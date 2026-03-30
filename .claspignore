@@ -1,0 +1,8 @@
+index.html
+.gitignore
+.claspignore
+docs/**
+*.jpg
+*.jpeg
+*.png
+*.url

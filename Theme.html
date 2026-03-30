@@ -429,9 +429,17 @@
   .empty-state .icon { font-size: 36px; display: block; margin-bottom: 8px; }
 </style>
 <style>
-  /* Suppress Google Apps Script injected footer banner */
-  body > div[style*="position:fixed"],
-  body > div[style*="position: fixed"] { display: none !important; }
+  /* White cover bar at the very bottom — sits over the GAS banner */
+  body::after {
+    content: '';
+    display: block;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 32px;
+    background: var(--bg, #F5F6FA);
+    z-index: 999999;
+    pointer-events: none;
+  }
 </style>
 <script>
   function goHome() {
@@ -444,30 +452,46 @@
       .getLandingHtml();
   }
 
-  // MutationObserver fallback: remove GAS footer if injected dynamically
+  // Remove GAS-injected footer: watch for any element added to body
+  // that contains a link to google.com/script or the branding text
   (function() {
+    function killBanner(node) {
+      if (!node || node.nodeType !== 1) return;
+      var html = node.innerHTML || '';
+      var href = (node.getAttribute && node.getAttribute('href')) || '';
+      if (html.indexOf('script.google.com') > -1 ||
+          html.indexOf('Google Apps Script') > -1 ||
+          href.indexOf('script.google.com') > -1) {
+        node.style.cssText = 'display:none!important';
+        return;
+      }
+      // Check computed style for fixed/sticky positioning
+      try {
+        var cs = window.getComputedStyle(node);
+        if ((cs.position === 'fixed' || cs.position === 'sticky') &&
+            node.parentNode === document.body) {
+          node.style.cssText = 'display:none!important';
+        }
+      } catch(e) {}
+    }
+
+    function scanBody() {
+      var kids = document.body ? document.body.children : [];
+      for (var i = 0; i < kids.length; i++) killBanner(kids[i]);
+    }
+
     var obs = new MutationObserver(function(muts) {
       muts.forEach(function(m) {
-        m.addedNodes.forEach(function(node) {
-          if (node.nodeType === 1) {
-            var s = node.style || {};
-            if ((s.position === 'fixed' || s.position === 'sticky') &&
-                node.parentNode === document.body) {
-              node.style.display = 'none';
-            }
-            // Also catch by href content (GAS branding link)
-            var links = node.querySelectorAll ? node.querySelectorAll('a[href*="script.google.com"]') : [];
-            if (links.length > 0) node.style.display = 'none';
-          }
-        });
+        m.addedNodes.forEach(killBanner);
       });
     });
-    if (document.body) {
-      obs.observe(document.body, { childList: true, subtree: false });
-    } else {
-      document.addEventListener('DOMContentLoaded', function() {
-        obs.observe(document.body, { childList: true, subtree: false });
-      });
+
+    function start() {
+      scanBody();
+      obs.observe(document.body, { childList: true, subtree: true });
     }
+
+    if (document.body) { start(); }
+    else { document.addEventListener('DOMContentLoaded', start); }
   })();
 </script>
