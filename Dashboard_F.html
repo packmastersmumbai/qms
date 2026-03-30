@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    /* ── Layout ── */
+    body { background: var(--bg); }
+    .dash-wrap { display:flex; flex-direction:column; min-height:100vh; }
+
+    /* ── Type Tabs ── */
+    .type-tabs {
+      display: flex; gap: 4px; padding: 10px 12px 0;
+      border-bottom: 2px solid var(--border);
+      background: var(--white);
+    }
+    .type-tab {
+      padding: 7px 14px; border-radius: 6px 6px 0 0;
+      border: none; cursor: pointer; font-size: 12px; font-weight: 600;
+      font-family: inherit; transition: background 0.15s, color 0.15s;
+      background: transparent; color: var(--muted);
+    }
+    .type-tab.active {
+      background: var(--navy); color: #fff;
+    }
+    .type-tab .tab-count {
+      display: inline-block; margin-left: 5px;
+      background: rgba(255,255,255,0.25); color: inherit;
+      border-radius: 10px; padding: 1px 6px; font-size: 10px;
+    }
+    .type-tab:not(.active) .tab-count {
+      background: var(--border); color: var(--muted);
+    }
+
+    /* ── Filter Bar ── */
+    .filter-bar {
+      display: flex; gap: 8px; padding: 8px 12px;
+      background: var(--white); border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+    .filter-bar select {
+      flex: 1; min-width: 0;
+    }
+    #lastRefresh { font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+    /* ── Summary Cards ── */
+    .summary-cards {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 6px; padding: 8px 12px;
+    }
+    @media (max-width: 480px) {
+      .summary-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── Kanban Board ── */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 10px 12px;
+      flex: 1;
+    }
+    @media (max-width: 700px) {
+      .kanban-board { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 420px) {
+      .kanban-board { grid-template-columns: 1fr; }
+    }
+
+    .kanban-col { display: flex; flex-direction: column; gap: 8px; }
+
+    .kanban-col-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 10px; border-radius: 8px 8px 0 0;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .kanban-col-hdr .col-count {
+      background: rgba(255,255,255,0.35);
+      border-radius: 10px; padding: 1px 7px; font-size: 11px;
+    }
+    .hdr-pending  { background: #F59E0B; color: #fff; }
+    .hdr-accepted { background: #10B981; color: #fff; }
+    .hdr-rejected { background: #EF4444; color: #fff; }
+    .hdr-hold     { background: #8B5CF6; color: #fff; }
+
+    .kanban-cards { display: flex; flex-direction: column; gap: 6px; }
+
+    /* ── Card ── */
+    .k-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-left: 3px solid transparent;
+      border-radius: 0 6px 6px 0;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .k-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .k-card.selected { box-shadow: 0 0 0 2px var(--navy); }
+
+    .k-card-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .k-docno { font-size: 12px; font-weight: 700; color: var(--navy); }
+    .k-date  { font-size: 10px; color: var(--muted); white-space: nowrap; }
+    .k-party { font-size: 11px; color: var(--text); margin-bottom: 2px;
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .k-material { font-size: 10px; color: var(--muted);
+                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .k-footer { display: flex; justify-content: space-between;
+                align-items: center; margin-top: 5px; }
+    .k-inspector { font-size: 10px; color: var(--muted);
+                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                   max-width: 70%; }
+
+    /* Card accent by type */
+    .k-card[data-type="GRN"]  { border-left-color: #3B82F6; }
+    .k-card[data-type="IQC"]  { border-left-color: #8B5CF6; }
+    .k-card[data-type="OQC"]  { border-left-color: #F59E0B; }
+
+    .empty-col {
+      background: var(--bg); border: 1px dashed var(--border);
+      border-radius: 6px; padding: 16px; text-align: center;
+      font-size: 11px; color: var(--muted);
+    }
+
+    /* ── Detail Panel ── */
+    .detail-panel { display: none; }
+    .detail-panel.open { display: block; padding: 0 12px 16px; }
+
+    /* ── Loading ── */
+    #loadingMsg { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
+
+    /* ── Qty chips ── */
+    .qty-chips { display: flex; gap: 8px; margin-top: 4px; }
+    .qty-chip {
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .qty-chip.accepted { background: #DCFCE7; color: #15803D; }
+    .qty-chip.rejected { background: #FEE2E2; color: #B91C1C; }
+  </style>
+</head>
+<body>
+
+<div class="dash-wrap">
+
+  <!-- Header -->
+  <div class="pm-header" style="padding:10px 16px;">
+    <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;margin-right:6px;text-decoration:none;line-height:1;">‹</a>
+    <span class="logo-text">📊 QMS Dashboard</span>
+  </div>
+
+  <!-- Type Tabs -->
+  <div class="type-tabs" id="typeTabs">
+    <button class="type-tab active" data-type="ALL" onclick="switchTab('ALL')">All <span class="tab-count" id="tc-ALL">—</span></button>
+    <button class="type-tab" data-type="GRN" onclick="switchTab('GRN')">GRN <span class="tab-count" id="tc-GRN">—</span></button>
+    <button class="type-tab" data-type="IQC" onclick="switchTab('IQC')">IQC <span class="tab-count" id="tc-IQC">—</span></button>
+    <button class="type-tab" data-type="OQC" onclick="switchTab('OQC')">OQC <span class="tab-count" id="tc-OQC">—</span></button>
+    <button class="type-tab" data-type="GP"  onclick="switchTab('GP')">Gatepass <span class="tab-count" id="tc-GP">—</span></button>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <select id="fRange" onchange="loadData()">
+      <option value="ALL">All Time</option>
+      <option value="TODAY">Today</option>
+      <option value="WEEK">This Week</option>
+      <option value="MONTH">This Month</option>
+    </select>
+    <button onclick="loadData()">🔄 Refresh</button>
+    <span id="lastRefresh" style="font-size:10px;color:var(--muted);margin-left:4px;"></span>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards" id="summaryCards">
+    <div class="sum-card total">  <div class="sc-num" id="cTotal">—</div><div class="sc-lbl">Total</div></div>
+    <div class="sum-card pass">   <div class="sc-num" id="cPass">—</div> <div class="sc-lbl">Accepted</div></div>
+    <div class="sum-card fail">   <div class="sc-num" id="cFail">—</div> <div class="sc-lbl">Rejected</div></div>
+    <div class="sum-card pending"><div class="sc-num" id="cPend">—</div> <div class="sc-lbl">Pending/Hold</div></div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loadingMsg"><span class="spinner"></span> Loading records…</div>
+
+  <!-- Kanban Board -->
+  <div class="kanban-board" id="kanbanBoard" style="display:none;">
+    <div class="kanban-col">
+      <div class="kanban-col-hdr hdr-pending">Pending / Review <span class="col-count" id="cnt-pending">0</span></div>
+      <div class="kanban-cards" id="col-pending"></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-col-hdr hdr-accepted">Accepted / Released <span class="col-count" id="cnt-accepted">0</span></div>
+      <div class="kanban-cards" id="col-accepted"></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-col-hdr hdr-rejected">Rejected <span class="col-count" id="cnt-rejected">0</span></div>
+      <div class="kanban-cards" id="col-rejected"></div>
+    </div>
+    <div class="kanban-col">
+      <div class="kanban-col-hdr hdr-hold">Hold / Deviation <span class="col-count" id="cnt-hold">0</span></div>
+      <div class="kanban-cards" id="col-hold"></div>
+    </div>
+  </div>
+
+  <!-- Detail Panel -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="section">
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span id="detailTitle">Record Detail</span>
+        <button onclick="closeDetail()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);">✕</button>
+      </div>
+      <div class="section-body">
+        <div class="detail-grid" id="detailGrid"></div>
+        <!-- IQC qty chips -->
+        <div id="qtyChips" style="display:none;margin-top:8px;">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Qty Disposition</div>
+          <div class="qty-chips">
+            <span class="qty-chip accepted" id="qtyAccepted"></span>
+            <span class="qty-chip rejected" id="qtyRejected"></span>
+          </div>
+        </div>
+        <!-- IQC params -->
+        <div id="paramDetail" style="display:none;margin-top:10px;">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Inspection Parameters</div>
+          <div id="paramDetailGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-wa" id="detailWABtn" onclick="sendWADetail()" style="width:auto;padding:9px 18px;margin-top:0;">📲 Send WhatsApp</button>
+          <button onclick="openFullRecord()" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--navy);background:var(--white);color:var(--navy);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">📄 Open Full Record</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var allRows = [];
+var activeTab = 'ALL';
+var selectedRecord = null;
+var selectedCardEl = null;
+
+/* ── Data Loading ── */
+function loadData() {
+  document.getElementById('loadingMsg').style.display = 'block';
+  document.getElementById('loadingMsg').innerHTML = '<span class="spinner"></span> Loading records…';
+  document.getElementById('kanbanBoard').style.display = 'none';
+  closeDetail();
+  console.log('[Dashboard] loadData called, range=' + document.getElementById('fRange').value);
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      try {
+        if (!data || !data.rows) {
+          var errMsg = (data && data.error) ? data.error : 'No data returned. Run Setup from QMS System menu first.';
+          document.getElementById('loadingMsg').innerHTML = '❌ ' + errMsg;
+          return;
+        }
+        allRows = data.rows;
+        renderTabCounts(allRows);
+        renderKanban(filteredRows());
+        renderCounts(data.counts);
+        document.getElementById('lastRefresh').textContent =
+          'Refreshed ' + new Date().toLocaleTimeString('en-IN');
+        document.getElementById('loadingMsg').style.display = 'none';
+        document.getElementById('kanbanBoard').style.display = 'grid';
+      } catch(jsErr) {
+        document.getElementById('loadingMsg').innerHTML =
+          '❌ Render error: ' + jsErr.message;
+      }
+    })
+    .withFailureHandler(function(e) {
+      console.log('[Dashboard] FAIL name=' + (e && e.name) + ' msg=' + (e && e.message));
+      document.getElementById('loadingMsg').innerHTML =
+        '❌ Error: ' + (e ? (e.message || e.name || JSON.stringify(e)) : 'unknown');
+    })
+    .getDashboardData({ type: 'ALL', range: document.getElementById('fRange').value });
+}
+
+/* ── Tab Switching (client-side filter) ── */
+function switchTab(type) {
+  activeTab = type;
+  document.querySelectorAll('.type-tab').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  closeDetail();
+  renderKanban(filteredRows());
+  renderCounts(buildCounts(filteredRows()));
+}
+
+function filteredRows() {
+  if (activeTab === 'ALL') return allRows;
+  return allRows.filter(function(r) { return r.type === activeTab; });
+}
+
+/* ── Tab Counts ── */
+function renderTabCounts(rows) {
+  var counts = { ALL: rows.length, GRN: 0, IQC: 0, OQC: 0, GP: 0 };
+  rows.forEach(function(r) { if (counts[r.type] !== undefined) counts[r.type]++; });
+  ['ALL','GRN','IQC','OQC','GP'].forEach(function(t) {
+    document.getElementById('tc-' + t).textContent = counts[t];
+  });
+}
+
+/* ── Summary Counts ── */
+function buildCounts(rows) {
+  var c = { total: rows.length, pass: 0, fail: 0, hold: 0, pending: 0 };
+  rows.forEach(function(r) {
+    var s = (r.status || '').toUpperCase();
+    if (s === 'ACCEPTED' || s === 'RELEASED' || s === 'ISSUED') c.pass++;
+    else if (s === 'REJECTED')                                  c.fail++;
+    else if (s === 'HOLD')                                      c.hold++;
+    else                                                        c.pending++;
+  });
+  return c;
+}
+
+function renderCounts(c) {
+  document.getElementById('cTotal').textContent = c.total;
+  document.getElementById('cPass').textContent  = c.pass;
+  document.getElementById('cFail').textContent  = c.fail;
+  document.getElementById('cPend').textContent  = (c.hold || 0) + (c.pending || 0);
+}
+
+/* ── Kanban Render ── */
+function renderKanban(rows) {
+  var cols = { pending: [], accepted: [], rejected: [], hold: [] };
+  rows.forEach(function(r, globalIdx) {
+    var s = (r.status || '').toUpperCase();
+    var bucket = s === 'ACCEPTED' || s === 'RELEASED' || s === 'ISSUED' ? 'accepted' :
+                 s === 'REJECTED'                                        ? 'rejected' :
+                 s === 'HOLD'                                            ? 'hold' : 'pending';
+    // store original index into allRows for detail lookup
+    r._filteredIdx = globalIdx;
+    cols[bucket].push(r);
+  });
+
+  ['pending','accepted','rejected','hold'].forEach(function(bucket) {
+    var container = document.getElementById('col-' + bucket);
+    container.innerHTML = '';
+    document.getElementById('cnt-' + bucket).textContent = cols[bucket].length;
+
+    if (cols[bucket].length === 0) {
+      container.innerHTML = '<div class="empty-col">No records</div>';
+      return;
+    }
+    cols[bucket].forEach(function(r) {
+      var card = document.createElement('div');
+      card.className = 'k-card';
+      card.dataset.type = r.type;
+      card.dataset.idx = r._filteredIdx;
+      card.onclick = function() { showDetail(r._filteredIdx, card); };
+
+      // Find original index in allRows for detail
+      card.innerHTML =
+        '<div class="k-card-top">' +
+          '<span class="k-docno">' + r.docNo + '</span>' +
+          '<span class="k-date">' + r.date + '</span>' +
+        '</div>' +
+        '<div class="k-party">' + (r.party || '—') + '</div>' +
+        '<div class="k-material">' + (r.material || '—') + '</div>' +
+        '<div class="k-footer">' +
+          '<span class="badge badge-' + r.type.toLowerCase() + '">' + r.type + '</span>' +
+          '<span class="k-inspector">' + (r.inspector || '') + '</span>' +
+        '</div>';
+      container.appendChild(card);
+    });
+  });
+}
+
+/* ── Detail Panel ── */
+function showDetail(idx, cardEl) {
+  // Deselect previous
+  if (selectedCardEl) selectedCardEl.classList.remove('selected');
+  selectedCardEl = cardEl;
+  if (cardEl) cardEl.classList.add('selected');
+
+  var r = filteredRows()[idx];
+  selectedRecord = r;
+  var d = r.detail || {};
+  var panel = document.getElementById('detailPanel');
+
+  document.getElementById('detailTitle').innerHTML =
+    '<span class="badge badge-' + r.type.toLowerCase() + '">' + r.type + '</span> ' +
+    r.docNo + ' &nbsp;' + statusBadge(r.status);
+
+  // Hide optional sections
+  document.getElementById('paramDetail').style.display = 'none';
+  document.getElementById('qtyChips').style.display = 'none';
+
+  var items = [];
+  if (r.type === 'GRN') {
+    items = [
+      ['GRN No.',     d.grnNo    || r.docNo],
+      ['Date',        r.date],
+      ['Supplier',    d.supplier || r.party],
+      ['PO Ref',      d.poRef],
+      ['Invoice No.', d.invoiceNo],
+      ['Material',    d.material || r.material],
+      ['Batch No.',   d.batch || r.batch],
+      ['Unit',        d.unit],
+      ['Qty Ordered', d.qtyOrdered],
+      ['Qty Received',d.qtyReceived],
+      ['COA',         d.coa],
+      ['Expiry',      d.expiry],
+      ['IQC Status',  statusBadge(d.iqcStatus)],
+      ['Remarks',     d.remarks || '—']
+    ];
+  } else if (r.type === 'IQC') {
+    items = [
+      ['IQC No.',     d.iqcNo    || r.docNo],
+      ['GRN Ref',     d.grnRef],
+      ['Date',        r.date],
+      ['Supplier',    d.supplier || r.party],
+      ['Material',    d.material || r.material],
+      ['Batch No.',   d.batch    || r.batch],
+      ['Inspector',   d.inspector || r.inspector],
+      ['AQL Level',   d.aql],
+      ['Sample Size', d.sampleSize],
+      ['Disposition', statusBadge(d.disposition)],
+      ['NCR Ref',     d.ncrRef   || '—'],
+      ['Remarks',     d.remarks  || '—']
+    ];
+
+    // Qty chips
+    var accQty = d.acceptedQty;
+    var rejQty  = d.rejectedQty;
+    if (accQty !== '' && accQty !== undefined && accQty !== null) {
+      document.getElementById('qtyAccepted').textContent = '✔ Accepted: ' + accQty;
+      document.getElementById('qtyRejected').textContent = '✖ Rejected: ' + (rejQty !== '' && rejQty !== undefined ? rejQty : '0');
+      document.getElementById('qtyChips').style.display = 'block';
+    }
+
+    // Param grid
+    if (d.params) {
+      var pLabels = {
+        qty:'Quantity', pkg:'Packaging', colour:'Colour', shape:'Shape/Form',
+        dims:'Dimensions', weight:'Net Weight', clean:'Cleanliness',
+        odour:'Odour', label:'Label', msds:'MSDS/SDS', shelf:'Shelf Life', coa:'COA'
+      };
+      var pg = document.getElementById('paramDetailGrid');
+      pg.innerHTML = '';
+      Object.keys(pLabels).forEach(function(k) {
+        var v = d.params[k];
+        if (v === '' || v === undefined || v === null) v = '—';
+        var bg = v === 'PASS' ? '#DCFCE7' : v === 'FAIL' ? '#FEE2E2' : '#F3F4F6';
+        var tc = v === 'PASS' ? '#15803D' : v === 'FAIL' ? '#B91C1C' : '#6B7280';
+        pg.innerHTML += '<div style="background:' + bg + ';border-radius:6px;padding:6px 8px;">' +
+          '<div style="font-size:10px;color:var(--muted);">' + pLabels[k] + '</div>' +
+          '<div style="font-size:12px;font-weight:600;color:' + tc + ';">' + v + '</div></div>';
+      });
+      document.getElementById('paramDetail').style.display = 'block';
+    }
+  } else if (r.type === 'OQC') {
+    var ch = d.checks || {};
+    items = [
+      ['OQC No.',       d.oqcNo     || r.docNo],
+      ['Date',          r.date],
+      ['Customer',      d.customer  || r.party],
+      ['Batch / PO',    d.batchPO   || r.batch],
+      ['Material',      d.material  || r.material],
+      ['Inspector',     d.inspector || r.inspector],
+      ['IPQC Reviewed', d.ipqcReviewed],
+      ['Sample Size',   d.sampleSize],
+      ['Fill Weight',   ch.fillWeight || '—'],
+      ['Label',         ch.label      || '—'],
+      ['Seal',          ch.seal       || '—'],
+      ['Appearance',    ch.appearance || '—'],
+      ['Cust Spec',     ch.custSpec   || '—'],
+      ['Decision',      statusBadge(d.releaseDecision)],
+      ['Remarks',       d.remarks     || '—']
+    ];
+  }
+
+  var grid = document.getElementById('detailGrid');
+  grid.innerHTML = items.map(function(item) {
+    return '<div class="detail-item">' +
+      '<div class="di-label">' + item[0] + '</div>' +
+      '<div class="di-value">' + (item[1] !== undefined && item[1] !== null && item[1] !== '' ? item[1] : '—') + '</div></div>';
+  }).join('');
+
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('paramDetail').style.display = 'none';
+  document.getElementById('qtyChips').style.display = 'none';
+  if (selectedCardEl) selectedCardEl.classList.remove('selected');
+  selectedCardEl = null;
+  selectedRecord = null;
+}
+
+/* ── Helpers ── */
+function statusBadge(s) {
+  if (!s) s = 'PENDING';
+  var su = s.toUpperCase();
+  var cls = su === 'ACCEPTED' || su === 'RELEASED' ? 'pass' :
+            su === 'REJECTED'                       ? 'fail' :
+            su === 'HOLD'                           ? 'hold' :
+            su.indexOf('DEVIATION') > -1            ? 'awd'  : 'pending';
+  return '<span class="badge badge-' + cls + '">' + s + '</span>';
+}
+
+function openFullRecord() {
+  if (!selectedRecord) return;
+  // DocView expects 'Gatepass' not 'GP'
+  var docType = selectedRecord.type === 'GP' ? 'Gatepass' : selectedRecord.type;
+  var docNo   = selectedRecord.docNo;
+  document.getElementById('detailPanel').innerHTML =
+    '<div style="text-align:center;padding:24px;color:var(--muted);">Loading document…</div>';
+  google.script.run
+    .withSuccessHandler(function(html) {
+      if (html) { document.open(); document.write(html); document.close(); }
+    })
+    .withFailureHandler(function(err) {
+      showToast('Error: ' + (err && err.message ? err.message : String(err)), 'error');
+    })
+    .getDocViewHtml(docType, docNo);
+}
+
+function sendWADetail() {
+  if (!selectedRecord) return;
+  var rec = {
+    type:            selectedRecord.type,
+    docNo:           selectedRecord.docNo,
+    date:            selectedRecord.date,
+    grnNo:           selectedRecord.detail && selectedRecord.detail.grnRef,
+    supplier:        selectedRecord.party,
+    material:        selectedRecord.material,
+    batch:           selectedRecord.batch,
+    inspector:       selectedRecord.inspector,
+    status:          selectedRecord.status,
+    disposition:     selectedRecord.status,
+    releaseDecision: selectedRecord.status,
+    customer:        selectedRecord.party,
+    batchPO:         selectedRecord.batch,
+    ncrRef:          selectedRecord.detail && selectedRecord.detail.ncrRef
+  };
+  google.script.run
+    .withSuccessHandler(function(url) { window.open(url, '_blank'); })
+    .getWhatsAppURLForRecord(rec);
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+// Call directly — document.write() context may not fire window.onload
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadData);
+} else {
+  loadData();
+}
+</script>
+</body>
+</html>

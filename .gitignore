@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+*.url
+
+# Credentials / local config — never commit
+.env
+*.credentials.json
+
+# Large media
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.avi
+
+# Docs / working files (not source code)
+docs/
+
+# clasp auth (global, not project-specific)
+# .clasp.json is intentionally included for CI/CD

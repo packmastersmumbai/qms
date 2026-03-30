@@ -1,0 +1,473 @@
+<style>
+  /* ── Pack Masters QMS — Shared Theme ── */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --navy:    #0D1B6E;
+    --amber:   #E8A020;
+    --white:   #FFFFFF;
+    --bg:      #F5F6FA;
+    --text:    #1A1A2E;
+    --muted:   #6B7280;
+    --border:  #E5E7EB;
+    --success: #16A34A;
+    --danger:  #DC2626;
+    --hold:    #D97706;
+    --deviation: #EA580C;
+    --radius:  8px;
+    --shadow:  0 2px 8px rgba(13,27,110,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .pm-header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 12px 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .pm-header .logo-text {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .pm-header .doc-badge {
+    margin-left: auto;
+    background: var(--amber);
+    color: var(--navy);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Sections ── */
+  .section {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin: 10px;
+    overflow: hidden;
+  }
+  .section-title {
+    background: var(--navy);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+  .section-body { padding: 10px 12px; }
+
+  /* ── Form fields ── */
+  .field { margin-bottom: 10px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .field label .ccp {
+    color: var(--danger);
+    font-size: 10px;
+    margin-left: 3px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--navy);
+  }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field .hint {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ── Doc number display ── */
+  .doc-number {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    background: #EEF1FA;
+    border: 2px dashed var(--navy);
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  /* ── COA / Toggle row ── */
+  .toggle-row {
+    display: flex;
+    gap: 6px;
+  }
+  .toggle-row button {
+    flex: 1;
+    padding: 8px 4px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--white);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .toggle-row button.active-yes  { background:#E8F5E9; border-color:var(--success); color:var(--success); }
+  .toggle-row button.active-no   { background:#FFEBEE; border-color:var(--danger);  color:var(--danger);  }
+  .toggle-row button.active-na   { background:#F3F4F6; border-color:#9CA3AF; color:#6B7280; }
+  .toggle-row button.active-pass { background:#E8F5E9; border-color:var(--success); color:var(--success); }
+  .toggle-row button.active-fail { background:#FFEBEE; border-color:var(--danger);  color:var(--danger);  }
+
+  /* ── Disposition buttons ── */
+  .disp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 4px;
+  }
+  .disp-btn {
+    padding: 10px 6px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    text-align: center;
+  }
+  .disp-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .disp-btn.active-acc  { background:#E8F5E9; border-color:var(--success); color:var(--success); }
+  .disp-btn.active-rej  { background:#FFEBEE; border-color:var(--danger);  color:var(--danger);  }
+  .disp-btn.active-hld  { background:#FEF3C7; border-color:var(--hold);    color:var(--hold);    }
+  .disp-btn.active-awd  { background:#FFEDD5; border-color:var(--deviation);color:var(--deviation);}
+
+  /* ── Submit button ── */
+  .btn-submit {
+    width: 100%;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+  .btn-submit:hover  { background: #1A2D9E; }
+  .btn-submit:active { background: #0A1450; }
+  .btn-submit:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+  .btn-wa {
+    width: 100%;
+    background: #25D366;
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 11px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 8px;
+    transition: background 0.15s;
+  }
+  .btn-wa:hover { background: #1EBA59; }
+
+  /* ── Status badges ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .badge-pass    { background:#DCFCE7; color:#15803D; }
+  .badge-fail    { background:#FEE2E2; color:#B91C1C; }
+  .badge-hold    { background:#FEF3C7; color:#B45309; }
+  .badge-pending { background:#F3F4F6; color:#6B7280; }
+  .badge-awd     { background:#FFEDD5; color:#C2410C; }
+  .badge-grn     { background:#EDE9FE; color:#6D28D9; }
+  .badge-iqc     { background:#DBEAFE; color:#1D4ED8; }
+  .badge-oqc     { background:#FCE7F3; color:#BE185D; }
+
+  /* ── Spinner ── */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid #ccc;
+    border-top-color: var(--navy);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--navy);
+    color: var(--white);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; pointer-events: auto; }
+  .toast.error { background: var(--danger); }
+  .toast.success { background: var(--success); }
+
+  /* ── Param row (IQC) ── */
+  .param-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .param-row:last-child { border-bottom: none; }
+  .param-num {
+    width: 20px;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .param-label {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .param-label .ccp-dot {
+    width: 6px; height: 6px;
+    background: var(--danger);
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .param-pf {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .param-pf button {
+    padding: 4px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    background: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .param-pf button.pass { background:#E8F5E9; border-color:var(--success); color:var(--success); }
+  .param-pf button.fail { background:#FFEBEE; border-color:var(--danger);  color:var(--danger);  }
+  .param-pf button.na   { background:#F3F4F6; border-color:#9CA3AF; color:#6B7280; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-bar select {
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--white);
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  .filter-bar button {
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ── Dashboard table ── */
+  .dash-table { width: 100%; border-collapse: collapse; }
+  .dash-table thead th {
+    background: var(--navy);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 10px;
+    text-align: left;
+    letter-spacing: 0.5px;
+  }
+  .dash-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .dash-table tbody tr:hover { background: #F0F4FF; }
+  .dash-table tbody td {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  /* ── Detail panel (slide-up) ── */
+  .detail-panel {
+    background: var(--white);
+    border-top: 2px solid var(--navy);
+    padding: 14px;
+    margin-top: 10px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .detail-item .di-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .detail-item .di-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 1px;
+  }
+
+  /* ── Summary cards ── */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+  }
+  .sum-card {
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .sum-card .sc-num  { font-size: 22px; font-weight: 700; line-height: 1; }
+  .sum-card .sc-lbl  { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
+  .sum-card.total    { background:#EEF1FA; color:var(--navy); }
+  .sum-card.pass     { background:#DCFCE7; color:#15803D; }
+  .sum-card.fail     { background:#FEE2E2; color:#B91C1C; }
+  .sum-card.pending  { background:#F3F4F6; color:#6B7280; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .empty-state .icon { font-size: 36px; display: block; margin-bottom: 8px; }
+</style>
+<style>
+  /* Suppress Google Apps Script injected footer banner */
+  body > div[style*="position:fixed"],
+  body > div[style*="position: fixed"] { display: none !important; }
+</style>
+<script>
+  function goHome() {
+    google.script.run
+      .withSuccessHandler(function(html) {
+        document.open();
+        document.write(html);
+        document.close();
+      })
+      .getLandingHtml();
+  }
+
+  // MutationObserver fallback: remove GAS footer if injected dynamically
+  (function() {
+    var obs = new MutationObserver(function(muts) {
+      muts.forEach(function(m) {
+        m.addedNodes.forEach(function(node) {
+          if (node.nodeType === 1) {
+            var s = node.style || {};
+            if ((s.position === 'fixed' || s.position === 'sticky') &&
+                node.parentNode === document.body) {
+              node.style.display = 'none';
+            }
+            // Also catch by href content (GAS branding link)
+            var links = node.querySelectorAll ? node.querySelectorAll('a[href*="script.google.com"]') : [];
+            if (links.length > 0) node.style.display = 'none';
+          }
+        });
+      });
+    });
+    if (document.body) {
+      obs.observe(document.body, { childList: true, subtree: false });
+    } else {
+      document.addEventListener('DOMContentLoaded', function() {
+        obs.observe(document.body, { childList: true, subtree: false });
+      });
+    }
+  })();
+</script>

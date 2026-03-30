@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    body { background: var(--bg); }
+
+    /* ── Doc view layout ── */
+    .dv-wrap { max-width: 720px; margin: 0 auto; padding-bottom: 40px; }
+
+    /* ── Header ── */
+    .dv-header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .dv-back {
+      background: none;
+      border: none;
+      color: var(--white);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1;
+      opacity: 0.85;
+      transition: opacity 0.15s;
+    }
+    .dv-back:hover { opacity: 1; }
+    .dv-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      flex: 1;
+    }
+    .dv-edit-btn {
+      background: var(--amber);
+      color: var(--navy);
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .dv-edit-btn:hover { background: #f0b030; }
+    .dv-save-btn {
+      background: var(--success);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      display: none;
+      transition: background 0.15s;
+    }
+    .dv-save-btn:hover { background: #15803d; }
+    .dv-cancel-btn {
+      background: none;
+      color: var(--white);
+      border: 1.5px solid rgba(255,255,255,0.4);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      display: none;
+    }
+    .dv-cancel-btn:hover { border-color: var(--white); }
+
+    /* ── Status badge in header ── */
+    .dv-status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Field rows ── */
+    .dv-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin: 10px;
+      overflow: hidden;
+    }
+    .dv-card-title {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 5px 12px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .dv-fields { padding: 4px 0; }
+    .dv-row {
+      display: flex;
+      align-items: baseline;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    .dv-row:last-child { border-bottom: none; }
+    .dv-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      width: 150px;
+      flex-shrink: 0;
+    }
+    .dv-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+      word-break: break-word;
+    }
+    .dv-value.empty { color: var(--muted); font-style: italic; }
+    .dv-value input,
+    .dv-value select,
+    .dv-value textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      transition: border-color 0.15s;
+    }
+    .dv-value input:focus,
+    .dv-value select:focus,
+    .dv-value textarea:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    .dv-value textarea { resize: vertical; min-height: 50px; }
+
+    /* ── Param badge in view mode ── */
+    .param-val {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .param-val.pass { background:#DCFCE7; color:#15803D; }
+    .param-val.fail { background:#FEE2E2; color:#B91C1C; }
+    .param-val.na   { background:#F3F4F6; color:#6B7280; }
+
+    /* ── Revision history ── */
+    .rev-toggle {
+      background: none;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      cursor: pointer;
+      font-family: inherit;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      text-align: left;
+    }
+    .rev-toggle:hover { background: #F0F4FF; }
+    .rev-toggle .arrow { transition: transform 0.2s; font-size: 11px; }
+    .rev-toggle.open .arrow { transform: rotate(90deg); }
+    .rev-body { display: none; padding: 0 12px 12px; }
+    .rev-body.open { display: block; }
+    .rev-item {
+      border-left: 3px solid var(--amber);
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      background: #FFFBF0;
+      border-radius: 0 6px 6px 0;
+    }
+    .rev-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .rev-meta strong { color: var(--text); }
+    .rev-change {
+      font-size: 12px;
+      color: var(--text);
+      margin-top: 3px;
+    }
+    .rev-change .old-val {
+      text-decoration: line-through;
+      color: var(--danger);
+      margin-right: 4px;
+    }
+    .rev-change .new-val {
+      color: var(--success);
+      font-weight: 600;
+    }
+    .rev-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(245,246,250,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      font-size: 13px;
+      color: var(--muted);
+      gap: 8px;
+    }
+    .loading-overlay.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <span class="spinner"></span> Loading record…
+</div>
+
+<!-- Header -->
+<div class="dv-header" id="dvHeader">
+  <button class="dv-back" onclick="goBackToRecords()" title="Back to Records">&#8592;</button>
+  <span class="dv-title" id="dvTitle">Loading…</span>
+  <span id="dvStatusBadge"></span>
+  <button class="dv-edit-btn" id="btnEdit" onclick="enterEditMode()">&#9998; Edit</button>
+  <button class="dv-save-btn" id="btnSave" onclick="saveRevision()">&#128190; Save Revision</button>
+  <button class="dv-cancel-btn" id="btnCancel" onclick="cancelEdit()">&#10005; Cancel</button>
+</div>
+
+<div class="dv-wrap">
+  <div id="dvContent"></div>
+  <!-- Revision History -->
+  <div class="dv-card" id="revCard" style="display:none;">
+    <button class="rev-toggle" id="revToggle" onclick="toggleRevHistory()">
+      <span class="arrow">&#9654;</span>
+      <span id="revToggleLabel">&#128336; Revision History</span>
+    </button>
+    <div class="rev-body" id="revBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Injected by server
+var DOC_TYPE = '<?= type ?>';
+var DOC_NO   = '<?= docNo ?>';
+
+var currentRecord  = null;
+var fieldsMeta     = null;
+var isEditMode     = false;
+var revisionCount  = 0;
+
+// ── Init ──────────────────────────────────────────────────────
+
+window.onload = function() {
+  google.script.run
+    .withSuccessHandler(onRecordLoaded)
+    .withFailureHandler(function(e) {
+      showError('Failed to load record: ' + e.message);
+    })
+    .getRecordDetail(DOC_TYPE, DOC_NO);
+};
+
+function onRecordLoaded(result) {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  if (!result || !result.success) {
+    showError(result ? result.error : 'Unknown error');
+    return;
+  }
+  currentRecord = result.record;
+  fieldsMeta    = result.fields;
+  revisionCount = result.revisionCount || 0;
+
+  document.getElementById('dvTitle').textContent = DOC_TYPE + ' — ' + DOC_NO;
+  renderStatusBadge(getStatusValue());
+  renderFields();
+  if (result.items && result.items.length > 0) {
+    renderItemsTable(result.items, result.itemHeaders);
+  }
+  renderRevCard();
+}
+
+function renderItemsTable(items, headers) {
+  var html = '<div class="dv-card" id="itemsCard">' +
+    '<div class="dv-card-title">Items (' + items.length + ')</div>' +
+    '<div style="overflow-x:auto;">' +
+    '<table style="width:100%;border-collapse:collapse;font-size:11px;">' +
+    '<thead><tr>' + headers.map(function(h) {
+      return '<th style="padding:5px 8px;text-align:left;background:#F3F4F6;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #E5E7EB;white-space:nowrap;">' + escHtml(h) + '</th>';
+    }).join('') + '</tr></thead>' +
+    '<tbody>' + items.map(function(item, idx) {
+      var bg = idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
+      return '<tr style="background:' + bg + ';">' + headers.map(function(h) {
+        return '<td style="padding:5px 8px;border-bottom:1px solid #F3F4F6;color:#1A1A2E;">' + escHtml(item[h] || '—') + '</td>';
+      }).join('') + '</tr>';
+    }).join('') +
+    '</tbody></table></div></div>';
+
+  var revCard = document.getElementById('revCard');
+  revCard.insertAdjacentHTML('beforebegin', html);
+}
+
+function getStatusValue() {
+  if (!currentRecord) return '';
+  return currentRecord.iqcStatus || currentRecord.disposition || currentRecord.releaseDecision || '';
+}
+
+// ── Render ────────────────────────────────────────────────────
+
+function renderStatusBadge(status) {
+  var el = document.getElementById('dvStatusBadge');
+  if (!status) { el.innerHTML = ''; return; }
+  var su = status.toUpperCase();
+  var cls = su === 'ACCEPTED' || su === 'RELEASED' ? 'badge-pass' :
+            su === 'REJECTED'                       ? 'badge-fail' :
+            su === 'HOLD'                           ? 'badge-hold' :
+            su.indexOf('DEVIATION') > -1            ? 'badge-awd'  : 'badge-pending';
+  el.innerHTML = '<span class="dv-status-badge ' + cls + '">' + status + '</span>';
+}
+
+function renderFields() {
+  if (!fieldsMeta || !currentRecord) return;
+  var html = '';
+
+  // Group: header fields
+  var headerKeys = ['docNo', 'date', 'createdBy', 'createdAt'];
+  var infoFields = fieldsMeta.filter(function(f) {
+    return !f.isParam && headerKeys.indexOf(f.key) === -1 && !f.isStatus;
+  });
+  var statusFields = fieldsMeta.filter(function(f) { return f.isStatus; });
+  var paramFields  = fieldsMeta.filter(function(f) { return f.isParam; });
+  var topFields    = fieldsMeta.filter(function(f) { return headerKeys.indexOf(f.key) > -1; });
+
+  html += buildCard('Document', topFields.concat(statusFields));
+  if (infoFields.length) html += buildCard('Details', infoFields);
+  if (paramFields.length) html += buildCard('Inspection Parameters', paramFields);
+
+  document.getElementById('dvContent').innerHTML = html;
+}
+
+function buildCard(title, fields) {
+  if (!fields.length) return '';
+  var rows = fields.map(function(f) { return buildRow(f); }).join('');
+  return '<div class="dv-card">' +
+    '<div class="dv-card-title">' + escHtml(title) + '</div>' +
+    '<div class="dv-fields">' + rows + '</div>' +
+    '</div>';
+}
+
+function buildRow(f) {
+  var val = currentRecord[f.key];
+  var displayVal = (val !== null && val !== undefined && val !== '') ? val : '';
+  var isEmpty    = displayVal === '';
+
+  if (isEditMode && !f.readOnly) {
+    return '<div class="dv-row">' +
+      '<span class="dv-label">' + escHtml(f.label) + '</span>' +
+      '<span class="dv-value">' + buildEditControl(f, displayVal) + '</span>' +
+      '</div>';
+  }
+
+  // View mode
+  var valHtml;
+  if (f.isStatus) {
+    valHtml = displayVal ? statusBadgeHtml(displayVal) : '<span class="empty">—</span>';
+  } else if (f.isParam) {
+    valHtml = displayVal ? paramBadgeHtml(displayVal) : '<span class="empty">—</span>';
+  } else {
+    valHtml = isEmpty
+      ? '<span class="empty">—</span>'
+      : escHtml(displayVal);
+  }
+
+  return '<div class="dv-row">' +
+    '<span class="dv-label">' + escHtml(f.label) + '</span>' +
+    '<span class="dv-value' + (isEmpty ? ' empty' : '') + '">' + valHtml + '</span>' +
+    '</div>';
+}
+
+function buildEditControl(f, val) {
+  var id = 'edit_' + f.key;
+
+  if (f.isParam) {
+    // P / F / NA toggle (select)
+    var opts = ['', 'PASS', 'FAIL', 'N/A'].map(function(o) {
+      return '<option value="' + o + '"' + (val === o ? ' selected' : '') + '>' + (o || '— select —') + '</option>';
+    }).join('');
+    return '<select id="' + id + '">' + opts + '</select>';
+  }
+
+  if (f.isStatus) {
+    var statusOptions = getStatusOptions(f.key);
+    var opts = statusOptions.map(function(o) {
+      return '<option value="' + o + '"' + (val === o ? ' selected' : '') + '>' + o + '</option>';
+    }).join('');
+    return '<select id="' + id + '">' + opts + '</select>';
+  }
+
+  if (f.isDate) {
+    // Convert display date back to yyyy-MM-dd for input
+    var dateVal = '';
+    if (val) {
+      try {
+        var d = new Date(val);
+        if (!isNaN(d)) {
+          var yyyy = d.getFullYear();
+          var mm   = String(d.getMonth() + 1).padStart(2, '0');
+          var dd   = String(d.getDate()).padStart(2, '0');
+          dateVal  = yyyy + '-' + mm + '-' + dd;
+        }
+      } catch(e) {}
+    }
+    return '<input type="date" id="' + id + '" value="' + escHtml(dateVal) + '">';
+  }
+
+  if (f.key === 'remarks' || f.key === 'materialDesc') {
+    return '<textarea id="' + id + '">' + escHtml(val) + '</textarea>';
+  }
+
+  return '<input type="text" id="' + id + '" value="' + escHtml(val) + '">';
+}
+
+function getStatusOptions(key) {
+  if (key === 'iqcStatus')       return ['PENDING', 'ACCEPTED', 'REJECTED', 'HOLD'];
+  if (key === 'disposition')     return ['PENDING', 'ACCEPTED', 'REJECTED', 'HOLD', 'ACCEPTED WITH DEVIATION'];
+  if (key === 'releaseDecision') return ['PENDING', 'RELEASED', 'REJECTED', 'HOLD'];
+  return ['PENDING', 'ACCEPTED', 'REJECTED', 'HOLD', 'RELEASED'];
+}
+
+function statusBadgeHtml(status) {
+  var su = status.toUpperCase();
+  var cls = su === 'ACCEPTED' || su === 'RELEASED' ? 'badge-pass' :
+            su === 'REJECTED'                       ? 'badge-fail' :
+            su === 'HOLD'                           ? 'badge-hold' :
+            su.indexOf('DEVIATION') > -1            ? 'badge-awd'  : 'badge-pending';
+  return '<span class="badge ' + cls + '">' + escHtml(status) + '</span>';
+}
+
+function paramBadgeHtml(val) {
+  var v = val.toUpperCase();
+  var cls = v === 'PASS' ? 'pass' : v === 'FAIL' ? 'fail' : 'na';
+  return '<span class="param-val ' + cls + '">' + escHtml(val) + '</span>';
+}
+
+// ── Revision History ──────────────────────────────────────────
+
+function renderRevCard() {
+  var card = document.getElementById('revCard');
+  card.style.display = 'block';
+  document.getElementById('revToggleLabel').textContent =
+    '\u{1F550} Revision History (' + revisionCount + ')';
+}
+
+function toggleRevHistory() {
+  var btn  = document.getElementById('revToggle');
+  var body = document.getElementById('revBody');
+  var isOpen = btn.classList.contains('open');
+
+  if (!isOpen) {
+    btn.classList.add('open');
+    body.classList.add('open');
+    // Load if not yet loaded
+    if (!body.dataset.loaded) {
+      body.innerHTML = '<span class="spinner"></span> Loading…';
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (!result.success) {
+            body.innerHTML = '<span class="rev-empty">Error: ' + result.error + '</span>';
+            return;
+          }
+          renderRevisions(result.revisions);
+          body.dataset.loaded = '1';
+          // Update count
+          revisionCount = result.revisions.length;
+          document.getElementById('revToggleLabel').textContent =
+            '\u{1F550} Revision History (' + revisionCount + ')';
+        })
+        .withFailureHandler(function(e) {
+          body.innerHTML = '<span class="rev-empty">Failed: ' + e.message + '</span>';
+        })
+        .getRevisionHistory(DOC_TYPE, DOC_NO);
+    }
+  } else {
+    btn.classList.remove('open');
+    body.classList.remove('open');
+  }
+}
+
+function renderRevisions(revisions) {
+  var body = document.getElementById('revBody');
+  if (!revisions || revisions.length === 0) {
+    body.innerHTML = '<p class="rev-empty">No revisions recorded for this document.</p>';
+    return;
+  }
+
+  var html = revisions.map(function(rev) {
+    var changesHtml = rev.changes.map(function(c) {
+      return '<div class="rev-change">' +
+        '<strong>' + escHtml(c.field) + ':</strong> ' +
+        '<span class="old-val">' + escHtml(c.oldValue || '—') + '</span>' +
+        '&#8594; ' +
+        '<span class="new-val">' + escHtml(c.newValue || '—') + '</span>' +
+        '</div>';
+    }).join('');
+
+    return '<div class="rev-item">' +
+      '<div class="rev-meta">' +
+        '<strong>' + escHtml(rev.timestamp) + '</strong> &mdash; ' + escHtml(rev.revisedBy) +
+        ' &mdash; ' + rev.changes.length + ' field(s) changed' +
+      '</div>' +
+      changesHtml +
+      '</div>';
+  }).join('');
+
+  body.innerHTML = html;
+}
+
+// ── Edit / Save / Cancel ──────────────────────────────────────
+
+function enterEditMode() {
+  isEditMode = true;
+  renderFields();
+  document.getElementById('btnEdit').style.display   = 'none';
+  document.getElementById('btnSave').style.display   = 'inline-block';
+  document.getElementById('btnCancel').style.display = 'inline-block';
+}
+
+function cancelEdit() {
+  isEditMode = false;
+  renderFields();
+  document.getElementById('btnEdit').style.display   = 'inline-block';
+  document.getElementById('btnSave').style.display   = 'none';
+  document.getElementById('btnCancel').style.display = 'none';
+}
+
+function saveRevision() {
+  // Collect updated values from inputs
+  var updatedData = {};
+  fieldsMeta.forEach(function(f) {
+    if (f.readOnly) return;
+    var el = document.getElementById('edit_' + f.key);
+    if (!el) return;
+    updatedData[f.key] = el.tagName === 'TEXTAREA' ? el.value : el.value;
+  });
+
+  document.getElementById('btnSave').disabled = true;
+  document.getElementById('btnSave').innerHTML = '<span class="spinner"></span> Saving…';
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      document.getElementById('btnSave').disabled = false;
+      document.getElementById('btnSave').innerHTML = '&#128190; Save Revision';
+
+      if (!result.success) {
+        showToast('Error: ' + result.error, 'error');
+        return;
+      }
+
+      if (result.message) {
+        showToast(result.message, '');
+        cancelEdit();
+        return;
+      }
+
+      // Update local record
+      fieldsMeta.forEach(function(f) {
+        if (!f.readOnly && f.key in updatedData) {
+          currentRecord[f.key] = updatedData[f.key];
+        }
+      });
+
+      revisionCount++;
+      // Invalidate cached revision body
+      var revBody = document.getElementById('revBody');
+      delete revBody.dataset.loaded;
+      revBody.innerHTML = '';
+
+      renderRevCard();
+      renderStatusBadge(getStatusValue());
+      showToast(result.changesCount + ' change(s) saved.', 'success');
+      cancelEdit();
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('btnSave').disabled = false;
+      document.getElementById('btnSave').innerHTML = '&#128190; Save Revision';
+      showToast('Save failed: ' + e.message, 'error');
+    })
+    .saveRevision(DOC_TYPE, DOC_NO, updatedData);
+}
+
+// ── Navigation ────────────────────────────────────────────────
+
+function goBackToRecords() {
+  google.script.run
+    .withSuccessHandler(function(html) {
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .withFailureHandler(function(e) {
+      showToast('Navigation error: ' + e.message, 'error');
+    })
+    .getFormHtml('Records');
+}
+
+// ── Utilities ─────────────────────────────────────────────────
+
+function escHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+function showError(msg) {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  document.getElementById('dvTitle').textContent = 'Error';
+  document.getElementById('dvContent').innerHTML =
+    '<div style="padding:30px;text-align:center;color:var(--danger);">' + escHtml(msg) + '</div>';
+}
+</script>
+</body>
+</html>

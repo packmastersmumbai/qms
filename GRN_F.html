@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+</head>
+<body>
+
+<div class="pm-header">
+  <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:4px;text-decoration:none;">‹</a>
+  <span class="logo-text">📥 New GRN</span>
+  <span class="doc-badge" id="docBadge">Loading…</span>
+</div>
+
+<div style="padding-bottom:80px;">
+
+  <div class="section">
+    <div class="section-title">Receipt Details</div>
+    <div class="section-body">
+
+      <div class="field">
+        <label>Date Received</label>
+        <input type="date" id="date">
+      </div>
+
+      <div class="field">
+        <label>Supplier</label>
+        <select id="supplier" onchange="onSupplierChange()">
+          <option value="">— Select Supplier —</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>PO Reference</label>
+        <input type="text" id="poRef" placeholder="PO number">
+      </div>
+
+      <div class="field">
+        <label>Invoice No.</label>
+        <input type="text" id="invoiceNo" placeholder="Supplier invoice number">
+      </div>
+
+      <div class="field">
+        <label>Storage Zone</label>
+        <select id="storageZone">
+          <option value="Quarantine Zone">Quarantine Zone</option>
+          <option value="Approved Zone">Approved Zone</option>
+          <option value="Rejected Zone">Rejected Zone</option>
+          <option value="Production Zone">Production Zone</option>
+          <option value="Raw Material Store">Raw Material Store</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Items</span>
+      <span id="itemBadge" style="background:var(--amber);color:var(--navy);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">0 added</span>
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <label>Material</label>
+        <input type="text" id="matSearch" placeholder="Type to search material…" oninput="filterMaterials()" autocomplete="off">
+        <select id="material" size="3" style="margin-top:4px;" onchange="onMaterialChange()"></select>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field">
+          <label>Qty Ordered</label>
+          <input type="number" id="qtyOrdered" min="0" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Qty Received</label>
+          <input type="number" id="qtyReceived" min="0" placeholder="0">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field">
+          <label>Batch / Lot No.</label>
+          <input type="text" id="batchNo" placeholder="Batch or lot">
+        </div>
+        <div class="field">
+          <label>Expiry Date <span style="font-size:10px;color:#9CA3AF;">(opt.)</span></label>
+          <input type="date" id="expiryDate">
+        </div>
+      </div>
+
+      <button type="button" onclick="addItem()" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px;">+ Add Item to GRN</button>
+
+      <div id="itemsList" style="margin-top:8px;">
+        <p style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0;">No items added yet</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">COA / Documents</div>
+    <div class="section-body">
+      <div class="field">
+        <label>COA / Test Certificate Received</label>
+        <div class="toggle-row">
+          <button onclick="setCOA(this,'Y')"  id="coaY">Yes</button>
+          <button onclick="setCOA(this,'N')"  id="coaN">No</button>
+          <button onclick="setCOA(this,'NA')" id="coaNA" class="active-na">N/A</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Remarks</label>
+        <textarea id="remarks" placeholder="Any observations or notes…"></textarea>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Sticky footer -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);">
+  <button class="btn-submit" id="btnSubmit" onclick="submitGRN()">Save GRN & Open IQC →</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SUPPLIERS = [], ALL_MATS = [];
+var coaVal = 'NA', supplierSel = {}, materialSel = {};
+var ITEMS = [];
+var docNo = '';
+
+function init() {
+  var today = new Date();
+  document.getElementById('date').value = today.toISOString().split('T')[0];
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      SUPPLIERS = data.suppliers;
+      ALL_MATS  = data.materials;
+      docNo     = data.docNumber;
+
+      document.getElementById('docBadge').textContent = docNo;
+
+      var sel = document.getElementById('supplier');
+      SUPPLIERS.forEach(function(s) {
+        var opt = document.createElement('option');
+        opt.value = s.code;
+        opt.textContent = s.name;
+        opt.dataset.obj = JSON.stringify(s);
+        sel.appendChild(opt);
+      });
+
+      renderMaterials(ALL_MATS);
+    })
+    .withFailureHandler(function(e) { showToast(e.message, 'error'); })
+    .getGRNFormInit();
+}
+
+function renderMaterials(mats) {
+  var sel = document.getElementById('material');
+  sel.innerHTML = '';
+  mats.slice(0, 50).forEach(function(m) {
+    var opt = document.createElement('option');
+    opt.value = m.code;
+    opt.textContent = '[' + m.code + '] ' + m.desc + ' (' + m.unit + ')';
+    opt.dataset.obj = JSON.stringify(m);
+    sel.appendChild(opt);
+  });
+}
+
+function filterMaterials() {
+  var q = document.getElementById('matSearch').value.toLowerCase();
+  if (!q) { renderMaterials(ALL_MATS); return; }
+  var filtered = ALL_MATS.filter(function(m) {
+    return m.desc.toLowerCase().indexOf(q) > -1 ||
+           String(m.code).toLowerCase().indexOf(q) > -1 ||
+           m.category.toLowerCase().indexOf(q) > -1;
+  });
+  renderMaterials(filtered);
+}
+
+function onSupplierChange() {
+  var sel = document.getElementById('supplier');
+  var opt = sel.options[sel.selectedIndex];
+  supplierSel = opt && opt.dataset.obj ? JSON.parse(opt.dataset.obj) : {};
+}
+
+function onMaterialChange() {
+  var sel = document.getElementById('material');
+  var opt = sel.options[sel.selectedIndex];
+  materialSel = opt && opt.dataset.obj ? JSON.parse(opt.dataset.obj) : {};
+}
+
+function setCOA(btn, val) {
+  coaVal = val;
+  ['Y','N','NA'].forEach(function(v) {
+    document.getElementById('coa'+v).className = '';
+  });
+  btn.className = 'active-' + (val === 'Y' ? 'yes' : val === 'N' ? 'no' : 'na');
+}
+
+function addItem() {
+  var matSel = document.getElementById('material');
+  if (!matSel.value) { showToast('Select a material first.', 'error'); return; }
+
+  var matOpt = matSel.options[matSel.selectedIndex];
+  if (matOpt && matOpt.dataset.obj) materialSel = JSON.parse(matOpt.dataset.obj);
+
+  var qtyO = document.getElementById('qtyOrdered').value;
+  var qtyR = document.getElementById('qtyReceived').value;
+  if (!qtyO && !qtyR) { showToast('Enter at least one quantity.', 'error'); return; }
+
+  ITEMS.push({
+    materialCode: matSel.value,
+    materialDesc: materialSel.desc || matSel.value,
+    unit:         materialSel.unit || '',
+    qtyOrdered:   qtyO || '',
+    qtyReceived:  qtyR || '',
+    batchNo:      document.getElementById('batchNo').value,
+    expiryDate:   document.getElementById('expiryDate').value
+  });
+
+  // Clear item entry fields for next entry
+  document.getElementById('matSearch').value = '';
+  document.getElementById('qtyOrdered').value = '';
+  document.getElementById('qtyReceived').value = '';
+  document.getElementById('batchNo').value = '';
+  document.getElementById('expiryDate').value = '';
+  renderMaterials(ALL_MATS);
+  materialSel = {};
+
+  renderItems();
+}
+
+function removeItem(i) {
+  ITEMS.splice(i, 1);
+  renderItems();
+}
+
+function renderItems() {
+  var badge = document.getElementById('itemBadge');
+  badge.textContent = ITEMS.length + (ITEMS.length === 1 ? ' item' : ' items');
+
+  var el = document.getElementById('itemsList');
+  if (!ITEMS.length) {
+    el.innerHTML = '<p style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0;">No items added yet</p>';
+    return;
+  }
+  el.innerHTML = ITEMS.map(function(item, i) {
+    return '<div style="background:#F0F4FF;border:1px solid #C7D7FF;border-radius:8px;padding:8px 10px;margin-bottom:6px;position:relative;">' +
+      '<button type="button" onclick="removeItem(' + i + ')" style="position:absolute;top:5px;right:8px;background:none;border:none;font-size:18px;cursor:pointer;color:#9CA3AF;line-height:1;">×</button>' +
+      '<div style="font-size:12px;font-weight:600;color:var(--navy);padding-right:24px;">' + escHtml(item.materialDesc) + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:3px;">' +
+        'Ordered: <b>' + (item.qtyOrdered || '—') + '</b> | Received: <b>' + (item.qtyReceived || '—') + '</b> ' + escHtml(item.unit) +
+        (item.batchNo   ? ' &nbsp;·&nbsp; Batch: ' + escHtml(item.batchNo) : '') +
+        (item.expiryDate ? ' &nbsp;·&nbsp; Exp: ' + escHtml(item.expiryDate) : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function submitGRN() {
+  if (!document.getElementById('date').value)     { showToast('Please enter date.', 'error'); return; }
+  if (!document.getElementById('supplier').value) { showToast('Please select a supplier.', 'error'); return; }
+  if (!ITEMS.length)                               { showToast('Add at least one item.', 'error'); return; }
+
+  var btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  var data = {
+    date:         document.getElementById('date').value,
+    supplierCode: document.getElementById('supplier').value,
+    supplierName: supplierSel.name || '',
+    poRef:        document.getElementById('poRef').value,
+    invoiceNo:    document.getElementById('invoiceNo').value,
+    coaReceived:  coaVal,
+    remarks:      document.getElementById('remarks').value,
+    storageZone:  document.getElementById('storageZone').value,
+    items:        ITEMS
+  };
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.success) {
+        showToast('✅ GRN Saved: ' + res.docNo, 'success');
+        setTimeout(function() { goHome(); }, 1500);
+      } else {
+        showToast('Error: ' + res.error, 'error');
+        btn.disabled = false;
+        btn.innerHTML = 'Save GRN & Open IQC →';
+      }
+    })
+    .withFailureHandler(function(e) {
+      showToast(e.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Save GRN & Open IQC →';
+    })
+    .saveGRN(data);
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

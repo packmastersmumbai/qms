@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+</head>
+<body>
+<div class="pm-header"><a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:4px;text-decoration:none;">‹</a><span class="logo-text">📂 Import Past Data</span></div>
+<div class="section" style="margin:10px;">
+  <div class="section-title">CSV Import</div>
+  <div class="section-body">
+    <div class="field">
+      <label>Document Type</label>
+      <select id="docType">
+        <option value="GRN">GRN — Goods Receipt Note</option>
+        <option value="IQC">IQC — Incoming Quality Check</option>
+        <option value="OQC">OQC — Outgoing Quality Check</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>CSV Content <span style="font-weight:400;font-size:10px;">(paste or type)</span></label>
+      <textarea id="csvContent" style="min-height:140px;font-family:monospace;font-size:11px;" placeholder="Date,Doc No.,Supplier,Material,Batch,Qty Ordered,Qty Received,COA,Remarks,Status"></textarea>
+    </div>
+    <div style="background:#FEF3C7;border-radius:6px;padding:8px 10px;font-size:11px;color:#92400E;margin-bottom:10px;">
+      <strong>GRN columns:</strong> Date, GRN No., Supplier, Material, Batch, Qty Ordered, Qty Received, COA, Remarks, IQC Status<br>
+      <strong>IQC columns:</strong> Date, IQC No., GRN No., Supplier, Material, Batch, Inspector, Disposition, Remarks<br>
+      <strong>OQC columns:</strong> Date, OQC No., Customer, Material, Batch/PO, Inspector, Decision, Remarks
+    </div>
+    <button class="btn-submit" onclick="doImport()">Import Data</button>
+    <div id="result" style="margin-top:10px;font-size:12px;"></div>
+  </div>
+</div>
+<script>
+function doImport() {
+  var csv  = document.getElementById('csvContent').value.trim();
+  var type = document.getElementById('docType').value;
+  if (!csv) { document.getElementById('result').innerHTML = '<span style="color:red;">Please paste CSV data.</span>'; return; }
+  document.getElementById('result').innerHTML = '<span class="spinner"></span> Importing…';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.success) {
+        var msg = '✅ Imported ' + res.imported + ' rows.';
+        if (res.errors && res.errors.length) msg += '<br>⚠️ Errors:<br>' + res.errors.join('<br>');
+        document.getElementById('result').innerHTML = msg;
+      } else {
+        document.getElementById('result').innerHTML = '<span style="color:red;">Error: ' + res.error + '</span>';
+      }
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('result').innerHTML = '<span style="color:red;">' + e.message + '</span>';
+    })
+    .importPastData(csv, type);
+}
+</script>
+</body>
+</html>
