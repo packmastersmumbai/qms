@@ -4,48 +4,70 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pack Masters QMS</title>
-  <meta http-equiv="refresh" content="0;url=https://script.google.com/macros/s/AKfycbzw1ykBjDzQ-KPlX9yq2mKtgxPc9CLiZfY5NmOHRt0IS-QMqyd_gAHFhxCCUQebvH1wCQ/exec">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
+    html, body {
+      height: 100%;
+      overflow: hidden;
       background: #0D1B6E;
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 16px;
-      text-align: center;
-      padding: 24px;
     }
-    .logo { font-size: 48px; }
-    h1 { font-size: 22px; font-weight: 700; }
-    p  { font-size: 14px; color: rgba(255,255,255,0.6); }
-    .spinner {
-      width: 36px; height: 36px;
+    /* Clip container — hides whatever Google appends at the bottom */
+    .clip {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+    /* Iframe is taller than the viewport so the GAS footer sits below the fold */
+    iframe {
+      border: none;
+      width: 100%;
+      /* Extra 50px pushes the injected footer out of view */
+      height: calc(100vh + 50px);
+      display: block;
+    }
+    /* Splash shown while iframe loads */
+    #splash {
+      position: fixed; inset: 0;
+      background: #0D1B6E;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; z-index: 9;
+      transition: opacity 0.4s;
+    }
+    #splash.gone { opacity: 0; pointer-events: none; }
+    .sp-logo { font-size: 48px; }
+    .sp-title { color: #fff; font-family: system-ui, sans-serif;
+                font-size: 20px; font-weight: 700; }
+    .sp-sub   { color: rgba(255,255,255,0.55); font-family: system-ui, sans-serif;
+                font-size: 13px; }
+    .sp-spin  {
+      width: 36px; height: 36px; margin-top: 4px;
       border: 3px solid rgba(255,255,255,0.2);
       border-top-color: #E8A020;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin-top: 8px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    a { color: #E8A020; font-size: 13px; margin-top: 12px; }
   </style>
 </head>
 <body>
-  <div class="logo">📦</div>
-  <h1>Pack Masters QMS</h1>
-  <p>Quality Management System</p>
-  <div class="spinner"></div>
-  <p>Redirecting…</p>
-  <a href="https://script.google.com/macros/s/AKfycbzw1ykBjDzQ-KPlX9yq2mKtgxPc9CLiZfY5NmOHRt0IS-QMqyd_gAHFhxCCUQebvH1wCQ/exec">
-    Click here if not redirected
-  </a>
-  <script>
-    window.location.replace("https://script.google.com/macros/s/AKfycbzw1ykBjDzQ-KPlX9yq2mKtgxPc9CLiZfY5NmOHRt0IS-QMqyd_gAHFhxCCUQebvH1wCQ/exec");
-  </script>
+
+<div id="splash">
+  <div class="sp-logo">📦</div>
+  <div class="sp-title">Pack Masters QMS</div>
+  <div class="sp-sub">Quality Management System</div>
+  <div class="sp-spin"></div>
+</div>
+
+<div class="clip">
+  <iframe
+    id="app"
+    src="https://script.google.com/macros/s/AKfycbzw1ykBjDzQ-KPlX9yq2mKtgxPc9CLiZfY5NmOHRt0IS-QMqyd_gAHFhxCCUQebvH1wCQ/exec"
+    allowfullscreen
+    onload="document.getElementById('splash').classList.add('gone')"
+  ></iframe>
+</div>
+
 </body>
 </html>
