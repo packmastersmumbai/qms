@@ -428,19 +428,6 @@
   }
   .empty-state .icon { font-size: 36px; display: block; margin-bottom: 8px; }
 </style>
-<style>
-  /* White cover bar at the very bottom — sits over the GAS banner */
-  body::after {
-    content: '';
-    display: block;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 32px;
-    background: var(--bg, #F5F6FA);
-    z-index: 999999;
-    pointer-events: none;
-  }
-</style>
 <script>
   function goHome() {
     google.script.run
@@ -452,46 +439,39 @@
       .getLandingHtml();
   }
 
-  // Remove GAS-injected footer: watch for any element added to body
-  // that contains a link to google.com/script or the branding text
+  // ── Suppress Google Apps Script footer banner ──────────────────
   (function() {
-    function killBanner(node) {
-      if (!node || node.nodeType !== 1) return;
-      var html = node.innerHTML || '';
-      var href = (node.getAttribute && node.getAttribute('href')) || '';
-      if (html.indexOf('script.google.com') > -1 ||
-          html.indexOf('Google Apps Script') > -1 ||
-          href.indexOf('script.google.com') > -1) {
-        node.style.cssText = 'display:none!important';
-        return;
-      }
-      // Check computed style for fixed/sticky positioning
-      try {
-        var cs = window.getComputedStyle(node);
-        if ((cs.position === 'fixed' || cs.position === 'sticky') &&
-            node.parentNode === document.body) {
-          node.style.cssText = 'display:none!important';
-        }
-      } catch(e) {}
+    var COVER_ID = '__gas_cover__';
+    function addCover() {
+      if (document.getElementById(COVER_ID)) return;
+      var d = document.createElement('div');
+      d.id = COVER_ID;
+      d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:30px;' +
+        'background:#F5F6FA;z-index:2147483647;pointer-events:none;';
+      document.body.appendChild(d);
     }
-
-    function scanBody() {
-      var kids = document.body ? document.body.children : [];
+    function killBanner(node) {
+      if (!node || node.nodeType !== 1 || node.id === COVER_ID) return;
+      var t = (node.textContent || node.innerText || '');
+      if (t.indexOf('Google Apps Script') !== -1 ||
+          t.indexOf('created using Google') !== -1) {
+        node.style.cssText = 'display:none!important';
+      }
+    }
+    function scan() {
+      addCover();
+      var kids = document.body.children;
       for (var i = 0; i < kids.length; i++) killBanner(kids[i]);
     }
-
     var obs = new MutationObserver(function(muts) {
-      muts.forEach(function(m) {
-        m.addedNodes.forEach(killBanner);
-      });
+      muts.forEach(function(m) { m.addedNodes.forEach(killBanner); });
     });
-
     function start() {
-      scanBody();
-      obs.observe(document.body, { childList: true, subtree: true });
+      scan();
+      obs.observe(document.body, { childList: true });
     }
-
     if (document.body) { start(); }
     else { document.addEventListener('DOMContentLoaded', start); }
+    window.addEventListener('load', scan);
   })();
 </script>

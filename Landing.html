@@ -345,6 +345,42 @@
     t.className = 'show' + (type ? ' ' + type : '');
     setTimeout(function() { t.className = ''; }, 2500);
   }
+
+  // ── Suppress Google Apps Script footer banner ──────────────────
+  (function() {
+    var COVER_ID = '__gas_cover__';
+    function addCover() {
+      if (document.getElementById(COVER_ID)) return;
+      var d = document.createElement('div');
+      d.id = COVER_ID;
+      d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:30px;' +
+        'background:#F5F6FA;z-index:2147483647;pointer-events:none;';
+      document.body.appendChild(d);
+    }
+    function killBanner(node) {
+      if (!node || node.nodeType !== 1 || node.id === COVER_ID) return;
+      var t = (node.textContent || node.innerText || '');
+      if (t.indexOf('Google Apps Script') !== -1 ||
+          t.indexOf('created using Google') !== -1) {
+        node.style.cssText = 'display:none!important';
+      }
+    }
+    function scan() {
+      addCover();
+      var kids = document.body.children;
+      for (var i = 0; i < kids.length; i++) killBanner(kids[i]);
+    }
+    var obs = new MutationObserver(function(muts) {
+      muts.forEach(function(m) { m.addedNodes.forEach(killBanner); });
+    });
+    function start() {
+      scan();
+      obs.observe(document.body, { childList: true });
+    }
+    if (document.body) { start(); }
+    else { document.addEventListener('DOMContentLoaded', start); }
+    window.addEventListener('load', scan);
+  })();
 </script>
 </body>
 </html>
