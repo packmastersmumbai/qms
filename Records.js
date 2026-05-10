@@ -8,7 +8,8 @@ var SHEET_MAP = {
   GRN:      'GRN_LOG',
   IQC:      'IQC_LOG',
   OQC:      'OQC_LOG',
-  Gatepass: 'GATEPASS_LOG'
+  Gatepass: 'GATEPASS_LOG',
+  IPQC:     'IPQC_Sessions'
 };
 
 // Column indices (1-based) per sheet type
@@ -90,6 +91,11 @@ function getRecordsList(type, filters) {
       var gpParty = row[4] ? String(row[4]).trim() : '';             // col5: party name
       name   = gpType && gpParty ? gpType + ' · ' + gpParty : gpType || gpParty;
       status = row[15] ? String(row[15]).trim() : 'ISSUED';          // col16: status
+    } else if (type === 'IPQC') {
+      var productName = row[2] ? String(row[2]).trim() : '';
+      var batchVal    = row[3] ? String(row[3]).trim() : '';
+      name   = productName && batchVal ? productName + ' · Batch ' + batchVal : productName || batchVal;
+      status = row[9] ? String(row[9]).trim() : 'OPEN';              // col10 = status
     }
 
     // Search filter (docNo or name)
@@ -136,15 +142,16 @@ function getRecordsList(type, filters) {
 
 /**
  * Returns counts of records in each log sheet.
- * @returns {{ grn: number, iqc: number, oqc: number, gp: number }}
+ * @returns {{ grn: number, iqc: number, oqc: number, gp: number, ipqc: number }}
  */
 function getRecordsCounts() {
   var ss = getSpreadsheet();
   return {
-    grn: _countRows(ss, 'GRN_LOG'),
-    iqc: _countRows(ss, 'IQC_LOG'),
-    oqc: _countRows(ss, 'OQC_LOG'),
-    gp:  _countRows(ss, 'GATEPASS_LOG')
+    grn:  _countRows(ss, 'GRN_LOG'),
+    iqc:  _countRows(ss, 'IQC_LOG'),
+    oqc:  _countRows(ss, 'OQC_LOG'),
+    gp:   _countRows(ss, 'GATEPASS_LOG'),
+    ipqc: _countRows(ss, 'IPQC_Sessions')
   };
 }
 

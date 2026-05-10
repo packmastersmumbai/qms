@@ -120,6 +120,7 @@
     .k-card[data-type="GRN"]  { border-left-color: #3B82F6; }
     .k-card[data-type="IQC"]  { border-left-color: #8B5CF6; }
     .k-card[data-type="OQC"]  { border-left-color: #F59E0B; }
+    .k-card[data-type="IPQC"] { border-left-color: #D97706; }
 
     .empty-col {
       background: var(--bg); border: 1px dashed var(--border);
@@ -159,7 +160,8 @@
     <button class="type-tab" data-type="GRN" onclick="switchTab('GRN')">GRN <span class="tab-count" id="tc-GRN">—</span></button>
     <button class="type-tab" data-type="IQC" onclick="switchTab('IQC')">IQC <span class="tab-count" id="tc-IQC">—</span></button>
     <button class="type-tab" data-type="OQC" onclick="switchTab('OQC')">OQC <span class="tab-count" id="tc-OQC">—</span></button>
-    <button class="type-tab" data-type="GP"  onclick="switchTab('GP')">Gatepass <span class="tab-count" id="tc-GP">—</span></button>
+    <button class="type-tab" data-type="GP"   onclick="switchTab('GP')">Gatepass <span class="tab-count" id="tc-GP">—</span></button>
+    <button class="type-tab" data-type="IPQC" onclick="switchTab('IPQC')">IPQC <span class="tab-count" id="tc-IPQC">—</span></button>
   </div>
 
   <!-- Filter Bar -->
@@ -180,6 +182,11 @@
     <div class="sum-card pass">   <div class="sc-num" id="cPass">—</div> <div class="sc-lbl">Accepted</div></div>
     <div class="sum-card fail">   <div class="sc-num" id="cFail">—</div> <div class="sc-lbl">Rejected</div></div>
     <div class="sum-card pending"><div class="sc-num" id="cPend">—</div> <div class="sc-lbl">Pending/Hold</div></div>
+    <div class="sum-card" id="ipqcRateCard" style="background:var(--navy);color:#fff;border-radius:10px;padding:10px 12px;">
+      <div class="sc-num" id="cIPQCRate" style="color:#fff;">—</div>
+      <div class="sc-lbl" style="color:rgba(255,255,255,0.75);">IPQC Defect Rate</div>
+      <div id="cIPQCPeriod" style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px;">Last 7 days</div>
+    </div>
   </div>
 
   <!-- Loading -->
@@ -280,6 +287,15 @@ function loadData() {
         'Load error: ' + (e ? (e.message || e.name || JSON.stringify(e)) : 'unknown');
     })
     .getDashboardData({ type: 'ALL', range: document.getElementById('fRange').value });
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      renderIPQCRate(data);
+    })
+    .withFailureHandler(function() {
+      renderIPQCRate(null);
+    })
+    .getIPQCDefectRate();
 }
 
 /* ── Tab Switching (client-side filter) ── */
@@ -300,9 +316,9 @@ function filteredRows() {
 
 /* ── Tab Counts ── */
 function renderTabCounts(rows) {
-  var counts = { ALL: rows.length, GRN: 0, IQC: 0, OQC: 0, GP: 0 };
+  var counts = { ALL: rows.length, GRN: 0, IQC: 0, OQC: 0, GP: 0, IPQC: 0 };
   rows.forEach(function(r) { if (counts[r.type] !== undefined) counts[r.type]++; });
-  ['ALL','GRN','IQC','OQC','GP'].forEach(function(t) {
+  ['ALL','GRN','IQC','OQC','GP','IPQC'].forEach(function(t) {
     document.getElementById('tc-' + t).textContent = counts[t];
   });
 }
@@ -312,10 +328,10 @@ function buildCounts(rows) {
   var c = { total: rows.length, pass: 0, fail: 0, hold: 0, pending: 0 };
   rows.forEach(function(r) {
     var s = (r.status || '').toUpperCase();
-    if (s === 'ACCEPTED' || s === 'RELEASED' || s === 'ISSUED') c.pass++;
-    else if (s === 'REJECTED')                                  c.fail++;
-    else if (s === 'HOLD')                                      c.hold++;
-    else                                                        c.pending++;
+    if (s === 'ACCEPTED' || s === 'RELEASED' || s === 'ISSUED' || s === 'CLOSED') c.pass++;
+    else if (s === 'REJECTED')                                                     c.fail++;
+    else if (s === 'HOLD')                                                         c.hold++;
+    else                                                                           c.pending++;
   });
   return c;
 }
@@ -327,14 +343,35 @@ function renderCounts(c) {
   document.getElementById('cPend').textContent  = (c.hold || 0) + (c.pending || 0);
 }
 
+function renderIPQCRate(data) {
+  var card   = document.getElementById('ipqcRateCard');
+  var numEl  = document.getElementById('cIPQCRate');
+  var subEl  = document.getElementById('cIPQCPeriod');
+  if (!data || !data.total || data.total === 0) {
+    numEl.textContent = '—';
+    card.style.background = 'var(--navy)';
+    return;
+  }
+  var rate = parseFloat(data.rate) || 0;
+  numEl.textContent = data.rate;
+  subEl.textContent = data.period || 'Last 7 days';
+  if (rate === 0) {
+    card.style.background = '#10B981';
+  } else if (rate > 5) {
+    card.style.background = '#D97706';
+  } else {
+    card.style.background = 'var(--navy)';
+  }
+}
+
 /* ── Kanban Render ── */
 function renderKanban(rows) {
   var cols = { pending: [], accepted: [], rejected: [], hold: [] };
   rows.forEach(function(r, globalIdx) {
     var s = (r.status || '').toUpperCase();
-    var bucket = s === 'ACCEPTED' || s === 'RELEASED' || s === 'ISSUED' ? 'accepted' :
-                 s === 'REJECTED'                                        ? 'rejected' :
-                 s === 'HOLD'                                            ? 'hold' : 'pending';
+    var bucket = s === 'ACCEPTED' || s === 'RELEASED' || s === 'ISSUED' || s === 'CLOSED' ? 'accepted' :
+                 s === 'REJECTED'                                                          ? 'rejected' :
+                 s === 'HOLD'                                                              ? 'hold' : 'pending';
     // store original index into allRows for detail lookup
     r._filteredIdx = globalIdx;
     cols[bucket].push(r);
@@ -475,6 +512,18 @@ function showDetail(idx, cardEl) {
       ['Decision',      statusBadge(d.releaseDecision)],
       ['Remarks',       d.remarks     || '—']
     ];
+  } else if (r.type === 'IPQC') {
+    items = [
+      ['Session ID',   d.sessionId  || r.docNo],
+      ['Product',      d.productName || r.material],
+      ['Batch',        d.batch       || r.batch],
+      ['Inspector',    d.inspector   || r.inspector],
+      ['Line',         d.line        || '—'],
+      ['Rounds',       d.rounds      || '—'],
+      ['Start Time',   d.startTime   || '—'],
+      ['End Time',     d.endTime     || '—'],
+      ['Status',       statusBadge(r.status)]
+    ];
   }
 
   var grid = document.getElementById('detailGrid');
@@ -501,10 +550,11 @@ function closeDetail() {
 function statusBadge(s) {
   if (!s) s = 'PENDING';
   var su = s.toUpperCase();
-  var cls = su === 'ACCEPTED' || su === 'RELEASED' ? 'pass' :
-            su === 'REJECTED'                       ? 'fail' :
-            su === 'HOLD'                           ? 'hold' :
-            su.indexOf('DEVIATION') > -1            ? 'awd'  : 'pending';
+  var cls = su === 'ACCEPTED' || su === 'RELEASED' || su === 'CLOSED' ? 'pass' :
+            su === 'REJECTED'                                          ? 'fail' :
+            su === 'HOLD'                                              ? 'hold' :
+            su === 'OPEN'                                              ? 'awd'  :
+            su.indexOf('DEVIATION') > -1                              ? 'awd'  : 'pending';
   return '<span class="badge badge-' + cls + '">' + s + '</span>';
 }
 

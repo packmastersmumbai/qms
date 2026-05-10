@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    /* ── IPQC-specific styles ── */
+    body { max-width: 600px; margin: 0 auto; }
+
+    /* Result badge classes */
+    .res-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      min-width: 46px;
+      text-align: center;
+    }
+    .res-pass      { background:#E8F5E9; color:#16A34A; }
+    .res-fail      { background:#FFEBEE; color:#DC2626; }
+    .res-deviation { background:#FFF3CD; color:#B45309; }
+    .res-reject    { background:#FFCDD2; color:#9B1C1C; }
+    .res-defect    { background:#EDE9FE; color:#5B21B6; }
+    .res-na        { background:#F3F4F6; color:#6B7280; }
+
+    /* Home screen */
+    .home-wrap {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .home-hero {
+      background: var(--navy);
+      border-radius: 12px;
+      padding: 20px 18px 18px;
+      color: var(--white);
+      text-align: center;
+    }
+    .home-hero .hero-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+    .home-hero h2 { font-size: 20px; font-weight: 700; }
+    .home-hero p  { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 4px; }
+
+    .btn-home-primary {
+      display: block;
+      width: 100%;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: center;
+      transition: background 0.15s;
+    }
+    .btn-home-primary:hover { background: #1A2D9E; }
+
+    .btn-home-secondary {
+      display: block;
+      width: 100%;
+      background: var(--white);
+      color: var(--navy);
+      border: 2px solid var(--navy);
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: center;
+      transition: background 0.15s;
+    }
+    .btn-home-secondary:hover { background: #EEF1FA; }
+
+    /* Open sessions list */
+    .sessions-list {
+      background: var(--white);
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .sessions-list-hdr {
+      background: #EEF1FA;
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: 0.5px;
+    }
+    .session-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .session-item:last-child { border-bottom: none; }
+    .session-item:hover { background: #F0F4FF; }
+    .session-item .si-name  { font-size: 13px; font-weight: 600; color: var(--text); }
+    .session-item .si-meta  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .session-item .si-badge {
+      float: right;
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--amber);
+      color: var(--navy);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .no-sessions {
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Screen B — Setup */
+    .setup-wrap { padding-bottom: 80px; overflow-y: auto; }
+
+    /* Screen C — Check */
+    .check-hdr {
+      background: var(--navy);
+      color: var(--white);
+      padding: 10px 14px;
+      position: sticky;
+      top: 46px; /* below pm-header */
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .check-hdr .ch-title { font-size: 13px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .round-badge {
+      background: var(--amber);
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .timer-badge {
+      background: rgba(255,255,255,0.15);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .btn-close-session {
+      background: none;
+      border: 1.5px solid rgba(220,38,38,0.7);
+      color: #FCA5A5;
+      border-radius: 5px;
+      padding: 3px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-close-session:hover { background: rgba(220,38,38,0.15); }
+
+    .check-wrap { padding-bottom: 80px; overflow-y: auto; }
+
+    /* No-control-plan banner */
+    .no-cp-banner {
+      background: #FFF3CD;
+      border-left: 4px solid #B45309;
+      padding: 10px 14px;
+      margin: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #92400E;
+    }
+
+    /* Weight + param rows */
+    .ipqc-row {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ipqc-row:last-child { border-bottom: none; }
+    .ipqc-row-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ipqc-row-label {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .ipqc-row-std {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .ipqc-row-input {
+      width: 80px;
+      padding: 5px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-size: 12px;
+      text-align: center;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      flex-shrink: 0;
+    }
+    .ipqc-row-input:focus { outline: none; border-color: var(--navy); }
+    .ipqc-row-input.error { border-color: var(--danger); }
+
+    /* Visual param buttons */
+    .visual-btns {
+      display: flex;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .vis-btn {
+      padding: 5px 9px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      background: var(--white);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.12s;
+    }
+    .vis-btn.active-pass   { background:#E8F5E9; border-color:#16A34A; color:#16A34A; }
+    .vis-btn.active-fail   { background:#FFEBEE; border-color:#DC2626; color:#DC2626; }
+    .vis-btn.active-defect { background:#EDE9FE; border-color:#5B21B6; color:#5B21B6; }
+    .vis-btn.active-na     { background:#F3F4F6; border-color:#9CA3AF; color:#6B7280; }
+
+    /* Upgrade buttons for measurement FAIL */
+    .upgrade-btns {
+      display: flex;
+      gap: 5px;
+      margin-top: 6px;
+    }
+    .btn-deviation {
+      padding: 4px 10px;
+      background: #FFF3CD;
+      border: 1.5px solid #B45309;
+      color: #B45309;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-deviation.active { background: #B45309; color: var(--white); }
+    .btn-reject {
+      padding: 4px 10px;
+      background: #FFCDD2;
+      border: 1.5px solid #9B1C1C;
+      color: #9B1C1C;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-reject.active { background: #9B1C1C; color: var(--white); }
+
+    /* Remark textarea */
+    .remark-area {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      resize: vertical;
+      min-height: 50px;
+      margin-top: 6px;
+    }
+    .remark-area:focus { outline: none; border-color: var(--navy); }
+    .remark-area.error { border-color: var(--danger); }
+    .remark-required {
+      font-size: 10px;
+      color: var(--danger);
+      margin-top: 2px;
+      display: none;
+    }
+    .remark-required.show { display: block; }
+
+    /* Sticky footer for check screen */
+    .check-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--white);
+      padding: 10px 14px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+      display: flex;
+      gap: 8px;
+    }
+    .btn-save-round {
+      flex: 2;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-save-round:hover { background: #1A2D9E; }
+    .btn-save-round:disabled { background: #9CA3AF; cursor: not-allowed; }
+    .btn-view-report {
+      flex: 1;
+      background: var(--white);
+      color: var(--navy);
+      border: 2px solid var(--navy);
+      border-radius: 8px;
+      padding: 11px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-view-report:hover { background: #EEF1FA; }
+
+    /* Screen D — Report overlay */
+    .report-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .report-hdr {
+      background: var(--navy);
+      color: var(--white);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .report-hdr .rh-title { flex: 1; font-size: 13px; font-weight: 700; }
+    .btn-close-report {
+      background: none;
+      border: none;
+      color: var(--white);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+    }
+    .report-body {
+      flex: 1;
+      overflow: auto;
+      padding: 10px;
+    }
+    .report-table-wrap {
+      overflow-x: auto;
+    }
+    .report-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+    .report-table th {
+      background: var(--navy);
+      color: var(--white);
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+      border: 1px solid #1A2D9E;
+    }
+    .report-table th.rt-param-hdr {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      text-align: left;
+      min-width: 160px;
+      background: var(--navy);
+    }
+    .report-table td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      vertical-align: middle;
+      text-align: center;
+    }
+    .report-table td.rt-param-cell {
+      position: sticky;
+      left: 0;
+      background: var(--white);
+      z-index: 1;
+      text-align: left;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .report-table tr.summary-row td {
+      background: #EEF1FA;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .report-table tr.summary-row td.rt-param-cell {
+      background: #EEF1FA;
+      color: var(--navy);
+    }
+    .rt-cell-val { font-size: 11px; color: var(--muted); display: block; }
+
+    /* Loading overlay */
+    #loading {
+      position: fixed; inset: 0;
+      background: rgba(13,27,110,0.85);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px;
+      z-index: 99999;
+      transition: opacity 0.3s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .load-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(255,255,255,0.25);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    #loading p { color: rgba(255,255,255,0.8); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading">
+  <div class="load-spinner"></div>
+  <p id="loadingMsg">Loading…</p>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PM Header (always visible)
+══════════════════════════════════════════ -->
+<div class="pm-header">
+  <a onclick="headerBack()" id="headerBackBtn" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:2px;text-decoration:none;display:none;">‹</a>
+  <span class="logo-text" id="headerTitle">&#9881; IPQC</span>
+  <span style="margin-left:6px;font-size:11px;color:rgba(255,255,255,0.55);font-weight:400;" id="headerSub">In-Process Quality Check</span>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN A — Home
+══════════════════════════════════════════ -->
+<div id="screenA" style="display:block;">
+  <div class="home-wrap">
+    <div class="home-hero">
+      <span class="hero-icon">&#9881;</span>
+      <h2>IPQC</h2>
+      <p>In-Process Quality Check</p>
+    </div>
+
+    <button class="btn-home-primary" onclick="goToSetup()">&#9654; New Check</button>
+
+    <button class="btn-home-secondary" id="btnResume" onclick="toggleResumeSessions()">&#128203; Resume Open Session</button>
+
+    <div id="sessionsPanel" style="display:none;">
+      <div class="sessions-list" id="sessionsList">
+        <div class="sessions-list-hdr">OPEN SESSIONS</div>
+        <div class="no-sessions" id="sessionsEmpty" style="display:none;">No open sessions found.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN B — New Check Setup
+══════════════════════════════════════════ -->
+<div id="screenB" style="display:none;">
+  <div class="setup-wrap">
+    <div class="section">
+      <div class="section-title">Check Setup</div>
+      <div class="section-body">
+
+        <div class="field">
+          <label>Product (FG)</label>
+          <select id="setupProduct" onchange="onProductChange()">
+            <option value="">— Select Product —</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Batch No.</label>
+          <input type="text" id="setupBatch" placeholder="e.g. B2401">
+        </div>
+
+        <div class="field">
+          <label>Production Line</label>
+          <select id="setupLine" onchange="onLineChange()">
+            <option value="Line 1">Line 1</option>
+            <option value="Line 2">Line 2</option>
+            <option value="Line 3">Line 3</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="field" id="setupLineOtherField" style="display:none;">
+          <label>Specify Line</label>
+          <input type="text" id="setupLineOther" placeholder="Enter line name">
+        </div>
+
+        <div class="field">
+          <label>Inspector</label>
+          <select id="setupInspector">
+            <option value="">— Select Inspector —</option>
+          </select>
+        </div>
+
+        <button class="btn-submit" onclick="startCheck()">Start Check &#187;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN C — Check Screen
+══════════════════════════════════════════ -->
+<div id="screenC" style="display:none;">
+
+  <!-- Sub-header: product info + controls -->
+  <div class="check-hdr">
+    <div class="ch-title" id="checkHdrTitle">Product — Batch</div>
+    <span class="round-badge" id="roundBadge">Round 1</span>
+    <span class="timer-badge" id="timerDisplay">00:00:00</span>
+    <button class="btn-close-session" onclick="confirmCloseSession()">&#10005; Close</button>
+  </div>
+
+  <div class="check-wrap" id="checkWrap">
+    <!-- No control plan banner (shown if needed) -->
+    <div id="noCpBanner" class="no-cp-banner" style="display:none;">
+      &#9888; No control plan configured for this product. Contact your QA manager.
+    </div>
+
+    <!-- Weight Checks Section -->
+    <div class="section">
+      <div class="section-title">Weight Checks</div>
+      <div class="section-body" style="padding:0;" id="weightSection"></div>
+    </div>
+
+    <!-- Quality Parameters Section -->
+    <div class="section" id="paramsSection" style="display:none;">
+      <div class="section-title">Quality Parameters</div>
+      <div class="section-body" style="padding:0;" id="paramsBody"></div>
+    </div>
+  </div>
+
+  <!-- Sticky footer -->
+  <div class="check-footer">
+    <button class="btn-save-round" id="btnSaveRound" onclick="saveRoundData()">&#128190; Save Round</button>
+    <button class="btn-view-report" onclick="viewReport()">&#128203; Report</button>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN D — Report Overlay
+══════════════════════════════════════════ -->
+<div id="screenD" class="report-overlay" style="display:none;">
+  <div class="report-hdr">
+    <div class="rh-title" id="reportTitle">IPQC Report</div>
+    <button class="btn-close-report" onclick="closeReport()">&#215;</button>
+  </div>
+  <div class="report-body">
+    <div class="report-table-wrap">
+      <table class="report-table" id="reportTable"></table>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+var FG_LIST = [];
+var INSPECTORS = [];
+var SESSION_ID = null;
+var SESSION_PRODUCT_CODE = '';
+var SESSION_PRODUCT_NAME = '';
+var SESSION_BATCH = '';
+var SESSION_INSPECTOR = '';
+var SESSION_LINE = '';
+var SESSION_START_TS = null;
+var SESSION_ROUND_NO = 1;
+
+var WEIGHT_ROWS = [];  // [{paramCode, paramName}]
+var QUALITY_PARAMS = [];  // [{paramCode, paramName, methodType, stdValue, unit, tolMin, tolMax}]
+var OPEN_SESSIONS = [];
+
+var timerInterval = null;
+
+// ─────────────────────────────────────────────
+// Navigation helpers
+// ─────────────────────────────────────────────
+function showScreen(name) {
+  var screens = ['screenA', 'screenB', 'screenC'];
+  for (var i = 0; i < screens.length; i++) {
+    document.getElementById(screens[i]).style.display = 'none';
+  }
+  document.getElementById('screen' + name).style.display = 'block';
+
+  var backBtn = document.getElementById('headerBackBtn');
+  if (name === 'A') {
+    backBtn.style.display = 'none';
+    document.getElementById('headerTitle').innerHTML = '&#9881; IPQC';
+    document.getElementById('headerSub').textContent = 'In-Process Quality Check';
+    stopTimer();
+  } else if (name === 'B') {
+    backBtn.style.display = 'inline';
+    document.getElementById('headerTitle').innerHTML = '&#9881; IPQC';
+    document.getElementById('headerSub').textContent = 'New Check Setup';
+  } else if (name === 'C') {
+    backBtn.style.display = 'none';
+    document.getElementById('headerTitle').innerHTML = '&#9881; IPQC';
+    document.getElementById('headerSub').textContent = 'Check in Progress';
+  }
+}
+
+function headerBack() {
+  showScreen('A');
+}
+
+// ─────────────────────────────────────────────
+// Init — fetch FG list and inspectors
+// ─────────────────────────────────────────────
+function init() {
+  showLoading('Loading…');
+  google.script.run
+    .withSuccessHandler(function(d) {
+      FG_LIST = d.fgList || [];
+      INSPECTORS = d.inspectors || [];
+
+      var pSel = document.getElementById('setupProduct');
+      FG_LIST.forEach(function(fg) {
+        var o = document.createElement('option');
+        o.value = fg.code;
+        o.textContent = fg.desc.length > 40 ? fg.desc.substring(0, 40) + '…' : fg.desc;
+        o.setAttribute('data-desc', fg.desc);
+        pSel.appendChild(o);
+      });
+
+      var iSel = document.getElementById('setupInspector');
+      INSPECTORS.forEach(function(p) {
+        var o = document.createElement('option');
+        o.value = p.name;
+        o.textContent = p.name + (p.role ? ' — ' + p.role : '');
+        iSel.appendChild(o);
+      });
+
+      hideLoading();
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      showToast('Failed to load form data: ' + e.message, 'error');
+    })
+    .getIPQCFormInit();
+}
+
+// ─────────────────────────────────────────────
+// Screen A — Home
+// ─────────────────────────────────────────────
+function goToSetup() {
+  showScreen('B');
+}
+
+function toggleResumeSessions() {
+  var panel = document.getElementById('sessionsPanel');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    loadOpenSessions();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function loadOpenSessions() {
+  var list = document.getElementById('sessionsList');
+  var empty = document.getElementById('sessionsEmpty');
+
+  // Clear old items (keep header and empty msg)
+  var kids = list.querySelectorAll('.session-item');
+  for (var i = 0; i < kids.length; i++) { kids[i].parentNode.removeChild(kids[i]); }
+  empty.style.display = 'none';
+
+  showLoading('Loading sessions…');
+  google.script.run
+    .withSuccessHandler(function(sessions) {
+      hideLoading();
+      OPEN_SESSIONS = sessions || [];
+      if (OPEN_SESSIONS.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      OPEN_SESSIONS.forEach(function(s, idx) {
+        var item = document.createElement('div');
+        item.className = 'session-item';
+
+        var badge = document.createElement('span');
+        badge.className = 'si-badge';
+        badge.textContent = s.rounds + ' round' + (s.rounds !== 1 ? 's' : '');
+
+        var name = document.createElement('div');
+        name.className = 'si-name';
+        name.textContent = s.productName || s.productCode;
+
+        var meta = document.createElement('div');
+        meta.className = 'si-meta';
+        meta.textContent = 'Batch: ' + (s.batch || '—') + ' · ' +
+          (s.inspector || '—') + ' · Line: ' + (s.line || '—') + ' · ' +
+          (s.dateStarted || '—');
+
+        item.appendChild(badge);
+        item.appendChild(name);
+        item.appendChild(meta);
+
+        item.onclick = (function(sess) {
+          return function() { resumeSession(sess); };
+        })(s);
+
+        list.appendChild(item);
+      });
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      empty.style.display = 'block';
+      empty.textContent = 'Error loading sessions.';
+    })
+    .getOpenSessions();
+}
+
+function resumeSession(sess) {
+  SESSION_ID = sess.sessionId;
+  SESSION_PRODUCT_CODE = sess.productCode;
+  SESSION_PRODUCT_NAME = sess.productName;
+  SESSION_BATCH = sess.batch;
+  SESSION_INSPECTOR = sess.inspector;
+  SESSION_LINE = sess.line;
+  SESSION_ROUND_NO = (sess.rounds || 0) + 1;
+  SESSION_START_TS = sess.startTs ? new Date(sess.startTs) : new Date();
+
+  showToast('Resuming session — Round ' + SESSION_ROUND_NO, 'success');
+  enterCheckScreen();
+}
+
+// ─────────────────────────────────────────────
+// Screen B — Setup
+// ─────────────────────────────────────────────
+function onProductChange() {
+  // Nothing needed — product selected for session start
+}
+
+function onLineChange() {
+  var val = document.getElementById('setupLine').value;
+  document.getElementById('setupLineOtherField').style.display = (val === 'Other') ? 'block' : 'none';
+}
+
+function startCheck() {
+  var pSel = document.getElementById('setupProduct');
+  var productCode = pSel.value;
+  var productOpt = pSel.options[pSel.selectedIndex];
+  var productName = productOpt ? (productOpt.getAttribute('data-desc') || productCode) : productCode;
+  var batch = document.getElementById('setupBatch').value.trim();
+  var lineVal = document.getElementById('setupLine').value;
+  var line = lineVal === 'Other' ? document.getElementById('setupLineOther').value.trim() : lineVal;
+  var inspector = document.getElementById('setupInspector').value;
+
+  if (!productCode) { showToast('Please select a product.', 'error'); return; }
+  if (!batch)       { showToast('Please enter a batch number.', 'error'); return; }
+  if (!inspector)   { showToast('Please select an inspector.', 'error'); return; }
+  if (lineVal === 'Other' && !line) { showToast('Please specify the line.', 'error'); return; }
+
+  showLoading('Starting session…');
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hideLoading();
+      if (!res.ok) {
+        showToast('Error: ' + (res.error || 'Could not start session.'), 'error');
+        return;
+      }
+      SESSION_ID = res.sessionId;
+      SESSION_PRODUCT_CODE = productCode;
+      SESSION_PRODUCT_NAME = productName;
+      SESSION_BATCH = batch;
+      SESSION_INSPECTOR = inspector;
+      SESSION_LINE = line;
+      SESSION_ROUND_NO = res.resumed ? (res.rounds || 0) + 1 : 1;
+      SESSION_START_TS = new Date();
+
+      showToast(res.resumed ? 'Resuming session — Round ' + SESSION_ROUND_NO : 'Session started', 'success');
+      enterCheckScreen();
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      showToast('Error: ' + e.message, 'error');
+    })
+    .startSession({
+      productCode: productCode,
+      productName: productName,
+      batch: batch,
+      inspector: inspector,
+      line: line
+    });
+}
+
+// ─────────────────────────────────────────────
+// Screen C — Check screen entry
+// ─────────────────────────────────────────────
+function enterCheckScreen() {
+  // Build weight rows (static W01–W10)
+  WEIGHT_ROWS = [];
+  for (var w = 1; w <= 10; w++) {
+    var code = 'W' + (w < 10 ? '0' + w : '' + w);
+    WEIGHT_ROWS.push({ paramCode: code, paramName: 'Weight Check ' + w });
+  }
+
+  // Update header
+  var title = SESSION_PRODUCT_NAME;
+  if (title.length > 28) title = title.substring(0, 28) + '…';
+  document.getElementById('checkHdrTitle').textContent = title + ' · ' + SESSION_BATCH;
+  updateRoundBadge();
+
+  showScreen('C');
+  startTimer();
+
+  // Build weight section immediately
+  buildWeightSection();
+
+  // Load quality params
+  showLoading('Loading parameters…');
+  google.script.run
+    .withSuccessHandler(function(result) {
+      hideLoading();
+      if (result.warning) {
+        document.getElementById('noCpBanner').style.display = 'block';
+      } else {
+        document.getElementById('noCpBanner').style.display = 'none';
+      }
+      QUALITY_PARAMS = result.params || [];
+      buildParamsSection();
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      showToast('Warning: Could not load parameters. ' + e.message, 'error');
+      QUALITY_PARAMS = [];
+      buildParamsSection();
+    })
+    .getIPQCParams(SESSION_PRODUCT_CODE);
+}
+
+function updateRoundBadge() {
+  document.getElementById('roundBadge').textContent = 'Round ' + SESSION_ROUND_NO;
+}
+
+// ─────────────────────────────────────────────
+// Timer
+// ─────────────────────────────────────────────
+function startTimer() {
+  stopTimer();
+  timerInterval = setInterval(function() {
+    if (!SESSION_START_TS) return;
+    var elapsed = Math.floor((new Date() - SESSION_START_TS) / 1000);
+    var h = Math.floor(elapsed / 3600);
+    var m = Math.floor((elapsed % 3600) / 60);
+    var s = elapsed % 60;
+    document.getElementById('timerDisplay').textContent =
+      pad2(h) + ':' + pad2(m) + ':' + pad2(s);
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+// ─────────────────────────────────────────────
+// Build weight section
+// ─────────────────────────────────────────────
+function buildWeightSection() {
+  var container = document.getElementById('weightSection');
+  container.innerHTML = '';
+
+  WEIGHT_ROWS.forEach(function(row) {
+    var div = document.createElement('div');
+    div.className = 'ipqc-row';
+    div.id = 'row_' + row.paramCode;
+
+    var top = document.createElement('div');
+    top.className = 'ipqc-row-top';
+
+    var labelWrap = document.createElement('div');
+    labelWrap.style.flex = '1';
+    var labelEl = document.createElement('div');
+    labelEl.className = 'ipqc-row-label';
+    labelEl.textContent = row.paramName;
+    var stdEl = document.createElement('div');
+    stdEl.className = 'ipqc-row-std';
+    stdEl.textContent = 'Std: —';
+    labelWrap.appendChild(labelEl);
+    labelWrap.appendChild(stdEl);
+
+    var inp = document.createElement('input');
+    inp.type = 'number';
+    inp.id = 'val_' + row.paramCode;
+    inp.className = 'ipqc-row-input';
+    inp.placeholder = '0.00';
+    inp.step = '0.01';
+    inp.setAttribute('data-paramcode', row.paramCode);
+    inp.oninput = (function(code) {
+      return function() { updateWeightResult(code); };
+    })(row.paramCode);
+
+    var badge = document.createElement('span');
+    badge.id = 'badge_' + row.paramCode;
+    badge.className = 'res-badge res-na';
+    badge.textContent = 'NA';
+
+    top.appendChild(labelWrap);
+    top.appendChild(inp);
+    top.appendChild(badge);
+    div.appendChild(top);
+    container.appendChild(div);
+  });
+}
+
+function updateWeightResult(code) {
+  var inp = document.getElementById('val_' + code);
+  var badge = document.getElementById('badge_' + code);
+  var val = inp.value.trim();
+  if (val !== '') {
+    badge.className = 'res-badge res-pass';
+    badge.textContent = 'PASS';
+  } else {
+    badge.className = 'res-badge res-na';
+    badge.textContent = 'NA';
+  }
+}
+
+// ─────────────────────────────────────────────
+// Build quality params section
+// ─────────────────────────────────────────────
+function buildParamsSection() {
+  var section = document.getElementById('paramsSection');
+  var body = document.getElementById('paramsBody');
+  body.innerHTML = '';
+
+  if (QUALITY_PARAMS.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  QUALITY_PARAMS.forEach(function(p) {
+    var isVisual = (p.methodType === 'Visual');
+    var div = buildParamRow(p, isVisual);
+    body.appendChild(div);
+  });
+}
+
+function buildParamRow(p, isVisual) {
+  var div = document.createElement('div');
+  div.className = 'ipqc-row';
+  div.id = 'row_' + p.paramCode;
+
+  var top = document.createElement('div');
+  top.className = 'ipqc-row-top';
+
+  // Label + std
+  var labelWrap = document.createElement('div');
+  labelWrap.style.flex = '1';
+  labelWrap.style.minWidth = '0';
+
+  var labelEl = document.createElement('div');
+  labelEl.className = 'ipqc-row-label';
+  labelEl.textContent = p.paramName;
+
+  var stdEl = document.createElement('div');
+  stdEl.className = 'ipqc-row-std';
+  if (p.stdValue !== null && p.stdValue !== undefined && p.stdValue !== '') {
+    var stdText = 'Std: ' + p.stdValue;
+    if (p.unit) stdText += ' ' + p.unit;
+    if (p.tolMin !== null && p.tolMin !== undefined && p.tolMax !== null && p.tolMax !== undefined) {
+      stdText += ' (' + p.tolMin + '–' + p.tolMax + ')';
+    }
+    stdEl.textContent = stdText;
+  } else {
+    stdEl.textContent = 'Std: —';
+  }
+
+  labelWrap.appendChild(labelEl);
+  labelWrap.appendChild(stdEl);
+  top.appendChild(labelWrap);
+
+  if (isVisual) {
+    // Visual: PASS / FAIL / DEFECT / NA tap buttons
+    var btns = document.createElement('div');
+    btns.className = 'visual-btns';
+
+    var options = [
+      { val: 'PASS',   cls: 'active-pass',   label: 'P' },
+      { val: 'FAIL',   cls: 'active-fail',   label: 'F' },
+      { val: 'DEFECT', cls: 'active-defect', label: 'DEF' },
+      { val: 'NA',     cls: 'active-na',     label: 'NA' }
+    ];
+    options.forEach(function(opt) {
+      var btn = document.createElement('button');
+      btn.className = 'vis-btn';
+      btn.textContent = opt.label;
+      btn.id = 'vbtn_' + p.paramCode + '_' + opt.val;
+      btn.onclick = (function(code, v, cls) {
+        return function() { setVisualResult(code, v, cls); };
+      })(p.paramCode, opt.val, opt.cls);
+      btns.appendChild(btn);
+    });
+
+    var badge = document.createElement('span');
+    badge.id = 'badge_' + p.paramCode;
+    badge.className = 'res-badge res-na';
+    badge.textContent = 'NA';
+
+    top.appendChild(btns);
+    top.appendChild(badge);
+
+  } else {
+    // Measurement: number input + auto result badge
+    var inp = document.createElement('input');
+    inp.type = 'number';
+    inp.id = 'val_' + p.paramCode;
+    inp.className = 'ipqc-row-input';
+    inp.placeholder = '—';
+    inp.step = '0.01';
+    inp.oninput = (function(code, tolMin, tolMax) {
+      return function() { updateMeasurementResult(code, tolMin, tolMax); };
+    })(p.paramCode, p.tolMin, p.tolMax);
+
+    var badge = document.createElement('span');
+    badge.id = 'badge_' + p.paramCode;
+    badge.className = 'res-badge res-na';
+    badge.textContent = 'NA';
+
+    top.appendChild(inp);
+    top.appendChild(badge);
+  }
+
+  div.appendChild(top);
+
+  // Upgrade buttons area (for measurement FAIL)
+  if (!isVisual) {
+    var upgArea = document.createElement('div');
+    upgArea.id = 'upg_' + p.paramCode;
+    upgArea.className = 'upgrade-btns';
+    upgArea.style.display = 'none';
+
+    var devBtn = document.createElement('button');
+    devBtn.className = 'btn-deviation';
+    devBtn.id = 'devbtn_' + p.paramCode;
+    devBtn.textContent = '&#9888; Deviation';
+    devBtn.onclick = (function(code) {
+      return function() { upgradeResult(code, 'DEVIATION'); };
+    })(p.paramCode);
+
+    var rejBtn = document.createElement('button');
+    rejBtn.className = 'btn-reject';
+    rejBtn.id = 'rejbtn_' + p.paramCode;
+    rejBtn.textContent = '&#10005; Reject';
+    rejBtn.onclick = (function(code) {
+      return function() { upgradeResult(code, 'REJECT'); };
+    })(p.paramCode);
+
+    upgArea.appendChild(devBtn);
+    upgArea.appendChild(rejBtn);
+    div.appendChild(upgArea);
+  }
+
+  // Remark area (for FAIL / DEVIATION / REJECT / DEFECT)
+  var remarkWrap = document.createElement('div');
+  remarkWrap.id = 'remarkwrap_' + p.paramCode;
+  remarkWrap.style.display = 'none';
+  remarkWrap.style.marginTop = '4px';
+
+  var remarkTa = document.createElement('textarea');
+  remarkTa.id = 'remark_' + p.paramCode;
+  remarkTa.className = 'remark-area';
+  remarkTa.placeholder = 'Describe the issue…';
+
+  var remarkReq = document.createElement('div');
+  remarkReq.id = 'remarkreq_' + p.paramCode;
+  remarkReq.className = 'remark-required';
+  remarkReq.textContent = 'Remark is required for this result.';
+
+  remarkWrap.appendChild(remarkTa);
+  remarkWrap.appendChild(remarkReq);
+  div.appendChild(remarkWrap);
+
+  return div;
+}
+
+// Visual result setter
+function setVisualResult(code, val, activeCls) {
+  var options = ['PASS', 'FAIL', 'DEFECT', 'NA'];
+  options.forEach(function(v) {
+    var btn = document.getElementById('vbtn_' + code + '_' + v);
+    if (btn) btn.className = 'vis-btn';
+  });
+  var activeBtn = document.getElementById('vbtn_' + code + '_' + val);
+  if (activeBtn) activeBtn.className = 'vis-btn ' + activeCls;
+
+  var badge = document.getElementById('badge_' + code);
+  if (badge) {
+    var cls = 'res-' + val.toLowerCase();
+    badge.className = 'res-badge ' + cls;
+    badge.textContent = val;
+  }
+
+  // Show remark area if FAIL or DEFECT
+  var remarkWrap = document.getElementById('remarkwrap_' + code);
+  if (remarkWrap) {
+    remarkWrap.style.display = (val === 'FAIL' || val === 'DEFECT') ? 'block' : 'none';
+  }
+  // Clear error state
+  var remarkReq = document.getElementById('remarkreq_' + code);
+  var remarkTa = document.getElementById('remark_' + code);
+  if (remarkReq) remarkReq.className = 'remark-required';
+  if (remarkTa) remarkTa.className = 'remark-area';
+}
+
+// Measurement result auto-calc
+function updateMeasurementResult(code, tolMin, tolMax) {
+  var inp = document.getElementById('val_' + code);
+  var badge = document.getElementById('badge_' + code);
+  var upgArea = document.getElementById('upg_' + code);
+  var remarkWrap = document.getElementById('remarkwrap_' + code);
+  var devBtn = document.getElementById('devbtn_' + code);
+  var rejBtn = document.getElementById('rejbtn_' + code);
+
+  var rawVal = inp.value.trim();
+  if (rawVal === '') {
+    badge.className = 'res-badge res-na';
+    badge.textContent = 'NA';
+    if (upgArea) upgArea.style.display = 'none';
+    if (remarkWrap) remarkWrap.style.display = 'none';
+    return;
+  }
+
+  var val = parseFloat(rawVal);
+  var result = 'PASS';
+  if (tolMin !== null && tolMin !== undefined && tolMin !== '' && val < parseFloat(tolMin)) result = 'FAIL';
+  if (tolMax !== null && tolMax !== undefined && tolMax !== '' && val > parseFloat(tolMax)) result = 'FAIL';
+
+  badge.className = 'res-badge res-' + result.toLowerCase();
+  badge.textContent = result;
+
+  if (upgArea) {
+    upgArea.style.display = result === 'FAIL' ? 'flex' : 'none';
+    if (result !== 'FAIL') {
+      if (devBtn) devBtn.className = 'btn-deviation';
+      if (rejBtn) rejBtn.className = 'btn-reject';
+      if (remarkWrap) remarkWrap.style.display = 'none';
+    }
+  }
+
+  // Clear error state on change
+  var remarkTa = document.getElementById('remark_' + code);
+  var remarkReq = document.getElementById('remarkreq_' + code);
+  if (remarkTa) remarkTa.className = 'remark-area';
+  if (remarkReq) remarkReq.className = 'remark-required';
+}
+
+// Upgrade FAIL → DEVIATION or REJECT
+function upgradeResult(code, newResult) {
+  var badge = document.getElementById('badge_' + code);
+  var devBtn = document.getElementById('devbtn_' + code);
+  var rejBtn = document.getElementById('rejbtn_' + code);
+  var remarkWrap = document.getElementById('remarkwrap_' + code);
+
+  badge.className = 'res-badge res-' + newResult.toLowerCase();
+  badge.textContent = newResult;
+  badge.setAttribute('data-upgraded', newResult);
+
+  if (devBtn) devBtn.className = newResult === 'DEVIATION' ? 'btn-deviation active' : 'btn-deviation';
+  if (rejBtn) rejBtn.className = newResult === 'REJECT'    ? 'btn-reject active'    : 'btn-reject';
+
+  if (remarkWrap) remarkWrap.style.display = 'block';
+}
+
+// ─────────────────────────────────────────────
+// Get current result for a param code
+// ─────────────────────────────────────────────
+function getParamResult(code) {
+  var badge = document.getElementById('badge_' + code);
+  if (!badge) return 'NA';
+  var cls = badge.className;
+  if (cls.indexOf('res-pass') !== -1)      return 'PASS';
+  if (cls.indexOf('res-fail') !== -1)      return 'FAIL';
+  if (cls.indexOf('res-deviation') !== -1) return 'DEVIATION';
+  if (cls.indexOf('res-reject') !== -1)    return 'REJECT';
+  if (cls.indexOf('res-defect') !== -1)    return 'DEFECT';
+  return 'NA';
+}
+
+// ─────────────────────────────────────────────
+// Save Round
+// ─────────────────────────────────────────────
+function saveRoundData() {
+  // Validate: FAIL/DEVIATION/REJECT/DEFECT need remarks
+  var valid = true;
+  var allParams = [];
+
+  // Collect weight rows
+  WEIGHT_ROWS.forEach(function(row) {
+    var inp = document.getElementById('val_' + row.paramCode);
+    var val = inp ? inp.value.trim() : '';
+    var result = val !== '' ? 'PASS' : 'NA';
+    allParams.push({
+      paramCode: row.paramCode,
+      paramName: row.paramName,
+      stdValue: '',
+      unit: 'g',
+      actualValue: val,
+      result: result,
+      remark: ''
+    });
+  });
+
+  // Collect quality params
+  QUALITY_PARAMS.forEach(function(p) {
+    var isVisual = (p.methodType === 'Visual');
+    var result = getParamResult(p.paramCode);
+    var actualVal = '';
+    if (!isVisual) {
+      var inp = document.getElementById('val_' + p.paramCode);
+      actualVal = inp ? inp.value.trim() : '';
+    }
+
+    var remarkEl = document.getElementById('remark_' + p.paramCode);
+    var remark = remarkEl ? remarkEl.value.trim() : '';
+
+    // Validate remark required
+    var needsRemark = (result === 'FAIL' || result === 'DEVIATION' || result === 'REJECT' || result === 'DEFECT');
+    if (needsRemark && !remark) {
+      valid = false;
+      var remarkTa = document.getElementById('remark_' + p.paramCode);
+      var remarkReq = document.getElementById('remarkreq_' + p.paramCode);
+      if (remarkTa) remarkTa.className = 'remark-area error';
+      if (remarkReq) remarkReq.className = 'remark-required show';
+      // Show remark wrap if hidden
+      var remarkWrap = document.getElementById('remarkwrap_' + p.paramCode);
+      if (remarkWrap) remarkWrap.style.display = 'block';
+    }
+
+    allParams.push({
+      paramCode: p.paramCode,
+      paramName: p.paramName,
+      stdValue: p.stdValue !== null && p.stdValue !== undefined ? String(p.stdValue) : '',
+      unit: p.unit || '',
+      actualValue: actualVal,
+      result: result,
+      remark: remark
+    });
+  });
+
+  if (!valid) {
+    showToast('Please add remarks for all failed checks.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('btnSaveRound');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.innerHTML = '&#128190; Save Round';
+      if (!res.ok) {
+        showToast('Error: ' + (res.error || 'Save failed.'), 'error');
+        return;
+      }
+      var savedRound = SESSION_ROUND_NO;
+      SESSION_ROUND_NO++;
+      updateRoundBadge();
+      // Reset actual values
+      resetCheckValues();
+      showToast('Round ' + savedRound + ' saved.', 'success');
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false;
+      btn.innerHTML = '&#128190; Save Round';
+      showToast('Error: ' + e.message, 'error');
+    })
+    .saveRound(SESSION_ID, {
+      productCode: SESSION_PRODUCT_CODE,
+      batch: SESSION_BATCH,
+      roundNo: SESSION_ROUND_NO,
+      params: allParams
+    });
+}
+
+function resetCheckValues() {
+  // Reset weight inputs
+  WEIGHT_ROWS.forEach(function(row) {
+    var inp = document.getElementById('val_' + row.paramCode);
+    if (inp) inp.value = '';
+    var badge = document.getElementById('badge_' + row.paramCode);
+    if (badge) { badge.className = 'res-badge res-na'; badge.textContent = 'NA'; }
+  });
+
+  // Reset quality params
+  QUALITY_PARAMS.forEach(function(p) {
+    var isVisual = (p.methodType === 'Visual');
+    if (!isVisual) {
+      var inp = document.getElementById('val_' + p.paramCode);
+      if (inp) inp.value = '';
+      var upgArea = document.getElementById('upg_' + p.paramCode);
+      if (upgArea) upgArea.style.display = 'none';
+      var devBtn = document.getElementById('devbtn_' + p.paramCode);
+      var rejBtn = document.getElementById('rejbtn_' + p.paramCode);
+      if (devBtn) devBtn.className = 'btn-deviation';
+      if (rejBtn) rejBtn.className = 'btn-reject';
+    } else {
+      var opts = ['PASS', 'FAIL', 'DEFECT', 'NA'];
+      opts.forEach(function(v) {
+        var btn = document.getElementById('vbtn_' + p.paramCode + '_' + v);
+        if (btn) btn.className = 'vis-btn';
+      });
+    }
+    var badge = document.getElementById('badge_' + p.paramCode);
+    if (badge) { badge.className = 'res-badge res-na'; badge.textContent = 'NA'; }
+    var remarkWrap = document.getElementById('remarkwrap_' + p.paramCode);
+    if (remarkWrap) remarkWrap.style.display = 'none';
+    var remarkTa = document.getElementById('remark_' + p.paramCode);
+    if (remarkTa) { remarkTa.value = ''; remarkTa.className = 'remark-area'; }
+    var remarkReq = document.getElementById('remarkreq_' + p.paramCode);
+    if (remarkReq) remarkReq.className = 'remark-required';
+  });
+}
+
+// ─────────────────────────────────────────────
+// Close session
+// ─────────────────────────────────────────────
+function confirmCloseSession() {
+  if (!confirm('Close this IPQC session? This cannot be reopened.')) return;
+  showLoading('Closing session…');
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hideLoading();
+      stopTimer();
+      showToast('Session closed.', 'success');
+      SESSION_ID = null;
+      showScreen('A');
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      showToast('Error closing session: ' + e.message, 'error');
+    })
+    .closeSession(SESSION_ID);
+}
+
+// ─────────────────────────────────────────────
+// Screen D — Report overlay
+// ─────────────────────────────────────────────
+function viewReport() {
+  showLoading('Loading report…');
+  google.script.run
+    .withSuccessHandler(function(rounds) {
+      hideLoading();
+      buildReportOverlay(rounds.rounds || []);
+      document.getElementById('screenD').style.display = 'flex';
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      showToast('Error loading report: ' + e.message, 'error');
+    })
+    .getSessionRounds(SESSION_ID);
+}
+
+function closeReport() {
+  document.getElementById('screenD').style.display = 'none';
+}
+
+function buildReportOverlay(rounds) {
+  var title = 'IPQC Report — ' + SESSION_PRODUCT_NAME + ' · Batch ' + SESSION_BATCH;
+  document.getElementById('reportTitle').textContent = title;
+
+  var table = document.getElementById('reportTable');
+  table.innerHTML = '';
+
+  if (rounds.length === 0) {
+    table.innerHTML = '<tr><td style="padding:20px;color:var(--muted);text-align:center;">No rounds saved yet.</td></tr>';
+    return;
+  }
+
+  // Collect all param codes/names in order
+  var paramOrder = [];
+  var paramNameMap = {};
+  // Use first round to determine params
+  if (rounds[0] && rounds[0].params) {
+    rounds[0].params.forEach(function(p) {
+      paramOrder.push(p.paramCode);
+      paramNameMap[p.paramCode] = p.paramName;
+    });
+  }
+
+  // Build a quick lookup: roundIndex -> paramCode -> {actualValue, result}
+  var roundData = [];
+  rounds.forEach(function(rnd) {
+    var map = {};
+    if (rnd.params) {
+      rnd.params.forEach(function(p) {
+        map[p.paramCode] = { actualValue: p.actualValue, result: p.result };
+        if (!paramNameMap[p.paramCode]) paramNameMap[p.paramCode] = p.paramName;
+        if (paramOrder.indexOf(p.paramCode) === -1) paramOrder.push(p.paramCode);
+      });
+    }
+    roundData.push(map);
+  });
+
+  // Header row
+  var thead = document.createElement('thead');
+  var hRow = document.createElement('tr');
+  var thParam = document.createElement('th');
+  thParam.className = 'rt-param-hdr';
+  thParam.textContent = 'Parameter';
+  hRow.appendChild(thParam);
+  rounds.forEach(function(rnd, idx) {
+    var th = document.createElement('th');
+    th.textContent = 'Round ' + (rnd.roundNo || (idx + 1));
+    hRow.appendChild(th);
+  });
+  thead.appendChild(hRow);
+  table.appendChild(thead);
+
+  // Body rows
+  var tbody = document.createElement('tbody');
+  paramOrder.forEach(function(code) {
+    var tr = document.createElement('tr');
+    var tdLabel = document.createElement('td');
+    tdLabel.className = 'rt-param-cell';
+    tdLabel.textContent = paramNameMap[code] || code;
+    tr.appendChild(tdLabel);
+
+    roundData.forEach(function(rMap) {
+      var td = document.createElement('td');
+      var entry = rMap[code];
+      if (entry) {
+        var result = entry.result || 'NA';
+        var cls = 'res-badge res-' + result.toLowerCase();
+        var badge = document.createElement('span');
+        badge.className = cls;
+        badge.textContent = result;
+        td.appendChild(badge);
+        if (entry.actualValue !== '' && entry.actualValue !== null && entry.actualValue !== undefined) {
+          var valSpan = document.createElement('span');
+          valSpan.className = 'rt-cell-val';
+          valSpan.textContent = entry.actualValue;
+          td.appendChild(valSpan);
+        }
+      } else {
+        var naBadge = document.createElement('span');
+        naBadge.className = 'res-badge res-na';
+        naBadge.textContent = 'NA';
+        td.appendChild(naBadge);
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // Summary row
+  var sumTr = document.createElement('tr');
+  sumTr.className = 'summary-row';
+  var sumLabel = document.createElement('td');
+  sumLabel.className = 'rt-param-cell';
+  sumLabel.textContent = 'Summary';
+  sumTr.appendChild(sumLabel);
+
+  roundData.forEach(function(rMap) {
+    var counts = { PASS: 0, FAIL: 0, DEVIATION: 0, REJECT: 0, DEFECT: 0, NA: 0 };
+    paramOrder.forEach(function(code) {
+      var entry = rMap[code];
+      var r = entry ? (entry.result || 'NA') : 'NA';
+      if (counts[r] !== undefined) counts[r]++;
+      else counts.NA++;
+    });
+    var td = document.createElement('td');
+    td.style.fontSize = '10px';
+    td.style.lineHeight = '1.6';
+    var lines = [];
+    if (counts.PASS)      lines.push('<span style="color:#16A34A;font-weight:700;">P:' + counts.PASS + '</span>');
+    if (counts.FAIL)      lines.push('<span style="color:#DC2626;font-weight:700;">F:' + counts.FAIL + '</span>');
+    if (counts.DEVIATION) lines.push('<span style="color:#B45309;font-weight:700;">D:' + counts.DEVIATION + '</span>');
+    if (counts.REJECT)    lines.push('<span style="color:#9B1C1C;font-weight:700;">R:' + counts.REJECT + '</span>');
+    if (counts.DEFECT)    lines.push('<span style="color:#5B21B6;font-weight:700;">Def:' + counts.DEFECT + '</span>');
+    td.innerHTML = lines.join(' ');
+    sumTr.appendChild(td);
+  });
+  tbody.appendChild(sumTr);
+
+  table.appendChild(tbody);
+}
+
+// ─────────────────────────────────────────────
+// Loading overlay
+// ─────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg || 'Loading…';
+  document.getElementById('loading').classList.remove('hidden');
+}
+
+function hideLoading() {
+  document.getElementById('loading').classList.add('hidden');
+}
+
+// ─────────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────────
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+// ─────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────
+window.onload = function() {
+  init();
+};
+</script>
+</body>
+</html>

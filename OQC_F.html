@@ -59,6 +59,18 @@
       font-size:10px; padding:3px 0; display:block; width:100%; margin-top:4px;
     }
     .remove-col-btn:hover { color:var(--danger); }
+
+    /* IPQC status warning / confirmation */
+    .ipqc-warn {
+      display:none; margin-top:6px; padding:8px 12px;
+      border-radius:6px; font-size:12px; text-align:left;
+    }
+    .ipqc-warn.amber {
+      background:#FFF3CD; border:1px solid #F59E0B; color:#B45309;
+    }
+    .ipqc-warn.green {
+      background:#E8F5E9; border:1px solid #16A34A; color:#16A34A;
+    }
   </style>
 </head>
 <body>
@@ -174,10 +186,55 @@ var OQC_CHECKS = [
 ];
 
 var FG_MATS = [], CUSTOMERS = [], INSPECTORS = [];
-var currentItems  = [];  // [{materialCode, materialDesc, batchPO}]
-var itemCheckVals = [];  // [{fillWeight, label, seal, appearance, custSpec}]
+var currentItems    = [];  // [{materialCode, materialDesc, batchPO}]
+var itemCheckVals   = [];  // [{fillWeight, label, seal, appearance, custSpec}]
+var ipqcSessionRefs = [];  // [sessionId or ''] — one per item column
 var ipqcVal = 'Y', releaseDecision = '', savedDocNos = [];
 var customerSel = {};
+
+// Advisory IPQC check — called on batch blur or material change
+function checkIPQCStatus(colIndex) {
+  var matSel   = document.getElementById('mat_sel_'    + colIndex);
+  var batchInp = document.getElementById('batch_inp_'  + colIndex);
+  var warnDiv  = document.getElementById('ipqc_warn_'  + colIndex);
+  if (!matSel || !batchInp || !warnDiv) return;
+
+  var productCode = matSel.value;
+  var batch       = batchInp.value.trim();
+
+  if (!productCode || !batch) {
+    warnDiv.style.display = 'none';
+    warnDiv.className = 'ipqc-warn';
+    ipqcSessionRefs[colIndex] = '';
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler((function(ci) {
+      return function(res) {
+        var div = document.getElementById('ipqc_warn_' + ci);
+        if (!div) return;
+        if (!res.found) {
+          ipqcSessionRefs[ci] = '';
+          div.className = 'ipqc-warn amber';
+          div.textContent = '⚠ No IPQC session found for this batch. Verify in-process checks were completed before releasing.';
+          div.style.display = 'block';
+        } else if (res.status === 'OPEN') {
+          ipqcSessionRefs[ci] = res.sessionId;
+          div.className = 'ipqc-warn amber';
+          div.textContent = '⚠ IPQC session is still OPEN for this batch. Ensure it is closed before releasing.';
+          div.style.display = 'block';
+        } else {
+          ipqcSessionRefs[ci] = res.sessionId;
+          div.className = 'ipqc-warn green';
+          div.textContent = '✓ IPQC completed for this batch (' + res.rounds + ' rounds).';
+          div.style.display = 'block';
+        }
+      };
+    })(colIndex))
+    .withFailureHandler(function() { /* silent — advisory only */ })
+    .checkIPQCForBatch(productCode, batch);
+}
 
 function init() {
   document.getElementById('date').value = new Date().toISOString().split('T')[0];
@@ -291,6 +348,7 @@ function buildMatrix() {
         var opt = this.options[this.selectedIndex];
         currentItems[colI].materialCode = this.value;
         currentItems[colI].materialDesc = opt ? (opt.dataset.desc || this.value) : this.value;
+        checkIPQCStatus(colI);
       };
     })(ci);
 
@@ -303,6 +361,13 @@ function buildMatrix() {
     batchInp.oninput = (function(colI) {
       return function() { currentItems[colI].batchPO = this.value; };
     })(ci);
+    batchInp.onblur = (function(colI) {
+      return function() { checkIPQCStatus(colI); };
+    })(ci);
+
+    var ipqcWarnDiv = document.createElement('div');
+    ipqcWarnDiv.id = 'ipqc_warn_' + ci;
+    ipqcWarnDiv.className = 'ipqc-warn';
 
     var removeBtn = document.createElement('button');
     removeBtn.className = 'remove-col-btn';
@@ -313,6 +378,7 @@ function buildMatrix() {
 
     th.appendChild(matSel);
     th.appendChild(batchInp);
+    th.appendChild(ipqcWarnDiv);
     th.appendChild(removeBtn);
     hRow.appendChild(th);
   });
@@ -456,10 +522,11 @@ function submitOQC() {
       materialCode: matCode  || '',
       materialDesc: matDesc  || '',
       batchPO:      batchInp ? batchInp.value : (item.batchPO || ''),
-      sampleSize:   parseFloat((document.getElementById('sampleSize_'  + ci) || {}).value) || 0,
-      acceptedQty:  parseFloat((document.getElementById('acceptedQty_' + ci) || {}).value) || 0,
-      rejectedQty:  parseFloat((document.getElementById('rejectedQty_' + ci) || {}).value) || 0,
-      checks:       itemCheckVals[ci] || {}
+      sampleSize:     parseFloat((document.getElementById('sampleSize_'  + ci) || {}).value) || 0,
+      acceptedQty:    parseFloat((document.getElementById('acceptedQty_' + ci) || {}).value) || 0,
+      rejectedQty:    parseFloat((document.getElementById('rejectedQty_' + ci) || {}).value) || 0,
+      checks:         itemCheckVals[ci] || {},
+      ipqcSessionRef: ipqcSessionRefs[ci] || ''
     };
   });
 

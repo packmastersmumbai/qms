@@ -48,7 +48,8 @@ function saveOQC(data) {
         data.remarks       || '',
         item.acceptedQty != null ? item.acceptedQty : 0,
         item.rejectedQty != null ? item.rejectedQty : 0,
-        now
+        now,
+        item.ipqcSessionRef || ''
       ];
 
       ws.appendRow(row);
@@ -72,10 +73,35 @@ function saveOQC(data) {
   }
 }
 
+function getOQCIPQCCheck_(productCode, batch) {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('IPQC_Sessions');
+  if (!ws) return { found: false };
+
+  var sessionId = productCode + '_' + batch;
+  var data = ws.getDataRange().getValues();
+  // Row 0 is header; session_id expected in col 0
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === String(sessionId).trim()) {
+      return {
+        found:     true,
+        status:    data[i][9] || '',   // col J: status OPEN|CLOSED
+        sessionId: sessionId,
+        rounds:    data[i][10] != null ? data[i][10] : 0  // col K: rounds count
+      };
+    }
+  }
+  return { found: false };
+}
+
+function checkIPQCForBatch(productCode, batch) {
+  return getOQCIPQCCheck_(productCode, batch);
+}
+
 function getOQCRowForWA(row) {
   var ws = getSpreadsheet().getSheetByName('OQC_LOG');
   if (!ws || row < 2) return null;
-  var r = ws.getRange(row, 1, 1, 19).getValues()[0];
+  var r = ws.getRange(row, 1, 1, 20).getValues()[0];
   if (!r[0]) return null;
   return {
     type:           'OQC',

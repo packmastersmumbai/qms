@@ -160,6 +160,8 @@
     .badge-pending   { background: #F3F4F6; color: #6B7280; }
     .badge-pass      { background: #DCFCE7; color: #15803D; }
     .badge-fail      { background: #FEE2E2; color: #B91C1C; }
+    .badge-open      { background: #FFF3CD; color: #B45309; }
+    .badge-closed    { background: #E8F5E9; color: #16A34A; }
 
     /* ── Loading / Empty states ── */
     .state-box {
@@ -187,6 +189,7 @@
   <button class="tab-btn"        id="tab-IQC"      onclick="switchTab('IQC')">IQC <span class="tab-count" id="cnt-IQC">—</span></button>
   <button class="tab-btn"        id="tab-OQC"      onclick="switchTab('OQC')">OQC <span class="tab-count" id="cnt-OQC">—</span></button>
   <button class="tab-btn"        id="tab-Gatepass" onclick="switchTab('Gatepass')">Gatepass <span class="tab-count" id="cnt-Gatepass">—</span></button>
+  <button class="tab-btn"        id="tab-IPQC"     onclick="switchTab('IPQC')">IPQC <span class="tab-count" id="cnt-IPQC">—</span></button>
 </div>
 
 <!-- Filter bar -->
@@ -248,6 +251,7 @@
         setCount('IQC',      counts.iqc);
         setCount('OQC',      counts.oqc);
         setCount('Gatepass', counts.gp);
+        setCount('IPQC',     counts.ipqc);
       })
       .withFailureHandler(function() {})
       .getRecordsCounts();
@@ -327,11 +331,17 @@
     if (s === 'ACCEPTED' || s === 'RELEASED' || s === 'PASS')  cls = 'badge-accepted';
     else if (s === 'REJECTED' || s === 'FAIL')                 cls = 'badge-rejected';
     else if (s === 'HOLD')                                     cls = 'badge-hold';
+    else if (s === 'OPEN')                                     cls = 'badge-open';
+    else if (s === 'CLOSED')                                   cls = 'badge-closed';
     return '<span class="badge ' + cls + '">' + s + '</span>';
   }
 
   // ── Open a record ────────────────────────────────────────────
   function openRecord(docNo) {
+    if (currentTab === 'IPQC') {
+      showToast('Document view not available for IPQC sessions.');
+      return;
+    }
     google.script.run
       .withSuccessHandler(function(html) {
         if (html) {
@@ -344,6 +354,24 @@
         alert('Could not open record: ' + (err && err.message ? err.message : String(err)));
       })
       .getDocViewHtml(currentTab, docNo);
+  }
+
+  // ── Toast notification ───────────────────────────────────────
+  function showToast(msg, duration) {
+    var t = document.getElementById('pmToast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'pmToast';
+      t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
+        'background:rgba(30,41,59,0.92);color:#fff;padding:10px 18px;border-radius:8px;' +
+        'font-size:13px;font-family:inherit;z-index:9999;pointer-events:none;' +
+        'opacity:0;transition:opacity 0.2s;max-width:88vw;text-align:center;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._tmr);
+    t._tmr = setTimeout(function() { t.style.opacity = '0'; }, duration || 3000);
   }
 
   // ── Utility: HTML-escape ─────────────────────────────────────

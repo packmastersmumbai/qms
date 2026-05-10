@@ -19,11 +19,12 @@ function getDashboardData(filter) {
       try { storedId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || 'NOT SET'; } catch(ex) { storedId = 'read error'; }
       return { rows: null, error: 'SS NULL. ID=[' + storedId + ']', diag: { step: 'no-ss' } };
     }
-    var grnRows = getGRNRows_(ss, typeFilter, dateFilter);
-    var iqcRows = getIQCRows_(ss, typeFilter, dateFilter);
-    var oqcRows = getOQCRows_(ss, typeFilter, dateFilter);
-    var gpRows  = getGPRows_(ss, typeFilter, dateFilter);
-    var rows = [].concat(grnRows).concat(iqcRows).concat(oqcRows).concat(gpRows);
+    var grnRows  = getGRNRows_(ss, typeFilter, dateFilter);
+    var iqcRows  = getIQCRows_(ss, typeFilter, dateFilter);
+    var oqcRows  = getOQCRows_(ss, typeFilter, dateFilter);
+    var gpRows   = getGPRows_(ss, typeFilter, dateFilter);
+    var ipqcRows = getIPQCRows_(ss, typeFilter, dateFilter);
+    var rows = [].concat(grnRows).concat(iqcRows).concat(oqcRows).concat(gpRows).concat(ipqcRows);
     rows.sort(function(a, b) { return (b.rawDate || 0) - (a.rawDate || 0); });
     return { rows: rows, counts: buildCounts_(rows) };
   } catch(e) {
@@ -163,7 +164,7 @@ function getOQCRows_(ss, typeFilter, dateFilter) {
   if (!ws) return [];
   var lastRow = ws.getLastRow();
   if (lastRow < 2) return [];
-  var data = ws.getRange(2, 1, lastRow - 1, 19).getValues();
+  var data = ws.getRange(2, 1, lastRow - 1, 20).getValues();
   var rows = [];
   for (var i = 0; i < data.length; i++) {
     var r = data[i];
@@ -183,6 +184,7 @@ function getOQCRows_(ss, typeFilter, dateFilter) {
         oqcNo: sv_(r[0]), customer: sv_(r[3]), batchPO: sv_(r[4]), material: sv_(r[5]),
         ipqcReviewed: sv_(r[6]), sampleSize: sv_(r[7]), inspector: sv_(r[13]),
         releaseDecision: sv_(r[14]), remarks: sv_(r[15]),
+        ipqcSessionRef: sv_(r[19]),
         checks: {
           fillWeight: sv_(r[8]), label: sv_(r[9]), seal: sv_(r[10]),
           appearance: sv_(r[11]), custSpec: sv_(r[12])
@@ -191,6 +193,70 @@ function getOQCRows_(ss, typeFilter, dateFilter) {
     });
   }
   return rows;
+}
+
+function getIPQCRows_(ss, typeFilter, dateFilter) {
+  if (typeFilter !== 'ALL' && typeFilter !== 'IPQC') return [];
+  var ws = ss.getSheetByName('IPQC_Sessions');
+  if (!ws) return [];
+  var lastRow = ws.getLastRow();
+  if (lastRow < 2) return [];
+  var data = ws.getRange(2, 1, lastRow - 1, 11).getValues();
+  var rows = [];
+  for (var i = 0; i < data.length; i++) {
+    var r = data[i];
+    if (!r[0]) continue;
+    if (!passesDateFilter_(r[6], dateFilter)) continue;
+    rows.push({
+      type:      'IPQC',
+      docNo:     sv_(r[0]),
+      rawDate:   r[6] ? new Date(r[6]).getTime() : 0,
+      date:      r[6] ? Utilities.formatDate(new Date(r[6]), 'Asia/Kolkata', 'dd-MMM-yyyy') : '',
+      party:     sv_(r[2]),
+      material:  sv_(r[1]),
+      batch:     sv_(r[3]),
+      status:    sv_(r[9]) || 'OPEN',
+      inspector: sv_(r[4]) || '',
+      detail: {
+        sessionId:   sv_(r[0]),
+        productCode: sv_(r[1]),
+        productName: sv_(r[2]),
+        batch:       sv_(r[3]),
+        inspector:   sv_(r[4]),
+        line:        sv_(r[5]),
+        startTime:   sv_(r[7]),
+        endTime:     sv_(r[8]),
+        status:      sv_(r[9]) || 'OPEN',
+        rounds:      sv_(r[10])
+      }
+    });
+  }
+  return rows;
+}
+
+function getIPQCDefectRate() {
+  try {
+    var ss = getSpreadsheet();
+    if (!ss) return { total: 0, defects: 0, rate: '0.0%', period: 'Last 7 days' };
+    var ws = ss.getSheetByName('IPQC_LOG');
+    if (!ws) return { total: 0, defects: 0, rate: '0.0%', period: 'Last 7 days' };
+    var lastRow = ws.getLastRow();
+    if (lastRow < 2) return { total: 0, defects: 0, rate: '0.0%', period: 'Last 7 days' };
+    var data = ws.getRange(2, 1, lastRow - 1, 11).getValues();
+    var total = 0, defects = 0;
+    for (var i = 0; i < data.length; i++) {
+      var r = data[i];
+      if (!r[0]) continue;
+      if (!passesDateFilter_(r[4], 'WEEK')) continue;
+      total++;
+      var result = r[10] ? String(r[10]).toUpperCase().trim() : '';
+      if (result === 'FAIL' || result === 'REJECT' || result === 'DEFECT') defects++;
+    }
+    var rate = total > 0 ? (defects / total * 100).toFixed(1) + '%' : '0.0%';
+    return { total: total, defects: defects, rate: rate, period: 'Last 7 days' };
+  } catch(e) {
+    return { total: 0, defects: 0, rate: '0.0%', period: 'Last 7 days' };
+  }
 }
 
 function passesDateFilter_(dateVal, range) {
@@ -221,7 +287,8 @@ function buildCounts_(rows) {
     if (s === 'ACCEPTED' || s === 'RELEASED' || s === 'ISSUED') c.pass++;
     else if (s === 'REJECTED')                                  c.fail++;
     else if (s === 'HOLD')                                      c.hold++;
-    else                                      c.pending++;
+    else if (s === 'CLOSED')                                    c.pass++;
+    else                                                        c.pending++;
   });
   return c;
 }

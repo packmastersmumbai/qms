@@ -57,6 +57,7 @@ function onOpen() {
     .addSeparator()
     .addItem('📥  New GRN', 'openGRNForm')
     .addItem('🔍  New IQC', 'openIQCForm')
+    .addItem('🏭  New IPQC Check', 'openIPQCForm')
     .addItem('📤  New OQC', 'openOQCForm')
     .addItem('🚚  New Gatepass', 'openGatpassForm')
     .addSeparator()
@@ -114,6 +115,13 @@ function openGatpassForm() {
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
+function openIPQCForm() {
+  var html = HtmlService.createTemplateFromFile('IPQC_F').evaluate()
+    .setWidth(640)
+    .setHeight(700);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'IPQC — In-Process Quality Check');
+}
+
 function openRecords() {
   var html = HtmlService.createTemplateFromFile('Records_F').evaluate()
     .setWidth(900)
@@ -148,7 +156,7 @@ function doGet(e) {
 // ── Called by client to inject sub-pages ─────────────────────
 
 function getFormHtml(type) {
-  var pageMap = { GRN: 'GRN_F', IQC: 'IQC_F', OQC: 'OQC_F', Dashboard: 'Dashboard_F', ImportCSV: 'ImportCSV_F', Records: 'Records_F', Gatepass: 'Gatepass_F', Masters: 'Masters_F', ControlPlan: 'ControlPlan_F' };
+  var pageMap = { GRN: 'GRN_F', IQC: 'IQC_F', OQC: 'OQC_F', IPQC: 'IPQC_F', Dashboard: 'Dashboard_F', ImportCSV: 'ImportCSV_F', Records: 'Records_F', Gatepass: 'Gatepass_F', Masters: 'Masters_F', ControlPlan: 'ControlPlan_F' };
   var page = pageMap[type] || 'Landing';
   return HtmlService.createTemplateFromFile(page).evaluate().getContent();
 }

@@ -68,12 +68,12 @@
 
     .bento-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       grid-template-areas:
-        "grn  iqc"
-        "oqc  gate"
-        "rec  dash"
-        "imp  imp";
+        "grn  iqc  ipqc"
+        "oqc  gate gate"
+        "rec  dash dash"
+        "imp  imp  imp";
       gap: 12px;
     }
 
@@ -100,6 +100,7 @@
     /* grid areas */
     .bt-grn  { grid-area: grn; }
     .bt-iqc  { grid-area: iqc; }
+    .bt-ipqc { grid-area: ipqc; }
     .bt-oqc  { grid-area: oqc; }
     .bt-gate { grid-area: gate; }
     .bt-rec  { grid-area: rec; }
@@ -145,12 +146,24 @@
     }
 
     /* responsive */
-    @media (max-width: 400px) {
+    @media (max-width: 480px) {
+      .bento-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "grn  iqc"
+          "ipqc ipqc"
+          "oqc  gate"
+          "rec  dash"
+          "imp  imp";
+      }
+    }
+    @media (max-width: 360px) {
       .bento-grid {
         grid-template-columns: 1fr;
         grid-template-areas:
           "grn"
           "iqc"
+          "ipqc"
           "oqc"
           "gate"
           "rec"
@@ -241,6 +254,13 @@
         <div class="bt-sub">Inspect materials</div>
       </a>
 
+      <!-- IPQC — primary -->
+      <a class="bt bt-primary bt-ipqc" onclick="openForm('IPQC')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="bt-title">IPQC</div>
+        <div class="bt-sub">In-process checks</div>
+      </a>
+
       <!-- OQC — secondary -->
       <a class="bt bt-secondary bt-oqc" onclick="openForm('OQC')">
         <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0 4 4m-4-4-4 4"/><path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/></svg></div>
@@ -318,13 +338,14 @@
     GRN:       'GRN_F',
     IQC:       'IQC_F',
     OQC:       'OQC_F',
+    IPQC:      'IPQC_F',
     Dashboard: 'Dashboard_F',
     ImportCSV: 'ImportCSV_F',
     Masters:     'Masters_F',
     ControlPlan: 'ControlPlan_F'
   };
   var titleMap = {
-    GRN: 'New GRN', IQC: 'New IQC', OQC: 'New OQC',
+    GRN: 'New GRN', IQC: 'New IQC', OQC: 'New OQC', IPQC: 'IPQC',
     Dashboard: 'Dashboard', ImportCSV: 'Import CSV',
     Records: 'Records', Gatepass: 'New Gatepass',
     Masters: 'Masters', ControlPlan: 'Control Plans'
