@@ -325,7 +325,8 @@
     items.forEach(function(item) {
       var opt = document.createElement('option');
       opt.value = item[valField];
-      opt.textContent = item[codeField] + ' — ' + item[labelField];
+      var label = item[labelField] || item['desc'] || item['name'] || item[valField];
+      opt.textContent = item[codeField] + ' — ' + label;
       sel.appendChild(opt);
     });
   }
@@ -409,10 +410,10 @@
       var rowClass = enabled ? 'enabled-row' : '';
       var dis      = enabled ? '' : 'disabled';
 
-      return '<tr class="' + rowClass + '" id="' + planType + '-row-' + esc(p.code) + '">' +
+      return '<tr class="' + rowClass + '" data-plan="' + planType + '" data-param="' + esc(p.code) + '">' +
         '<td>' +
           '<label class="toggle-switch">' +
-            '<input type="checkbox" ' + (enabled ? 'checked' : '') + ' onchange="toggleParam(\'' + planType + '\',\'' + esc(p.code) + '\',this.checked)">' +
+            '<input type="checkbox" class="param-chk" ' + (enabled ? 'checked' : '') + ' onchange="toggleParam(\'' + planType + '\',\'' + esc(p.code) + '\',this.checked)">' +
             '<span class="toggle-slider"></span>' +
           '</label>' +
         '</td>' +
@@ -420,11 +421,11 @@
         '<td style="font-weight:600;">' + esc(p.name) + '</td>' +
         '<td style="color:var(--muted);">' + esc(p.unit || '') + '</td>' +
         '<td style="color:var(--muted);">' + esc(p.stdValue || '') + '</td>' +
-        '<td><input class="override-input" type="text" ' + dis + ' id="' + planType + '-std-' + esc(p.code) + '" value="' + esc(stdOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+        '<td><input class="override-input ov-std" type="text" ' + dis + ' value="' + esc(stdOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
         '<td style="color:var(--muted);">' + esc(p.tolMin || '') + '</td>' +
-        '<td><input class="override-input" type="text" ' + dis + ' id="' + planType + '-min-' + esc(p.code) + '" value="' + esc(minOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+        '<td><input class="override-input ov-min" type="text" ' + dis + ' value="' + esc(minOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
         '<td style="color:var(--muted);">' + esc(p.tolMax || '') + '</td>' +
-        '<td><input class="override-input" type="text" ' + dis + ' id="' + planType + '-max-' + esc(p.code) + '" value="' + esc(maxOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+        '<td><input class="override-input ov-max" type="text" ' + dis + ' value="' + esc(maxOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
         '<td><span class="method-badge">' + esc(p.methodType || '') + '</span></td>' +
         '<td style="font-size:11px;color:var(--muted);">' + esc(p.tools || '') + '</td>' +
         '<td style="font-size:11px;color:var(--muted);max-width:180px;">' + esc(p.checkBrief || '') + '</td>' +
@@ -434,18 +435,10 @@
 
   // ── Toggle a parameter on/off in the matrix ───────────────────────
   function toggleParam(planType, paramCode, checked) {
-    var row = document.getElementById(planType + '-row-' + paramCode);
+    var row = document.querySelector('tr[data-plan="' + planType + '"][data-param="' + paramCode + '"]');
     if (!row) return;
-    if (checked) {
-      row.classList.add('enabled-row');
-    } else {
-      row.classList.remove('enabled-row');
-    }
-    // Enable/disable override inputs
-    ['std', 'min', 'max'].forEach(function(field) {
-      var inp = document.getElementById(planType + '-' + field + '-' + paramCode);
-      if (inp) inp.disabled = !checked;
-    });
+    row.classList.toggle('enabled-row', checked);
+    row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !checked; });
     markChanged(planType);
   }
 
@@ -461,20 +454,19 @@
   // ── Collect current matrix state into rows ────────────────────────
   function collectPlanRows(planType, itemCode) {
     return allParameters.map(function(p) {
-      var chk = document.querySelector('#' + planType + '-row-' + p.code + ' input[type=checkbox]');
+      var row = document.querySelector('tr[data-plan="' + planType + '"][data-param="' + p.code + '"]');
+      if (!row) return null;
+      var chk = row.querySelector('input[type=checkbox]');
       var enabled = chk && chk.checked;
-      var stdInp = document.getElementById(planType + '-std-' + p.code);
-      var minInp = document.getElementById(planType + '-min-' + p.code);
-      var maxInp = document.getElementById(planType + '-max-' + p.code);
       return {
         itemCode:         itemCode,
         paramCode:        p.code,
         enabled:          enabled,
-        stdValueOverride: stdInp ? stdInp.value.trim() : '',
-        tolMinOverride:   minInp ? minInp.value.trim() : '',
-        tolMaxOverride:   maxInp ? maxInp.value.trim() : ''
+        stdValueOverride: (row.querySelector('.ov-std') || {}).value ? row.querySelector('.ov-std').value.trim() : '',
+        tolMinOverride:   (row.querySelector('.ov-min') || {}).value ? row.querySelector('.ov-min').value.trim() : '',
+        tolMaxOverride:   (row.querySelector('.ov-max') || {}).value ? row.querySelector('.ov-max').value.trim() : ''
       };
-    }).filter(function(r) { return r.enabled; });
+    }).filter(function(r) { return r && r.enabled; });
   }
 
   // ── Save RM plan ──────────────────────────────────────────────────
