@@ -124,7 +124,7 @@
       height: 20px;
       flex-shrink: 0;
     }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; pointer-events: none; }
     .toggle-slider {
       position: absolute;
       inset: 0;
@@ -414,9 +414,8 @@
 
       return '<tr class="' + rowClass + '" id="' + rowId + '" data-code="' + esc(p.code) + '">' +
         '<td>' +
-          '<label class="toggle-switch">' +
-            '<input type="checkbox" class="param-chk" ' + (enabled ? 'checked' : '') +
-              ' onchange="toggleRow(\'' + rowId + '\',this.checked,\'' + planType + '\')">' +
+          '<label class="toggle-switch" onclick="toggleRow(\'' + rowId + '\',\'' + planType + '\')">' +
+            '<input type="checkbox" class="param-chk" ' + (enabled ? 'checked' : '') + '>' +
             '<span class="toggle-slider"></span>' +
           '</label>' +
         '</td>' +
@@ -437,11 +436,14 @@
   }
 
   // ── Toggle a row on/off ───────────────────────────────────────────
-  function toggleRow(rowId, checked, planType) {
+  function toggleRow(rowId, planType) {
     var row = document.getElementById(rowId);
     if (!row) return;
-    row.classList.toggle('enabled-row', checked);
-    row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !checked; });
+    var chk = row.querySelector('.param-chk');
+    if (!chk) return;
+    chk.checked = !chk.checked;
+    row.classList.toggle('enabled-row', chk.checked);
+    row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !chk.checked; });
     markChanged(planType);
   }
 
