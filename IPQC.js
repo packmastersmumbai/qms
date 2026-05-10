@@ -21,7 +21,7 @@ function _ensureIPQCLog() {
   var ws = ss.getSheetByName('IPQC_LOG');
   if (!ws) {
     ws = ss.insertSheet('IPQC_LOG');
-    ws.appendRow(['session_id', 'product_code', 'batch', 'round_no', 'timestamp', 'param_code', 'param_name', 'std_value', 'unit', 'actual_value', 'result', 'remark']);
+    ws.appendRow(['session_id', 'product_code', 'batch', 'round_no', 'timestamp', 'param_code', 'param_name', 'std_value', 'unit', 'actual_value', 'result', 'remark', 'elapsed_hms']);
   }
   return ws;
 }
@@ -261,7 +261,8 @@ function saveRound(sessionId, roundData) {
         p.unit        || '',
         p.actualValue || '',
         p.result      || '',
-        p.remark      || ''
+        p.remark      || '',
+        roundData.elapsedHms  || ''
       ]);
     }
 
