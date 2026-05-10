@@ -660,9 +660,10 @@ function init() {
       var pSel = document.getElementById('setupProduct');
       FG_LIST.forEach(function(fg) {
         var o = document.createElement('option');
+        var label = fg.name || fg.description || fg.code;
         o.value = fg.code;
-        o.textContent = fg.desc.length > 40 ? fg.desc.substring(0, 40) + '…' : fg.desc;
-        o.setAttribute('data-desc', fg.desc);
+        o.textContent = label.length > 40 ? label.substring(0, 40) + '…' : label;
+        o.setAttribute('data-desc', label);
         pSel.appendChild(o);
       });
 
@@ -734,7 +735,7 @@ function loadOpenSessions() {
         meta.className = 'si-meta';
         meta.textContent = 'Batch: ' + (s.batch || '—') + ' · ' +
           (s.inspector || '—') + ' · Line: ' + (s.line || '—') + ' · ' +
-          (s.dateStarted || '—');
+          (s.date || '—');
 
         item.appendChild(badge);
         item.appendChild(name);
