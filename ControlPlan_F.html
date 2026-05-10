@@ -124,7 +124,7 @@
       height: 20px;
       flex-shrink: 0;
     }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; pointer-events: none; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-slider {
       position: absolute;
       inset: 0;
@@ -402,6 +402,7 @@
     }
 
     // Use numeric index as row key — avoids all special-char issues in selectors
+    tbody.innerHTML = '';
     tbody.innerHTML = allParameters.map(function(p, idx) {
       var existing = planData[p.code] || {};
       var enabled  = existing.enabled || false;
@@ -414,7 +415,7 @@
 
       return '<tr class="' + rowClass + '" id="' + rowId + '" data-code="' + esc(p.code) + '">' +
         '<td>' +
-          '<label class="toggle-switch" onclick="toggleRow(\'' + rowId + '\',\'' + planType + '\')">' +
+          '<label class="toggle-switch">' +
             '<input type="checkbox" class="param-chk" ' + (enabled ? 'checked' : '') + '>' +
             '<span class="toggle-slider"></span>' +
           '</label>' +
@@ -435,17 +436,21 @@
     }).join('');
   }
 
-  // ── Toggle a row on/off ───────────────────────────────────────────
-  function toggleRow(rowId, planType) {
-    var row = document.getElementById(rowId);
-    if (!row) return;
-    var chk = row.querySelector('.param-chk');
-    if (!chk) return;
-    chk.checked = !chk.checked;
-    row.classList.toggle('enabled-row', chk.checked);
-    row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !chk.checked; });
-    markChanged(planType);
-  }
+  // ── Event delegation for toggles ─────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    ['rm-matrix-tbody', 'fg-matrix-tbody'].forEach(function(tbodyId) {
+      var planType = tbodyId.startsWith('rm') ? 'rm' : 'fg';
+      document.getElementById(tbodyId).addEventListener('change', function(e) {
+        if (!e.target.classList.contains('param-chk')) return;
+        var row = e.target.closest('tr');
+        if (!row) return;
+        var checked = e.target.checked;
+        row.classList.toggle('enabled-row', checked);
+        row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !checked; });
+        markChanged(planType);
+      });
+    });
+  });
 
   // ── Mark plan as having unsaved changes ───────────────────────────
   function markChanged(planType) {
