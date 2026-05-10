@@ -764,7 +764,12 @@ function resumeSession(sess) {
   SESSION_INSPECTOR = sess.inspector;
   SESSION_LINE = sess.line;
   SESSION_ROUND_NO = (sess.rounds || 0) + 1;
-  SESSION_START_TS = sess.startTs ? new Date(sess.startTs) : new Date();
+  if (sess.date && sess.startTime) {
+    SESSION_START_TS = new Date(sess.date + 'T' + sess.startTime);
+    if (isNaN(SESSION_START_TS)) SESSION_START_TS = new Date();
+  } else {
+    SESSION_START_TS = new Date();
+  }
 
   showToast('Resuming session — Round ' + SESSION_ROUND_NO, 'success');
   enterCheckScreen();
@@ -812,7 +817,12 @@ function startCheck() {
       SESSION_INSPECTOR = inspector;
       SESSION_LINE = line;
       SESSION_ROUND_NO = res.resumed ? (res.rounds || 0) + 1 : 1;
-      SESSION_START_TS = new Date();
+      if (res.resumed && res.date && res.startTime) {
+        SESSION_START_TS = new Date(res.date + 'T' + res.startTime);
+        if (isNaN(SESSION_START_TS)) SESSION_START_TS = new Date();
+      } else {
+        SESSION_START_TS = new Date();
+      }
 
       showToast(res.resumed ? 'Resuming session — Round ' + SESSION_ROUND_NO : 'Session started', 'success');
       enterCheckScreen();

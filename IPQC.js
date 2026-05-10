@@ -125,7 +125,8 @@ function startSession(data) {
     for (var i = 1; i < values.length; i++) {
       if (String(values[i][0]).trim() === sessionId) {
         if (values[i][9] === 'OPEN') {
-          return { ok: true, resumed: true, sessionId: sessionId, rounds: values[i][10] || 0 };
+          return { ok: true, resumed: true, sessionId: sessionId, rounds: values[i][10] || 0,
+                   date: values[i][6], startTime: values[i][7] };
         } else {
           return { ok: false, error: 'A CLOSED session already exists for this product+batch. Use a new batch number.' };
         }
