@@ -362,7 +362,7 @@
       .withFailureHandler(function(err) {
         showToast('Load failed: ' + (err.message || err), 'error');
       })
-      .getControlPlan('rm');
+      .getControlPlan('rm', itemCode);
   }
 
   // ── Load FG plan ──────────────────────────────────────────────────
@@ -387,7 +387,7 @@
       .withFailureHandler(function(err) {
         showToast('Load failed: ' + (err.message || err), 'error');
       })
-      .getControlPlan('fg');
+      .getControlPlan('fg', fgCode);
   }
 
   // ── Render matrix rows ────────────────────────────────────────────
@@ -401,7 +401,8 @@
       return;
     }
 
-    tbody.innerHTML = allParameters.map(function(p) {
+    // Use numeric index as row key — avoids all special-char issues in selectors
+    tbody.innerHTML = allParameters.map(function(p, idx) {
       var existing = planData[p.code] || {};
       var enabled  = existing.enabled || false;
       var stdOvr   = existing.stdValueOverride || '';
@@ -409,11 +410,13 @@
       var maxOvr   = existing.tolMaxOverride   || '';
       var rowClass = enabled ? 'enabled-row' : '';
       var dis      = enabled ? '' : 'disabled';
+      var rowId    = planType + '-row-' + idx;
 
-      return '<tr class="' + rowClass + '" data-plan="' + planType + '" data-param="' + esc(p.code) + '">' +
+      return '<tr class="' + rowClass + '" id="' + rowId + '" data-code="' + esc(p.code) + '">' +
         '<td>' +
           '<label class="toggle-switch">' +
-            '<input type="checkbox" class="param-chk" ' + (enabled ? 'checked' : '') + ' onchange="toggleParam(\'' + planType + '\',\'' + esc(p.code) + '\',this.checked)">' +
+            '<input type="checkbox" class="param-chk" ' + (enabled ? 'checked' : '') +
+              ' onchange="toggleRow(\'' + rowId + '\',this.checked,\'' + planType + '\')">' +
             '<span class="toggle-slider"></span>' +
           '</label>' +
         '</td>' +
@@ -433,9 +436,9 @@
     }).join('');
   }
 
-  // ── Toggle a parameter on/off in the matrix ───────────────────────
-  function toggleParam(planType, paramCode, checked) {
-    var row = document.querySelector('tr[data-plan="' + planType + '"][data-param="' + paramCode + '"]');
+  // ── Toggle a row on/off ───────────────────────────────────────────
+  function toggleRow(rowId, checked, planType) {
+    var row = document.getElementById(rowId);
     if (!row) return;
     row.classList.toggle('enabled-row', checked);
     row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !checked; });
@@ -453,20 +456,25 @@
 
   // ── Collect current matrix state into rows ────────────────────────
   function collectPlanRows(planType, itemCode) {
-    return allParameters.map(function(p) {
-      var row = document.querySelector('tr[data-plan="' + planType + '"][data-param="' + p.code + '"]');
-      if (!row) return null;
+    var tbody = document.getElementById(planType + '-matrix-tbody');
+    var rows = tbody ? tbody.querySelectorAll('tr[data-code]') : [];
+    var result = [];
+    rows.forEach(function(row) {
       var chk = row.querySelector('input[type=checkbox]');
-      var enabled = chk && chk.checked;
-      return {
+      if (!chk || !chk.checked) return;
+      var stdInp = row.querySelector('.ov-std');
+      var minInp = row.querySelector('.ov-min');
+      var maxInp = row.querySelector('.ov-max');
+      result.push({
         itemCode:         itemCode,
-        paramCode:        p.code,
-        enabled:          enabled,
-        stdValueOverride: (row.querySelector('.ov-std') || {}).value ? row.querySelector('.ov-std').value.trim() : '',
-        tolMinOverride:   (row.querySelector('.ov-min') || {}).value ? row.querySelector('.ov-min').value.trim() : '',
-        tolMaxOverride:   (row.querySelector('.ov-max') || {}).value ? row.querySelector('.ov-max').value.trim() : ''
-      };
-    }).filter(function(r) { return r && r.enabled; });
+        paramCode:        row.getAttribute('data-code'),
+        enabled:          true,
+        stdValueOverride: stdInp ? stdInp.value.trim() : '',
+        tolMinOverride:   minInp ? minInp.value.trim() : '',
+        tolMaxOverride:   maxInp ? maxInp.value.trim() : ''
+      });
+    });
+    return result;
   }
 
   // ── Save RM plan ──────────────────────────────────────────────────

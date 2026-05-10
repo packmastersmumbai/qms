@@ -49,12 +49,15 @@ function getParameters() {
     .map(function(r) { return { code: r[0], name: r[1], unit: r[2], stdValue: r[3], tolMin: r[4], tolMax: r[5], methodType: r[6], checkBrief: r[7], tools: r[8], docRef: r[9], docNumber: r[10] }; });
 }
 
-function getControlPlan(planType) {
+function getControlPlan(planType, itemCode) {
   var sheetName = planType === 'fg' ? 'CONTROL_FG' : 'CONTROL_RM';
   var ws = getSpreadsheet().getSheetByName(sheetName);
   if (!ws) return [];
   var data = ws.getDataRange().getValues();
-  return data.slice(1).filter(function(r) { return r[0] && r[1]; })
+  return data.slice(1)
+    .filter(function(r) {
+      return r[0] && r[1] && (!itemCode || String(r[0]).trim() === String(itemCode).trim());
+    })
     .map(function(r) { return { itemCode: r[0], paramCode: r[1], enabled: r[2] === 'Y' || r[2] === true, stdValueOverride: r[3], tolMinOverride: r[4], tolMaxOverride: r[5] }; });
 }
 
@@ -136,7 +139,9 @@ function seedDefaultParameters() {
     ['QP017','Drop Test','','Pass/Fail','','','Test','Drop filled pack from 1m height on each face (6 faces). No leakage or structural failure.','Drop height jig / flat surface','ISTA 1A / client spec','PM/QC/017'],
     ['QP018','Leak Test','','Pass/Fail','','','Test','Submerge sealed pack in water for 30 sec. No air bubbles / water ingress.','Water bath','Internal SOP','PM/QC/018'],
     ['QP019','Label Placement','mm','As per spec','−1','+1','Measurement','Measure label position from reference edge using calliper. Check top, bottom, side offsets.','Vernier calliper, steel rule','Label spec drawing','PM/QC/019'],
-    ['QP020','Quantity / Count','pcs','As per spec','0','0','Count','Count units in pack/box. Must equal declared quantity exactly.','Manual count / counter','Packing spec','PM/QC/020']
+    ['QP020','Quantity / Count','pcs','As per spec','0','0','Count','Count units in pack/box. Must equal declared quantity exactly.','Manual count / counter','Packing spec','PM/QC/020'],
+    ['QP021','Gross Weight','g','As per spec','−1%','+1%','Measurement','Weigh filled and sealed pack including all packaging on calibrated balance. Record gross weight.','Calibrated weighing balance','Legal Metrology Act','PM/QC/021'],
+    ['QP022','Net Weight','g','As per spec','−0.5%','+0.5%','Measurement','Tare the empty pack, then weigh filled unit. Net weight = gross − tare. Must be within tolerance.','Calibrated weighing balance','Legal Metrology Act','PM/QC/022']
   ];
 
   params.forEach(function(p) {
