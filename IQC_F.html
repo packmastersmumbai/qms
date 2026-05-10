@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    body { min-width: 580px; }
+    body { }
     .two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     .ccp-legend { font-size:10px; color:var(--muted); margin-bottom:6px; }
     .ccp-legend span { color:var(--danger); font-weight:700; }
@@ -95,7 +95,7 @@
 <body>
 
 <div class="pm-header"><a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:4px;text-decoration:none;">‹</a>
-  <span class="logo-text">🔍 Incoming Quality Check</span>
+  <span class="logo-text"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>Incoming Quality Check</span>
   <span class="doc-badge" id="docBadge">Loading…</span>
 </div>
 
@@ -180,10 +180,10 @@
     <div class="section-title">Disposition</div>
     <div class="section-body">
       <div class="disp-grid">
-        <button class="disp-btn" id="d_acc" onclick="setDisp('ACCEPTED')">✅ ACCEPT</button>
-        <button class="disp-btn" id="d_hld" onclick="setDisp('HOLD')">⏸ HOLD</button>
-        <button class="disp-btn" id="d_rej" onclick="setDisp('REJECTED')">❌ REJECT</button>
-        <button class="disp-btn" id="d_awd" onclick="setDisp('ACCEPTED WITH DEVIATION')">⚠️ WITH DEVIATION</button>
+        <button class="disp-btn" id="d_acc" onclick="setDisp('ACCEPTED')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>ACCEPT</button>
+        <button class="disp-btn" id="d_hld" onclick="setDisp('HOLD')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>HOLD</button>
+        <button class="disp-btn" id="d_rej" onclick="setDisp('REJECTED')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>REJECT</button>
+        <button class="disp-btn" id="d_awd" onclick="setDisp('ACCEPTED WITH DEVIATION')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>WITH DEVIATION</button>
       </div>
       <div class="two-col" style="margin-top:10px;">
         <div class="field">
@@ -205,9 +205,9 @@
 </div>
 
 <!-- Sticky footer -->
-<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;">
+<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;padding-bottom:max(10px, env(safe-area-inset-bottom));border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;">
   <button class="btn-submit" id="btnSubmit" onclick="submitIQC()" style="flex:2;">Save IQC Record</button>
-  <button class="btn-wa" id="btnWA" onclick="sendWA()" style="flex:1;margin-top:0;display:none;">📲 WhatsApp</button>
+  <button class="btn-wa" id="btnWA" onclick="sendWA()" style="flex:1;margin-top:0;display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>WhatsApp</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -526,9 +526,9 @@ function submitIQC() {
           disposition: data.disposition,
           ncrRef:      document.getElementById('ncrRef').value
         };
-        showToast('✅ Saved: ' + res.docNos.join(', '), 'success');
+        showToast('Saved: ' + res.docNos.join(', '), 'success');
         document.getElementById('btnWA').style.display = 'block';
-        btn.innerHTML = '✅ Saved';
+        btn.innerHTML = 'Saved';
         setTimeout(function() { goHome(); }, 2500);
       } else {
         showToast('Error: ' + res.error, 'error');

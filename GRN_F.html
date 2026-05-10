@@ -121,7 +121,7 @@
 
 <!-- Sticky footer -->
 <div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);">
-  <button class="btn-submit" id="btnSubmit" onclick="submitGRN()">Save GRN & Open IQC →</button>
+  <button class="btn-submit" id="btnSubmit" onclick="submitGRN()">Save GRN</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -295,13 +295,13 @@ function submitGRN() {
       } else {
         showToast('Error: ' + res.error, 'error');
         btn.disabled = false;
-        btn.innerHTML = 'Save GRN & Open IQC →';
+        btn.innerHTML = 'Save GRN';
       }
     })
     .withFailureHandler(function(e) {
       showToast(e.message, 'error');
       btn.disabled = false;
-      btn.innerHTML = 'Save GRN & Open IQC →';
+      btn.innerHTML = 'Save GRN';
     })
     .saveGRN(data);
 }
@@ -311,6 +311,22 @@ function showToast(msg, type) {
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+function goHome() {
+  var hasItems = ITEMS.length > 0;
+  var hasFields = document.getElementById('supplier').value ||
+                  document.getElementById('matSearch').value;
+  if (hasItems || hasFields) {
+    if (!confirm('You have unsaved changes. Leave anyway?')) return;
+  }
+  google.script.run
+    .withSuccessHandler(function(html) {
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .getLandingHtml();
 }
 
 window.onload = init;

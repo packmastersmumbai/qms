@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    /* ── Masters-specific styles ── */
+    body { padding-bottom: 80px; }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      padding: 12px 12px 0;
+      background: var(--white);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 41px;
+      z-index: 90;
+    }
+    .tab-btn {
+      padding: 8px 20px;
+      border: none;
+      background: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      color: var(--navy);
+      border-bottom-color: var(--amber);
+    }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    /* Tab panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Table toolbar */
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+    }
+    .table-toolbar h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* Add button */
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-add:hover { background: #1A2D9E; }
+
+    /* Table wrapper */
+    .table-wrap {
+      overflow-x: auto;
+      background: var(--white);
+    }
+
+    /* Masters table */
+    .masters-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 540px;
+    }
+    .masters-table thead th {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: left;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .masters-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .masters-table tbody tr:last-child { border-bottom: none; }
+    .masters-table tbody tr:hover { background: #F0F4FF; }
+    .masters-table tbody td {
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .masters-table td.actions {
+      white-space: nowrap;
+      text-align: right;
+      padding-right: 8px;
+    }
+
+    /* Icon action buttons */
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--white);
+      cursor: pointer;
+      transition: all 0.15s;
+      padding: 0;
+    }
+    .icon-btn:hover { border-color: var(--navy); background: #EEF1FA; }
+    .icon-btn.danger:hover { border-color: var(--danger); background: #FEE2E2; }
+    .icon-btn svg { pointer-events: none; }
+
+    /* Approved pill */
+    .appr-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .appr-pill.yes { background: #DCFCE7; color: #15803D; }
+    .appr-pill.no  { background: #F3F4F6; color: #6B7280; }
+
+    /* Inline form panel */
+    .inline-form {
+      display: none;
+      background: #EEF1FA;
+      border-top: 2px solid var(--navy);
+      padding: 14px 12px;
+    }
+    .inline-form.open { display: block; }
+    .inline-form h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 480px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+    .form-grid .field { margin-bottom: 0; }
+    .field .field-error {
+      font-size: 11px;
+      color: var(--danger);
+      margin-top: 3px;
+      display: none;
+    }
+    .field input.invalid,
+    .field select.invalid {
+      border-color: var(--danger);
+    }
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .btn-save {
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      padding: 9px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-save:hover { background: #1A2D9E; }
+    .btn-save:disabled { background: #9CA3AF; cursor: not-allowed; }
+    .btn-cancel {
+      background: var(--white);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-cancel:hover { border-color: var(--navy); }
+
+    /* Approved toggle in form */
+    .appr-toggle-wrap {
+      display: flex;
+      gap: 8px;
+    }
+    .appr-toggle {
+      flex: 1;
+      padding: 8px 4px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .appr-toggle.sel-yes { background: #DCFCE7; border-color: #16A34A; color: #15803D; }
+    .appr-toggle.sel-no  { background: #F3F4F6; border-color: #9CA3AF; color: #6B7280; }
+
+    /* Skeleton loading rows */
+    .skel-row td {
+      padding: 10px;
+    }
+    .skel-cell {
+      height: 14px;
+      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="pm-header">
+  <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;margin-right:2px;text-decoration:none;line-height:1;">&#8249;</a>
+  <span class="logo-text">Masters</span>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-suppliers" onclick="switchTab('suppliers')">Suppliers</button>
+  <button class="tab-btn" id="tab-materials" onclick="switchTab('materials')">Items (RM)</button>
+  <button class="tab-btn" id="tab-fg" onclick="switchTab('fg')">FG</button>
+  <button class="tab-btn" id="tab-parameters" onclick="switchTab('parameters')">Parameters</button>
+  <button class="tab-btn" id="tab-customers" onclick="switchTab('customers')">Customers</button>
+  <button class="tab-btn" id="tab-inspectors" onclick="switchTab('inspectors')">Inspectors</button>
+</div>
+
+<!-- ════ SUPPLIERS TAB ════ -->
+<div class="tab-panel active" id="panel-suppliers">
+  <div class="table-toolbar">
+    <h2>Supplier List</h2>
+    <button class="btn-add" onclick="openAddForm('supplier')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Supplier
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table class="masters-table" id="suppliers-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Contact</th>
+          <th>Phone</th>
+          <th>Material Supplied</th>
+          <th>City</th>
+          <th>Approved</th>
+          <th style="width:72px;"></th>
+        </tr>
+      </thead>
+      <tbody id="suppliers-tbody">
+        <!-- skeleton rows inserted by JS -->
+      </tbody>
+    </table>
+  </div>
+  <!-- Inline form: Supplier -->
+  <div class="inline-form" id="supplier-form">
+    <h3 id="supplier-form-title">Add Supplier</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Code <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="s-code" placeholder="e.g. SUP001" autocomplete="off">
+        <div class="field-error" id="s-code-err">Code is required</div>
+      </div>
+      <div class="field">
+        <label>Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="s-name" placeholder="Supplier name" autocomplete="off">
+        <div class="field-error" id="s-name-err">Name is required</div>
+      </div>
+      <div class="field">
+        <label>Contact Person</label>
+        <input type="text" id="s-contact" placeholder="Contact name" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="s-phone" placeholder="+91 XXXXX XXXXX" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Material Supplied</label>
+        <input type="text" id="s-material" placeholder="e.g. Labels, Cartons" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="s-city" placeholder="e.g. Mumbai" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Approved</label>
+        <div class="appr-toggle-wrap">
+          <button type="button" class="appr-toggle sel-yes" id="s-appr-yes" onclick="setApproved('s', 'Y')">Yes</button>
+          <button type="button" class="appr-toggle" id="s-appr-no" onclick="setApproved('s', 'N')">No</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="supplier-save-btn" onclick="saveSupplier()">Save</button>
+      <button class="btn-cancel" onclick="closeForm('supplier')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MATERIALS TAB ════ -->
+<div class="tab-panel" id="panel-materials">
+  <div class="table-toolbar">
+    <h2>Item / Material List</h2>
+    <button class="btn-add" onclick="openAddForm('material')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Item
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table class="masters-table" id="materials-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Description</th>
+          <th>Unit</th>
+          <th>Category</th>
+          <th style="width:72px;"></th>
+        </tr>
+      </thead>
+      <tbody id="materials-tbody">
+        <!-- skeleton rows inserted by JS -->
+      </tbody>
+    </table>
+  </div>
+  <!-- Inline form: Material -->
+  <div class="inline-form" id="material-form">
+    <h3 id="material-form-title">Add Item</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Code <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="m-code" placeholder="e.g. MAT001" autocomplete="off">
+        <div class="field-error" id="m-code-err">Code is required</div>
+      </div>
+      <div class="field">
+        <label>Description <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="m-desc" placeholder="Item description" autocomplete="off">
+        <div class="field-error" id="m-desc-err">Description is required</div>
+      </div>
+      <div class="field">
+        <label>Unit</label>
+        <select id="m-unit">
+          <option value="KG">KG</option>
+          <option value="PC">PC</option>
+          <option value="M">M</option>
+          <option value="LTR">LTR</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="m-cat">
+          <option value="BULK">BULK</option>
+          <option value="LABEL">LABEL</option>
+          <option value="TAPE">TAPE</option>
+          <option value="CANS">CANS</option>
+          <option value="CARTONS">CARTONS</option>
+          <option value="BOTTLES">BOTTLES</option>
+          <option value="PLUG">PLUG</option>
+          <option value="CAP">CAP</option>
+          <option value="RIBBON">RIBBON</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="material-save-btn" onclick="saveMaterial()">Save</button>
+      <button class="btn-cancel" onclick="closeForm('material')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ FG TAB ════ -->
+<div class="tab-panel" id="panel-fg">
+  <div class="table-toolbar">
+    <h2>Finished Goods List</h2>
+    <button class="btn-add" onclick="openAddFormExt('fg')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add FG
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table class="masters-table" id="fg-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>UOM</th>
+          <th>Description</th>
+          <th style="width:72px;"></th>
+        </tr>
+      </thead>
+      <tbody id="fg-tbody"></tbody>
+    </table>
+  </div>
+  <div class="inline-form" id="fg-form">
+    <h3 id="fg-form-title">Add Finished Good</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Code <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="fg-code" placeholder="e.g. FG001" autocomplete="off">
+        <div class="field-error" id="fg-code-err">Code is required</div>
+      </div>
+      <div class="field">
+        <label>Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="fg-name" placeholder="FG name" autocomplete="off">
+        <div class="field-error" id="fg-name-err">Name is required</div>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <input type="text" id="fg-category" placeholder="e.g. Labels, Cartons" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>UOM</label>
+        <select id="fg-uom">
+          <option value="PC">PC</option>
+          <option value="KG">KG</option>
+          <option value="M">M</option>
+          <option value="LTR">LTR</option>
+          <option value="BOX">BOX</option>
+          <option value="ROLL">ROLL</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Description</label>
+        <input type="text" id="fg-desc" placeholder="Brief description" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="fg-save-btn" onclick="saveFG()">Save</button>
+      <button class="btn-cancel" onclick="closeForm('fg')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PARAMETERS TAB ════ -->
+<div class="tab-panel" id="panel-parameters">
+  <div class="table-toolbar">
+    <h2>Quality Parameters Library</h2>
+    <button class="btn-add" onclick="openAddFormExt('parameter')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Parameter
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table class="masters-table" id="parameters-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Unit</th>
+          <th>Std Value</th>
+          <th>Min</th>
+          <th>Max</th>
+          <th>Method</th>
+          <th>Tools</th>
+          <th>Doc Ref</th>
+          <th>Doc No.</th>
+          <th style="width:72px;"></th>
+        </tr>
+      </thead>
+      <tbody id="parameters-tbody"></tbody>
+    </table>
+  </div>
+  <div class="inline-form" id="parameter-form">
+    <h3 id="parameter-form-title">Add Quality Parameter</h3>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="field">
+        <label>Code <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="p-code" placeholder="e.g. QP001" autocomplete="off">
+        <div class="field-error" id="p-code-err">Code is required</div>
+      </div>
+      <div class="field">
+        <label>Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="p-name" placeholder="Parameter name" autocomplete="off">
+        <div class="field-error" id="p-name-err">Name is required</div>
+      </div>
+      <div class="field">
+        <label>Unit</label>
+        <input type="text" id="p-unit" placeholder="e.g. mm, gsm, %" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Standard Value</label>
+        <input type="text" id="p-std" placeholder="e.g. 75" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Tolerance Min</label>
+        <input type="text" id="p-min" placeholder="e.g. 70" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Tolerance Max</label>
+        <input type="text" id="p-max" placeholder="e.g. 80" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Method Type</label>
+        <select id="p-method">
+          <option value="Visual">Visual</option>
+          <option value="Measurement">Measurement</option>
+          <option value="Test">Test</option>
+          <option value="Weight">Weight</option>
+          <option value="Count">Count</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tools Required</label>
+        <input type="text" id="p-tools" placeholder="e.g. Vernier, Scale" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Doc Reference</label>
+        <input type="text" id="p-docref" placeholder="e.g. SOP-QC-001" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Doc Number</label>
+        <input type="text" id="p-docno" placeholder="e.g. PM/QC/001" autocomplete="off">
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Check Brief (How to check)</label>
+        <input type="text" id="p-checkbrief" placeholder="Brief description of how to perform this check" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="parameter-save-btn" onclick="saveParameter()">Save</button>
+      <button class="btn-cancel" onclick="closeForm('parameter')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ CUSTOMERS TAB ════ -->
+<div class="tab-panel" id="panel-customers">
+  <div class="table-toolbar">
+    <h2>Customer List</h2>
+    <button class="btn-add" onclick="openAddForm('customer')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Customer
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table class="masters-table" id="customers-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Contact</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Products</th>
+          <th>City</th>
+          <th style="width:72px;"></th>
+        </tr>
+      </thead>
+      <tbody id="customers-tbody">
+        <!-- skeleton rows inserted by JS -->
+      </tbody>
+    </table>
+  </div>
+  <!-- Inline form: Customer -->
+  <div class="inline-form" id="customer-form">
+    <h3 id="customer-form-title">Add Customer</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Code <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="c-code" placeholder="e.g. CUST001" autocomplete="off">
+        <div class="field-error" id="c-code-err">Code is required</div>
+      </div>
+      <div class="field">
+        <label>Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="c-name" placeholder="Customer name" autocomplete="off">
+        <div class="field-error" id="c-name-err">Name is required</div>
+      </div>
+      <div class="field">
+        <label>Contact Person</label>
+        <input type="text" id="c-contact" placeholder="Contact name" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="c-phone" placeholder="+91 XXXXX XXXXX" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="c-email" placeholder="email@example.com" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Products</label>
+        <input type="text" id="c-products" placeholder="e.g. Labels, Cartons" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="c-city" placeholder="e.g. Mumbai" autocomplete="off">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="customer-save-btn" onclick="saveCustomer()">Save</button>
+      <button class="btn-cancel" onclick="closeForm('customer')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ INSPECTORS TAB ════ -->
+<div class="tab-panel" id="panel-inspectors">
+  <div class="table-toolbar">
+    <h2>Inspector / Personnel List</h2>
+    <button class="btn-add" onclick="openAddForm('inspector')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Inspector
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table class="masters-table" id="inspectors-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role / Designation</th>
+          <th>Department</th>
+          <th>WhatsApp No.</th>
+          <th>Notify (Y/N)</th>
+          <th style="width:72px;"></th>
+        </tr>
+      </thead>
+      <tbody id="inspectors-tbody">
+        <!-- skeleton rows inserted by JS -->
+      </tbody>
+    </table>
+  </div>
+  <!-- Inline form: Inspector -->
+  <div class="inline-form" id="inspector-form">
+    <h3 id="inspector-form-title">Add Inspector</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="i-name" placeholder="Full name" autocomplete="off">
+        <div class="field-error" id="i-name-err">Name is required</div>
+      </div>
+      <div class="field">
+        <label>Role / Designation <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="i-role" placeholder="e.g. QC Inspector" autocomplete="off">
+        <div class="field-error" id="i-role-err">Role is required</div>
+      </div>
+      <div class="field">
+        <label>Department</label>
+        <input type="text" id="i-dept" placeholder="e.g. Quality" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>WhatsApp No.</label>
+        <input type="tel" id="i-phone" placeholder="+91 XXXXX XXXXX" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Notify</label>
+        <div class="appr-toggle-wrap">
+          <button type="button" class="appr-toggle sel-yes" id="i-notify-yes" onclick="setNotify('Y')">Yes</button>
+          <button type="button" class="appr-toggle" id="i-notify-no" onclick="setNotify('N')">No</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="inspector-save-btn" onclick="saveInspector()">Save</button>
+      <button class="btn-cancel" onclick="closeForm('inspector')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────
+  var suppliersData  = [];
+  var materialsData  = [];
+  var fgData         = [];
+  var parametersData = [];
+  var customersData  = [];
+  var inspectorsData = [];
+  var activeTab      = 'suppliers';
+  var supplierMode   = null;  // 'add' | 'edit'
+  var materialMode   = null;
+  var fgMode         = null;
+  var parameterMode  = null;
+  var customerMode   = null;
+  var inspectorMode  = null;
+  var supplierEditCode  = null;
+  var materialEditCode  = null;
+  var fgEditCode        = null;
+  var parameterEditCode = null;
+  var customerEditCode  = null;
+  var inspectorEditName = null;
+  var supplierApproved = 'Y';
+  var inspectorNotify  = 'Y';
+
+  // ── Tab switching ─────────────────────────────────────────────────
+  var ALL_TABS = ['suppliers', 'materials', 'fg', 'parameters', 'customers', 'inspectors'];
+
+  function switchTab(tab) {
+    var modeMap = { suppliers: supplierMode, materials: materialMode, fg: fgMode,
+                    parameters: parameterMode, customers: customerMode, inspectors: inspectorMode };
+    if (modeMap[activeTab] && tab !== activeTab) {
+      if (!confirm('You have unsaved changes. Discard and switch tab?')) return;
+    }
+    closeForm('supplier'); closeForm('material'); closeForm('fg');
+    closeForm('parameter'); closeForm('customer'); closeForm('inspector');
+
+    activeTab = tab;
+    ALL_TABS.forEach(function(t) {
+      document.getElementById('tab-' + t).classList.toggle('active', tab === t);
+      document.getElementById('panel-' + t).classList.toggle('active', tab === t);
+    });
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show' + (type ? ' ' + type : '');
+    setTimeout(function() { t.className = ''; }, 2800);
+  }
+
+  // ── Skeleton loader ────────────────────────────────────────────────
+  function renderSkeleton(tbodyId, colCount) {
+    var html = '';
+    for (var i = 0; i < 3; i++) {
+      html += '<tr class="skel-row">';
+      for (var j = 0; j < colCount; j++) {
+        html += '<td><div class="skel-cell" style="width:' + (60 + Math.random()*30|0) + '%"></div></td>';
+      }
+      html += '</tr>';
+    }
+    document.getElementById(tbodyId).innerHTML = html;
+  }
+
+  // ── Load data on page ready ────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    renderSkeleton('suppliers-tbody',  8);
+    renderSkeleton('materials-tbody',  5);
+    renderSkeleton('fg-tbody',         6);
+    renderSkeleton('parameters-tbody', 11);
+    renderSkeleton('customers-tbody',  8);
+    renderSkeleton('inspectors-tbody', 6);
+    google.script.run
+      .withSuccessHandler(function(data) {
+        suppliersData  = data.suppliers  || [];
+        materialsData  = data.materials  || [];
+        fgData         = data.fg         || [];
+        parametersData = data.parameters || [];
+        customersData  = data.customers  || [];
+        inspectorsData = data.inspectors || [];
+        renderSuppliers();
+        renderMaterials();
+        renderFG();
+        renderParameters();
+        renderCustomers();
+        renderInspectors();
+      })
+      .withFailureHandler(function(err) {
+        showToast('Failed to load data: ' + (err.message || err), 'error');
+      })
+      .getMastersData();
+  });
+
+  // ── Render suppliers table ─────────────────────────────────────────
+  function renderSuppliers() {
+    var tbody = document.getElementById('suppliers-tbody');
+    if (!suppliersData.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No suppliers yet. Add one above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = suppliersData.map(function(s) {
+      var approvedHtml = '<button class="appr-pill ' + (s.approved === 'Y' ? 'yes' : 'no') +
+        '" onclick="toggleApprovedInline(\'' + esc(s.code) + '\')">' +
+        (s.approved === 'Y' ? 'Approved' : 'Not Approved') + '</button>';
+      return '<tr>' +
+        '<td>' + esc(s.code) + '</td>' +
+        '<td>' + esc(s.name) + '</td>' +
+        '<td>' + esc(s.contact || '') + '</td>' +
+        '<td>' + esc(s.phone || '') + '</td>' +
+        '<td>' + esc(s.material || '') + '</td>' +
+        '<td>' + esc(s.city || '') + '</td>' +
+        '<td>' + approvedHtml + '</td>' +
+        '<td class="actions">' +
+          '<button class="icon-btn" title="Edit" onclick="editSupplier(\'' + esc(s.code) + '\')">' +
+            iconPencil() +
+          '</button> ' +
+          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'supplier\', \'' + esc(s.code) + '\')">' +
+            iconTrash() +
+          '</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // ── Render materials table ─────────────────────────────────────────
+  function renderMaterials() {
+    var tbody = document.getElementById('materials-tbody');
+    if (!materialsData.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No items yet. Add one above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = materialsData.map(function(m) {
+      return '<tr>' +
+        '<td>' + esc(m.code) + '</td>' +
+        '<td>' + esc(m.desc || m.description || '') + '</td>' +
+        '<td>' + esc(m.unit || '') + '</td>' +
+        '<td>' + esc(m.category || '') + '</td>' +
+        '<td class="actions">' +
+          '<button class="icon-btn" title="Edit" onclick="editMaterial(\'' + esc(m.code) + '\')">' +
+            iconPencil() +
+          '</button> ' +
+          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'material\', \'' + esc(m.code) + '\')">' +
+            iconTrash() +
+          '</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // ── Render customers table ────────────────────────────────────────
+  function renderCustomers() {
+    var tbody = document.getElementById('customers-tbody');
+    if (!customersData.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No customers yet. Add one above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = customersData.map(function(c) {
+      return '<tr>' +
+        '<td>' + esc(c.code) + '</td>' +
+        '<td>' + esc(c.name) + '</td>' +
+        '<td>' + esc(c.contact || '') + '</td>' +
+        '<td>' + esc(c.phone || '') + '</td>' +
+        '<td>' + esc(c.email || '') + '</td>' +
+        '<td>' + esc(c.products || '') + '</td>' +
+        '<td>' + esc(c.city || '') + '</td>' +
+        '<td class="actions">' +
+          '<button class="icon-btn" title="Edit" onclick="editCustomer(\'' + esc(c.code) + '\')">' +
+            iconPencil() +
+          '</button> ' +
+          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'customer\', \'' + esc(c.code) + '\')">' +
+            iconTrash() +
+          '</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // ── Render inspectors table ───────────────────────────────────────
+  function renderInspectors() {
+    var tbody = document.getElementById('inspectors-tbody');
+    if (!inspectorsData.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No inspectors yet. Add one above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = inspectorsData.map(function(p) {
+      var notifyHtml = '<button class="appr-pill ' + (p.notify === 'Y' ? 'yes' : 'no') +
+        '" onclick="toggleNotifyInline(\'' + esc(p.name) + '\')">' +
+        (p.notify === 'Y' ? 'Yes' : 'No') + '</button>';
+      return '<tr>' +
+        '<td>' + esc(p.name) + '</td>' +
+        '<td>' + esc(p.role || '') + '</td>' +
+        '<td>' + esc(p.dept || '') + '</td>' +
+        '<td>' + esc(p.phone || '') + '</td>' +
+        '<td>' + notifyHtml + '</td>' +
+        '<td class="actions">' +
+          '<button class="icon-btn" title="Edit" onclick="editInspector(\'' + esc(p.name) + '\')">' +
+            iconPencil() +
+          '</button> ' +
+          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'inspector\', \'' + esc(p.name) + '\')">' +
+            iconTrash() +
+          '</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // ── SVG icons ─────────────────────────────────────────────────────
+  function iconPencil() {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0D1B6E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+  }
+  function iconTrash() {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  }
+  function iconPlus() {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  }
+
+  // ── HTML escape ────────────────────────────────────────────────────
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── Open add form ─────────────────────────────────────────────────
+  function openAddForm(type) {
+    if (type === 'supplier') {
+      supplierMode = 'add';
+      supplierEditCode = null;
+      supplierApproved = 'Y';
+      clearSupplierForm();
+      document.getElementById('supplier-form-title').textContent = 'Add Supplier';
+      document.getElementById('supplier-save-btn').textContent = 'Save';
+      document.getElementById('supplier-form').classList.add('open');
+      document.getElementById('supplier-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (type === 'material') {
+      materialMode = 'add';
+      materialEditCode = null;
+      clearMaterialForm();
+      document.getElementById('material-form-title').textContent = 'Add Item';
+      document.getElementById('material-save-btn').textContent = 'Save';
+      document.getElementById('material-form').classList.add('open');
+      document.getElementById('material-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (type === 'customer') {
+      customerMode = 'add';
+      customerEditCode = null;
+      clearCustomerForm();
+      document.getElementById('customer-form-title').textContent = 'Add Customer';
+      document.getElementById('customer-save-btn').textContent = 'Save';
+      document.getElementById('customer-form').classList.add('open');
+      document.getElementById('customer-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (type === 'inspector') {
+      inspectorMode = 'add';
+      inspectorEditName = null;
+      inspectorNotify = 'Y';
+      clearInspectorForm();
+      document.getElementById('inspector-form-title').textContent = 'Add Inspector';
+      document.getElementById('inspector-save-btn').textContent = 'Save';
+      document.getElementById('inspector-form').classList.add('open');
+      document.getElementById('inspector-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function clearSupplierForm() {
+    ['s-code','s-name','s-contact','s-phone','s-material','s-city'].forEach(function(id) {
+      document.getElementById(id).value = '';
+      document.getElementById(id).classList.remove('invalid');
+    });
+    ['s-code-err','s-name-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+    setApproved('s', 'Y');
+  }
+
+  function clearMaterialForm() {
+    document.getElementById('m-code').value = '';
+    document.getElementById('m-desc').value = '';
+    document.getElementById('m-unit').value = 'KG';
+    document.getElementById('m-cat').value = 'BULK';
+    ['m-code','m-desc'].forEach(function(id) {
+      document.getElementById(id).classList.remove('invalid');
+    });
+    ['m-code-err','m-desc-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+
+  function clearCustomerForm() {
+    ['c-code','c-name','c-contact','c-phone','c-email','c-products','c-city'].forEach(function(id) {
+      document.getElementById(id).value = '';
+      document.getElementById(id).classList.remove('invalid');
+    });
+    ['c-code-err','c-name-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+
+  function clearInspectorForm() {
+    ['i-name','i-role','i-dept','i-phone'].forEach(function(id) {
+      document.getElementById(id).value = '';
+      document.getElementById(id).classList.remove('invalid');
+    });
+    ['i-name-err','i-role-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+    setNotify('Y');
+  }
+
+  // ── Approved toggle ────────────────────────────────────────────────
+  function setApproved(prefix, val) {
+    supplierApproved = val;
+    var yBtn = document.getElementById(prefix + '-appr-yes');
+    var nBtn = document.getElementById(prefix + '-appr-no');
+    yBtn.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
+    nBtn.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
+  }
+
+  // ── Notify toggle (inspector form) ───────────────────────────────
+  function setNotify(val) {
+    inspectorNotify = val;
+    var yBtn = document.getElementById('i-notify-yes');
+    var nBtn = document.getElementById('i-notify-no');
+    yBtn.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
+    nBtn.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
+  }
+
+  // ── Toggle approved inline (pill click in table) ───────────────────
+  function toggleApprovedInline(code) {
+    var s = suppliersData.find(function(x) { return x.code === code; });
+    if (!s) return;
+    var newVal = s.approved === 'Y' ? 'N' : 'Y';
+    var updated = Object.assign({}, s, { approved: newVal });
+    google.script.run
+      .withSuccessHandler(function() {
+        s.approved = newVal;
+        renderSuppliers();
+        showToast(code + ' approval updated', 'success');
+      })
+      .withFailureHandler(function(err) {
+        showToast('Update failed: ' + (err.message || err), 'error');
+      })
+      .saveMaster('supplier', updated);
+  }
+
+  // ── Toggle notify inline (pill click in inspectors table) ────────
+  function toggleNotifyInline(name) {
+    var p = inspectorsData.find(function(x) { return x.name === name; });
+    if (!p) return;
+    var newVal = p.notify === 'Y' ? 'N' : 'Y';
+    var updated = Object.assign({}, p, { notify: newVal });
+    google.script.run
+      .withSuccessHandler(function() {
+        p.notify = newVal;
+        renderInspectors();
+        showToast(name + ' notify updated', 'success');
+      })
+      .withFailureHandler(function(err) {
+        showToast('Update failed: ' + (err.message || err), 'error');
+      })
+      .saveMaster('inspector', updated);
+  }
+
+  // ── Edit supplier ──────────────────────────────────────────────────
+  function editSupplier(code) {
+    var s = suppliersData.find(function(x) { return x.code === code; });
+    if (!s) return;
+    supplierMode = 'edit';
+    supplierEditCode = code;
+    supplierApproved = s.approved || 'Y';
+
+    document.getElementById('s-code').value = s.code || '';
+    document.getElementById('s-name').value = s.name || '';
+    document.getElementById('s-contact').value = s.contact || '';
+    document.getElementById('s-phone').value = s.phone || '';
+    document.getElementById('s-material').value = s.material || '';
+    document.getElementById('s-city').value = s.city || '';
+    setApproved('s', supplierApproved);
+
+    // Clear validation state
+    ['s-code','s-name'].forEach(function(id) {
+      document.getElementById(id).classList.remove('invalid');
+    });
+    ['s-code-err','s-name-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+
+    document.getElementById('supplier-form-title').textContent = 'Edit Supplier: ' + code;
+    document.getElementById('supplier-save-btn').textContent = 'Update';
+    document.getElementById('supplier-form').classList.add('open');
+    document.getElementById('supplier-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Edit material ──────────────────────────────────────────────────
+  function editMaterial(code) {
+    var m = materialsData.find(function(x) { return x.code === code; });
+    if (!m) return;
+    materialMode = 'edit';
+    materialEditCode = code;
+
+    document.getElementById('m-code').value = m.code || '';
+    document.getElementById('m-desc').value = m.desc || m.description || '';
+    document.getElementById('m-unit').value = m.unit || 'KG';
+    document.getElementById('m-cat').value = m.category || 'BULK';
+
+    ['m-code','m-desc'].forEach(function(id) {
+      document.getElementById(id).classList.remove('invalid');
+    });
+    ['m-code-err','m-desc-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+
+    document.getElementById('material-form-title').textContent = 'Edit Item: ' + code;
+    document.getElementById('material-save-btn').textContent = 'Update';
+    document.getElementById('material-form').classList.add('open');
+    document.getElementById('material-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Edit customer ─────────────────────────────────────────────────
+  function editCustomer(code) {
+    var c = customersData.find(function(x) { return x.code === code; });
+    if (!c) return;
+    customerMode = 'edit';
+    customerEditCode = code;
+
+    document.getElementById('c-code').value    = c.code    || '';
+    document.getElementById('c-name').value    = c.name    || '';
+    document.getElementById('c-contact').value = c.contact || '';
+    document.getElementById('c-phone').value   = c.phone   || '';
+    document.getElementById('c-email').value   = c.email   || '';
+    document.getElementById('c-products').value= c.products|| '';
+    document.getElementById('c-city').value    = c.city    || '';
+
+    ['c-code','c-name'].forEach(function(id) {
+      document.getElementById(id).classList.remove('invalid');
+    });
+    ['c-code-err','c-name-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+
+    document.getElementById('customer-form-title').textContent = 'Edit Customer: ' + code;
+    document.getElementById('customer-save-btn').textContent = 'Update';
+    document.getElementById('customer-form').classList.add('open');
+    document.getElementById('customer-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Edit inspector ────────────────────────────────────────────────
+  function editInspector(name) {
+    var p = inspectorsData.find(function(x) { return x.name === name; });
+    if (!p) return;
+    inspectorMode = 'edit';
+    inspectorEditName = name;
+    inspectorNotify = p.notify || 'Y';
+
+    document.getElementById('i-name').value  = p.name  || '';
+    document.getElementById('i-role').value  = p.role  || '';
+    document.getElementById('i-dept').value  = p.dept  || '';
+    document.getElementById('i-phone').value = p.phone || '';
+    setNotify(inspectorNotify);
+
+    ['i-name','i-role'].forEach(function(id) {
+      document.getElementById(id).classList.remove('invalid');
+    });
+    ['i-name-err','i-role-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+
+    document.getElementById('inspector-form-title').textContent = 'Edit Inspector: ' + name;
+    document.getElementById('inspector-save-btn').textContent = 'Update';
+    document.getElementById('inspector-form').classList.add('open');
+    document.getElementById('inspector-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Close form ────────────────────────────────────────────────────
+  function closeForm(type) {
+    if (type === 'supplier') {
+      supplierMode = null;
+      supplierEditCode = null;
+      document.getElementById('supplier-form').classList.remove('open');
+    } else if (type === 'material') {
+      materialMode = null;
+      materialEditCode = null;
+      document.getElementById('material-form').classList.remove('open');
+    } else if (type === 'customer') {
+      customerMode = null;
+      customerEditCode = null;
+      document.getElementById('customer-form').classList.remove('open');
+    } else if (type === 'inspector') {
+      inspectorMode = null;
+      inspectorEditName = null;
+      document.getElementById('inspector-form').classList.remove('open');
+    } else if (type === 'fg') {
+      fgMode = null;
+      fgEditCode = null;
+      document.getElementById('fg-form').classList.remove('open');
+    } else if (type === 'parameter') {
+      parameterMode = null;
+      parameterEditCode = null;
+      document.getElementById('parameter-form').classList.remove('open');
+    }
+  }
+
+  // ── Validate supplier form ─────────────────────────────────────────
+  function validateSupplierForm() {
+    var valid = true;
+    var code = document.getElementById('s-code').value.trim();
+    var name = document.getElementById('s-name').value.trim();
+
+    if (!code) {
+      document.getElementById('s-code').classList.add('invalid');
+      document.getElementById('s-code-err').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('s-code').classList.remove('invalid');
+      document.getElementById('s-code-err').style.display = 'none';
+    }
+    if (!name) {
+      document.getElementById('s-name').classList.add('invalid');
+      document.getElementById('s-name-err').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('s-name').classList.remove('invalid');
+      document.getElementById('s-name-err').style.display = 'none';
+    }
+    return valid;
+  }
+
+  // ── Validate material form ─────────────────────────────────────────
+  function validateMaterialForm() {
+    var valid = true;
+    var code = document.getElementById('m-code').value.trim();
+    var desc = document.getElementById('m-desc').value.trim();
+
+    if (!code) {
+      document.getElementById('m-code').classList.add('invalid');
+      document.getElementById('m-code-err').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('m-code').classList.remove('invalid');
+      document.getElementById('m-code-err').style.display = 'none';
+    }
+    if (!desc) {
+      document.getElementById('m-desc').classList.add('invalid');
+      document.getElementById('m-desc-err').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('m-desc').classList.remove('invalid');
+      document.getElementById('m-desc-err').style.display = 'none';
+    }
+    return valid;
+  }
+
+  // ── Validate customer form ────────────────────────────────────────
+  function validateCustomerForm() {
+    var valid = true;
+    var code = document.getElementById('c-code').value.trim();
+    var name = document.getElementById('c-name').value.trim();
+
+    if (!code) {
+      document.getElementById('c-code').classList.add('invalid');
+      document.getElementById('c-code-err').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('c-code').classList.remove('invalid');
+      document.getElementById('c-code-err').style.display = 'none';
+    }
+    if (!name) {
+      document.getElementById('c-name').classList.add('invalid');
+      document.getElementById('c-name-err').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('c-name').classList.remove('invalid');
+      document.getElementById('c-name-err').style.display = 'none';
+    }
+    return valid;
+  }
+
+  // ── Validate inspector form ───────────────────────────────────────
+  function validateInspectorForm() {
+    var valid = true;
+    var name = document.getElementById('i-name').value.trim();
+    var role = document.getElementById('i-role').value.trim();
+
+    if (!name) {
+      document.getElementById('i-name').classList.add('invalid');
+      document.getElementById('i-name-err').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('i-name').classList.remove('invalid');
+      document.getElementById('i-name-err').style.display = 'none';
+    }
+    if (!role) {
+      document.getElementById('i-role').classList.add('invalid');
+      document.getElementById('i-role-err').style.display = 'block';
+      valid = false;
+    } else {
+      document.getElementById('i-role').classList.remove('invalid');
+      document.getElementById('i-role-err').style.display = 'none';
+    }
+    return valid;
+  }
+
+  // ── Save supplier ──────────────────────────────────────────────────
+  function saveSupplier() {
+    if (!validateSupplierForm()) return;
+
+    var data = {
+      code:     document.getElementById('s-code').value.trim(),
+      name:     document.getElementById('s-name').value.trim(),
+      contact:  document.getElementById('s-contact').value.trim(),
+      phone:    document.getElementById('s-phone').value.trim(),
+      material: document.getElementById('s-material').value.trim(),
+      city:     document.getElementById('s-city').value.trim(),
+      approved: supplierApproved
+    };
+
+    var btn = document.getElementById('supplier-save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        if (supplierMode === 'add') {
+          suppliersData.push(data);
+          showToast('Supplier added', 'success');
+        } else {
+          var idx = suppliersData.findIndex(function(x) { return x.code === supplierEditCode; });
+          if (idx !== -1) suppliersData[idx] = data;
+          showToast('Supplier updated', 'success');
+        }
+        renderSuppliers();
+        closeForm('supplier');
+        btn.disabled = false;
+      })
+      .withFailureHandler(function(err) {
+        showToast('Save failed: ' + (err.message || err), 'error');
+        btn.disabled = false;
+        btn.textContent = supplierMode === 'edit' ? 'Update' : 'Save';
+      })
+      .saveMaster('supplier', data);
+  }
+
+  // ── Save material ──────────────────────────────────────────────────
+  function saveMaterial() {
+    if (!validateMaterialForm()) return;
+
+    var data = {
+      code:     document.getElementById('m-code').value.trim(),
+      desc:     document.getElementById('m-desc').value.trim(),
+      unit:     document.getElementById('m-unit').value,
+      category: document.getElementById('m-cat').value
+    };
+
+    var btn = document.getElementById('material-save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        if (materialMode === 'add') {
+          materialsData.push(data);
+          showToast('Item added', 'success');
+        } else {
+          var idx = materialsData.findIndex(function(x) { return x.code === materialEditCode; });
+          if (idx !== -1) materialsData[idx] = data;
+          showToast('Item updated', 'success');
+        }
+        renderMaterials();
+        closeForm('material');
+        btn.disabled = false;
+      })
+      .withFailureHandler(function(err) {
+        showToast('Save failed: ' + (err.message || err), 'error');
+        btn.disabled = false;
+        btn.textContent = materialMode === 'edit' ? 'Update' : 'Save';
+      })
+      .saveMaster('material', data);
+  }
+
+  // ── Save customer ─────────────────────────────────────────────────
+  function saveCustomer() {
+    if (!validateCustomerForm()) return;
+
+    var data = {
+      code:     document.getElementById('c-code').value.trim(),
+      name:     document.getElementById('c-name').value.trim(),
+      contact:  document.getElementById('c-contact').value.trim(),
+      phone:    document.getElementById('c-phone').value.trim(),
+      email:    document.getElementById('c-email').value.trim(),
+      products: document.getElementById('c-products').value.trim(),
+      city:     document.getElementById('c-city').value.trim()
+    };
+
+    var btn = document.getElementById('customer-save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        if (customerMode === 'add') {
+          customersData.push(data);
+          showToast('Customer added', 'success');
+        } else {
+          var idx = customersData.findIndex(function(x) { return x.code === customerEditCode; });
+          if (idx !== -1) customersData[idx] = data;
+          showToast('Customer updated', 'success');
+        }
+        renderCustomers();
+        closeForm('customer');
+        btn.disabled = false;
+      })
+      .withFailureHandler(function(err) {
+        showToast('Save failed: ' + (err.message || err), 'error');
+        btn.disabled = false;
+        btn.textContent = customerMode === 'edit' ? 'Update' : 'Save';
+      })
+      .saveMaster('customer', data);
+  }
+
+  // ── Save inspector ────────────────────────────────────────────────
+  function saveInspector() {
+    if (!validateInspectorForm()) return;
+
+    var data = {
+      name:   document.getElementById('i-name').value.trim(),
+      role:   document.getElementById('i-role').value.trim(),
+      dept:   document.getElementById('i-dept').value.trim(),
+      phone:  document.getElementById('i-phone').value.trim(),
+      notify: inspectorNotify
+    };
+
+    var btn = document.getElementById('inspector-save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        if (inspectorMode === 'add') {
+          inspectorsData.push(data);
+          showToast('Inspector added', 'success');
+        } else {
+          var idx = inspectorsData.findIndex(function(x) { return x.name === inspectorEditName; });
+          if (idx !== -1) inspectorsData[idx] = data;
+          showToast('Inspector updated', 'success');
+        }
+        renderInspectors();
+        closeForm('inspector');
+        btn.disabled = false;
+      })
+      .withFailureHandler(function(err) {
+        showToast('Save failed: ' + (err.message || err), 'error');
+        btn.disabled = false;
+        btn.textContent = inspectorMode === 'edit' ? 'Update' : 'Save';
+      })
+      .saveMaster('inspector', data);
+  }
+
+  // ── Render FG table ───────────────────────────────────────────────
+  function renderFG() {
+    var tbody = document.getElementById('fg-tbody');
+    if (!fgData.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No finished goods yet. Add one above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = fgData.map(function(f) {
+      return '<tr>' +
+        '<td>' + esc(f.code) + '</td>' +
+        '<td>' + esc(f.name) + '</td>' +
+        '<td>' + esc(f.category || '') + '</td>' +
+        '<td>' + esc(f.uom || '') + '</td>' +
+        '<td>' + esc(f.description || '') + '</td>' +
+        '<td class="actions">' +
+          '<button class="icon-btn" title="Edit" onclick="editFG(\'' + esc(f.code) + '\')">' + iconPencil() + '</button> ' +
+          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'fg\', \'' + esc(f.code) + '\')">' + iconTrash() + '</button>' +
+        '</td></tr>';
+    }).join('');
+  }
+
+  // ── Render Parameters table ───────────────────────────────────────
+  function renderParameters() {
+    var tbody = document.getElementById('parameters-tbody');
+    if (!parametersData.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No parameters yet. Add one above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = parametersData.map(function(p) {
+      return '<tr>' +
+        '<td>' + esc(p.code) + '</td>' +
+        '<td>' + esc(p.name) + '</td>' +
+        '<td>' + esc(p.unit || '') + '</td>' +
+        '<td>' + esc(p.stdValue || '') + '</td>' +
+        '<td>' + esc(p.tolMin || '') + '</td>' +
+        '<td>' + esc(p.tolMax || '') + '</td>' +
+        '<td><span style="font-size:11px;padding:2px 7px;border-radius:12px;background:#EEF1FA;color:var(--navy);font-weight:600;">' + esc(p.methodType || '') + '</span></td>' +
+        '<td>' + esc(p.tools || '') + '</td>' +
+        '<td>' + esc(p.docRef || '') + '</td>' +
+        '<td>' + esc(p.docNumber || '') + '</td>' +
+        '<td class="actions">' +
+          '<button class="icon-btn" title="Edit" onclick="editParameter(\'' + esc(p.code) + '\')">' + iconPencil() + '</button> ' +
+          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'parameter\', \'' + esc(p.code) + '\')">' + iconTrash() + '</button>' +
+        '</td></tr>';
+    }).join('');
+  }
+
+  // ── Open add form (all types) ──────────────────────────────────────
+  function openAddFormExt(type) {
+    if (type === 'fg') {
+      fgMode = 'add'; fgEditCode = null;
+      clearFGForm();
+      document.getElementById('fg-form-title').textContent = 'Add Finished Good';
+      document.getElementById('fg-save-btn').textContent = 'Save';
+      document.getElementById('fg-form').classList.add('open');
+      document.getElementById('fg-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (type === 'parameter') {
+      parameterMode = 'add'; parameterEditCode = null;
+      clearParameterForm();
+      document.getElementById('parameter-form-title').textContent = 'Add Quality Parameter';
+      document.getElementById('parameter-save-btn').textContent = 'Save';
+      document.getElementById('parameter-form').classList.add('open');
+      document.getElementById('parameter-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      openAddForm(type);
+    }
+  }
+
+  function clearFGForm() {
+    ['fg-code','fg-name','fg-category','fg-desc'].forEach(function(id) {
+      document.getElementById(id).value = '';
+      document.getElementById(id).classList.remove('invalid');
+    });
+    document.getElementById('fg-uom').value = 'PC';
+    ['fg-code-err','fg-name-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+
+  function clearParameterForm() {
+    ['p-code','p-name','p-unit','p-std','p-min','p-max','p-tools','p-docref','p-docno','p-checkbrief'].forEach(function(id) {
+      document.getElementById(id).value = '';
+      document.getElementById(id).classList.remove('invalid');
+    });
+    document.getElementById('p-method').value = 'Visual';
+    ['p-code-err','p-name-err'].forEach(function(id) {
+      document.getElementById(id).style.display = 'none';
+    });
+  }
+
+  // ── Edit FG ───────────────────────────────────────────────────────
+  function editFG(code) {
+    var f = fgData.find(function(x) { return x.code === code; });
+    if (!f) return;
+    fgMode = 'edit'; fgEditCode = code;
+    document.getElementById('fg-code').value     = f.code || '';
+    document.getElementById('fg-name').value     = f.name || '';
+    document.getElementById('fg-category').value = f.category || '';
+    document.getElementById('fg-uom').value      = f.uom || 'PC';
+    document.getElementById('fg-desc').value     = f.description || '';
+    ['fg-code','fg-name'].forEach(function(id) { document.getElementById(id).classList.remove('invalid'); });
+    ['fg-code-err','fg-name-err'].forEach(function(id) { document.getElementById(id).style.display = 'none'; });
+    document.getElementById('fg-form-title').textContent = 'Edit FG: ' + code;
+    document.getElementById('fg-save-btn').textContent = 'Update';
+    document.getElementById('fg-form').classList.add('open');
+    document.getElementById('fg-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Edit Parameter ────────────────────────────────────────────────
+  function editParameter(code) {
+    var p = parametersData.find(function(x) { return x.code === code; });
+    if (!p) return;
+    parameterMode = 'edit'; parameterEditCode = code;
+    document.getElementById('p-code').value       = p.code || '';
+    document.getElementById('p-name').value       = p.name || '';
+    document.getElementById('p-unit').value       = p.unit || '';
+    document.getElementById('p-std').value        = p.stdValue || '';
+    document.getElementById('p-min').value        = p.tolMin || '';
+    document.getElementById('p-max').value        = p.tolMax || '';
+    document.getElementById('p-method').value     = p.methodType || 'Visual';
+    document.getElementById('p-tools').value      = p.tools || '';
+    document.getElementById('p-docref').value     = p.docRef || '';
+    document.getElementById('p-docno').value      = p.docNumber || '';
+    document.getElementById('p-checkbrief').value = p.checkBrief || '';
+    ['p-code','p-name'].forEach(function(id) { document.getElementById(id).classList.remove('invalid'); });
+    ['p-code-err','p-name-err'].forEach(function(id) { document.getElementById(id).style.display = 'none'; });
+    document.getElementById('parameter-form-title').textContent = 'Edit Parameter: ' + code;
+    document.getElementById('parameter-save-btn').textContent = 'Update';
+    document.getElementById('parameter-form').classList.add('open');
+    document.getElementById('parameter-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+
+  // ── Save FG ───────────────────────────────────────────────────────
+  function saveFG() {
+    var code = document.getElementById('fg-code').value.trim();
+    var name = document.getElementById('fg-name').value.trim();
+    var valid = true;
+    if (!code) { document.getElementById('fg-code').classList.add('invalid'); document.getElementById('fg-code-err').style.display = 'block'; valid = false; }
+    else       { document.getElementById('fg-code').classList.remove('invalid'); document.getElementById('fg-code-err').style.display = 'none'; }
+    if (!name) { document.getElementById('fg-name').classList.add('invalid'); document.getElementById('fg-name-err').style.display = 'block'; valid = false; }
+    else       { document.getElementById('fg-name').classList.remove('invalid'); document.getElementById('fg-name-err').style.display = 'none'; }
+    if (!valid) return;
+
+    var data = { code: code, name: name,
+      unit: document.getElementById('fg-uom').value,
+      category: 'FG' };
+
+    var btn = document.getElementById('fg-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function() {
+        if (fgMode === 'add') { fgData.push(data); showToast('FG added', 'success'); }
+        else { var idx = fgData.findIndex(function(x) { return x.code === fgEditCode; }); if (idx !== -1) fgData[idx] = data; showToast('FG updated', 'success'); }
+        renderFG(); closeForm('fg'); btn.disabled = false;
+      })
+      .withFailureHandler(function(err) { showToast('Save failed: ' + (err.message || err), 'error'); btn.disabled = false; btn.textContent = fgMode === 'edit' ? 'Update' : 'Save'; })
+      .saveMaster('fg', data);
+  }
+
+  // ── Save Parameter ────────────────────────────────────────────────
+  function saveParameter() {
+    var code = document.getElementById('p-code').value.trim();
+    var name = document.getElementById('p-name').value.trim();
+    var valid = true;
+    if (!code) { document.getElementById('p-code').classList.add('invalid'); document.getElementById('p-code-err').style.display = 'block'; valid = false; }
+    else       { document.getElementById('p-code').classList.remove('invalid'); document.getElementById('p-code-err').style.display = 'none'; }
+    if (!name) { document.getElementById('p-name').classList.add('invalid'); document.getElementById('p-name-err').style.display = 'block'; valid = false; }
+    else       { document.getElementById('p-name').classList.remove('invalid'); document.getElementById('p-name-err').style.display = 'none'; }
+    if (!valid) return;
+
+    var data = { code: code, name: name,
+      unit:        document.getElementById('p-unit').value.trim(),
+      stdValue:    document.getElementById('p-std').value.trim(),
+      tolMin:      document.getElementById('p-min').value.trim(),
+      tolMax:      document.getElementById('p-max').value.trim(),
+      methodType:  document.getElementById('p-method').value,
+      tools:       document.getElementById('p-tools').value.trim(),
+      docRef:      document.getElementById('p-docref').value.trim(),
+      docNumber:   document.getElementById('p-docno').value.trim(),
+      checkBrief:  document.getElementById('p-checkbrief').value.trim() };
+
+    var btn = document.getElementById('parameter-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function() {
+        if (parameterMode === 'add') { parametersData.push(data); showToast('Parameter added', 'success'); }
+        else { var idx = parametersData.findIndex(function(x) { return x.code === parameterEditCode; }); if (idx !== -1) parametersData[idx] = data; showToast('Parameter updated', 'success'); }
+        renderParameters(); closeForm('parameter'); btn.disabled = false;
+      })
+      .withFailureHandler(function(err) { showToast('Save failed: ' + (err.message || err), 'error'); btn.disabled = false; btn.textContent = parameterMode === 'edit' ? 'Update' : 'Save'; })
+      .saveMaster('parameter', data);
+  }
+
+  // ── Delete record ──────────────────────────────────────────────────
+  function deleteRecord(type, code) {
+    if (!confirm('Delete ' + type + ' "' + code + '"? This cannot be undone.')) return;
+
+    google.script.run
+      .withSuccessHandler(function() {
+        if (type === 'supplier') {
+          suppliersData = suppliersData.filter(function(x) { return x.code !== code; });
+          renderSuppliers();
+          if (supplierEditCode === code) closeForm('supplier');
+        } else if (type === 'material') {
+          materialsData = materialsData.filter(function(x) { return x.code !== code; });
+          renderMaterials();
+          if (materialEditCode === code) closeForm('material');
+        } else if (type === 'customer') {
+          customersData = customersData.filter(function(x) { return x.code !== code; });
+          renderCustomers();
+          if (customerEditCode === code) closeForm('customer');
+        } else if (type === 'inspector') {
+          inspectorsData = inspectorsData.filter(function(x) { return x.name !== code; });
+          renderInspectors();
+          if (inspectorEditName === code) closeForm('inspector');
+        } else if (type === 'fg') {
+          fgData = fgData.filter(function(x) { return x.code !== code; });
+          renderFG();
+          if (fgEditCode === code) closeForm('fg');
+        } else if (type === 'parameter') {
+          parametersData = parametersData.filter(function(x) { return x.code !== code; });
+          renderParameters();
+          if (parameterEditCode === code) closeForm('parameter');
+        }
+        showToast(type.charAt(0).toUpperCase() + type.slice(1) + ' deleted', 'success');
+      })
+      .withFailureHandler(function(err) {
+        showToast('Delete failed: ' + (err.message || err), 'error');
+      })
+      .deleteMaster(type, code);
+  }
+</script>
+</body>
+</html>

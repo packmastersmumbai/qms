@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    body { padding-bottom: 80px; }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      padding: 12px 12px 0;
+      background: var(--white);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 41px;
+      z-index: 90;
+    }
+    .tab-btn {
+      padding: 8px 20px;
+      border: none;
+      background: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--amber); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Product selector bar */
+    .product-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 87px;
+      z-index: 80;
+    }
+    .product-bar label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .product-bar select {
+      flex: 1;
+      max-width: 320px;
+    }
+    .btn-save-plan {
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      padding: 7px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-save-plan:hover { background: #1A2D9E; }
+    .btn-save-plan:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+    /* Matrix table */
+    .matrix-wrap {
+      overflow-x: auto;
+      padding: 12px;
+    }
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+      background: var(--white);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .matrix-table thead th {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: left;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .matrix-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .matrix-table tbody tr:last-child { border-bottom: none; }
+    .matrix-table tbody tr.enabled-row { background: #F0FFF4; }
+    .matrix-table tbody td {
+      padding: 7px 10px;
+      font-size: 12px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    /* Enable toggle switch */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #D1D5DB;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-slider:before {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--navy); }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+    .toggle-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+    .toggle-switch input:checked ~ .toggle-label { color: #15803D; }
+
+    /* Override inputs */
+    .override-input {
+      width: 80px;
+      padding: 4px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--white);
+      transition: border-color 0.15s;
+    }
+    .override-input:focus { border-color: var(--navy); outline: none; }
+    .override-input:disabled { background: #F3F4F6; color: #9CA3AF; border-color: #E5E7EB; }
+
+    /* Method badge */
+    .method-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: #EEF1FA;
+      color: var(--navy);
+      font-weight: 600;
+    }
+
+    /* Empty / loading state */
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 32px 20px;
+    }
+    .skel-cell {
+      height: 14px;
+      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Sticky save notice */
+    .changes-notice {
+      display: none;
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 200;
+      white-space: nowrap;
+    }
+    .changes-notice.show { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="pm-header">
+  <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;margin-right:2px;text-decoration:none;line-height:1;">&#8249;</a>
+  <span class="logo-text">Control Plans</span>
+</div>
+
+<!-- Plan type tabs -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-rm" onclick="switchPlan('rm')">RM Control Plan</button>
+  <button class="tab-btn" id="tab-fg" onclick="switchPlan('fg')">FG Control Plan</button>
+</div>
+
+<!-- ════ RM PLAN ════ -->
+<div class="tab-panel active" id="panel-rm">
+  <div class="product-bar">
+    <label>RM Item:</label>
+    <select id="rm-product-select" onchange="loadRMPlan()">
+      <option value="">— Select Item —</option>
+    </select>
+    <button class="btn-save-plan" id="rm-save-btn" onclick="saveRMPlan()" disabled>Save Plan</button>
+  </div>
+  <div class="matrix-wrap">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th style="width:32px;"></th>
+          <th>Code</th>
+          <th>Parameter</th>
+          <th>Unit</th>
+          <th>Std Value</th>
+          <th>Override Std</th>
+          <th>Min</th>
+          <th>Override Min</th>
+          <th>Max</th>
+          <th>Override Max</th>
+          <th>Method</th>
+          <th>Tools</th>
+          <th>Check Brief</th>
+        </tr>
+      </thead>
+      <tbody id="rm-matrix-tbody">
+        <tr><td colspan="13" class="empty-state">Select an item to view its control plan.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════ FG PLAN ════ -->
+<div class="tab-panel" id="panel-fg">
+  <div class="product-bar">
+    <label>FG:</label>
+    <select id="fg-product-select" onchange="loadFGPlan()">
+      <option value="">— Select FG —</option>
+    </select>
+    <button class="btn-save-plan" id="fg-save-btn" onclick="saveFGPlan()" disabled>Save Plan</button>
+  </div>
+  <div class="matrix-wrap">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th style="width:32px;"></th>
+          <th>Code</th>
+          <th>Parameter</th>
+          <th>Unit</th>
+          <th>Std Value</th>
+          <th>Override Std</th>
+          <th>Min</th>
+          <th>Override Min</th>
+          <th>Max</th>
+          <th>Override Max</th>
+          <th>Method</th>
+          <th>Tools</th>
+          <th>Check Brief</th>
+        </tr>
+      </thead>
+      <tbody id="fg-matrix-tbody">
+        <tr><td colspan="13" class="empty-state">Select a finished good to view its control plan.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div class="changes-notice" id="rm-changes-notice">Unsaved changes — click Save Plan</div>
+<div class="changes-notice" id="fg-changes-notice">Unsaved changes — click Save Plan</div>
+
+<script>
+  var allParameters = [];
+  var allRM         = [];
+  var allFG         = [];
+  var rmPlanData    = {};  // { paramCode: { enabled, stdValueOverride, tolMinOverride, tolMaxOverride } }
+  var fgPlanData    = {};
+  var activePlan    = 'rm';
+
+  // ── Init ─────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    google.script.run
+      .withSuccessHandler(function(data) {
+        allParameters = data.parameters || [];
+        allRM         = data.materials  || [];
+        allFG         = data.fg         || [];
+        populateSelect('rm-product-select', allRM, 'code', 'name', 'code');
+        populateSelect('fg-product-select', allFG, 'code', 'name', 'code');
+      })
+      .withFailureHandler(function(err) {
+        showToast('Failed to load data: ' + (err.message || err), 'error');
+      })
+      .getMastersData();
+  });
+
+  function populateSelect(selectId, items, valField, labelField, codeField) {
+    var sel = document.getElementById(selectId);
+    items.forEach(function(item) {
+      var opt = document.createElement('option');
+      opt.value = item[valField];
+      opt.textContent = item[codeField] + ' — ' + item[labelField];
+      sel.appendChild(opt);
+    });
+  }
+
+  // ── Tab switch ────────────────────────────────────────────────────
+  function switchPlan(plan) {
+    activePlan = plan;
+    ['rm', 'fg'].forEach(function(p) {
+      document.getElementById('tab-' + p).classList.toggle('active', p === plan);
+      document.getElementById('panel-' + p).classList.toggle('active', p === plan);
+    });
+  }
+
+  // ── Load RM plan ──────────────────────────────────────────────────
+  function loadRMPlan() {
+    var itemCode = document.getElementById('rm-product-select').value;
+    if (!itemCode) {
+      document.getElementById('rm-matrix-tbody').innerHTML =
+        '<tr><td colspan="13" class="empty-state">Select an item to view its control plan.</td></tr>';
+      document.getElementById('rm-save-btn').disabled = true;
+      hideNotice('rm');
+      return;
+    }
+    renderSkeletonMatrix('rm-matrix-tbody', 13);
+    google.script.run
+      .withSuccessHandler(function(rows) {
+        rmPlanData = {};
+        rows.forEach(function(r) { rmPlanData[r.paramCode] = r; });
+        renderMatrix('rm', itemCode);
+        document.getElementById('rm-save-btn').disabled = false;
+        hideNotice('rm');
+      })
+      .withFailureHandler(function(err) {
+        showToast('Load failed: ' + (err.message || err), 'error');
+      })
+      .getControlPlan('rm');
+  }
+
+  // ── Load FG plan ──────────────────────────────────────────────────
+  function loadFGPlan() {
+    var fgCode = document.getElementById('fg-product-select').value;
+    if (!fgCode) {
+      document.getElementById('fg-matrix-tbody').innerHTML =
+        '<tr><td colspan="13" class="empty-state">Select a finished good to view its control plan.</td></tr>';
+      document.getElementById('fg-save-btn').disabled = true;
+      hideNotice('fg');
+      return;
+    }
+    renderSkeletonMatrix('fg-matrix-tbody', 13);
+    google.script.run
+      .withSuccessHandler(function(rows) {
+        fgPlanData = {};
+        rows.forEach(function(r) { fgPlanData[r.paramCode] = r; });
+        renderMatrix('fg', fgCode);
+        document.getElementById('fg-save-btn').disabled = false;
+        hideNotice('fg');
+      })
+      .withFailureHandler(function(err) {
+        showToast('Load failed: ' + (err.message || err), 'error');
+      })
+      .getControlPlan('fg');
+  }
+
+  // ── Render matrix rows ────────────────────────────────────────────
+  function renderMatrix(planType, itemCode) {
+    var planData = planType === 'rm' ? rmPlanData : fgPlanData;
+    var tbodyId  = planType + '-matrix-tbody';
+    var tbody = document.getElementById(tbodyId);
+
+    if (!allParameters.length) {
+      tbody.innerHTML = '<tr><td colspan="13" class="empty-state">No parameters defined yet. Add them in Masters → Parameters.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = allParameters.map(function(p) {
+      var existing = planData[p.code] || {};
+      var enabled  = existing.enabled || false;
+      var stdOvr   = existing.stdValueOverride || '';
+      var minOvr   = existing.tolMinOverride   || '';
+      var maxOvr   = existing.tolMaxOverride   || '';
+      var rowClass = enabled ? 'enabled-row' : '';
+      var dis      = enabled ? '' : 'disabled';
+
+      return '<tr class="' + rowClass + '" id="' + planType + '-row-' + esc(p.code) + '">' +
+        '<td>' +
+          '<label class="toggle-switch">' +
+            '<input type="checkbox" ' + (enabled ? 'checked' : '') + ' onchange="toggleParam(\'' + planType + '\',\'' + esc(p.code) + '\',this.checked)">' +
+            '<span class="toggle-slider"></span>' +
+          '</label>' +
+        '</td>' +
+        '<td style="font-family:monospace;font-size:11px;">' + esc(p.code) + '</td>' +
+        '<td style="font-weight:600;">' + esc(p.name) + '</td>' +
+        '<td style="color:var(--muted);">' + esc(p.unit || '') + '</td>' +
+        '<td style="color:var(--muted);">' + esc(p.stdValue || '') + '</td>' +
+        '<td><input class="override-input" type="text" ' + dis + ' id="' + planType + '-std-' + esc(p.code) + '" value="' + esc(stdOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+        '<td style="color:var(--muted);">' + esc(p.tolMin || '') + '</td>' +
+        '<td><input class="override-input" type="text" ' + dis + ' id="' + planType + '-min-' + esc(p.code) + '" value="' + esc(minOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+        '<td style="color:var(--muted);">' + esc(p.tolMax || '') + '</td>' +
+        '<td><input class="override-input" type="text" ' + dis + ' id="' + planType + '-max-' + esc(p.code) + '" value="' + esc(maxOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+        '<td><span class="method-badge">' + esc(p.methodType || '') + '</span></td>' +
+        '<td style="font-size:11px;color:var(--muted);">' + esc(p.tools || '') + '</td>' +
+        '<td style="font-size:11px;color:var(--muted);max-width:180px;">' + esc(p.checkBrief || '') + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  // ── Toggle a parameter on/off in the matrix ───────────────────────
+  function toggleParam(planType, paramCode, checked) {
+    var row = document.getElementById(planType + '-row-' + paramCode);
+    if (!row) return;
+    if (checked) {
+      row.classList.add('enabled-row');
+    } else {
+      row.classList.remove('enabled-row');
+    }
+    // Enable/disable override inputs
+    ['std', 'min', 'max'].forEach(function(field) {
+      var inp = document.getElementById(planType + '-' + field + '-' + paramCode);
+      if (inp) inp.disabled = !checked;
+    });
+    markChanged(planType);
+  }
+
+  // ── Mark plan as having unsaved changes ───────────────────────────
+  function markChanged(planType) {
+    document.getElementById(planType + '-changes-notice').classList.add('show');
+  }
+
+  function hideNotice(planType) {
+    document.getElementById(planType + '-changes-notice').classList.remove('show');
+  }
+
+  // ── Collect current matrix state into rows ────────────────────────
+  function collectPlanRows(planType, itemCode) {
+    return allParameters.map(function(p) {
+      var chk = document.querySelector('#' + planType + '-row-' + p.code + ' input[type=checkbox]');
+      var enabled = chk && chk.checked;
+      var stdInp = document.getElementById(planType + '-std-' + p.code);
+      var minInp = document.getElementById(planType + '-min-' + p.code);
+      var maxInp = document.getElementById(planType + '-max-' + p.code);
+      return {
+        itemCode:         itemCode,
+        paramCode:        p.code,
+        enabled:          enabled,
+        stdValueOverride: stdInp ? stdInp.value.trim() : '',
+        tolMinOverride:   minInp ? minInp.value.trim() : '',
+        tolMaxOverride:   maxInp ? maxInp.value.trim() : ''
+      };
+    }).filter(function(r) { return r.enabled; });
+  }
+
+  // ── Save RM plan ──────────────────────────────────────────────────
+  function saveRMPlan() {
+    var itemCode = document.getElementById('rm-product-select').value;
+    if (!itemCode) return;
+    var rows = collectPlanRows('rm', itemCode);
+    var btn = document.getElementById('rm-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function() {
+        showToast('RM Control Plan saved (' + rows.length + ' parameters)', 'success');
+        hideNotice('rm');
+        btn.disabled = false; btn.textContent = 'Save Plan';
+      })
+      .withFailureHandler(function(err) {
+        showToast('Save failed: ' + (err.message || err), 'error');
+        btn.disabled = false; btn.textContent = 'Save Plan';
+      })
+      .saveControlPlan('rm', itemCode, rows);
+  }
+
+  // ── Save FG plan ──────────────────────────────────────────────────
+  function saveFGPlan() {
+    var fgCode = document.getElementById('fg-product-select').value;
+    if (!fgCode) return;
+    var rows = collectPlanRows('fg', fgCode);
+    var btn = document.getElementById('fg-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function() {
+        showToast('FG Control Plan saved (' + rows.length + ' parameters)', 'success');
+        hideNotice('fg');
+        btn.disabled = false; btn.textContent = 'Save Plan';
+      })
+      .withFailureHandler(function(err) {
+        showToast('Save failed: ' + (err.message || err), 'error');
+        btn.disabled = false; btn.textContent = 'Save Plan';
+      })
+      .saveControlPlan('fg', fgCode, rows);
+  }
+
+  // ── Skeleton ──────────────────────────────────────────────────────
+  function renderSkeletonMatrix(tbodyId, cols) {
+    var html = '';
+    for (var i = 0; i < 5; i++) {
+      html += '<tr>';
+      for (var j = 0; j < cols; j++) {
+        html += '<td><div class="skel-cell" style="width:' + (40 + Math.random()*40|0) + '%"></div></td>';
+      }
+      html += '</tr>';
+    }
+    document.getElementById(tbodyId).innerHTML = html;
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show' + (type ? ' ' + type : '');
+    setTimeout(function() { t.className = ''; }, 2800);
+  }
+
+  // ── HTML escape ───────────────────────────────────────────────────
+  function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // ── goHome ────────────────────────────────────────────────────────
+  function goHome() {
+    google.script.run.withSuccessHandler(function(html) {
+      document.open(); document.write(html); document.close();
+    }).getLandingHtml();
+  }
+</script>
+</body>
+</html>

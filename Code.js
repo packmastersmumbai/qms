@@ -65,6 +65,8 @@ function onOpen() {
     .addItem('📲  Send WhatsApp (selected row)', 'sendWhatsAppSelected')
     .addSeparator()
     .addItem('📂  Import Past Data (CSV)', 'openImportCSV')
+    .addSeparator()
+    .addItem('🔬  Seed Default Quality Parameters', 'seedDefaultParameters')
     .addToUi();
 }
 
@@ -130,15 +132,23 @@ function doGet(e) {
       if (ss) props.setProperty('SPREADSHEET_ID', ss.getId());
     }
   } catch(ex) {}
-  return HtmlService.createTemplateFromFile('Landing').evaluate()
-    .setTitle('Pack Masters QMS')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+
+  var page = e && e.parameter && e.parameter.page ? e.parameter.page : '';
+  var template;
+  if (page === 'masters') {
+    template = HtmlService.createTemplateFromFile('Masters_F').evaluate()
+      .setTitle('Masters — Pack Masters QMS');
+  } else {
+    template = HtmlService.createTemplateFromFile('Landing').evaluate()
+      .setTitle('Pack Masters QMS');
+  }
+  return template.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 // ── Called by client to inject sub-pages ─────────────────────
 
 function getFormHtml(type) {
-  var pageMap = { GRN: 'GRN_F', IQC: 'IQC_F', OQC: 'OQC_F', Dashboard: 'Dashboard_F', ImportCSV: 'ImportCSV_F', Records: 'Records_F', Gatepass: 'Gatepass_F' };
+  var pageMap = { GRN: 'GRN_F', IQC: 'IQC_F', OQC: 'OQC_F', Dashboard: 'Dashboard_F', ImportCSV: 'ImportCSV_F', Records: 'Records_F', Gatepass: 'Gatepass_F', Masters: 'Masters_F', ControlPlan: 'ControlPlan_F' };
   var page = pageMap[type] || 'Landing';
   return HtmlService.createTemplateFromFile(page).evaluate().getContent();
 }

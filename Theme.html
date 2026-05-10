@@ -67,11 +67,7 @@
   .section-title {
     background: var(--navy);
     color: var(--white);
-    font-size: 11px;
-    font-weight: 600;
     padding: 6px 12px;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
   }
   .section-body { padding: 10px 12px; }
 
@@ -79,12 +75,7 @@
   .field { margin-bottom: 10px; }
   .field label {
     display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
     margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
   .field label .ccp {
     color: var(--danger);
@@ -386,11 +377,6 @@
     margin-bottom: 12px;
   }
   .detail-item .di-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
   .detail-item .di-value {
     font-size: 13px;
@@ -413,8 +399,25 @@
     padding: 8px 10px;
     text-align: center;
   }
-  .sum-card .sc-num  { font-size: 22px; font-weight: 700; line-height: 1; }
-  .sum-card .sc-lbl  { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
+  .sum-card .sc-num  { font-size: 40px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .sum-card .sc-lbl  { margin-top: 2px; }
+
+  /* ── Canonical micro-label (12px, sentence-case) ── */
+  .section-title,
+  .field label,
+  .detail-item .di-label,
+  .sum-card .sc-lbl {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+  /* muted color for data-context labels only (not the navy section header) */
+  .field label,
+  .detail-item .di-label,
+  .sum-card .sc-lbl {
+    color: var(--muted);
+  }
+
   .sum-card.total    { background:#EEF1FA; color:var(--navy); }
   .sum-card.pass     { background:#DCFCE7; color:#15803D; }
   .sum-card.fail     { background:#FEE2E2; color:#B91C1C; }

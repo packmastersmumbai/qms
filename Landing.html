@@ -25,6 +25,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
     }
@@ -51,78 +52,112 @@
     .header-right .date { font-size: 12px; color: rgba(255,255,255,0.55); }
     .header-right .company { font-size: 13px; font-weight: 600; color: var(--amber); }
 
-    /* ── Status bar ── */
-    .status-bar {
-      background: rgba(13,27,110,0.06);
-      border-bottom: 1px solid var(--border);
-      padding: 8px 24px;
-      display: flex;
-      gap: 20px;
-      overflow-x: auto;
-    }
-    .stat-pill {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; font-weight: 500;
-      white-space: nowrap; color: var(--muted);
-    }
-    .stat-pill span { font-weight: 700; color: var(--navy); font-size: 14px; }
-    #statusMsg { font-size: 12px; color: var(--muted); margin-left: auto; align-self: center; white-space: nowrap; }
 
     /* ── Main ── */
     main {
       flex: 1;
-      padding: 20px 16px 32px;
-      max-width: 520px;
-      width: 100%;
+      padding: 16px;
+    }
+
+    /* ── Bento grid ── */
+    .bento-wrap {
+      max-width: 560px;
       margin: 0 auto;
+      padding: 0;
     }
 
-    .section-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin: 20px 0 10px;
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "grn  iqc"
+        "oqc  gate"
+        "rec  dash"
+        "imp  imp";
+      gap: 12px;
     }
 
-    /* ── Action cards ── */
-    .card-grid { display: flex; flex-direction: column; gap: 10px; }
-
-    .action-card {
-      background: var(--white);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 18px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
+    /* tile base */
+    .bt {
+      border-radius: 14px;
       cursor: pointer;
       text-decoration: none;
-      color: var(--text);
-      transition: all 0.15s;
-      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 14px;
+      transition: transform 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
     }
-    .action-card:hover  { border-color: var(--navy); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(13,27,110,0.18); }
-    .action-card:active { transform: translateY(0); }
+    .bt:hover  { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,27,110,0.18); }
+    .bt:active { transform: translateY(0); }
 
-    .card-icon {
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
+    .bt-icon { display: flex; margin-bottom: 8px; }
+    .bt-title { font-weight: 700; line-height: 1.2; }
+    .bt-sub   { margin-top: 3px; line-height: 1.3; }
+
+    /* grid areas */
+    .bt-grn  { grid-area: grn; }
+    .bt-iqc  { grid-area: iqc; }
+    .bt-oqc  { grid-area: oqc; }
+    .bt-gate { grid-area: gate; }
+    .bt-rec  { grid-area: rec; }
+    .bt-dash { grid-area: dash; }
+    .bt-imp  { grid-area: imp; flex-direction: row; align-items: center; gap: 12px; justify-content: flex-start; }
+    .bt-imp .bt-icon { margin-bottom: 0; }
+
+    /* primary tiles — navy bg, amber icon accent, white text */
+    .bt-primary {
+      background: var(--navy);
+      color: var(--white);
+      min-height: 160px;
+      box-shadow: 0 2px 12px rgba(13,27,110,0.22);
     }
-    .icon-grn  { background: #EDE9FE; }
-    .icon-iqc  { background: #DBEAFE; }
-    .icon-oqc  { background: #FCE7F3; }
-    .icon-dash { background: #FEF3C7; }
-    .icon-csv  { background: #DCFCE7; }
+    .bt-primary .bt-icon svg { color: var(--amber); }
+    .bt-primary .bt-title { font-size: 16px; color: var(--white); }
+    .bt-primary .bt-sub   { font-size: 12px; color: rgba(255,255,255,0.65); }
 
-    .card-text h3 { font-size: 15px; font-weight: 700; }
-    .card-text p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .card-arrow { margin-left: auto; font-size: 18px; color: var(--muted); flex-shrink: 0; }
+    /* secondary tiles — white bg, navy text/icon */
+    .bt-secondary {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      min-height: 120px;
+      box-shadow: var(--shadow);
+    }
+    .bt-secondary .bt-title { font-size: 14px; color: var(--navy); }
+    .bt-secondary .bt-sub   { font-size: 11px; color: var(--muted); }
+
+    /* tertiary tiles — light grey bg, muted */
+    .bt-tertiary {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      min-height: 100px;
+    }
+    .bt-tertiary .bt-title { font-size: 13px; color: var(--text); }
+    .bt-tertiary .bt-sub   { font-size: 11px; color: var(--muted); }
+
+    /* import row spans full width */
+    .bt-imp {
+      min-height: 72px;
+    }
+
+    /* responsive */
+    @media (max-width: 400px) {
+      .bento-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "grn"
+          "iqc"
+          "oqc"
+          "gate"
+          "rec"
+          "dash"
+          "imp";
+      }
+    }
 
     /* ── Footer ── */
     footer {
@@ -176,7 +211,7 @@
 
 <!-- Header -->
 <header>
-  <div class="logo-box">📦</div>
+  <div class="logo-box"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></div>
   <div class="header-text">
     <h1>Pack Masters QMS</h1>
     <p>Quality Management System</p>
@@ -187,92 +222,77 @@
   </div>
 </header>
 
-<!-- Status bar -->
-<div class="status-bar">
-  <div class="stat-pill">GRN <span id="cntGRN">—</span></div>
-  <div class="stat-pill">IQC <span id="cntIQC">—</span></div>
-  <div class="stat-pill">OQC <span id="cntOQC">—</span></div>
-  <div id="statusMsg">Loading stats…</div>
-</div>
-
 <!-- Main -->
 <main>
-  <div class="section-label">Incoming</div>
-  <div class="card-grid">
+  <div class="bento-wrap">
+    <div class="bento-grid">
 
-    <a class="action-card" onclick="openForm('GRN')">
-      <div class="card-icon icon-grn">📥</div>
-      <div class="card-text">
-        <h3>New GRN</h3>
-        <p>Record goods received from supplier</p>
-      </div>
-      <div class="card-arrow">›</div>
-    </a>
+      <!-- GRN — primary -->
+      <a class="bt bt-primary bt-grn" onclick="openForm('GRN')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/></svg></div>
+        <div class="bt-title">New GRN</div>
+        <div class="bt-sub">Log incoming goods</div>
+      </a>
 
-    <a class="action-card" onclick="openForm('IQC')">
-      <div class="card-icon icon-iqc">🔍</div>
-      <div class="card-text">
-        <h3>New IQC</h3>
-        <p>Inspect incoming material (12 parameters)</p>
-      </div>
-      <div class="card-arrow">›</div>
-    </a>
+      <!-- IQC — primary -->
+      <a class="bt bt-primary bt-iqc" onclick="openForm('IQC')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg></div>
+        <div class="bt-title">New IQC</div>
+        <div class="bt-sub">Inspect materials</div>
+      </a>
 
-  </div>
+      <!-- OQC — secondary -->
+      <a class="bt bt-secondary bt-oqc" onclick="openForm('OQC')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0 4 4m-4-4-4 4"/><path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/></svg></div>
+        <div class="bt-title">New OQC</div>
+        <div class="bt-sub">Inspect finished goods</div>
+      </a>
 
-  <div class="section-label">Outgoing</div>
-  <div class="card-grid">
+      <!-- Gatepass — secondary -->
+      <a class="bt bt-secondary bt-gate" onclick="openForm('Gatepass')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 4v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+        <div class="bt-title">New Gatepass</div>
+        <div class="bt-sub">Authorize dispatch</div>
+      </a>
 
-    <a class="action-card" onclick="openForm('OQC')">
-      <div class="card-icon icon-oqc">📤</div>
-      <div class="card-text">
-        <h3>New OQC</h3>
-        <p>Inspect finished goods before dispatch</p>
-      </div>
-      <div class="card-arrow">›</div>
-    </a>
+      <!-- Records — tertiary -->
+      <a class="bt bt-tertiary bt-rec" onclick="openForm('Records')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+        <div class="bt-title">Records</div>
+        <div class="bt-sub">Browse all entries</div>
+      </a>
 
-    <a class="action-card" onclick="openForm('Gatepass')">
-      <div class="card-icon" style="background:#FEE2E2;">🚚</div>
-      <div class="card-text">
-        <h3>New Gatepass</h3>
-        <p>Authorize goods dispatch from premises</p>
-      </div>
-      <div class="card-arrow">›</div>
-    </a>
+      <!-- Dashboard — tertiary -->
+      <a class="bt bt-tertiary bt-dash" onclick="openForm('Dashboard')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16V11M12 16V8M17 16V13"/></svg></div>
+        <div class="bt-title">Dashboard</div>
+        <div class="bt-sub">Charts &amp; stats</div>
+      </a>
 
-  </div>
+      <!-- Masters — tertiary -->
+      <a class="bt bt-tertiary bt-masters" onclick="openForm('Masters')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="bt-title">Masters</div>
+        <div class="bt-sub">Suppliers, Items &amp; FG</div>
+      </a>
 
-  <div class="section-label">Records</div>
-  <div class="card-grid">
+      <!-- Control Plans — tertiary -->
+      <a class="bt bt-tertiary bt-ctrl" onclick="openForm('ControlPlan')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/><circle cx="17" cy="17" r="4"/><path d="M15.5 17l1 1 2-2"/></svg></div>
+        <div class="bt-title">Control Plans</div>
+        <div class="bt-sub">RM &amp; FG parameters</div>
+      </a>
 
-    <a class="action-card" onclick="openForm('Records')">
-      <div class="card-icon" style="background:#E0F2FE;">📋</div>
-      <div class="card-text">
-        <h3>Records</h3>
-        <p>Browse all GRN, IQC, OQC &amp; Gatepass records</p>
-      </div>
-      <div class="card-arrow">›</div>
-    </a>
+      <!-- Import CSV — tertiary, full-width row -->
+      <a class="bt bt-tertiary bt-imp" onclick="openForm('ImportCSV')">
+        <div class="bt-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M8 14h8M12 11v6"/></svg></div>
+        <div>
+          <div class="bt-title">Import Past Data</div>
+          <div class="bt-sub">Bulk-load historical records via CSV</div>
+        </div>
+      </a>
 
-    <a class="action-card" onclick="openForm('Dashboard')">
-      <div class="card-icon icon-dash">📊</div>
-      <div class="card-text">
-        <h3>Dashboard</h3>
-        <p>View and filter all GRN / IQC / OQC records</p>
-      </div>
-      <div class="card-arrow">›</div>
-    </a>
-
-    <a class="action-card" onclick="openForm('ImportCSV')">
-      <div class="card-icon icon-csv">📂</div>
-      <div class="card-text">
-        <h3>Import Past Data</h3>
-        <p>Bulk-load historical records via CSV</p>
-      </div>
-      <div class="card-arrow">›</div>
-    </a>
-
+    </div>
   </div>
 </main>
 
@@ -291,23 +311,7 @@
   // Hide loading once page is ready
   window.addEventListener('load', function() {
     document.getElementById('loading').classList.add('hidden');
-    loadStats();
   });
-
-  // Load record counts
-  function loadStats() {
-    google.script.run
-      .withSuccessHandler(function(s) {
-        document.getElementById('cntGRN').textContent = s.grn;
-        document.getElementById('cntIQC').textContent = s.iqc;
-        document.getElementById('cntOQC').textContent = s.oqc;
-        document.getElementById('statusMsg').textContent = 'Updated ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
-      })
-      .withFailureHandler(function() {
-        document.getElementById('statusMsg').textContent = 'Could not load stats';
-      })
-      .getLandingStats();
-  }
 
   // Page routing via URL parameter
   var pageMap = {
@@ -315,12 +319,15 @@
     IQC:       'IQC_F',
     OQC:       'OQC_F',
     Dashboard: 'Dashboard_F',
-    ImportCSV: 'ImportCSV_F'
+    ImportCSV: 'ImportCSV_F',
+    Masters:     'Masters_F',
+    ControlPlan: 'ControlPlan_F'
   };
   var titleMap = {
     GRN: 'New GRN', IQC: 'New IQC', OQC: 'New OQC',
     Dashboard: 'Dashboard', ImportCSV: 'Import CSV',
-    Records: 'Records', Gatepass: 'New Gatepass'
+    Records: 'Records', Gatepass: 'New Gatepass',
+    Masters: 'Masters', ControlPlan: 'Control Plans'
   };
 
   function openForm(type) {

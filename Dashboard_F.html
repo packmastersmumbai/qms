@@ -150,7 +150,7 @@
   <!-- Header -->
   <div class="pm-header" style="padding:10px 16px;">
     <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;margin-right:6px;text-decoration:none;line-height:1;">‹</a>
-    <span class="logo-text">📊 QMS Dashboard</span>
+    <span class="logo-text"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><path d="M3 3v18h18"/><path d="M7 16V11M12 16V8M17 16V13"/></svg>QMS Dashboard</span>
   </div>
 
   <!-- Type Tabs -->
@@ -170,7 +170,7 @@
       <option value="WEEK">This Week</option>
       <option value="MONTH">This Month</option>
     </select>
-    <button onclick="loadData()">🔄 Refresh</button>
+    <button onclick="loadData()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.85.99 6.54 2.6L21 3v6h-6l2.18-2.18A7 7 0 1 0 19 12"/></svg>Refresh</button>
     <span id="lastRefresh" style="font-size:10px;color:var(--muted);margin-left:4px;"></span>
   </div>
 
@@ -228,8 +228,8 @@
           <div id="paramDetailGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
         </div>
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn-wa" id="detailWABtn" onclick="sendWADetail()" style="width:auto;padding:9px 18px;margin-top:0;">📲 Send WhatsApp</button>
-          <button onclick="openFullRecord()" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--navy);background:var(--white);color:var(--navy);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">📄 Open Full Record</button>
+          <button class="btn-wa" id="detailWABtn" onclick="sendWADetail()" style="width:auto;padding:9px 18px;margin-top:0;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Send WhatsApp</button>
+          <button onclick="openFullRecord()" style="padding:9px 18px;border-radius:8px;border:1.5px solid var(--navy);background:var(--white);color:var(--navy);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Open Full Record</button>
         </div>
       </div>
     </div>
@@ -258,7 +258,7 @@ function loadData() {
       try {
         if (!data || !data.rows) {
           var errMsg = (data && data.error) ? data.error : 'No data returned. Run Setup from QMS System menu first.';
-          document.getElementById('loadingMsg').innerHTML = '❌ ' + errMsg;
+          document.getElementById('loadingMsg').innerHTML = 'Error: ' + errMsg;
           return;
         }
         allRows = data.rows;
@@ -271,13 +271,13 @@ function loadData() {
         document.getElementById('kanbanBoard').style.display = 'grid';
       } catch(jsErr) {
         document.getElementById('loadingMsg').innerHTML =
-          '❌ Render error: ' + jsErr.message;
+          'Render error: ' + jsErr.message;
       }
     })
     .withFailureHandler(function(e) {
       console.log('[Dashboard] FAIL name=' + (e && e.name) + ' msg=' + (e && e.message));
       document.getElementById('loadingMsg').innerHTML =
-        '❌ Error: ' + (e ? (e.message || e.name || JSON.stringify(e)) : 'unknown');
+        'Load error: ' + (e ? (e.message || e.name || JSON.stringify(e)) : 'unknown');
     })
     .getDashboardData({ type: 'ALL', range: document.getElementById('fRange').value });
 }
@@ -431,8 +431,8 @@ function showDetail(idx, cardEl) {
     var accQty = d.acceptedQty;
     var rejQty  = d.rejectedQty;
     if (accQty !== '' && accQty !== undefined && accQty !== null) {
-      document.getElementById('qtyAccepted').textContent = '✔ Accepted: ' + accQty;
-      document.getElementById('qtyRejected').textContent = '✖ Rejected: ' + (rejQty !== '' && rejQty !== undefined ? rejQty : '0');
+      document.getElementById('qtyAccepted').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><polyline points="20 6 9 17 4 12"/></svg>Accepted: ' + accQty;
+      document.getElementById('qtyRejected').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Rejected: ' + (rejQty !== '' && rejQty !== undefined ? rejQty : '0');
       document.getElementById('qtyChips').style.display = 'block';
     }
 
