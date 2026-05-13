@@ -2,61 +2,43 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    /* ── Masters-specific styles ── */
-    body { padding-bottom: 80px; }
-
-    /* Tab bar */
-    .tab-bar {
-      display: flex;
-      gap: 0;
-      padding: 12px 12px 0;
-      background: var(--white);
-      border-bottom: 2px solid var(--border);
-      position: sticky;
-      top: 41px;
-      z-index: 90;
-    }
-    .tab-btn {
-      padding: 8px 20px;
-      border: none;
-      background: none;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      margin-bottom: -2px;
-      transition: color 0.15s, border-color 0.15s;
-      white-space: nowrap;
-    }
-    .tab-btn.active {
-      color: var(--navy);
-      border-bottom-color: var(--amber);
-    }
-    .tab-btn:hover:not(.active) { color: var(--text); }
-
     /* Tab panels */
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* Table toolbar */
+    /* Toolbar */
     .table-toolbar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
       padding: 10px 12px;
       background: var(--white);
       border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
     }
     .table-toolbar h2 {
       font-size: 13px;
       font-weight: 600;
       color: var(--text);
+      flex: 1;
+      white-space: nowrap;
     }
+    .search-input {
+      flex: 1;
+      min-width: 120px;
+      max-width: 220px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .search-input:focus { outline: none; border-color: var(--navy); }
 
     /* Add button */
     .btn-add {
@@ -73,85 +55,16 @@
       cursor: pointer;
       font-family: inherit;
       transition: background 0.15s;
+      white-space: nowrap;
+      touch-action: manipulation;
+      flex-shrink: 0;
     }
     .btn-add:hover { background: #1A2D9E; }
-
-    /* Table wrapper */
-    .table-wrap {
-      overflow-x: auto;
-      background: var(--white);
-    }
-
-    /* Masters table */
-    .masters-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 540px;
-    }
-    .masters-table thead th {
-      background: var(--navy);
-      color: var(--white);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 8px 10px;
-      text-align: left;
-      letter-spacing: 0.5px;
-      white-space: nowrap;
-    }
-    .masters-table tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background 0.1s;
-    }
-    .masters-table tbody tr:last-child { border-bottom: none; }
-    .masters-table tbody tr:hover { background: #F0F4FF; }
-    .masters-table tbody td {
-      padding: 8px 10px;
-      font-size: 12px;
-      color: var(--text);
-      vertical-align: middle;
-    }
-    .masters-table td.actions {
-      white-space: nowrap;
-      text-align: right;
-      padding-right: 8px;
-    }
-
-    /* Icon action buttons */
-    .icon-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px; height: 28px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      background: var(--white);
-      cursor: pointer;
-      transition: all 0.15s;
-      padding: 0;
-    }
-    .icon-btn:hover { border-color: var(--navy); background: #EEF1FA; }
-    .icon-btn.danger:hover { border-color: var(--danger); background: #FEE2E2; }
-    .icon-btn svg { pointer-events: none; }
-
-    /* Approved pill */
-    .appr-pill {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      border: none;
-      font-family: inherit;
-      transition: all 0.15s;
-    }
-    .appr-pill.yes { background: #DCFCE7; color: #15803D; }
-    .appr-pill.no  { background: #F3F4F6; color: #6B7280; }
 
     /* Inline form panel */
     .inline-form {
       display: none;
-      background: #EEF1FA;
+      background: var(--navy-light);
       border-top: 2px solid var(--navy);
       padding: 14px 12px;
     }
@@ -178,9 +91,7 @@
       display: none;
     }
     .field input.invalid,
-    .field select.invalid {
-      border-color: var(--danger);
-    }
+    .field select.invalid { border-color: var(--danger); }
     .form-actions {
       display: flex;
       gap: 8px;
@@ -197,6 +108,7 @@
       cursor: pointer;
       font-family: inherit;
       transition: background 0.15s;
+      touch-action: manipulation;
     }
     .btn-save:hover { background: #1A2D9E; }
     .btn-save:disabled { background: #9CA3AF; cursor: not-allowed; }
@@ -211,14 +123,12 @@
       cursor: pointer;
       font-family: inherit;
       transition: all 0.15s;
+      touch-action: manipulation;
     }
     .btn-cancel:hover { border-color: var(--navy); }
 
-    /* Approved toggle in form */
-    .appr-toggle-wrap {
-      display: flex;
-      gap: 8px;
-    }
+    /* Approved / notify toggle in form */
+    .appr-toggle-wrap { display: flex; gap: 8px; }
     .appr-toggle {
       flex: 1;
       padding: 8px 4px;
@@ -230,20 +140,122 @@
       cursor: pointer;
       font-family: inherit;
       transition: all 0.15s;
+      touch-action: manipulation;
     }
     .appr-toggle.sel-yes { background: #DCFCE7; border-color: #16A34A; color: #15803D; }
     .appr-toggle.sel-no  { background: #F3F4F6; border-color: #9CA3AF; color: #6B7280; }
 
-    /* Skeleton loading rows */
-    .skel-row td {
-      padding: 10px;
+    /* ── Desktop table ── */
+    .table-wrap { overflow-x: auto; background: var(--white); }
+    .masters-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 480px;
     }
+    .masters-table thead th {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: left;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .masters-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .masters-table tbody tr:last-child { border-bottom: none; }
+    .masters-table tbody tr:hover { background: #F0F4FF; }
+    .masters-table tbody td {
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .masters-table td.actions { white-space: nowrap; text-align: right; padding-right: 8px; }
+
+    /* Icon action buttons */
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--white);
+      cursor: pointer;
+      transition: all 0.15s;
+      padding: 0;
+      touch-action: manipulation;
+    }
+    .icon-btn:hover { border-color: var(--navy); background: var(--navy-light); }
+    .icon-btn.danger:hover { border-color: var(--danger); background: #FEE2E2; }
+    .icon-btn svg { pointer-events: none; }
+
+    /* Approved pill */
+    .appr-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .appr-pill.yes { background: #DCFCE7; color: #15803D; }
+    .appr-pill.no  { background: #F3F4F6; color: #6B7280; }
+
+    /* ── Mobile card list ── */
+    .card-list { display: none; }
+    .entry-card {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+    }
+    .entry-card:last-child { border-bottom: none; }
+    .entry-card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .entry-card-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .entry-card-code {
+      font-size: 10px;
+      font-family: monospace;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .entry-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .entry-card-meta {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Responsive switch */
+    @media (max-width: 540px) {
+      .table-wrap { display: none; }
+      .card-list { display: block; }
+    }
+
+    /* Skeleton */
     .skel-cell {
       height: 14px;
       background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
       background-size: 200% 100%;
       animation: shimmer 1.2s infinite;
       border-radius: 4px;
+      display: inline-block;
     }
     @keyframes shimmer {
       0%   { background-position: 200% 0; }
@@ -255,49 +267,35 @@
 
 <!-- Header -->
 <div class="pm-header">
-  <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;margin-right:2px;text-decoration:none;line-height:1;">&#8249;</a>
-  <span class="logo-text">Masters</span>
+  <button class="back-btn" id="backBtn">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4l-6 6 6 6"/>
+    </svg>
+  </button>
+  <span class="page-title">Masters</span>
+  <span class="doc-badge" id="docBadge">QMS-MST</span>
 </div>
 
 <!-- Tab Bar -->
 <div class="tab-bar">
-  <button class="tab-btn active" id="tab-suppliers" onclick="switchTab('suppliers')">Suppliers</button>
-  <button class="tab-btn" id="tab-materials" onclick="switchTab('materials')">Items (RM)</button>
-  <button class="tab-btn" id="tab-fg" onclick="switchTab('fg')">FG</button>
-  <button class="tab-btn" id="tab-parameters" onclick="switchTab('parameters')">Parameters</button>
-  <button class="tab-btn" id="tab-customers" onclick="switchTab('customers')">Customers</button>
-  <button class="tab-btn" id="tab-inspectors" onclick="switchTab('inspectors')">Inspectors</button>
+  <button class="tab-btn active" id="tab-suppliers"  onclick="switchTab('suppliers')">Suppliers</button>
+  <button class="tab-btn" id="tab-materials"         onclick="switchTab('materials')">Items (RM)</button>
+  <button class="tab-btn" id="tab-fg"                onclick="switchTab('fg')">FG</button>
+  <button class="tab-btn" id="tab-parameters"        onclick="switchTab('parameters')">Parameters</button>
+  <button class="tab-btn" id="tab-customers"         onclick="switchTab('customers')">Customers</button>
+  <button class="tab-btn" id="tab-inspectors"        onclick="switchTab('inspectors')">Inspectors</button>
 </div>
 
-<!-- ════ SUPPLIERS TAB ════ -->
+<!-- ════ SUPPLIERS ════ -->
 <div class="tab-panel active" id="panel-suppliers">
   <div class="table-toolbar">
-    <h2>Supplier List</h2>
-    <button class="btn-add" onclick="openAddForm('supplier')">
+    <h2>Suppliers</h2>
+    <input class="search-input" id="search-suppliers" type="search" placeholder="Search…" oninput="filterList('suppliers')">
+    <button class="btn-add" onclick="openForm('supplier', 'add')">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Supplier
     </button>
   </div>
-  <div class="table-wrap">
-    <table class="masters-table" id="suppliers-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Name</th>
-          <th>Contact</th>
-          <th>Phone</th>
-          <th>Material Supplied</th>
-          <th>City</th>
-          <th>Approved</th>
-          <th style="width:72px;"></th>
-        </tr>
-      </thead>
-      <tbody id="suppliers-tbody">
-        <!-- skeleton rows inserted by JS -->
-      </tbody>
-    </table>
-  </div>
-  <!-- Inline form: Supplier -->
   <div class="inline-form" id="supplier-form">
     <h3 id="supplier-form-title">Add Supplier</h3>
     <div class="form-grid">
@@ -330,44 +328,37 @@
       <div class="field">
         <label>Approved</label>
         <div class="appr-toggle-wrap">
-          <button type="button" class="appr-toggle sel-yes" id="s-appr-yes" onclick="setApproved('s', 'Y')">Yes</button>
-          <button type="button" class="appr-toggle" id="s-appr-no" onclick="setApproved('s', 'N')">No</button>
+          <button type="button" class="appr-toggle sel-yes" id="s-appr-yes" onclick="setApproved('s','Y')">Yes</button>
+          <button type="button" class="appr-toggle" id="s-appr-no" onclick="setApproved('s','N')">No</button>
         </div>
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="supplier-save-btn" onclick="saveSupplier()">Save</button>
+      <button class="btn-save" id="supplier-save-btn" onclick="saveRecord('supplier')">Save</button>
       <button class="btn-cancel" onclick="closeForm('supplier')">Cancel</button>
     </div>
   </div>
+  <div class="table-wrap">
+    <table class="masters-table">
+      <thead><tr>
+        <th>Code</th><th>Name</th><th>Contact</th><th>Phone</th><th>Material</th><th>City</th><th>Approved</th><th style="width:72px;"></th>
+      </tr></thead>
+      <tbody id="suppliers-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card-list" id="suppliers-cards"></div>
 </div>
 
-<!-- ════ MATERIALS TAB ════ -->
+<!-- ════ MATERIALS ════ -->
 <div class="tab-panel" id="panel-materials">
   <div class="table-toolbar">
-    <h2>Item / Material List</h2>
-    <button class="btn-add" onclick="openAddForm('material')">
+    <h2>Items (RM)</h2>
+    <input class="search-input" id="search-materials" type="search" placeholder="Search…" oninput="filterList('materials')">
+    <button class="btn-add" onclick="openForm('material', 'add')">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Item
     </button>
   </div>
-  <div class="table-wrap">
-    <table class="masters-table" id="materials-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Description</th>
-          <th>Unit</th>
-          <th>Category</th>
-          <th style="width:72px;"></th>
-        </tr>
-      </thead>
-      <tbody id="materials-tbody">
-        <!-- skeleton rows inserted by JS -->
-      </tbody>
-    </table>
-  </div>
-  <!-- Inline form: Material -->
   <div class="inline-form" id="material-form">
     <h3 id="material-form-title">Add Item</h3>
     <div class="form-grid">
@@ -384,57 +375,44 @@
       <div class="field">
         <label>Unit</label>
         <select id="m-unit">
-          <option value="KG">KG</option>
-          <option value="PC">PC</option>
-          <option value="M">M</option>
-          <option value="LTR">LTR</option>
+          <option value="KG">KG</option><option value="PC">PC</option>
+          <option value="M">M</option><option value="LTR">LTR</option><option value="BOX">BOX</option>
         </select>
       </div>
       <div class="field">
         <label>Category</label>
         <select id="m-cat">
-          <option value="BULK">BULK</option>
-          <option value="LABEL">LABEL</option>
-          <option value="TAPE">TAPE</option>
-          <option value="CANS">CANS</option>
-          <option value="CARTONS">CARTONS</option>
-          <option value="BOTTLES">BOTTLES</option>
-          <option value="PLUG">PLUG</option>
-          <option value="CAP">CAP</option>
-          <option value="RIBBON">RIBBON</option>
+          <option value="BULK">BULK</option><option value="LABEL">LABEL</option><option value="TAPE">TAPE</option>
+          <option value="CANS">CANS</option><option value="CARTONS">CARTONS</option><option value="BOTTLES">BOTTLES</option>
+          <option value="PLUG">PLUG</option><option value="CAP">CAP</option><option value="RIBBON">RIBBON</option>
         </select>
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="material-save-btn" onclick="saveMaterial()">Save</button>
+      <button class="btn-save" id="material-save-btn" onclick="saveRecord('material')">Save</button>
       <button class="btn-cancel" onclick="closeForm('material')">Cancel</button>
     </div>
   </div>
+  <div class="table-wrap">
+    <table class="masters-table">
+      <thead><tr>
+        <th>Code</th><th>Description</th><th>Unit</th><th>Category</th><th style="width:72px;"></th>
+      </tr></thead>
+      <tbody id="materials-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card-list" id="materials-cards"></div>
 </div>
 
-<!-- ════ FG TAB ════ -->
+<!-- ════ FG ════ -->
 <div class="tab-panel" id="panel-fg">
   <div class="table-toolbar">
-    <h2>Finished Goods List</h2>
-    <button class="btn-add" onclick="openAddFormExt('fg')">
+    <h2>Finished Goods</h2>
+    <input class="search-input" id="search-fg" type="search" placeholder="Search…" oninput="filterList('fg')">
+    <button class="btn-add" onclick="openForm('fg', 'add')">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add FG
     </button>
-  </div>
-  <div class="table-wrap">
-    <table class="masters-table" id="fg-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Name</th>
-          <th>Category</th>
-          <th>UOM</th>
-          <th>Description</th>
-          <th style="width:72px;"></th>
-        </tr>
-      </thead>
-      <tbody id="fg-tbody"></tbody>
-    </table>
   </div>
   <div class="inline-form" id="fg-form">
     <h3 id="fg-form-title">Add Finished Good</h3>
@@ -456,12 +434,8 @@
       <div class="field">
         <label>UOM</label>
         <select id="fg-uom">
-          <option value="PC">PC</option>
-          <option value="KG">KG</option>
-          <option value="M">M</option>
-          <option value="LTR">LTR</option>
-          <option value="BOX">BOX</option>
-          <option value="ROLL">ROLL</option>
+          <option value="PC">PC</option><option value="KG">KG</option><option value="M">M</option>
+          <option value="LTR">LTR</option><option value="BOX">BOX</option><option value="ROLL">ROLL</option>
         </select>
       </div>
       <div class="field" style="grid-column:1/-1">
@@ -470,40 +444,30 @@
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="fg-save-btn" onclick="saveFG()">Save</button>
+      <button class="btn-save" id="fg-save-btn" onclick="saveRecord('fg')">Save</button>
       <button class="btn-cancel" onclick="closeForm('fg')">Cancel</button>
     </div>
   </div>
+  <div class="table-wrap">
+    <table class="masters-table">
+      <thead><tr>
+        <th>Code</th><th>Name</th><th>Category</th><th>UOM</th><th>Description</th><th style="width:72px;"></th>
+      </tr></thead>
+      <tbody id="fg-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card-list" id="fg-cards"></div>
 </div>
 
-<!-- ════ PARAMETERS TAB ════ -->
+<!-- ════ PARAMETERS ════ -->
 <div class="tab-panel" id="panel-parameters">
   <div class="table-toolbar">
-    <h2>Quality Parameters Library</h2>
-    <button class="btn-add" onclick="openAddFormExt('parameter')">
+    <h2>Quality Parameters</h2>
+    <input class="search-input" id="search-parameters" type="search" placeholder="Search…" oninput="filterList('parameters')">
+    <button class="btn-add" onclick="openForm('parameter', 'add')">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Parameter
     </button>
-  </div>
-  <div class="table-wrap">
-    <table class="masters-table" id="parameters-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Name</th>
-          <th>Unit</th>
-          <th>Std Value</th>
-          <th>Min</th>
-          <th>Max</th>
-          <th>Method</th>
-          <th>Tools</th>
-          <th>Doc Ref</th>
-          <th>Doc No.</th>
-          <th style="width:72px;"></th>
-        </tr>
-      </thead>
-      <tbody id="parameters-tbody"></tbody>
-    </table>
   </div>
   <div class="inline-form" id="parameter-form">
     <h3 id="parameter-form-title">Add Quality Parameter</h3>
@@ -562,41 +526,31 @@
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="parameter-save-btn" onclick="saveParameter()">Save</button>
+      <button class="btn-save" id="parameter-save-btn" onclick="saveRecord('parameter')">Save</button>
       <button class="btn-cancel" onclick="closeForm('parameter')">Cancel</button>
     </div>
   </div>
+  <div class="table-wrap">
+    <table class="masters-table">
+      <thead><tr>
+        <th>Code</th><th>Name</th><th>Unit</th><th>Std</th><th>Min</th><th>Max</th><th>Method</th><th>Tools</th><th>Doc Ref</th><th>Doc No.</th><th style="width:72px;"></th>
+      </tr></thead>
+      <tbody id="parameters-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card-list" id="parameters-cards"></div>
 </div>
 
-<!-- ════ CUSTOMERS TAB ════ -->
+<!-- ════ CUSTOMERS ════ -->
 <div class="tab-panel" id="panel-customers">
   <div class="table-toolbar">
-    <h2>Customer List</h2>
-    <button class="btn-add" onclick="openAddForm('customer')">
+    <h2>Customers</h2>
+    <input class="search-input" id="search-customers" type="search" placeholder="Search…" oninput="filterList('customers')">
+    <button class="btn-add" onclick="openForm('customer', 'add')">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Customer
     </button>
   </div>
-  <div class="table-wrap">
-    <table class="masters-table" id="customers-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Name</th>
-          <th>Contact</th>
-          <th>Phone</th>
-          <th>Email</th>
-          <th>Products</th>
-          <th>City</th>
-          <th style="width:72px;"></th>
-        </tr>
-      </thead>
-      <tbody id="customers-tbody">
-        <!-- skeleton rows inserted by JS -->
-      </tbody>
-    </table>
-  </div>
-  <!-- Inline form: Customer -->
   <div class="inline-form" id="customer-form">
     <h3 id="customer-form-title">Add Customer</h3>
     <div class="form-grid">
@@ -632,39 +586,31 @@
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="customer-save-btn" onclick="saveCustomer()">Save</button>
+      <button class="btn-save" id="customer-save-btn" onclick="saveRecord('customer')">Save</button>
       <button class="btn-cancel" onclick="closeForm('customer')">Cancel</button>
     </div>
   </div>
+  <div class="table-wrap">
+    <table class="masters-table">
+      <thead><tr>
+        <th>Code</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Products</th><th>City</th><th style="width:72px;"></th>
+      </tr></thead>
+      <tbody id="customers-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card-list" id="customers-cards"></div>
 </div>
 
-<!-- ════ INSPECTORS TAB ════ -->
+<!-- ════ INSPECTORS ════ -->
 <div class="tab-panel" id="panel-inspectors">
   <div class="table-toolbar">
-    <h2>Inspector / Personnel List</h2>
-    <button class="btn-add" onclick="openAddForm('inspector')">
+    <h2>Inspectors / Personnel</h2>
+    <input class="search-input" id="search-inspectors" type="search" placeholder="Search…" oninput="filterList('inspectors')">
+    <button class="btn-add" onclick="openForm('inspector', 'add')">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Inspector
     </button>
   </div>
-  <div class="table-wrap">
-    <table class="masters-table" id="inspectors-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Role / Designation</th>
-          <th>Department</th>
-          <th>WhatsApp No.</th>
-          <th>Notify (Y/N)</th>
-          <th style="width:72px;"></th>
-        </tr>
-      </thead>
-      <tbody id="inspectors-tbody">
-        <!-- skeleton rows inserted by JS -->
-      </tbody>
-    </table>
-  </div>
-  <!-- Inline form: Inspector -->
   <div class="inline-form" id="inspector-form">
     <h3 id="inspector-form-title">Add Inspector</h3>
     <div class="form-grid">
@@ -695,16 +641,25 @@
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="inspector-save-btn" onclick="saveInspector()">Save</button>
+      <button class="btn-save" id="inspector-save-btn" onclick="saveRecord('inspector')">Save</button>
       <button class="btn-cancel" onclick="closeForm('inspector')">Cancel</button>
     </div>
   </div>
+  <div class="table-wrap">
+    <table class="masters-table">
+      <thead><tr>
+        <th>Name</th><th>Role</th><th>Dept</th><th>WhatsApp</th><th>Notify</th><th style="width:72px;"></th>
+      </tr></thead>
+      <tbody id="inspectors-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card-list" id="inspectors-cards"></div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" class="toast"></div>
 
 <script>
-  // ── State ──────────────────────────────────────────────────────────
+  // ── State ──────────────────────────────────────────────────────
   var suppliersData  = [];
   var materialsData  = [];
   var fgData         = [];
@@ -712,69 +667,33 @@
   var customersData  = [];
   var inspectorsData = [];
   var activeTab      = 'suppliers';
-  var supplierMode   = null;  // 'add' | 'edit'
-  var materialMode   = null;
-  var fgMode         = null;
-  var parameterMode  = null;
-  var customerMode   = null;
-  var inspectorMode  = null;
-  var supplierEditCode  = null;
-  var materialEditCode  = null;
-  var fgEditCode        = null;
-  var parameterEditCode = null;
-  var customerEditCode  = null;
-  var inspectorEditName = null;
+
+  // Per-type edit state
+  var formState = {
+    supplier:  { mode: null, editKey: null },
+    material:  { mode: null, editKey: null },
+    fg:        { mode: null, editKey: null },
+    parameter: { mode: null, editKey: null },
+    customer:  { mode: null, editKey: null },
+    inspector: { mode: null, editKey: null }
+  };
+
   var supplierApproved = 'Y';
   var inspectorNotify  = 'Y';
 
-  // ── Tab switching ─────────────────────────────────────────────────
-  var ALL_TABS = ['suppliers', 'materials', 'fg', 'parameters', 'customers', 'inspectors'];
+  var SESSION_ID = (function() {
+    try { return window.sessionId || (window.parent && window.parent.sessionId) || ''; } catch(e) { return ''; }
+  })();
 
-  function switchTab(tab) {
-    var modeMap = { suppliers: supplierMode, materials: materialMode, fg: fgMode,
-                    parameters: parameterMode, customers: customerMode, inspectors: inspectorMode };
-    if (modeMap[activeTab] && tab !== activeTab) {
-      if (!confirm('You have unsaved changes. Discard and switch tab?')) return;
-    }
-    closeForm('supplier'); closeForm('material'); closeForm('fg');
-    closeForm('parameter'); closeForm('customer'); closeForm('inspector');
+  var ALL_TABS = ['suppliers','materials','fg','parameters','customers','inspectors'];
 
-    activeTab = tab;
-    ALL_TABS.forEach(function(t) {
-      document.getElementById('tab-' + t).classList.toggle('active', tab === t);
-      document.getElementById('panel-' + t).classList.toggle('active', tab === t);
-    });
-  }
-
-  // ── Toast ─────────────────────────────────────────────────────────
-  function showToast(msg, type) {
-    var t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'show' + (type ? ' ' + type : '');
-    setTimeout(function() { t.className = ''; }, 2800);
-  }
-
-  // ── Skeleton loader ────────────────────────────────────────────────
-  function renderSkeleton(tbodyId, colCount) {
-    var html = '';
-    for (var i = 0; i < 3; i++) {
-      html += '<tr class="skel-row">';
-      for (var j = 0; j < colCount; j++) {
-        html += '<td><div class="skel-cell" style="width:' + (60 + Math.random()*30|0) + '%"></div></td>';
-      }
-      html += '</tr>';
-    }
-    document.getElementById(tbodyId).innerHTML = html;
-  }
-
-  // ── Load data on page ready ────────────────────────────────────────
+  // ── Init ───────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function() {
-    renderSkeleton('suppliers-tbody',  8);
-    renderSkeleton('materials-tbody',  5);
-    renderSkeleton('fg-tbody',         6);
-    renderSkeleton('parameters-tbody', 11);
-    renderSkeleton('customers-tbody',  8);
-    renderSkeleton('inspectors-tbody', 6);
+    document.getElementById('backBtn').addEventListener('click', goHome);
+
+    // Show skeleton
+    ALL_TABS.forEach(function(t) { renderSkeleton(t); });
+
     google.script.run
       .withSuccessHandler(function(data) {
         suppliersData  = data.suppliers  || [];
@@ -783,12 +702,7 @@
         parametersData = data.parameters || [];
         customersData  = data.customers  || [];
         inspectorsData = data.inspectors || [];
-        renderSuppliers();
-        renderMaterials();
-        renderFG();
-        renderParameters();
-        renderCustomers();
-        renderInspectors();
+        renderAll();
       })
       .withFailureHandler(function(err) {
         showToast('Failed to load data: ' + (err.message || err), 'error');
@@ -796,904 +710,574 @@
       .getMastersData();
   });
 
-  // ── Render suppliers table ─────────────────────────────────────────
-  function renderSuppliers() {
+  // ── Tab switching ──────────────────────────────────────────────
+  function switchTab(tab) {
+    // Check for open forms with unsaved changes
+    var currentType = tabToType(activeTab);
+    if (formState[currentType] && formState[currentType].mode && tab !== activeTab) {
+      if (!confirm('You have unsaved changes. Discard and switch tab?')) return;
+    }
+    // Close all forms
+    ALL_TABS.forEach(function(t) { closeForm(tabToType(t)); });
+    activeTab = tab;
+    ALL_TABS.forEach(function(t) {
+      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+      document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+    });
+  }
+
+  function tabToType(tab) {
+    var map = { suppliers: 'supplier', materials: 'material', fg: 'fg', parameters: 'parameter', customers: 'customer', inspectors: 'inspector' };
+    return map[tab] || tab;
+  }
+
+  // ── Render all ─────────────────────────────────────────────────
+  function renderAll() {
+    renderSuppliers();
+    renderMaterials();
+    renderFG();
+    renderParameters();
+    renderCustomers();
+    renderInspectors();
+  }
+
+  // ── Filter/search ──────────────────────────────────────────────
+  function filterList(tab) {
+    var query = (document.getElementById('search-' + tab) || {}).value || '';
+    query = query.toLowerCase();
+    var type = tabToType(tab);
+    switch(type) {
+      case 'supplier':  renderSuppliers(query);  break;
+      case 'material':  renderMaterials(query);  break;
+      case 'fg':        renderFG(query);         break;
+      case 'parameter': renderParameters(query); break;
+      case 'customer':  renderCustomers(query);  break;
+      case 'inspector': renderInspectors(query); break;
+    }
+  }
+
+  // ── Render suppliers ───────────────────────────────────────────
+  function renderSuppliers(q) {
+    var items = q ? suppliersData.filter(function(s) {
+      return (s.code + s.name + (s.material||'')).toLowerCase().indexOf(q) !== -1;
+    }) : suppliersData;
+
+    // Table
     var tbody = document.getElementById('suppliers-tbody');
-    if (!suppliersData.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No suppliers yet. Add one above.</td></tr>';
-      return;
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No suppliers found.</td></tr>';
+    } else {
+      tbody.innerHTML = items.map(function(s) {
+        var pill = '<button class="appr-pill ' + (s.approved === 'Y' ? 'yes' : 'no') +
+          '" onclick="toggleApproved(\'' + esc(s.code) + '\')">' + (s.approved === 'Y' ? 'Approved' : 'Pending') + '</button>';
+        return '<tr>' +
+          td(s.code) + td(s.name) + td(s.contact) + td(s.phone) + td(s.material) + td(s.city) +
+          '<td>' + pill + '</td>' +
+          '<td class="actions">' + editBtn('supplier', esc(s.code)) + ' ' + delBtn('supplier', esc(s.code)) + '</td>' +
+          '</tr>';
+      }).join('');
     }
-    tbody.innerHTML = suppliersData.map(function(s) {
-      var approvedHtml = '<button class="appr-pill ' + (s.approved === 'Y' ? 'yes' : 'no') +
-        '" onclick="toggleApprovedInline(\'' + esc(s.code) + '\')">' +
-        (s.approved === 'Y' ? 'Approved' : 'Not Approved') + '</button>';
-      return '<tr>' +
-        '<td>' + esc(s.code) + '</td>' +
-        '<td>' + esc(s.name) + '</td>' +
-        '<td>' + esc(s.contact || '') + '</td>' +
-        '<td>' + esc(s.phone || '') + '</td>' +
-        '<td>' + esc(s.material || '') + '</td>' +
-        '<td>' + esc(s.city || '') + '</td>' +
-        '<td>' + approvedHtml + '</td>' +
-        '<td class="actions">' +
-          '<button class="icon-btn" title="Edit" onclick="editSupplier(\'' + esc(s.code) + '\')">' +
-            iconPencil() +
-          '</button> ' +
-          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'supplier\', \'' + esc(s.code) + '\')">' +
-            iconTrash() +
-          '</button>' +
-        '</td>' +
-        '</tr>';
-    }).join('');
+
+    // Cards
+    var cards = document.getElementById('suppliers-cards');
+    if (!items.length) {
+      cards.innerHTML = '<div class="empty-state">No suppliers found.</div>';
+    } else {
+      cards.innerHTML = items.map(function(s) {
+        return '<div class="entry-card">' +
+          '<div class="entry-card-top">' +
+            '<div><div class="entry-card-name">' + esc(s.name) + '</div><div class="entry-card-code">' + esc(s.code) + '</div></div>' +
+            '<div class="entry-card-actions">' + editBtn('supplier', esc(s.code)) + ' ' + delBtn('supplier', esc(s.code)) + '</div>' +
+          '</div>' +
+          '<div class="entry-card-meta">' +
+            (s.phone ? 'Phone: ' + esc(s.phone) + ' &nbsp;' : '') +
+            (s.city ? 'City: ' + esc(s.city) : '') +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
   }
 
-  // ── Render materials table ─────────────────────────────────────────
-  function renderMaterials() {
+  // ── Render materials ───────────────────────────────────────────
+  function renderMaterials(q) {
+    var items = q ? materialsData.filter(function(m) {
+      return (m.code + (m.desc||'')).toLowerCase().indexOf(q) !== -1;
+    }) : materialsData;
+
     var tbody = document.getElementById('materials-tbody');
-    if (!materialsData.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No items yet. Add one above.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = materialsData.map(function(m) {
-      return '<tr>' +
-        '<td>' + esc(m.code) + '</td>' +
-        '<td>' + esc(m.desc || m.description || '') + '</td>' +
-        '<td>' + esc(m.unit || '') + '</td>' +
-        '<td>' + esc(m.category || '') + '</td>' +
-        '<td class="actions">' +
-          '<button class="icon-btn" title="Edit" onclick="editMaterial(\'' + esc(m.code) + '\')">' +
-            iconPencil() +
-          '</button> ' +
-          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'material\', \'' + esc(m.code) + '\')">' +
-            iconTrash() +
-          '</button>' +
-        '</td>' +
-        '</tr>';
-    }).join('');
+    tbody.innerHTML = !items.length
+      ? '<tr><td colspan="5" class="empty-state">No items found.</td></tr>'
+      : items.map(function(m) {
+          return '<tr>' + td(m.code) + td(m.desc||m.description||'') + td(m.unit) + td(m.category) +
+            '<td class="actions">' + editBtn('material', esc(m.code)) + ' ' + delBtn('material', esc(m.code)) + '</td></tr>';
+        }).join('');
+
+    var cards = document.getElementById('materials-cards');
+    cards.innerHTML = !items.length
+      ? '<div class="empty-state">No items found.</div>'
+      : items.map(function(m) {
+          return '<div class="entry-card"><div class="entry-card-top">' +
+            '<div><div class="entry-card-name">' + esc(m.desc||m.description||'') + '</div><div class="entry-card-code">' + esc(m.code) + '</div></div>' +
+            '<div class="entry-card-actions">' + editBtn('material', esc(m.code)) + ' ' + delBtn('material', esc(m.code)) + '</div>' +
+            '</div><div class="entry-card-meta">Unit: ' + esc(m.unit||'') + ' &nbsp; Cat: ' + esc(m.category||'') + '</div></div>';
+        }).join('');
   }
 
-  // ── Render customers table ────────────────────────────────────────
-  function renderCustomers() {
+  // ── Render FG ──────────────────────────────────────────────────
+  function renderFG(q) {
+    var items = q ? fgData.filter(function(f) {
+      return (f.code + f.name + (f.description||'')).toLowerCase().indexOf(q) !== -1;
+    }) : fgData;
+
+    var tbody = document.getElementById('fg-tbody');
+    tbody.innerHTML = !items.length
+      ? '<tr><td colspan="6" class="empty-state">No finished goods found.</td></tr>'
+      : items.map(function(f) {
+          return '<tr>' + td(f.code) + td(f.name) + td(f.category) + td(f.uom) + td(f.description) +
+            '<td class="actions">' + editBtn('fg', esc(f.code)) + ' ' + delBtn('fg', esc(f.code)) + '</td></tr>';
+        }).join('');
+
+    var cards = document.getElementById('fg-cards');
+    cards.innerHTML = !items.length
+      ? '<div class="empty-state">No finished goods found.</div>'
+      : items.map(function(f) {
+          return '<div class="entry-card"><div class="entry-card-top">' +
+            '<div><div class="entry-card-name">' + esc(f.name) + '</div><div class="entry-card-code">' + esc(f.code) + '</div></div>' +
+            '<div class="entry-card-actions">' + editBtn('fg', esc(f.code)) + ' ' + delBtn('fg', esc(f.code)) + '</div>' +
+            '</div><div class="entry-card-meta">UOM: ' + esc(f.uom||'') + ' &nbsp; Cat: ' + esc(f.category||'') + '</div></div>';
+        }).join('');
+  }
+
+  // ── Render parameters ──────────────────────────────────────────
+  function renderParameters(q) {
+    var items = q ? parametersData.filter(function(p) {
+      return (p.code + p.name + (p.methodType||'')).toLowerCase().indexOf(q) !== -1;
+    }) : parametersData;
+
+    var tbody = document.getElementById('parameters-tbody');
+    tbody.innerHTML = !items.length
+      ? '<tr><td colspan="11" class="empty-state">No parameters found.</td></tr>'
+      : items.map(function(p) {
+          return '<tr>' + td(p.code) + td(p.name) + td(p.unit) + td(p.stdValue) + td(p.tolMin) + td(p.tolMax) +
+            '<td><span style="font-size:10px;padding:2px 7px;border-radius:12px;background:var(--navy-light);color:var(--navy);font-weight:600;">' + esc(p.methodType||'') + '</span></td>' +
+            td(p.tools) + td(p.docRef) + td(p.docNumber) +
+            '<td class="actions">' + editBtn('parameter', esc(p.code)) + ' ' + delBtn('parameter', esc(p.code)) + '</td></tr>';
+        }).join('');
+
+    var cards = document.getElementById('parameters-cards');
+    cards.innerHTML = !items.length
+      ? '<div class="empty-state">No parameters found.</div>'
+      : items.map(function(p) {
+          return '<div class="entry-card"><div class="entry-card-top">' +
+            '<div><div class="entry-card-name">' + esc(p.name) + '</div><div class="entry-card-code">' + esc(p.code) + (p.unit ? ' &bull; ' + esc(p.unit) : '') + '</div></div>' +
+            '<div class="entry-card-actions">' + editBtn('parameter', esc(p.code)) + ' ' + delBtn('parameter', esc(p.code)) + '</div>' +
+            '</div><div class="entry-card-meta">' +
+              (p.stdValue ? 'Std: ' + esc(p.stdValue) + ' &nbsp;' : '') +
+              (p.tolMin ? 'Min: ' + esc(p.tolMin) + ' &nbsp;' : '') +
+              (p.tolMax ? 'Max: ' + esc(p.tolMax) + ' &nbsp;' : '') +
+              (p.methodType ? 'Method: ' + esc(p.methodType) : '') +
+            '</div></div>';
+        }).join('');
+  }
+
+  // ── Render customers ───────────────────────────────────────────
+  function renderCustomers(q) {
+    var items = q ? customersData.filter(function(c) {
+      return (c.code + c.name + (c.city||'')).toLowerCase().indexOf(q) !== -1;
+    }) : customersData;
+
     var tbody = document.getElementById('customers-tbody');
-    if (!customersData.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No customers yet. Add one above.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = customersData.map(function(c) {
-      return '<tr>' +
-        '<td>' + esc(c.code) + '</td>' +
-        '<td>' + esc(c.name) + '</td>' +
-        '<td>' + esc(c.contact || '') + '</td>' +
-        '<td>' + esc(c.phone || '') + '</td>' +
-        '<td>' + esc(c.email || '') + '</td>' +
-        '<td>' + esc(c.products || '') + '</td>' +
-        '<td>' + esc(c.city || '') + '</td>' +
-        '<td class="actions">' +
-          '<button class="icon-btn" title="Edit" onclick="editCustomer(\'' + esc(c.code) + '\')">' +
-            iconPencil() +
-          '</button> ' +
-          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'customer\', \'' + esc(c.code) + '\')">' +
-            iconTrash() +
-          '</button>' +
-        '</td>' +
-        '</tr>';
-    }).join('');
+    tbody.innerHTML = !items.length
+      ? '<tr><td colspan="8" class="empty-state">No customers found.</td></tr>'
+      : items.map(function(c) {
+          return '<tr>' + td(c.code) + td(c.name) + td(c.contact) + td(c.phone) + td(c.email) + td(c.products) + td(c.city) +
+            '<td class="actions">' + editBtn('customer', esc(c.code)) + ' ' + delBtn('customer', esc(c.code)) + '</td></tr>';
+        }).join('');
+
+    var cards = document.getElementById('customers-cards');
+    cards.innerHTML = !items.length
+      ? '<div class="empty-state">No customers found.</div>'
+      : items.map(function(c) {
+          return '<div class="entry-card"><div class="entry-card-top">' +
+            '<div><div class="entry-card-name">' + esc(c.name) + '</div><div class="entry-card-code">' + esc(c.code) + '</div></div>' +
+            '<div class="entry-card-actions">' + editBtn('customer', esc(c.code)) + ' ' + delBtn('customer', esc(c.code)) + '</div>' +
+            '</div><div class="entry-card-meta">' + (c.phone ? 'Phone: ' + esc(c.phone) + ' &nbsp;' : '') + (c.city ? 'City: ' + esc(c.city) : '') + '</div></div>';
+        }).join('');
   }
 
-  // ── Render inspectors table ───────────────────────────────────────
-  function renderInspectors() {
+  // ── Render inspectors ──────────────────────────────────────────
+  function renderInspectors(q) {
+    var items = q ? inspectorsData.filter(function(p) {
+      return (p.name + (p.role||'')).toLowerCase().indexOf(q) !== -1;
+    }) : inspectorsData;
+
     var tbody = document.getElementById('inspectors-tbody');
-    if (!inspectorsData.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No inspectors yet. Add one above.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = inspectorsData.map(function(p) {
-      var notifyHtml = '<button class="appr-pill ' + (p.notify === 'Y' ? 'yes' : 'no') +
-        '" onclick="toggleNotifyInline(\'' + esc(p.name) + '\')">' +
-        (p.notify === 'Y' ? 'Yes' : 'No') + '</button>';
-      return '<tr>' +
-        '<td>' + esc(p.name) + '</td>' +
-        '<td>' + esc(p.role || '') + '</td>' +
-        '<td>' + esc(p.dept || '') + '</td>' +
-        '<td>' + esc(p.phone || '') + '</td>' +
-        '<td>' + notifyHtml + '</td>' +
-        '<td class="actions">' +
-          '<button class="icon-btn" title="Edit" onclick="editInspector(\'' + esc(p.name) + '\')">' +
-            iconPencil() +
-          '</button> ' +
-          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'inspector\', \'' + esc(p.name) + '\')">' +
-            iconTrash() +
-          '</button>' +
-        '</td>' +
-        '</tr>';
-    }).join('');
+    tbody.innerHTML = !items.length
+      ? '<tr><td colspan="6" class="empty-state">No inspectors found.</td></tr>'
+      : items.map(function(p) {
+          var pill = '<button class="appr-pill ' + (p.notify === 'Y' ? 'yes' : 'no') +
+            '" onclick="toggleNotify(\'' + esc(p.name) + '\')">' + (p.notify === 'Y' ? 'Yes' : 'No') + '</button>';
+          return '<tr>' + td(p.name) + td(p.role) + td(p.dept) + td(p.phone) +
+            '<td>' + pill + '</td>' +
+            '<td class="actions">' + editBtn('inspector', esc(p.name)) + ' ' + delBtn('inspector', esc(p.name)) + '</td></tr>';
+        }).join('');
+
+    var cards = document.getElementById('inspectors-cards');
+    cards.innerHTML = !items.length
+      ? '<div class="empty-state">No inspectors found.</div>'
+      : items.map(function(p) {
+          return '<div class="entry-card"><div class="entry-card-top">' +
+            '<div><div class="entry-card-name">' + esc(p.name) + '</div><div class="entry-card-code">' + esc(p.role||'') + '</div></div>' +
+            '<div class="entry-card-actions">' + editBtn('inspector', esc(p.name)) + ' ' + delBtn('inspector', esc(p.name)) + '</div>' +
+            '</div><div class="entry-card-meta">' + (p.dept ? 'Dept: ' + esc(p.dept) + ' &nbsp;' : '') + (p.phone ? 'WA: ' + esc(p.phone) : '') + '</div></div>';
+        }).join('');
   }
 
-  // ── SVG icons ─────────────────────────────────────────────────────
+  // ── Skeleton ───────────────────────────────────────────────────
+  function renderSkeleton(tab) {
+    var type = tabToType(tab);
+    var tbody = document.getElementById(type === 'inspector' ? 'inspectors-tbody' : type + (type === 'inspector' ? '' : 's-tbody'));
+    // Correct tbody id lookup
+    var tbodyId = type + 's-tbody';
+    if (type === 'material') tbodyId = 'materials-tbody';
+    if (type === 'parameter') tbodyId = 'parameters-tbody';
+    if (type === 'inspector') tbodyId = 'inspectors-tbody';
+    var tbodyEl = document.getElementById(tbodyId);
+    if (!tbodyEl) return;
+    var cols = { supplier:8, material:5, fg:6, parameter:11, customer:8, inspector:6 }[type] || 5;
+    var html = '';
+    for (var i = 0; i < 3; i++) {
+      html += '<tr>';
+      for (var j = 0; j < cols; j++) {
+        html += '<td><span class="skel-cell" style="width:' + (50 + Math.random()*35|0) + '%">&nbsp;</span></td>';
+      }
+      html += '</tr>';
+    }
+    tbodyEl.innerHTML = html;
+  }
+
+  // ── Open form ──────────────────────────────────────────────────
+  function openForm(type, mode, key) {
+    var formEl = document.getElementById(type + '-form');
+    if (!formEl) return;
+
+    formState[type].mode = mode;
+    formState[type].editKey = key || null;
+
+    var titleEl = document.getElementById(type + '-form-title');
+    var saveBtn = document.getElementById(type + '-save-btn');
+
+    if (mode === 'add') {
+      clearForm(type);
+      if (titleEl) titleEl.textContent = 'Add ' + typeName(type);
+      if (saveBtn) saveBtn.textContent = 'Save';
+    } else {
+      populateForm(type, key);
+      if (titleEl) titleEl.textContent = 'Edit ' + typeName(type) + ': ' + key;
+      if (saveBtn) saveBtn.textContent = 'Update';
+    }
+
+    formEl.classList.add('open');
+    formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function typeName(type) {
+    var m = { supplier:'Supplier', material:'Item', fg:'Finished Good', parameter:'Parameter', customer:'Customer', inspector:'Inspector' };
+    return m[type] || type;
+  }
+
+  // ── Close form ─────────────────────────────────────────────────
+  function closeForm(type) {
+    var formEl = document.getElementById(type + '-form');
+    if (formEl) formEl.classList.remove('open');
+    if (formState[type]) { formState[type].mode = null; formState[type].editKey = null; }
+  }
+
+  // ── Clear form fields ──────────────────────────────────────────
+  function clearForm(type) {
+    var maps = {
+      supplier:  { fields: ['s-code','s-name','s-contact','s-phone','s-material','s-city'], req: ['s-code','s-name'] },
+      material:  { fields: ['m-code','m-desc'], req: ['m-code','m-desc'] },
+      fg:        { fields: ['fg-code','fg-name','fg-category','fg-desc'], req: ['fg-code','fg-name'] },
+      parameter: { fields: ['p-code','p-name','p-unit','p-std','p-min','p-max','p-tools','p-docref','p-docno','p-checkbrief'], req: ['p-code','p-name'] },
+      customer:  { fields: ['c-code','c-name','c-contact','c-phone','c-email','c-products','c-city'], req: ['c-code','c-name'] },
+      inspector: { fields: ['i-name','i-role','i-dept','i-phone'], req: ['i-name','i-role'] }
+    };
+    var m = maps[type];
+    if (!m) return;
+    m.fields.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('invalid'); }
+    });
+    m.req.forEach(function(id) {
+      var err = document.getElementById(id + '-err');
+      if (err) err.style.display = 'none';
+    });
+    // Reset selects
+    if (type === 'material')  { setIfEl('m-unit','KG'); setIfEl('m-cat','BULK'); }
+    if (type === 'fg')        { setIfEl('fg-uom','PC'); }
+    if (type === 'parameter') { setIfEl('p-method','Visual'); }
+    if (type === 'supplier')  { setApproved('s','Y'); }
+    if (type === 'inspector') { setNotify('Y'); }
+  }
+
+  function setIfEl(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.value = val;
+  }
+
+  // ── Populate form for edit ─────────────────────────────────────
+  function populateForm(type, key) {
+    clearForm(type);
+    var item;
+    switch(type) {
+      case 'supplier':
+        item = suppliersData.find(function(x) { return x.code === key; }); if (!item) return;
+        setIfEl('s-code', item.code); setIfEl('s-name', item.name); setIfEl('s-contact', item.contact);
+        setIfEl('s-phone', item.phone); setIfEl('s-material', item.material); setIfEl('s-city', item.city);
+        setApproved('s', item.approved || 'Y');
+        break;
+      case 'material':
+        item = materialsData.find(function(x) { return x.code === key; }); if (!item) return;
+        setIfEl('m-code', item.code); setIfEl('m-desc', item.desc || item.description || '');
+        setIfEl('m-unit', item.unit || 'KG'); setIfEl('m-cat', item.category || 'BULK');
+        break;
+      case 'fg':
+        item = fgData.find(function(x) { return x.code === key; }); if (!item) return;
+        setIfEl('fg-code', item.code); setIfEl('fg-name', item.name || '');
+        setIfEl('fg-category', item.category || ''); setIfEl('fg-uom', item.uom || 'PC');
+        setIfEl('fg-desc', item.description || '');
+        break;
+      case 'parameter':
+        item = parametersData.find(function(x) { return x.code === key; }); if (!item) return;
+        setIfEl('p-code', item.code); setIfEl('p-name', item.name); setIfEl('p-unit', item.unit || '');
+        setIfEl('p-std', item.stdValue || ''); setIfEl('p-min', item.tolMin || ''); setIfEl('p-max', item.tolMax || '');
+        setIfEl('p-method', item.methodType || 'Visual'); setIfEl('p-tools', item.tools || '');
+        setIfEl('p-docref', item.docRef || ''); setIfEl('p-docno', item.docNumber || '');
+        setIfEl('p-checkbrief', item.checkBrief || '');
+        break;
+      case 'customer':
+        item = customersData.find(function(x) { return x.code === key; }); if (!item) return;
+        setIfEl('c-code', item.code); setIfEl('c-name', item.name); setIfEl('c-contact', item.contact || '');
+        setIfEl('c-phone', item.phone || ''); setIfEl('c-email', item.email || '');
+        setIfEl('c-products', item.products || ''); setIfEl('c-city', item.city || '');
+        break;
+      case 'inspector':
+        item = inspectorsData.find(function(x) { return x.name === key; }); if (!item) return;
+        setIfEl('i-name', item.name); setIfEl('i-role', item.role || '');
+        setIfEl('i-dept', item.dept || ''); setIfEl('i-phone', item.phone || '');
+        setNotify(item.notify || 'Y');
+        break;
+    }
+  }
+
+  // ── Collect form data ──────────────────────────────────────────
+  function collectForm(type) {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var gs = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
+    switch(type) {
+      case 'supplier':  return { code: g('s-code'), name: g('s-name'), contact: g('s-contact'), phone: g('s-phone'), material: g('s-material'), city: g('s-city'), approved: supplierApproved };
+      case 'material':  return { code: g('m-code'), desc: g('m-desc'), unit: gs('m-unit'), category: gs('m-cat') };
+      case 'fg':        return { code: g('fg-code'), name: g('fg-name'), category: g('fg-category'), uom: gs('fg-uom'), description: g('fg-desc') };
+      case 'parameter': return { code: g('p-code'), name: g('p-name'), unit: g('p-unit'), stdValue: g('p-std'), tolMin: g('p-min'), tolMax: g('p-max'), methodType: gs('p-method'), tools: g('p-tools'), docRef: g('p-docref'), docNumber: g('p-docno'), checkBrief: g('p-checkbrief') };
+      case 'customer':  return { code: g('c-code'), name: g('c-name'), contact: g('c-contact'), phone: g('c-phone'), email: g('c-email'), products: g('c-products'), city: g('c-city') };
+      case 'inspector': return { name: g('i-name'), role: g('i-role'), dept: g('i-dept'), phone: g('i-phone'), notify: inspectorNotify };
+    }
+  }
+
+  // ── Validate form ──────────────────────────────────────────────
+  function validateForm(type, data) {
+    var required = {
+      supplier:  [['code','s-code','s-code-err'],['name','s-name','s-name-err']],
+      material:  [['code','m-code','m-code-err'],['desc','m-desc','m-desc-err']],
+      fg:        [['code','fg-code','fg-code-err'],['name','fg-name','fg-name-err']],
+      parameter: [['code','p-code','p-code-err'],['name','p-name','p-name-err']],
+      customer:  [['code','c-code','c-code-err'],['name','c-name','c-name-err']],
+      inspector: [['name','i-name','i-name-err'],['role','i-role','i-role-err']]
+    };
+    var checks = required[type] || [];
+    var valid = true;
+    checks.forEach(function(c) {
+      var val = data[c[0]];
+      var inp = document.getElementById(c[1]);
+      var err = document.getElementById(c[2]);
+      if (!val) {
+        if (inp) inp.classList.add('invalid');
+        if (err) err.style.display = 'block';
+        valid = false;
+      } else {
+        if (inp) inp.classList.remove('invalid');
+        if (err) err.style.display = 'none';
+      }
+    });
+    return valid;
+  }
+
+  // ── Save record (unified) ──────────────────────────────────────
+  function saveRecord(type) {
+    var data = collectForm(type);
+    if (!validateForm(type, data)) return;
+
+    var mode = formState[type].mode;
+    var editKey = formState[type].editKey;
+    var btn = document.getElementById(type + '-save-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+    google.script.run
+      .withSuccessHandler(function() {
+        // Update local data
+        var arr = getDataArray(type);
+        var keyField = type === 'inspector' ? 'name' : 'code';
+        if (mode === 'add') {
+          arr.push(data);
+          showToast(typeName(type) + ' added', 'success');
+        } else {
+          var idx = arr.findIndex(function(x) { return x[keyField] === editKey; });
+          if (idx !== -1) arr[idx] = data;
+          showToast(typeName(type) + ' updated', 'success');
+        }
+        closeForm(type);
+        renderType(type);
+        if (btn) { btn.disabled = false; btn.textContent = mode === 'edit' ? 'Update' : 'Save'; }
+      })
+      .withFailureHandler(function(err) {
+        showToast('Save failed: ' + (err.message || err), 'error');
+        if (btn) { btn.disabled = false; btn.textContent = mode === 'edit' ? 'Update' : 'Save'; }
+      })
+      .saveMaster(type, data);
+  }
+
+  function getDataArray(type) {
+    switch(type) {
+      case 'supplier':  return suppliersData;
+      case 'material':  return materialsData;
+      case 'fg':        return fgData;
+      case 'parameter': return parametersData;
+      case 'customer':  return customersData;
+      case 'inspector': return inspectorsData;
+    }
+    return [];
+  }
+
+  function renderType(type) {
+    switch(type) {
+      case 'supplier':  renderSuppliers(); break;
+      case 'material':  renderMaterials(); break;
+      case 'fg':        renderFG(); break;
+      case 'parameter': renderParameters(); break;
+      case 'customer':  renderCustomers(); break;
+      case 'inspector': renderInspectors(); break;
+    }
+  }
+
+  // ── Toggle approved inline ─────────────────────────────────────
+  function toggleApproved(code) {
+    var s = suppliersData.find(function(x) { return x.code === code; });
+    if (!s) return;
+    var newVal = s.approved === 'Y' ? 'N' : 'Y';
+    var updated = Object.assign({}, s, { approved: newVal });
+    google.script.run
+      .withSuccessHandler(function() { s.approved = newVal; renderSuppliers(); showToast(code + ' approval updated', 'success'); })
+      .withFailureHandler(function(err) { showToast('Update failed: ' + (err.message || err), 'error'); })
+      .saveMaster('supplier', updated);
+  }
+
+  // ── Toggle notify inline ───────────────────────────────────────
+  function toggleNotify(name) {
+    var p = inspectorsData.find(function(x) { return x.name === name; });
+    if (!p) return;
+    var newVal = p.notify === 'Y' ? 'N' : 'Y';
+    var updated = Object.assign({}, p, { notify: newVal });
+    google.script.run
+      .withSuccessHandler(function() { p.notify = newVal; renderInspectors(); showToast(name + ' notify updated', 'success'); })
+      .withFailureHandler(function(err) { showToast('Update failed: ' + (err.message || err), 'error'); })
+      .saveMaster('inspector', updated);
+  }
+
+  // ── Approved toggle state ──────────────────────────────────────
+  function setApproved(prefix, val) {
+    supplierApproved = val;
+    var y = document.getElementById(prefix + '-appr-yes');
+    var n = document.getElementById(prefix + '-appr-no');
+    if (y) y.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
+    if (n) n.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
+  }
+  function setNotify(val) {
+    inspectorNotify = val;
+    var y = document.getElementById('i-notify-yes');
+    var n = document.getElementById('i-notify-no');
+    if (y) y.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
+    if (n) n.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
+  }
+
+  // ── Edit shortcuts (called from inline onclick in rendered HTML) ─
+  function editSupplier(code) { openForm('supplier', 'edit', code); }
+  function editMaterial(code) { openForm('material', 'edit', code); }
+  function editFG(code)       { openForm('fg', 'edit', code); }
+  function editParameter(code){ openForm('parameter', 'edit', code); }
+  function editCustomer(code) { openForm('customer', 'edit', code); }
+  function editInspector(name){ openForm('inspector', 'edit', name); }
+
+  // ── Delete record ──────────────────────────────────────────────
+  function deleteRecord(type, key) {
+    if (!confirm('Delete ' + typeName(type) + ' "' + key + '"? This cannot be undone.')) return;
+    google.script.run
+      .withSuccessHandler(function() {
+        var arr = getDataArray(type);
+        var keyField = type === 'inspector' ? 'name' : 'code';
+        var filtered = arr.filter(function(x) { return x[keyField] !== key; });
+        // Replace in-place
+        switch(type) {
+          case 'supplier':  suppliersData  = filtered; break;
+          case 'material':  materialsData  = filtered; break;
+          case 'fg':        fgData         = filtered; break;
+          case 'parameter': parametersData = filtered; break;
+          case 'customer':  customersData  = filtered; break;
+          case 'inspector': inspectorsData = filtered; break;
+        }
+        renderType(type);
+        if (formState[type] && formState[type].editKey === key) closeForm(type);
+        showToast(typeName(type) + ' deleted', 'success');
+      })
+      .withFailureHandler(function(err) {
+        showToast('Delete failed: ' + (err.message || err), 'error');
+      })
+      .deleteMaster(type, key);
+  }
+
+  // ── HTML helpers ───────────────────────────────────────────────
+  function td(val) { return '<td>' + esc(val || '') + '</td>'; }
+  function editBtn(type, key) {
+    return '<button class="icon-btn" title="Edit" onclick="edit' +
+      type.charAt(0).toUpperCase() + type.slice(1) + '(\'' + key + '\')">' + iconPencil() + '</button>';
+  }
+  function delBtn(type, key) {
+    return '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'' + type + '\',\'' + key + '\')">' + iconTrash() + '</button>';
+  }
   function iconPencil() {
     return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0D1B6E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
   }
   function iconTrash() {
     return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
   }
-  function iconPlus() {
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-  }
-
-  // ── HTML escape ────────────────────────────────────────────────────
   function esc(str) {
     if (str === null || str === undefined) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
-  // ── Open add form ─────────────────────────────────────────────────
-  function openAddForm(type) {
-    if (type === 'supplier') {
-      supplierMode = 'add';
-      supplierEditCode = null;
-      supplierApproved = 'Y';
-      clearSupplierForm();
-      document.getElementById('supplier-form-title').textContent = 'Add Supplier';
-      document.getElementById('supplier-save-btn').textContent = 'Save';
-      document.getElementById('supplier-form').classList.add('open');
-      document.getElementById('supplier-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else if (type === 'material') {
-      materialMode = 'add';
-      materialEditCode = null;
-      clearMaterialForm();
-      document.getElementById('material-form-title').textContent = 'Add Item';
-      document.getElementById('material-save-btn').textContent = 'Save';
-      document.getElementById('material-form').classList.add('open');
-      document.getElementById('material-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else if (type === 'customer') {
-      customerMode = 'add';
-      customerEditCode = null;
-      clearCustomerForm();
-      document.getElementById('customer-form-title').textContent = 'Add Customer';
-      document.getElementById('customer-save-btn').textContent = 'Save';
-      document.getElementById('customer-form').classList.add('open');
-      document.getElementById('customer-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else if (type === 'inspector') {
-      inspectorMode = 'add';
-      inspectorEditName = null;
-      inspectorNotify = 'Y';
-      clearInspectorForm();
-      document.getElementById('inspector-form-title').textContent = 'Add Inspector';
-      document.getElementById('inspector-save-btn').textContent = 'Save';
-      document.getElementById('inspector-form').classList.add('open');
-      document.getElementById('inspector-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+  // ── Toast ──────────────────────────────────────────────────────
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(function() { t.className = 'toast'; }, 2800);
   }
 
-  function clearSupplierForm() {
-    ['s-code','s-name','s-contact','s-phone','s-material','s-city'].forEach(function(id) {
-      document.getElementById(id).value = '';
-      document.getElementById(id).classList.remove('invalid');
-    });
-    ['s-code-err','s-name-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-    setApproved('s', 'Y');
-  }
-
-  function clearMaterialForm() {
-    document.getElementById('m-code').value = '';
-    document.getElementById('m-desc').value = '';
-    document.getElementById('m-unit').value = 'KG';
-    document.getElementById('m-cat').value = 'BULK';
-    ['m-code','m-desc'].forEach(function(id) {
-      document.getElementById(id).classList.remove('invalid');
-    });
-    ['m-code-err','m-desc-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-  }
-
-  function clearCustomerForm() {
-    ['c-code','c-name','c-contact','c-phone','c-email','c-products','c-city'].forEach(function(id) {
-      document.getElementById(id).value = '';
-      document.getElementById(id).classList.remove('invalid');
-    });
-    ['c-code-err','c-name-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-  }
-
-  function clearInspectorForm() {
-    ['i-name','i-role','i-dept','i-phone'].forEach(function(id) {
-      document.getElementById(id).value = '';
-      document.getElementById(id).classList.remove('invalid');
-    });
-    ['i-name-err','i-role-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-    setNotify('Y');
-  }
-
-  // ── Approved toggle ────────────────────────────────────────────────
-  function setApproved(prefix, val) {
-    supplierApproved = val;
-    var yBtn = document.getElementById(prefix + '-appr-yes');
-    var nBtn = document.getElementById(prefix + '-appr-no');
-    yBtn.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
-    nBtn.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
-  }
-
-  // ── Notify toggle (inspector form) ───────────────────────────────
-  function setNotify(val) {
-    inspectorNotify = val;
-    var yBtn = document.getElementById('i-notify-yes');
-    var nBtn = document.getElementById('i-notify-no');
-    yBtn.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
-    nBtn.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
-  }
-
-  // ── Toggle approved inline (pill click in table) ───────────────────
-  function toggleApprovedInline(code) {
-    var s = suppliersData.find(function(x) { return x.code === code; });
-    if (!s) return;
-    var newVal = s.approved === 'Y' ? 'N' : 'Y';
-    var updated = Object.assign({}, s, { approved: newVal });
-    google.script.run
-      .withSuccessHandler(function() {
-        s.approved = newVal;
-        renderSuppliers();
-        showToast(code + ' approval updated', 'success');
-      })
-      .withFailureHandler(function(err) {
-        showToast('Update failed: ' + (err.message || err), 'error');
-      })
-      .saveMaster('supplier', updated);
-  }
-
-  // ── Toggle notify inline (pill click in inspectors table) ────────
-  function toggleNotifyInline(name) {
-    var p = inspectorsData.find(function(x) { return x.name === name; });
-    if (!p) return;
-    var newVal = p.notify === 'Y' ? 'N' : 'Y';
-    var updated = Object.assign({}, p, { notify: newVal });
-    google.script.run
-      .withSuccessHandler(function() {
-        p.notify = newVal;
-        renderInspectors();
-        showToast(name + ' notify updated', 'success');
-      })
-      .withFailureHandler(function(err) {
-        showToast('Update failed: ' + (err.message || err), 'error');
-      })
-      .saveMaster('inspector', updated);
-  }
-
-  // ── Edit supplier ──────────────────────────────────────────────────
-  function editSupplier(code) {
-    var s = suppliersData.find(function(x) { return x.code === code; });
-    if (!s) return;
-    supplierMode = 'edit';
-    supplierEditCode = code;
-    supplierApproved = s.approved || 'Y';
-
-    document.getElementById('s-code').value = s.code || '';
-    document.getElementById('s-name').value = s.name || '';
-    document.getElementById('s-contact').value = s.contact || '';
-    document.getElementById('s-phone').value = s.phone || '';
-    document.getElementById('s-material').value = s.material || '';
-    document.getElementById('s-city').value = s.city || '';
-    setApproved('s', supplierApproved);
-
-    // Clear validation state
-    ['s-code','s-name'].forEach(function(id) {
-      document.getElementById(id).classList.remove('invalid');
-    });
-    ['s-code-err','s-name-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-
-    document.getElementById('supplier-form-title').textContent = 'Edit Supplier: ' + code;
-    document.getElementById('supplier-save-btn').textContent = 'Update';
-    document.getElementById('supplier-form').classList.add('open');
-    document.getElementById('supplier-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  // ── Edit material ──────────────────────────────────────────────────
-  function editMaterial(code) {
-    var m = materialsData.find(function(x) { return x.code === code; });
-    if (!m) return;
-    materialMode = 'edit';
-    materialEditCode = code;
-
-    document.getElementById('m-code').value = m.code || '';
-    document.getElementById('m-desc').value = m.desc || m.description || '';
-    document.getElementById('m-unit').value = m.unit || 'KG';
-    document.getElementById('m-cat').value = m.category || 'BULK';
-
-    ['m-code','m-desc'].forEach(function(id) {
-      document.getElementById(id).classList.remove('invalid');
-    });
-    ['m-code-err','m-desc-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-
-    document.getElementById('material-form-title').textContent = 'Edit Item: ' + code;
-    document.getElementById('material-save-btn').textContent = 'Update';
-    document.getElementById('material-form').classList.add('open');
-    document.getElementById('material-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  // ── Edit customer ─────────────────────────────────────────────────
-  function editCustomer(code) {
-    var c = customersData.find(function(x) { return x.code === code; });
-    if (!c) return;
-    customerMode = 'edit';
-    customerEditCode = code;
-
-    document.getElementById('c-code').value    = c.code    || '';
-    document.getElementById('c-name').value    = c.name    || '';
-    document.getElementById('c-contact').value = c.contact || '';
-    document.getElementById('c-phone').value   = c.phone   || '';
-    document.getElementById('c-email').value   = c.email   || '';
-    document.getElementById('c-products').value= c.products|| '';
-    document.getElementById('c-city').value    = c.city    || '';
-
-    ['c-code','c-name'].forEach(function(id) {
-      document.getElementById(id).classList.remove('invalid');
-    });
-    ['c-code-err','c-name-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-
-    document.getElementById('customer-form-title').textContent = 'Edit Customer: ' + code;
-    document.getElementById('customer-save-btn').textContent = 'Update';
-    document.getElementById('customer-form').classList.add('open');
-    document.getElementById('customer-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  // ── Edit inspector ────────────────────────────────────────────────
-  function editInspector(name) {
-    var p = inspectorsData.find(function(x) { return x.name === name; });
-    if (!p) return;
-    inspectorMode = 'edit';
-    inspectorEditName = name;
-    inspectorNotify = p.notify || 'Y';
-
-    document.getElementById('i-name').value  = p.name  || '';
-    document.getElementById('i-role').value  = p.role  || '';
-    document.getElementById('i-dept').value  = p.dept  || '';
-    document.getElementById('i-phone').value = p.phone || '';
-    setNotify(inspectorNotify);
-
-    ['i-name','i-role'].forEach(function(id) {
-      document.getElementById(id).classList.remove('invalid');
-    });
-    ['i-name-err','i-role-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-
-    document.getElementById('inspector-form-title').textContent = 'Edit Inspector: ' + name;
-    document.getElementById('inspector-save-btn').textContent = 'Update';
-    document.getElementById('inspector-form').classList.add('open');
-    document.getElementById('inspector-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  // ── Close form ────────────────────────────────────────────────────
-  function closeForm(type) {
-    if (type === 'supplier') {
-      supplierMode = null;
-      supplierEditCode = null;
-      document.getElementById('supplier-form').classList.remove('open');
-    } else if (type === 'material') {
-      materialMode = null;
-      materialEditCode = null;
-      document.getElementById('material-form').classList.remove('open');
-    } else if (type === 'customer') {
-      customerMode = null;
-      customerEditCode = null;
-      document.getElementById('customer-form').classList.remove('open');
-    } else if (type === 'inspector') {
-      inspectorMode = null;
-      inspectorEditName = null;
-      document.getElementById('inspector-form').classList.remove('open');
-    } else if (type === 'fg') {
-      fgMode = null;
-      fgEditCode = null;
-      document.getElementById('fg-form').classList.remove('open');
-    } else if (type === 'parameter') {
-      parameterMode = null;
-      parameterEditCode = null;
-      document.getElementById('parameter-form').classList.remove('open');
-    }
-  }
-
-  // ── Validate supplier form ─────────────────────────────────────────
-  function validateSupplierForm() {
-    var valid = true;
-    var code = document.getElementById('s-code').value.trim();
-    var name = document.getElementById('s-name').value.trim();
-
-    if (!code) {
-      document.getElementById('s-code').classList.add('invalid');
-      document.getElementById('s-code-err').style.display = 'block';
-      valid = false;
-    } else {
-      document.getElementById('s-code').classList.remove('invalid');
-      document.getElementById('s-code-err').style.display = 'none';
-    }
-    if (!name) {
-      document.getElementById('s-name').classList.add('invalid');
-      document.getElementById('s-name-err').style.display = 'block';
-      valid = false;
-    } else {
-      document.getElementById('s-name').classList.remove('invalid');
-      document.getElementById('s-name-err').style.display = 'none';
-    }
-    return valid;
-  }
-
-  // ── Validate material form ─────────────────────────────────────────
-  function validateMaterialForm() {
-    var valid = true;
-    var code = document.getElementById('m-code').value.trim();
-    var desc = document.getElementById('m-desc').value.trim();
-
-    if (!code) {
-      document.getElementById('m-code').classList.add('invalid');
-      document.getElementById('m-code-err').style.display = 'block';
-      valid = false;
-    } else {
-      document.getElementById('m-code').classList.remove('invalid');
-      document.getElementById('m-code-err').style.display = 'none';
-    }
-    if (!desc) {
-      document.getElementById('m-desc').classList.add('invalid');
-      document.getElementById('m-desc-err').style.display = 'block';
-      valid = false;
-    } else {
-      document.getElementById('m-desc').classList.remove('invalid');
-      document.getElementById('m-desc-err').style.display = 'none';
-    }
-    return valid;
-  }
-
-  // ── Validate customer form ────────────────────────────────────────
-  function validateCustomerForm() {
-    var valid = true;
-    var code = document.getElementById('c-code').value.trim();
-    var name = document.getElementById('c-name').value.trim();
-
-    if (!code) {
-      document.getElementById('c-code').classList.add('invalid');
-      document.getElementById('c-code-err').style.display = 'block';
-      valid = false;
-    } else {
-      document.getElementById('c-code').classList.remove('invalid');
-      document.getElementById('c-code-err').style.display = 'none';
-    }
-    if (!name) {
-      document.getElementById('c-name').classList.add('invalid');
-      document.getElementById('c-name-err').style.display = 'block';
-      valid = false;
-    } else {
-      document.getElementById('c-name').classList.remove('invalid');
-      document.getElementById('c-name-err').style.display = 'none';
-    }
-    return valid;
-  }
-
-  // ── Validate inspector form ───────────────────────────────────────
-  function validateInspectorForm() {
-    var valid = true;
-    var name = document.getElementById('i-name').value.trim();
-    var role = document.getElementById('i-role').value.trim();
-
-    if (!name) {
-      document.getElementById('i-name').classList.add('invalid');
-      document.getElementById('i-name-err').style.display = 'block';
-      valid = false;
-    } else {
-      document.getElementById('i-name').classList.remove('invalid');
-      document.getElementById('i-name-err').style.display = 'none';
-    }
-    if (!role) {
-      document.getElementById('i-role').classList.add('invalid');
-      document.getElementById('i-role-err').style.display = 'block';
-      valid = false;
-    } else {
-      document.getElementById('i-role').classList.remove('invalid');
-      document.getElementById('i-role-err').style.display = 'none';
-    }
-    return valid;
-  }
-
-  // ── Save supplier ──────────────────────────────────────────────────
-  function saveSupplier() {
-    if (!validateSupplierForm()) return;
-
-    var data = {
-      code:     document.getElementById('s-code').value.trim(),
-      name:     document.getElementById('s-name').value.trim(),
-      contact:  document.getElementById('s-contact').value.trim(),
-      phone:    document.getElementById('s-phone').value.trim(),
-      material: document.getElementById('s-material').value.trim(),
-      city:     document.getElementById('s-city').value.trim(),
-      approved: supplierApproved
-    };
-
-    var btn = document.getElementById('supplier-save-btn');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    google.script.run
-      .withSuccessHandler(function() {
-        if (supplierMode === 'add') {
-          suppliersData.push(data);
-          showToast('Supplier added', 'success');
-        } else {
-          var idx = suppliersData.findIndex(function(x) { return x.code === supplierEditCode; });
-          if (idx !== -1) suppliersData[idx] = data;
-          showToast('Supplier updated', 'success');
-        }
-        renderSuppliers();
-        closeForm('supplier');
-        btn.disabled = false;
-      })
-      .withFailureHandler(function(err) {
-        showToast('Save failed: ' + (err.message || err), 'error');
-        btn.disabled = false;
-        btn.textContent = supplierMode === 'edit' ? 'Update' : 'Save';
-      })
-      .saveMaster('supplier', data);
-  }
-
-  // ── Save material ──────────────────────────────────────────────────
-  function saveMaterial() {
-    if (!validateMaterialForm()) return;
-
-    var data = {
-      code:     document.getElementById('m-code').value.trim(),
-      desc:     document.getElementById('m-desc').value.trim(),
-      unit:     document.getElementById('m-unit').value,
-      category: document.getElementById('m-cat').value
-    };
-
-    var btn = document.getElementById('material-save-btn');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    google.script.run
-      .withSuccessHandler(function() {
-        if (materialMode === 'add') {
-          materialsData.push(data);
-          showToast('Item added', 'success');
-        } else {
-          var idx = materialsData.findIndex(function(x) { return x.code === materialEditCode; });
-          if (idx !== -1) materialsData[idx] = data;
-          showToast('Item updated', 'success');
-        }
-        renderMaterials();
-        closeForm('material');
-        btn.disabled = false;
-      })
-      .withFailureHandler(function(err) {
-        showToast('Save failed: ' + (err.message || err), 'error');
-        btn.disabled = false;
-        btn.textContent = materialMode === 'edit' ? 'Update' : 'Save';
-      })
-      .saveMaster('material', data);
-  }
-
-  // ── Save customer ─────────────────────────────────────────────────
-  function saveCustomer() {
-    if (!validateCustomerForm()) return;
-
-    var data = {
-      code:     document.getElementById('c-code').value.trim(),
-      name:     document.getElementById('c-name').value.trim(),
-      contact:  document.getElementById('c-contact').value.trim(),
-      phone:    document.getElementById('c-phone').value.trim(),
-      email:    document.getElementById('c-email').value.trim(),
-      products: document.getElementById('c-products').value.trim(),
-      city:     document.getElementById('c-city').value.trim()
-    };
-
-    var btn = document.getElementById('customer-save-btn');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    google.script.run
-      .withSuccessHandler(function() {
-        if (customerMode === 'add') {
-          customersData.push(data);
-          showToast('Customer added', 'success');
-        } else {
-          var idx = customersData.findIndex(function(x) { return x.code === customerEditCode; });
-          if (idx !== -1) customersData[idx] = data;
-          showToast('Customer updated', 'success');
-        }
-        renderCustomers();
-        closeForm('customer');
-        btn.disabled = false;
-      })
-      .withFailureHandler(function(err) {
-        showToast('Save failed: ' + (err.message || err), 'error');
-        btn.disabled = false;
-        btn.textContent = customerMode === 'edit' ? 'Update' : 'Save';
-      })
-      .saveMaster('customer', data);
-  }
-
-  // ── Save inspector ────────────────────────────────────────────────
-  function saveInspector() {
-    if (!validateInspectorForm()) return;
-
-    var data = {
-      name:   document.getElementById('i-name').value.trim(),
-      role:   document.getElementById('i-role').value.trim(),
-      dept:   document.getElementById('i-dept').value.trim(),
-      phone:  document.getElementById('i-phone').value.trim(),
-      notify: inspectorNotify
-    };
-
-    var btn = document.getElementById('inspector-save-btn');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    google.script.run
-      .withSuccessHandler(function() {
-        if (inspectorMode === 'add') {
-          inspectorsData.push(data);
-          showToast('Inspector added', 'success');
-        } else {
-          var idx = inspectorsData.findIndex(function(x) { return x.name === inspectorEditName; });
-          if (idx !== -1) inspectorsData[idx] = data;
-          showToast('Inspector updated', 'success');
-        }
-        renderInspectors();
-        closeForm('inspector');
-        btn.disabled = false;
-      })
-      .withFailureHandler(function(err) {
-        showToast('Save failed: ' + (err.message || err), 'error');
-        btn.disabled = false;
-        btn.textContent = inspectorMode === 'edit' ? 'Update' : 'Save';
-      })
-      .saveMaster('inspector', data);
-  }
-
-  // ── Render FG table ───────────────────────────────────────────────
-  function renderFG() {
-    var tbody = document.getElementById('fg-tbody');
-    if (!fgData.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No finished goods yet. Add one above.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = fgData.map(function(f) {
-      return '<tr>' +
-        '<td>' + esc(f.code) + '</td>' +
-        '<td>' + esc(f.name) + '</td>' +
-        '<td>' + esc(f.category || '') + '</td>' +
-        '<td>' + esc(f.uom || '') + '</td>' +
-        '<td>' + esc(f.description || '') + '</td>' +
-        '<td class="actions">' +
-          '<button class="icon-btn" title="Edit" onclick="editFG(\'' + esc(f.code) + '\')">' + iconPencil() + '</button> ' +
-          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'fg\', \'' + esc(f.code) + '\')">' + iconTrash() + '</button>' +
-        '</td></tr>';
-    }).join('');
-  }
-
-  // ── Render Parameters table ───────────────────────────────────────
-  function renderParameters() {
-    var tbody = document.getElementById('parameters-tbody');
-    if (!parametersData.length) {
-      tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No parameters yet. Add one above.</td></tr>';
-      return;
-    }
-    tbody.innerHTML = parametersData.map(function(p) {
-      return '<tr>' +
-        '<td>' + esc(p.code) + '</td>' +
-        '<td>' + esc(p.name) + '</td>' +
-        '<td>' + esc(p.unit || '') + '</td>' +
-        '<td>' + esc(p.stdValue || '') + '</td>' +
-        '<td>' + esc(p.tolMin || '') + '</td>' +
-        '<td>' + esc(p.tolMax || '') + '</td>' +
-        '<td><span style="font-size:11px;padding:2px 7px;border-radius:12px;background:#EEF1FA;color:var(--navy);font-weight:600;">' + esc(p.methodType || '') + '</span></td>' +
-        '<td>' + esc(p.tools || '') + '</td>' +
-        '<td>' + esc(p.docRef || '') + '</td>' +
-        '<td>' + esc(p.docNumber || '') + '</td>' +
-        '<td class="actions">' +
-          '<button class="icon-btn" title="Edit" onclick="editParameter(\'' + esc(p.code) + '\')">' + iconPencil() + '</button> ' +
-          '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'parameter\', \'' + esc(p.code) + '\')">' + iconTrash() + '</button>' +
-        '</td></tr>';
-    }).join('');
-  }
-
-  // ── Open add form (all types) ──────────────────────────────────────
-  function openAddFormExt(type) {
-    if (type === 'fg') {
-      fgMode = 'add'; fgEditCode = null;
-      clearFGForm();
-      document.getElementById('fg-form-title').textContent = 'Add Finished Good';
-      document.getElementById('fg-save-btn').textContent = 'Save';
-      document.getElementById('fg-form').classList.add('open');
-      document.getElementById('fg-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else if (type === 'parameter') {
-      parameterMode = 'add'; parameterEditCode = null;
-      clearParameterForm();
-      document.getElementById('parameter-form-title').textContent = 'Add Quality Parameter';
-      document.getElementById('parameter-save-btn').textContent = 'Save';
-      document.getElementById('parameter-form').classList.add('open');
-      document.getElementById('parameter-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else {
-      openAddForm(type);
-    }
-  }
-
-  function clearFGForm() {
-    ['fg-code','fg-name','fg-category','fg-desc'].forEach(function(id) {
-      document.getElementById(id).value = '';
-      document.getElementById(id).classList.remove('invalid');
-    });
-    document.getElementById('fg-uom').value = 'PC';
-    ['fg-code-err','fg-name-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-  }
-
-  function clearParameterForm() {
-    ['p-code','p-name','p-unit','p-std','p-min','p-max','p-tools','p-docref','p-docno','p-checkbrief'].forEach(function(id) {
-      document.getElementById(id).value = '';
-      document.getElementById(id).classList.remove('invalid');
-    });
-    document.getElementById('p-method').value = 'Visual';
-    ['p-code-err','p-name-err'].forEach(function(id) {
-      document.getElementById(id).style.display = 'none';
-    });
-  }
-
-  // ── Edit FG ───────────────────────────────────────────────────────
-  function editFG(code) {
-    var f = fgData.find(function(x) { return x.code === code; });
-    if (!f) return;
-    fgMode = 'edit'; fgEditCode = code;
-    document.getElementById('fg-code').value     = f.code || '';
-    document.getElementById('fg-name').value     = f.name || '';
-    document.getElementById('fg-category').value = f.category || '';
-    document.getElementById('fg-uom').value      = f.uom || 'PC';
-    document.getElementById('fg-desc').value     = f.description || '';
-    ['fg-code','fg-name'].forEach(function(id) { document.getElementById(id).classList.remove('invalid'); });
-    ['fg-code-err','fg-name-err'].forEach(function(id) { document.getElementById(id).style.display = 'none'; });
-    document.getElementById('fg-form-title').textContent = 'Edit FG: ' + code;
-    document.getElementById('fg-save-btn').textContent = 'Update';
-    document.getElementById('fg-form').classList.add('open');
-    document.getElementById('fg-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  // ── Edit Parameter ────────────────────────────────────────────────
-  function editParameter(code) {
-    var p = parametersData.find(function(x) { return x.code === code; });
-    if (!p) return;
-    parameterMode = 'edit'; parameterEditCode = code;
-    document.getElementById('p-code').value       = p.code || '';
-    document.getElementById('p-name').value       = p.name || '';
-    document.getElementById('p-unit').value       = p.unit || '';
-    document.getElementById('p-std').value        = p.stdValue || '';
-    document.getElementById('p-min').value        = p.tolMin || '';
-    document.getElementById('p-max').value        = p.tolMax || '';
-    document.getElementById('p-method').value     = p.methodType || 'Visual';
-    document.getElementById('p-tools').value      = p.tools || '';
-    document.getElementById('p-docref').value     = p.docRef || '';
-    document.getElementById('p-docno').value      = p.docNumber || '';
-    document.getElementById('p-checkbrief').value = p.checkBrief || '';
-    ['p-code','p-name'].forEach(function(id) { document.getElementById(id).classList.remove('invalid'); });
-    ['p-code-err','p-name-err'].forEach(function(id) { document.getElementById(id).style.display = 'none'; });
-    document.getElementById('parameter-form-title').textContent = 'Edit Parameter: ' + code;
-    document.getElementById('parameter-save-btn').textContent = 'Update';
-    document.getElementById('parameter-form').classList.add('open');
-    document.getElementById('parameter-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-
-  // ── Save FG ───────────────────────────────────────────────────────
-  function saveFG() {
-    var code = document.getElementById('fg-code').value.trim();
-    var name = document.getElementById('fg-name').value.trim();
-    var valid = true;
-    if (!code) { document.getElementById('fg-code').classList.add('invalid'); document.getElementById('fg-code-err').style.display = 'block'; valid = false; }
-    else       { document.getElementById('fg-code').classList.remove('invalid'); document.getElementById('fg-code-err').style.display = 'none'; }
-    if (!name) { document.getElementById('fg-name').classList.add('invalid'); document.getElementById('fg-name-err').style.display = 'block'; valid = false; }
-    else       { document.getElementById('fg-name').classList.remove('invalid'); document.getElementById('fg-name-err').style.display = 'none'; }
-    if (!valid) return;
-
-    var data = { code: code, name: name,
-      unit: document.getElementById('fg-uom').value,
-      category: 'FG' };
-
-    var btn = document.getElementById('fg-save-btn');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    google.script.run
-      .withSuccessHandler(function() {
-        if (fgMode === 'add') { fgData.push(data); showToast('FG added', 'success'); }
-        else { var idx = fgData.findIndex(function(x) { return x.code === fgEditCode; }); if (idx !== -1) fgData[idx] = data; showToast('FG updated', 'success'); }
-        renderFG(); closeForm('fg'); btn.disabled = false;
-      })
-      .withFailureHandler(function(err) { showToast('Save failed: ' + (err.message || err), 'error'); btn.disabled = false; btn.textContent = fgMode === 'edit' ? 'Update' : 'Save'; })
-      .saveMaster('fg', data);
-  }
-
-  // ── Save Parameter ────────────────────────────────────────────────
-  function saveParameter() {
-    var code = document.getElementById('p-code').value.trim();
-    var name = document.getElementById('p-name').value.trim();
-    var valid = true;
-    if (!code) { document.getElementById('p-code').classList.add('invalid'); document.getElementById('p-code-err').style.display = 'block'; valid = false; }
-    else       { document.getElementById('p-code').classList.remove('invalid'); document.getElementById('p-code-err').style.display = 'none'; }
-    if (!name) { document.getElementById('p-name').classList.add('invalid'); document.getElementById('p-name-err').style.display = 'block'; valid = false; }
-    else       { document.getElementById('p-name').classList.remove('invalid'); document.getElementById('p-name-err').style.display = 'none'; }
-    if (!valid) return;
-
-    var data = { code: code, name: name,
-      unit:        document.getElementById('p-unit').value.trim(),
-      stdValue:    document.getElementById('p-std').value.trim(),
-      tolMin:      document.getElementById('p-min').value.trim(),
-      tolMax:      document.getElementById('p-max').value.trim(),
-      methodType:  document.getElementById('p-method').value,
-      tools:       document.getElementById('p-tools').value.trim(),
-      docRef:      document.getElementById('p-docref').value.trim(),
-      docNumber:   document.getElementById('p-docno').value.trim(),
-      checkBrief:  document.getElementById('p-checkbrief').value.trim() };
-
-    var btn = document.getElementById('parameter-save-btn');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    google.script.run
-      .withSuccessHandler(function() {
-        if (parameterMode === 'add') { parametersData.push(data); showToast('Parameter added', 'success'); }
-        else { var idx = parametersData.findIndex(function(x) { return x.code === parameterEditCode; }); if (idx !== -1) parametersData[idx] = data; showToast('Parameter updated', 'success'); }
-        renderParameters(); closeForm('parameter'); btn.disabled = false;
-      })
-      .withFailureHandler(function(err) { showToast('Save failed: ' + (err.message || err), 'error'); btn.disabled = false; btn.textContent = parameterMode === 'edit' ? 'Update' : 'Save'; })
-      .saveMaster('parameter', data);
-  }
-
-  // ── Delete record ──────────────────────────────────────────────────
-  function deleteRecord(type, code) {
-    if (!confirm('Delete ' + type + ' "' + code + '"? This cannot be undone.')) return;
-
-    google.script.run
-      .withSuccessHandler(function() {
-        if (type === 'supplier') {
-          suppliersData = suppliersData.filter(function(x) { return x.code !== code; });
-          renderSuppliers();
-          if (supplierEditCode === code) closeForm('supplier');
-        } else if (type === 'material') {
-          materialsData = materialsData.filter(function(x) { return x.code !== code; });
-          renderMaterials();
-          if (materialEditCode === code) closeForm('material');
-        } else if (type === 'customer') {
-          customersData = customersData.filter(function(x) { return x.code !== code; });
-          renderCustomers();
-          if (customerEditCode === code) closeForm('customer');
-        } else if (type === 'inspector') {
-          inspectorsData = inspectorsData.filter(function(x) { return x.name !== code; });
-          renderInspectors();
-          if (inspectorEditName === code) closeForm('inspector');
-        } else if (type === 'fg') {
-          fgData = fgData.filter(function(x) { return x.code !== code; });
-          renderFG();
-          if (fgEditCode === code) closeForm('fg');
-        } else if (type === 'parameter') {
-          parametersData = parametersData.filter(function(x) { return x.code !== code; });
-          renderParameters();
-          if (parameterEditCode === code) closeForm('parameter');
-        }
-        showToast(type.charAt(0).toUpperCase() + type.slice(1) + ' deleted', 'success');
-      })
-      .withFailureHandler(function(err) {
-        showToast('Delete failed: ' + (err.message || err), 'error');
-      })
-      .deleteMaster(type, code);
+  // ── goHome ─────────────────────────────────────────────────────
+  function goHome() {
+    google.script.run.withSuccessHandler(function(html) {
+      document.open(); document.write(html); document.close();
+    }).getLandingHtml();
   }
 </script>
 </body>
