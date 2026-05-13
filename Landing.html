@@ -190,9 +190,14 @@
     document.getElementById('loadOverlay').classList.add('hidden');
 
     if (!result || result.authenticated === false) {
-      document.open();
-      document.write('<script>window.location.href="?app=dwm&login=1&from=qms"<\/script>');
-      document.close();
+      google.script.run
+        .withSuccessHandler(function(url){
+          document.open();
+          document.write('<meta http-equiv="refresh" content="0;url=' + url + '?app=dwm&from=qms">');
+          document.close();
+        })
+        .withFailureHandler(function(){ document.getElementById('loadOverlay').classList.add('hidden'); })
+        .getScriptUrl();
       return;
     }
 
