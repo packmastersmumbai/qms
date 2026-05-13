@@ -138,9 +138,9 @@ function submit() {
         if (r.mustReset) {
           dwmGoto('changepin');
         } else {
-          // If arriving from QMS landing page, return to it after login
-          var params = new URLSearchParams(window.location.search);
-          if (params.get('from') === 'qms') {
+          var postNav = sessionStorage.getItem('postLoginNav');
+          sessionStorage.removeItem('postLoginNav');
+          if (postNav === 'qms') {
             google.script.run
               .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
               .withFailureHandler(function() { dwmGoto('dashboard'); })

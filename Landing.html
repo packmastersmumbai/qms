@@ -227,6 +227,7 @@
     document.getElementById('btnLogin').addEventListener('click', function () {
       this.disabled = true;
       this.innerHTML = '<span class="spinner"></span> Loading…';
+      sessionStorage.setItem('postLoginNav', 'qms');
       google.script.run
         .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
         .withFailureHandler(function(){ showToast('Could not load login page', 'error'); })

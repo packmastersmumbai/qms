@@ -184,6 +184,20 @@
   100% { background: #fff; }
 }
 .flash-ok { animation: flash-ok 0.6s ease; }
+
+/* ── Timer buttons ── */
+.timer-btn {
+  flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: inherit; transition: all 0.15s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.play-btn { background: var(--navy-light); color: var(--navy); }
+.play-btn:active { background: var(--navy); color: #fff; transform: scale(0.93); }
+.stop-btn { background: #FEE2E2; color: var(--danger); }
+.stop-btn:active { transform: scale(0.93); }
 </style>
 </head>
 <body>
@@ -393,9 +407,20 @@ function onBoardClick(e) {
     if (tog) tog.textContent = S.collapsed[key] ? '▶' : '▼';
     return;
   }
-  // Task row tap
+  // Timer button tap (play/stop) — must check before row tap
+  var timerBtn = e.target.closest('.timer-btn');
+  if (timerBtn) {
+    e.stopPropagation();
+    var action = timerBtn.dataset.action;
+    var tid = timerBtn.dataset.taskId;
+    if (action === 'play') onPlayTap(tid);
+    else if (action === 'stop') onStopTap(tid);
+    return;
+  }
+
+  // Task row tap → open edit
   var row = e.target.closest('.task-row');
-  if (row && row.dataset.taskId) onRowTap(row.dataset.taskId);
+  if (row && row.dataset.taskId) editTask(row.dataset.taskId);
 }
 
 // ═══════════════════════════════════════════════
@@ -542,9 +567,7 @@ function emptyHtml(tab) {
 function rowHtml(t, isDone) {
   var prio = t.priority || 'medium';
   var dotCls = 'dot-' + prio;
-
   var titleCls = 'row-title' + (isDone ? ' done-text' : '');
-
   var proj = pname(t.projectId);
   var cat  = cname(t.categoryId);
 
@@ -558,10 +581,19 @@ function rowHtml(t, isDone) {
     else if (t.dueDate === today) dueMc = '<span class="mc mc-due-today">Today</span>';
   }
 
-  var elapsed = '';
-  if (S.activeTimer && S.activeTimer.taskId === t.taskId) {
-    elapsed = '<span class="mc mc-elapsed" id="el-' + esc(t.taskId) +
-              '" data-start="' + esc(S.activeTimer.startTime) + '">0:00</span>';
+  var isActive = S.activeTimer && S.activeTimer.taskId === t.taskId;
+  var elapsed = isActive
+    ? '<span class="mc mc-elapsed" id="el-' + esc(t.taskId) + '" data-start="' + esc(S.activeTimer.startTime) + '">0:00</span>'
+    : '';
+
+  // Play/Stop button — shown on open and in_progress rows only
+  var timerBtn = '';
+  if (!isDone && t.status !== 'not_done') {
+    if (isActive) {
+      timerBtn = '<button class="timer-btn stop-btn" data-action="stop" data-task-id="' + esc(t.taskId) + '" title="Stop timer">⏹</button>';
+    } else {
+      timerBtn = '<button class="timer-btn play-btn" data-action="play" data-task-id="' + esc(t.taskId) + '" title="Start timer">▶</button>';
+    }
   }
 
   return '<div class="task-row' + (isDone ? ' done-row' : '') + '" data-task-id="' + esc(t.taskId) + '">' +
@@ -571,9 +603,9 @@ function rowHtml(t, isDone) {
       (proj ? '<span class="mc mc-proj">' + esc(proj) + '</span>' : '') +
       (cat  ? '<span class="mc mc-cat">'  + esc(cat)  + '</span>' : '') +
       (assigneeName ? '<span class="mc mc-assignee">' + esc(assigneeName) + '</span>' : '') +
-      dueMc +
-      elapsed +
+      dueMc + elapsed +
     '</span>' +
+    timerBtn +
   '</div>';
 }
 
@@ -614,6 +646,47 @@ function onRowTap(taskId) {
       updateCounts(); renderBoard();
     })
     .changeStatus(sid, taskId, next);
+}
+
+// ═══════════════════════════════════════════════
+// PLAY / STOP TIMER
+// ═══════════════════════════════════════════════
+function onPlayTap(taskId) {
+  var sid = dwmGetSession();
+  var task = findTask(taskId);
+  if (!task) return;
+  // Mark in_progress optimistically
+  if (task.status === 'open') { task.status = 'in_progress'; updateCounts(); }
+  S.activeTimer = { taskId: taskId, startTime: new Date().toISOString() };
+  renderBoard();
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (r && r.status === 'success') {
+        if (r.startTime) S.activeTimer.startTime = r.startTime;
+        renderBoard();
+      } else {
+        dwmShowToast(r && r.message ? r.message : 'Could not start timer', 'error');
+        S.activeTimer = null; renderBoard();
+      }
+    })
+    .withFailureHandler(function() {
+      dwmShowToast('Network error', 'error');
+      S.activeTimer = null; renderBoard();
+    })
+    .startTimer(sid, taskId);
+}
+
+function onStopTap(taskId) {
+  var sid = dwmGetSession();
+  S.activeTimer = null;
+  renderBoard();
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (!r || r.status !== 'success') dwmShowToast(r && r.message ? r.message : 'Could not stop timer', 'error');
+      else dwmShowToast('Timer stopped', 'success');
+    })
+    .withFailureHandler(function() { dwmShowToast('Network error', 'error'); })
+    .stopTimer(sid, taskId);
 }
 
 // ═══════════════════════════════════════════════
