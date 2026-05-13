@@ -21,7 +21,7 @@ function _ensureIPQCLog() {
   var ws = ss.getSheetByName('IPQC_LOG');
   if (!ws) {
     ws = ss.insertSheet('IPQC_LOG');
-    ws.appendRow(['session_id', 'product_code', 'batch', 'round_no', 'timestamp', 'param_code', 'param_name', 'std_value', 'unit', 'actual_value', 'result', 'remark', 'elapsed_hms']);
+    ws.appendRow(['session_id', 'product_code', 'batch', 'round_no', 'timestamp', 'param_code', 'param_name', 'std_value', 'unit', 'actual_value', 'result', 'remark', 'elapsed_hms', 'period_start', 'period_end', 'avg_weight']);
   }
   return ws;
 }
@@ -117,14 +117,14 @@ function getIPQCFormInit() {
 
 function startSession(data) {
   try {
-    var sessionId = data.productCode + '_' + data.batch;
+    var sessionId = data.productCode + '_' + data.batch + '_' + (data.inspector || '');
     var ws = _ensureIPQCSessions();
     var values = ws.getDataRange().getValues();
 
     // Check for existing session
     for (var i = 1; i < values.length; i++) {
       if (String(values[i][0]).trim() === sessionId) {
-        if (values[i][9] === 'OPEN') {
+        if (String(values[i][9]).trim() === 'OPEN') {
           return { ok: true, resumed: true, sessionId: sessionId, rounds: values[i][10] || 0,
                    date: values[i][6], startTime: values[i][7] };
         } else {
@@ -164,25 +164,29 @@ function getOpenSessions() {
     var result = [];
     // IPQC_Sessions columns: session_id[0], product_code[1], product_name[2], batch[3], inspector[4], line[5], date[6], start_time[7], end_time[8], status[9], rounds[10]
     for (var i = 1; i < values.length; i++) {
-      if (values[i][9] === 'OPEN') {
+      if (String(values[i][9]).trim() === 'OPEN') {
+        var rawDate = values[i][6];
+        var dateStr = rawDate instanceof Date
+          ? Utilities.formatDate(rawDate, Session.getScriptTimeZone(), 'dd/MM/yyyy')
+          : String(rawDate);
         result.push({
-          sessionId:   values[i][0],
-          productCode: values[i][1],
-          productName: values[i][2],
-          batch:       values[i][3],
-          inspector:   values[i][4],
-          line:        values[i][5],
-          date:        values[i][6],
-          startTime:   values[i][7],
-          rounds:      values[i][10] || 0
+          sessionId:   String(values[i][0]),
+          productCode: String(values[i][1]),
+          productName: String(values[i][2]),
+          batch:       String(values[i][3]),
+          inspector:   String(values[i][4]),
+          line:        String(values[i][5]),
+          date:        dateStr,
+          startTime:   String(values[i][7]),
+          rounds:      Number(values[i][10]) || 0
         });
       }
     }
     result.reverse();
-    return result;
+    return { ok: true, sessions: result };
   } catch(e) {
     Logger.log(e);
-    return [];
+    return { ok: false, error: e.message, sessions: [] };
   }
 }
 
@@ -247,23 +251,32 @@ function saveRound(sessionId, roundData) {
     var tsStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
 
     var params = roundData.params || [];
-    for (var j = 0; j < params.length; j++) {
-      var p = params[j];
-      logWs.appendRow([
-        sessionId,
-        roundData.productCode || '',
-        roundData.batch       || '',
-        roundNo,
-        tsStr,
-        p.paramCode   || '',
-        p.paramName   || '',
-        p.stdValue    || '',
-        p.unit        || '',
-        p.actualValue || '',
-        p.result      || '',
-        p.remark      || '',
-        roundData.elapsedHms  || ''
-      ]);
+    var lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    try {
+      for (var j = 0; j < params.length; j++) {
+        var p = params[j];
+        logWs.appendRow([
+          sessionId,
+          roundData.productCode     || '',
+          roundData.batch           || '',
+          roundNo,
+          tsStr,
+          p.paramCode               || '',
+          p.paramName               || '',
+          p.stdValue                || '',
+          p.unit                    || '',
+          p.actualValue             || '',
+          p.result                  || '',
+          p.remark                  || '',
+          roundData.elapsedHms      || '',
+          roundData.periodStartTime || '',
+          roundData.periodEndTime   || '',
+          roundData.avgWeight       || ''
+        ]);
+      }
+    } finally {
+      lock.releaseLock();
     }
 
     // Increment rounds count in IPQC_Sessions
@@ -296,6 +309,32 @@ function closeSession(sessionId) {
   } catch(e) {
     Logger.log(e);
     return { ok: false, error: e.message };
+  }
+}
+
+// Returns weight data keyed by periodNo -> rowIdx -> value
+// Used by the matrix to prefill past period columns
+function getSessionWeightData(sessionId) {
+  try {
+    var ws = _ensureIPQCLog();
+    var values = ws.getDataRange().getValues();
+    // IPQC_LOG: session_id[0], ..., round_no[3], ..., param_code[5], ..., actual_value[9]
+    var result = {};
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() !== String(sessionId).trim()) continue;
+      var roundNo = Number(values[i][3]);
+      var code = String(values[i][5]).trim();
+      // Weight rows are coded W01–W10
+      if (/^W\d{2}$/.test(code)) {
+        var rowIdx = parseInt(code.substring(1), 10);
+        if (!result[roundNo]) result[roundNo] = {};
+        result[roundNo][rowIdx] = values[i][9] !== undefined && values[i][9] !== '' ? String(values[i][9]) : '';
+      }
+    }
+    return result;
+  } catch(e) {
+    Logger.log(e);
+    return {};
   }
 }
 

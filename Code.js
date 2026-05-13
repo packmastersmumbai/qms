@@ -5,6 +5,14 @@
 
 // ── Spreadsheet accessor (works in both bound and web app context) ──
 var _SS_CACHE = null;
+
+const QMS_DWM_MAP = {
+  GRN:      { project: 'Quality',    category: 'Inspection', priority: 'high' },
+  IQC:      { project: 'Quality',    category: 'Inspection', priority: 'high' },
+  OQC:      { project: 'Quality',    category: 'Inspection', priority: 'high' },
+  IPQC:     { project: 'Production', category: 'Operations', priority: 'medium' },
+  Gatepass: { project: 'Production', category: 'Operations', priority: 'medium' },
+};
 function getSpreadsheet() {
   if (_SS_CACHE) return _SS_CACHE;
 
@@ -141,16 +149,36 @@ function doGet(e) {
     }
   } catch(ex) {}
 
+  var app = e && e.parameter && e.parameter.app ? String(e.parameter.app).toLowerCase() : '';
+  if (app === 'dwm') return dwmDoGet_(e);
+
   var page = e && e.parameter && e.parameter.page ? e.parameter.page : '';
   var template;
   if (page === 'masters') {
     template = HtmlService.createTemplateFromFile('Masters_F').evaluate()
       .setTitle('Masters — Pack Masters QMS');
   } else {
-    template = HtmlService.createTemplateFromFile('Landing').evaluate()
-      .setTitle('Pack Masters QMS');
+    var landingTpl = HtmlService.createTemplateFromFile('Landing');
+    landingTpl.scriptUrl = ScriptApp.getService().getUrl();
+    template = landingTpl.evaluate().setTitle('Pack Masters QMS');
   }
   return template.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function dwmDoGet_(e) {
+  var page = (e && e.parameter && e.parameter.page) ? String(e.parameter.page).toLowerCase() : 'login';
+  var validPages = { login:'Login_Dwm', dashboard:'Dashboard_Dwm', taskform:'TaskForm_Dwm', report:'Report_Dwm', admin:'Admin_Dwm', changepin:'Login_Dwm' };
+  var tplName = validPages[page] || 'Login_Dwm';
+  var tpl = HtmlService.createTemplateFromFile(tplName);
+  tpl.scriptUrl = ScriptApp.getService().getUrl();
+  return tpl.evaluate()
+    .setTitle('Daily Work Manager')
+    .addMetaTag('viewport','width=device-width, initial-scale=1, maximum-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 // ── Called by client to inject sub-pages ─────────────────────
@@ -201,4 +229,48 @@ function sendWhatsAppSelected() {
     '<script>window.onload=function(){window.open("' + url + '","_blank");}</script>'
   ).setWidth(320).setHeight(140);
   SpreadsheetApp.getUi().showModelessDialog(html, 'Send WhatsApp Update');
+}
+
+function autoQmsTask_(sessionId, type, title, linkedRecord) {
+  try {
+    if (!sessionId) return null;
+    const map = QMS_DWM_MAP[type];
+    if (!map) return null;
+    return createTask(sessionId, {
+      title: title,
+      projectId: map.project,
+      categoryId: map.category,
+      priority: map.priority,
+      linkedRecord: linkedRecord || ''
+    });
+  } catch (e) {
+    console.error('autoQmsTask_ failed: ' + e.message);
+    return null;
+  }
+}
+
+function getQmsLandingState(sessionId) {
+  const session = validateSessionFast_(sessionId);
+  if (!session) return { authenticated: false };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const today = new Date();
+  const todayStr = Utilities.formatDate(today, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+  const counts = {};
+  ['GRN_LOG', 'IQC_LOG', 'OQC_LOG'].forEach(sheetName => {
+    const sh = ss.getSheetByName(sheetName);
+    if (!sh) { counts[sheetName] = 0; return; }
+    const data = sh.getDataRange().getValues();
+    counts[sheetName] = data.slice(1).filter(row => {
+      const d = row[0];
+      return d && Utilities.formatDate(new Date(d), Session.getScriptTimeZone(), 'yyyy-MM-dd') === todayStr;
+    }).length;
+  });
+
+  return {
+    authenticated: true,
+    operatorName: session.name || session.userId,
+    todayCounts: counts
+  };
 }
