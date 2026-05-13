@@ -158,6 +158,13 @@
 
 <footer>Pack Masters · Rabale MIDC, Navi Mumbai · ISO 9001 / 14001 / 45001</footer>
 
+<div id="loginBanner" style="display:none;position:fixed;inset:0;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:400;">
+  <div class="logo-box" style="width:56px;height:56px;font-size:22px;">PM</div>
+  <div style="font-size:18px;font-weight:700;color:var(--navy);">Pack Masters QMS</div>
+  <div style="font-size:13px;color:var(--muted);">Please log in to continue</div>
+  <button id="btnLogin" class="btn-submit" style="width:200px;margin-top:8px;">Log In with DWM</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -190,14 +197,9 @@
     document.getElementById('loadOverlay').classList.add('hidden');
 
     if (!result || result.authenticated === false) {
-      google.script.run
-        .withSuccessHandler(function(url){
-          document.open();
-          document.write('<meta http-equiv="refresh" content="0;url=' + url + '?app=dwm&from=qms">');
-          document.close();
-        })
-        .withFailureHandler(function(){ document.getElementById('loadOverlay').classList.add('hidden'); })
-        .getScriptUrl();
+      document.getElementById('loadOverlay').classList.add('hidden');
+      document.getElementById('operatorBadge').textContent = 'Not logged in';
+      document.getElementById('loginBanner').style.display = 'flex';
       return;
     }
 
@@ -222,6 +224,15 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('btnLogin').addEventListener('click', function () {
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner"></span> Loading…';
+      google.script.run
+        .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function(){ showToast('Could not load login page', 'error'); })
+        .getFormHtml('DwmLogin');
+    });
+
     document.querySelector('main').addEventListener('click', function (e) {
       var tile = e.target.closest('[data-form]');
       if (!tile || tile.classList.contains('loading')) return;
