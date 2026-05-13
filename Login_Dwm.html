@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Daily Work Manager — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>var __DWM_SCRIPT_URL__ = '<?!= scriptUrl ?>';</script>
+<?!= include('DwmTheme') ?>
+<style>
+  .login-wrap { padding: 32px 16px 16px; text-align: center; }
+  .login-title { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .login-user-select { margin-bottom: 24px; }
+  .pin-strip { display: flex; justify-content: center; gap: 12px; margin: 20px 0 8px; }
+  .pin-dot {
+    width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border);
+    background: transparent; transition: background 0.15s ease;
+  }
+  .pin-dot.filled { background: var(--navy); border-color: var(--navy); }
+  .pin-error { color: var(--danger); font-size: 14px; height: 20px; margin-bottom: 12px; font-weight: 600; }
+  .pin-shake { animation: dwm-shake 0.3s ease; }
+  .pin-grid {
+    display: grid; grid-template-columns: repeat(3, 72px); gap: 12px;
+    justify-content: center; margin: 16px auto;
+  }
+  .pin-btn {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #f3f4f6; border: none; color: var(--text);
+    font-size: 22px; font-weight: 600; cursor: pointer;
+    transition: transform 0.08s ease, background 0.15s ease;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pin-btn:active { transform: scale(0.93); background: #e5e7eb; }
+</style>
+</head>
+<body>
+<div class="dwm-container">
+  <div class="login-wrap">
+    <div class="login-title">Daily Work Manager</div>
+    <div class="login-sub">Pack Masters QMS</div>
+
+    <div class="login-user-select dwm-card">
+      <label for="userSelect" style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px;text-align:left">Who are you?</label>
+      <select id="userSelect" class="dwm-input"></select>
+    </div>
+
+    <div class="pin-strip" id="pinStrip">
+      <div class="pin-dot" data-i="0"></div>
+      <div class="pin-dot" data-i="1"></div>
+      <div class="pin-dot" data-i="2"></div>
+      <div class="pin-dot" data-i="3"></div>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+
+    <div class="pin-grid" id="pinGrid"></div>
+  </div>
+</div>
+
+<script>
+var pin = '';
+var lockUntil = 0;
+
+window.addEventListener('load', function() {
+  loadUsers();
+  buildPinGrid();
+
+  var sid = dwmGetSession();
+  if (sid) {
+    google.script.run
+      .withSuccessHandler(function(s) {
+        if (s && s.userId) {
+          if (s.name) localStorage.setItem('dwmUserName', s.name);
+          if (s.role) localStorage.setItem('dwmUserRole', s.role);
+          dwmGoto('dashboard');
+        }
+      })
+      .withFailureHandler(function(){ /* stay on login */ })
+      .validateSession(sid);
+  }
+});
+
+function loadUsers() {
+  google.script.run
+    .withSuccessHandler(function(users) {
+      var sel = document.getElementById('userSelect');
+      sel.innerHTML = '';
+      var last = localStorage.getItem('dwmLastUserId') || '';
+      users.forEach(function(u) {
+        var o = document.createElement('option');
+        o.value = u.userId; o.textContent = u.name;
+        if (u.userId === last) o.selected = true;
+        sel.appendChild(o);
+      });
+    })
+    .withFailureHandler(function(e){ dwmShowToast('Could not load users','error'); })
+    .listActiveUsersForLogin();
+}
+
+function buildPinGrid() {
+  var grid = document.getElementById('pinGrid');
+  var keys = ['1','2','3','4','5','6','7','8','9','C','0','⌫'];
+  keys.forEach(function(k){
+    var b = document.createElement('button');
+    b.className = 'pin-btn';
+    b.textContent = k;
+    b.addEventListener('click', function(){ onKey(k); });
+    grid.appendChild(b);
+  });
+}
+
+function onKey(k) {
+  if (Date.now() < lockUntil) return;
+  if (k === 'C') { pin = ''; render(); return; }
+  if (k === '⌫') { pin = pin.slice(0,-1); render(); return; }
+  if (pin.length >= 4) return;
+  pin += k;
+  render();
+  if (pin.length === 4) submit();
+}
+
+function render() {
+  document.querySelectorAll('.pin-dot').forEach(function(d, i){
+    d.classList.toggle('filled', i < pin.length);
+  });
+  document.getElementById('pinError').textContent = '';
+}
+
+function submit() {
+  var userId = document.getElementById('userSelect').value;
+  google.script.run
+    .withSuccessHandler(function(r){
+      if (r.status === 'success') {
+        dwmSetSession(r.sessionId);
+        localStorage.setItem('dwmLastUserId', r.userId);
+        localStorage.setItem('dwmUserName', r.name);
+        localStorage.setItem('dwmUserRole', r.role);
+        if (r.mustReset) {
+          dwmGoto('changepin');
+        } else {
+          // If arriving from QMS landing page, return to it after login
+          var params = new URLSearchParams(window.location.search);
+          if (params.get('from') === 'qms') {
+            google.script.run
+              .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+              .withFailureHandler(function() { dwmGoto('dashboard'); })
+              .getFormHtml('Landing');
+          } else {
+            dwmGoto('dashboard');
+          }
+        }
+      } else {
+        showError(r.message || 'Invalid PIN');
+      }
+    })
+    .withFailureHandler(function(e){
+      showError('Connection error. Try again.');
+      console.error(e);
+    })
+    .loginWithPin(userId, pin);
+}
+
+function showError(msg) {
+  var strip = document.getElementById('pinStrip');
+  strip.classList.remove('pin-shake');
+  void strip.offsetWidth;
+  strip.classList.add('pin-shake');
+  document.getElementById('pinError').textContent = msg;
+  pin = '';
+  setTimeout(render, 350);
+  if (msg && msg.indexOf('Too many') >= 0) lockUntil = Date.now() + 60000;
+}
+</script>
+</body>
+</html>
