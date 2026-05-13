@@ -112,13 +112,19 @@
       vertical-align: middle;
     }
 
-    /* Enable checkbox */
-    .param-chk {
-      width: 18px;
-      height: 18px;
+    /* Enable toggle button */
+    .param-toggle {
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: none;
+      font-size: 11px;
+      font-weight: 700;
       cursor: pointer;
-      accent-color: var(--navy);
+      font-family: inherit;
+      min-width: 42px;
     }
+    .param-toggle.on  { background: #22c55e; color: #fff; }
+    .param-toggle.off { background: #d1d5db; color: #6b7280; }
 
     /* Override inputs */
     .override-input {
@@ -386,9 +392,12 @@
       var dis      = enabled ? '' : 'disabled';
       var rowId    = planType + '-row-' + idx;
 
-      return '<tr class="' + rowClass + '" id="' + rowId + '" data-code="' + esc(p.code) + '">' +
+
+      var btnCls = enabled ? 'on' : 'off';
+      var btnTxt = enabled ? 'ON' : 'OFF';
+      return '<tr class="' + rowClass + '" id="' + rowId + '" data-code="' + esc(p.code) + '" data-enabled="' + (enabled ? '1' : '0') + '">' +
         '<td style="text-align:center;">' +
-          '<input type="checkbox" class="param-chk" ' + (enabled ? 'checked' : '') + '>' +
+          '<button class="param-toggle ' + btnCls + '" data-plantype="' + planType + '">' + btnTxt + '</button>' +
         '</td>' +
         '<td style="font-family:monospace;font-size:11px;">' + esc(p.code) + '</td>' +
         '<td style="font-weight:600;">' + esc(p.name) + '</td>' +
@@ -404,23 +413,30 @@
         '<td style="font-size:11px;color:var(--muted);max-width:180px;">' + esc(p.checkBrief || '') + '</td>' +
         '</tr>';
     }).join('');
+    attachToggleListeners(planType);
   }
 
-  // ── Event delegation for toggles ─────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function() {
-    ['rm-matrix-tbody', 'fg-matrix-tbody'].forEach(function(tbodyId) {
-      var planType = tbodyId.startsWith('rm') ? 'rm' : 'fg';
-      document.getElementById(tbodyId).addEventListener('change', function(e) {
-        if (!e.target.classList.contains('param-chk')) return;
-        var row = e.target.closest('tr');
-        if (!row) return;
-        var checked = e.target.checked;
-        row.classList.toggle('enabled-row', checked);
-        row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !checked; });
-        markChanged(planType);
-      });
-    });
-  });
+  // ── Wire toggle buttons after each render ────────────────────────
+  function attachToggleListeners(planType) {
+    var tbody = document.getElementById(planType + '-matrix-tbody');
+    if (!tbody) return;
+    var buttons = tbody.querySelectorAll('.param-toggle');
+    for (var i = 0; i < buttons.length; i++) {
+      (function(btn) {
+        btn.onclick = function() {
+          var row = btn.parentNode.parentNode;
+          var isOn = row.getAttribute('data-enabled') === '1';
+          var nowOn = !isOn;
+          row.setAttribute('data-enabled', nowOn ? '1' : '0');
+          row.classList.toggle('enabled-row', nowOn);
+          btn.textContent = nowOn ? 'ON' : 'OFF';
+          btn.className = 'param-toggle ' + (nowOn ? 'on' : 'off');
+          row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !nowOn; });
+          markChanged(planType);
+        };
+      })(buttons[i]);
+    }
+  }
 
   // ── Mark plan as having unsaved changes ───────────────────────────
   function markChanged(planType) {
@@ -437,8 +453,7 @@
     var rows = tbody ? tbody.querySelectorAll('tr[data-code]') : [];
     var result = [];
     rows.forEach(function(row) {
-      var chk = row.querySelector('input[type=checkbox]');
-      if (!chk || !chk.checked) return;
+      if (row.getAttribute('data-enabled') !== '1') return;
       var stdInp = row.querySelector('.ov-std');
       var minInp = row.querySelector('.ov-min');
       var maxInp = row.querySelector('.ov-max');

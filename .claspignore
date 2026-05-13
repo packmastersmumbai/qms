@@ -6,3 +6,6 @@ docs/**
 *.jpeg
 *.png
 *.url
+.claude/**
+.git/**
+.playwright-cli/**
