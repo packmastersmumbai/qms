@@ -2,248 +2,273 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    body { min-width: 580px; }
-    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    /* Matrix table */
-    .matrix-th-label {
-      position:sticky; left:0; background:var(--white); z-index:2;
-      min-width:190px; text-align:left; padding:6px 10px;
-      border:1px solid var(--border); font-size:12px; font-weight:600;
-      color:var(--text); white-space:nowrap;
+    /* Per-item card */
+    .item-block {
+      background: var(--navy-light);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
     }
-    .matrix-td-label {
-      position:sticky; left:0; background:var(--white); z-index:1;
-      min-width:190px; padding:6px 10px;
-      border:1px solid var(--border); font-size:12px;
-      color:var(--text); white-space:nowrap;
+    .item-block-header {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
-    .matrix-th-item {
-      min-width:160px; padding:6px 8px; border:1px solid var(--border);
-      text-align:center; font-size:11px; background:#F8FAFC; vertical-align:top;
+    .item-block-header button {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0 2px;
     }
-    .matrix-td {
-      min-width:160px; padding:5px 6px; border:1px solid var(--border);
-      text-align:center; vertical-align:middle;
-    }
-    .matrix-td button {
-      padding:4px 10px; border:1.5px solid var(--border); border-radius:4px;
-      background:var(--white); font-size:11px; font-weight:600;
-      cursor:pointer; font-family:inherit;
-    }
-    .matrix-td button.pass { background:#E8F5E9; border-color:var(--success); color:var(--success); }
-    .matrix-td button.fail { background:#FFEBEE; border-color:var(--danger);  color:var(--danger);  }
-    .matrix-td input[type=number] {
-      width:80px; padding:4px 6px; border:1px solid var(--border);
-      border-radius:4px; font-size:12px; text-align:center; font-family:inherit;
-    }
-    .matrix-shortage { font-size:12px; color:var(--muted); font-weight:600; }
-    .matrix-qty-label { font-size:11px; font-weight:600; color:var(--muted); }
-    .ccp-star { color:var(--danger); font-weight:700; margin-left:3px; }
-    .param-num-sm { color:var(--muted); font-size:10px; margin-right:4px; }
+    .item-block-header button:hover { color: var(--white); }
+    .item-block-body { padding: 10px 12px; }
 
-    /* Column header inputs */
-    .col-mat-sel {
-      width:100%; padding:4px 6px; border:1px solid var(--border);
-      border-radius:4px; font-size:11px; font-family:inherit; margin-bottom:4px;
+    /* IPQC advisory */
+    .ipqc-info {
+      margin-top: 6px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      display: none;
     }
-    .col-batch-inp {
-      width:100%; padding:4px 6px; border:1px solid var(--border);
-      border-radius:4px; font-size:11px; font-family:inherit;
-    }
-    .remove-col-btn {
-      background:none; border:none; color:var(--muted); cursor:pointer;
-      font-size:10px; padding:3px 0; display:block; width:100%; margin-top:4px;
-    }
-    .remove-col-btn:hover { color:var(--danger); }
+    .ipqc-info.amber { background: #FFF3CD; border: 1px solid var(--hold); color: #92600A; }
+    .ipqc-info.green { background: #DCFCE7; border: 1px solid var(--success); color: #15803D; }
 
-    /* IPQC status warning / confirmation */
-    .ipqc-warn {
-      display:none; margin-top:6px; padding:8px 12px;
-      border-radius:6px; font-size:12px; text-align:left;
+    /* Param card layout */
+    .param-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
     }
-    .ipqc-warn.amber {
-      background:#FFF3CD; border:1px solid #F59E0B; color:#B45309;
+    .param-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
-    .ipqc-warn.green {
-      background:#E8F5E9; border:1px solid #16A34A; color:#16A34A;
+    .param-card-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    .param-card-name .ccp-star { color: var(--danger); font-size: 10px; margin-left: 3px; }
+    .param-card-spec {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      margin-bottom: 6px;
+    }
+    .param-card-btns {
+      display: flex;
+      gap: 5px;
+    }
+    .param-card-btns button {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: all 0.12s ease;
+    }
+    .param-card-btns button.pass { background: #E8F5E9; border-color: var(--success); color: var(--success); }
+    .param-card-btns button.fail { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
+    .param-card-btns button.na   { background: #F3F4F6; border-color: #9CA3AF; color: #9CA3AF; }
+    .param-card-remarks {
+      margin-top: 6px;
+    }
+    .param-card-remarks input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+    }
+    .param-card-remarks input:focus { outline: none; border-color: var(--navy); }
+
+    /* Qty row */
+    .qty-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .qty-grid .field { margin-bottom: 0; }
+
+    /* Add item btn */
+    .add-item-btn {
+      width: 100%;
+      background: var(--amber);
+      color: var(--navy);
+      border: none;
+      border-radius: 6px;
+      padding: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      margin-bottom: 4px;
     }
   </style>
 </head>
 <body>
 
 <div class="pm-header">
-  <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:4px;text-decoration:none;">‹</a>
-  <span class="logo-text">📤 Outgoing Quality Check</span>
+  <button class="back-btn" id="backBtn">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4l-6 6 6 6"/>
+    </svg>
+  </button>
+  <span class="page-title">Outgoing Quality Check</span>
   <span class="doc-badge" id="docBadge">Loading…</span>
 </div>
 
-<div style="padding-bottom:80px; overflow-y:auto;">
+<!-- Dispatch Details -->
+<div class="section">
+  <div class="section-title">Dispatch Details</div>
+  <div class="section-body">
+    <div class="two-col">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="date">
+      </div>
+      <div class="field">
+        <label>Inspector</label>
+        <select id="inspector"><option value="">— Select —</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Customer</label>
+      <select id="customer"><option value="">— Select Customer —</option></select>
+    </div>
+  </div>
+</div>
 
-  <!-- Dispatch Details -->
-  <div class="section">
-    <div class="section-title">Dispatch Details</div>
-    <div class="section-body">
-      <div class="two-col">
-        <div class="field">
-          <label>Date</label>
-          <input type="date" id="date">
-        </div>
-        <div class="field">
-          <label>Inspector</label>
-          <select id="inspector"><option value="">— Select —</option></select>
+<!-- Sampling -->
+<div class="section">
+  <div class="section-title">Sampling</div>
+  <div class="section-body">
+    <div class="two-col">
+      <div class="field">
+        <label>IPQC Records Reviewed</label>
+        <div class="toggle-row">
+          <button id="ipqcY" onclick="setIPQC(this,'Y')" class="active-yes">Yes</button>
+          <button id="ipqcN" onclick="setIPQC(this,'N')">No</button>
         </div>
       </div>
       <div class="field">
-        <label>Customer</label>
-        <select id="customer" onchange="onCustomerChange()"><option value="">— Select Customer —</option></select>
+        <label>AQL Level</label>
+        <select id="aqlLevel">
+          <option value="AQL 2.5">AQL 2.5 (Default)</option>
+          <option value="AQL 0.65">AQL 0.65</option>
+          <option value="AQL 1.0">AQL 1.0</option>
+          <option value="AQL 4.0">AQL 4.0</option>
+          <option value="AQL 6.5">AQL 6.5</option>
+        </select>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Sampling -->
-  <div class="section">
-    <div class="section-title">Sampling</div>
-    <div class="section-body">
-      <div class="two-col">
-        <div class="field">
-          <label>IPQC Records Reviewed</label>
-          <div class="toggle-row">
-            <button onclick="setIPQC(this,'Y')" id="ipqcY" class="active-yes">Yes</button>
-            <button onclick="setIPQC(this,'N')" id="ipqcN">No</button>
-          </div>
-        </div>
-        <div class="field">
-          <label>AQL Level</label>
-          <select id="aqlLevel">
-            <option value="AQL 2.5">AQL 2.5 (Default)</option>
-            <option value="AQL 0.65">AQL 0.65</option>
-            <option value="AQL 1.0">AQL 1.0</option>
-            <option value="AQL 4.0">AQL 4.0</option>
-            <option value="AQL 6.5">AQL 6.5</option>
-          </select>
-        </div>
+<!-- Items & Quality Checks -->
+<div class="section">
+  <div class="section-title">Items &amp; Quality Checks <span style="font-size:10px;font-weight:400;opacity:0.7;margin-left:6px;">★ = CCP</span></div>
+  <div class="section-body">
+    <button class="add-item-btn" onclick="addItem()">+ Add Item</button>
+    <div id="itemsContainer">
+      <div id="noItemsMsg" style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">
+        Click "+ Add Item" to add products for this dispatch.
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Items & Checks Matrix -->
-  <div class="section">
-    <div class="section-title">
-      Items &amp; Quality Checks
-      <button onclick="addItem()" style="margin-left:8px;background:var(--amber);color:var(--navy);border:none;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;">+ Add Item</button>
-      <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-left:6px;">★ = CCP</span>
+<!-- Release Decision -->
+<div class="section">
+  <div class="section-title">Release Decision</div>
+  <div class="section-body">
+    <div class="disp-grid">
+      <button class="disp-btn" id="r_rel" onclick="setRelease('RELEASED')">RELEASE</button>
+      <button class="disp-btn" id="r_hld" onclick="setRelease('HOLD')">HOLD</button>
+      <button class="disp-btn" id="r_rej" onclick="setRelease('REJECTED')" style="grid-column:span 2;">REJECT</button>
     </div>
-    <div class="section-body" style="padding:0;">
-      <div id="matrixWrap" style="overflow-x:auto;">
-        <div id="matrixPlaceholder" style="padding:16px;color:var(--muted);font-size:13px;">
-          Click "+ Add Item" to add products for this dispatch.
-        </div>
-        <table id="matrixTable" style="display:none;border-collapse:collapse;width:100%;min-width:400px;">
-          <thead id="matrixHead"></thead>
-          <tbody id="matrixBody"></tbody>
-        </table>
-      </div>
+    <div class="field" style="margin-top:10px;">
+      <label>Remarks</label>
+      <textarea id="remarks" placeholder="Observations or notes…"></textarea>
     </div>
   </div>
-
-  <!-- Release Decision -->
-  <div class="section">
-    <div class="section-title">Release Decision</div>
-    <div class="section-body">
-      <div class="disp-grid">
-        <button class="disp-btn" id="r_rel" onclick="setRelease('RELEASED')">✅ RELEASE</button>
-        <button class="disp-btn" id="r_hld" onclick="setRelease('HOLD')">⏸ HOLD</button>
-        <button class="disp-btn" id="r_rej" onclick="setRelease('REJECTED')" style="grid-column:span 2;">❌ REJECT</button>
-      </div>
-      <div class="field" style="margin-top:10px;">
-        <label>Remarks</label>
-        <textarea id="remarks" placeholder="Observations or notes…"></textarea>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <!-- Sticky footer -->
-<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;">
+<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;z-index:90;">
   <button class="btn-submit" id="btnSubmit" onclick="submitOQC()" style="flex:2;">Save OQC Record</button>
-  <button class="btn-wa" id="btnWA" onclick="sendWA()" style="flex:1;margin-top:0;display:none;">📲 WA</button>
+  <button class="btn-wa" id="btnWA" onclick="sendWA()" style="flex:1;margin-top:0;display:none;">WA</button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 var OQC_CHECKS = [
-  { id: 'fillWeight',  label: 'Fill Weight',       ccp: true  },
-  { id: 'label',       label: 'Label Accuracy',     ccp: true  },
-  { id: 'seal',        label: 'Seal Integrity',     ccp: true  },
-  { id: 'appearance',  label: 'Appearance / Visual',ccp: false },
-  { id: 'custSpec',    label: 'Customer Spec Met',  ccp: true  }
+  { id: 'fillWeight',  label: 'Fill Weight',        spec: 'As per product spec',       ccp: true  },
+  { id: 'label',       label: 'Label Accuracy',      spec: 'Correct labels, no errors', ccp: true  },
+  { id: 'seal',        label: 'Seal Integrity',      spec: 'No leaks, proper seal',     ccp: true  },
+  { id: 'appearance',  label: 'Appearance / Visual', spec: 'No damage, correct colour', ccp: false },
+  { id: 'custSpec',    label: 'Customer Spec Met',   spec: 'All customer requirements', ccp: true  }
 ];
 
 var FG_MATS = [], CUSTOMERS = [], INSPECTORS = [];
-var currentItems    = [];  // [{materialCode, materialDesc, batchPO}]
-var itemCheckVals   = [];  // [{fillWeight, label, seal, appearance, custSpec}]
-var ipqcSessionRefs = [];  // [sessionId or ''] — one per item column
+var currentItems    = [];   // [{materialCode, materialDesc, batchPO, checks:{}, remarks:{}, sampleSize, acceptedQty, rejectedQty, ipqcSessionRef}]
 var ipqcVal = 'Y', releaseDecision = '', savedDocNos = [];
 var customerSel = {};
+var sessionId = sessionStorage.getItem('dwmSessionId') || '';
+var _dirty = false;
 
-// Advisory IPQC check — called on batch blur or material change
-function checkIPQCStatus(colIndex) {
-  var matSel   = document.getElementById('mat_sel_'    + colIndex);
-  var batchInp = document.getElementById('batch_inp_'  + colIndex);
-  var warnDiv  = document.getElementById('ipqc_warn_'  + colIndex);
-  if (!matSel || !batchInp || !warnDiv) return;
+function markDirty() { _dirty = true; }
 
-  var productCode = matSel.value;
-  var batch       = batchInp.value.trim();
-
-  if (!productCode || !batch) {
-    warnDiv.style.display = 'none';
-    warnDiv.className = 'ipqc-warn';
-    ipqcSessionRefs[colIndex] = '';
-    return;
+window.addEventListener('beforeunload', function(e) {
+  if (_dirty) {
+    e.preventDefault();
+    e.returnValue = 'You have unsaved changes. Leave anyway?';
   }
-
-  google.script.run
-    .withSuccessHandler((function(ci) {
-      return function(res) {
-        var div = document.getElementById('ipqc_warn_' + ci);
-        if (!div) return;
-        if (!res.found) {
-          ipqcSessionRefs[ci] = '';
-          div.className = 'ipqc-warn amber';
-          div.textContent = '⚠ No IPQC session found for this batch. Verify in-process checks were completed before releasing.';
-          div.style.display = 'block';
-        } else if (res.status === 'OPEN') {
-          ipqcSessionRefs[ci] = res.sessionId;
-          div.className = 'ipqc-warn amber';
-          div.textContent = '⚠ IPQC session is still OPEN for this batch. Ensure it is closed before releasing.';
-          div.style.display = 'block';
-        } else {
-          ipqcSessionRefs[ci] = res.sessionId;
-          div.className = 'ipqc-warn green';
-          div.textContent = '✓ IPQC completed for this batch (' + res.rounds + ' rounds).';
-          div.style.display = 'block';
-        }
-      };
-    })(colIndex))
-    .withFailureHandler(function() { /* silent — advisory only */ })
-    .checkIPQCForBatch(productCode, batch);
-}
+});
 
 function init() {
   document.getElementById('date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('backBtn').addEventListener('click', function() {
+    if (_dirty && !confirm('Unsaved changes will be lost. Go back?')) return;
+    goHome();
+  });
+
   google.script.run
     .withSuccessHandler(function(d) {
       document.getElementById('docBadge').textContent = d.docNumber;
-      FG_MATS    = d.materials;
-      CUSTOMERS  = d.customers;
-      INSPECTORS = d.inspectors;
+      FG_MATS    = d.materials  || [];
+      CUSTOMERS  = d.customers  || [];
+      INSPECTORS = d.inspectors || [];
 
       var cSel = document.getElementById('customer');
       CUSTOMERS.forEach(function(c) {
@@ -260,231 +285,296 @@ function init() {
         o.textContent = p.name + ' — ' + p.role;
         iSel.appendChild(o);
       });
+
+      // Bind change listeners for dirty tracking
+      ['customer','inspector','aqlLevel','date','remarks'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', markDirty);
+      });
     })
     .withFailureHandler(function(e) { showToast(e.message, 'error'); })
     .getOQCFormInit();
 }
 
-function onCustomerChange() {
-  var sel = document.getElementById('customer');
+document.getElementById('customer').addEventListener('change', function() {
+  var sel = this;
   var opt = sel.options[sel.selectedIndex];
   customerSel = opt && opt.dataset.obj ? JSON.parse(opt.dataset.obj) : {};
-}
+});
 
 function addItem() {
-  currentItems.push({ materialCode: '', materialDesc: '', batchPO: '' });
-  itemCheckVals.push({});
-  buildMatrix();
-}
-
-function removeItem(ci) {
-  syncDomToState();
-  currentItems.splice(ci, 1);
-  itemCheckVals.splice(ci, 1);
-  buildMatrix();
-}
-
-// Save current DOM input values back into currentItems before rebuild
-function syncDomToState() {
-  currentItems.forEach(function(item, ci) {
-    var matSel   = document.getElementById('mat_sel_'   + ci);
-    var batchInp = document.getElementById('batch_inp_' + ci);
-    if (matSel) {
-      var opt = matSel.options[matSel.selectedIndex];
-      item.materialCode = matSel.value;
-      item.materialDesc = opt ? (opt.dataset.desc || matSel.value) : matSel.value;
-    }
-    if (batchInp) item.batchPO = batchInp.value;
+  var idx = currentItems.length;
+  currentItems.push({
+    materialCode: '', materialDesc: '', batchPO: '',
+    checks: {}, remarks: {},
+    sampleSize: '', acceptedQty: '', rejectedQty: '',
+    ipqcSessionRef: ''
   });
+  renderItem(idx);
+  document.getElementById('noItemsMsg').style.display = 'none';
+  markDirty();
 }
 
-function buildMatrix() {
-  var head = document.getElementById('matrixHead');
-  var body = document.getElementById('matrixBody');
-  head.innerHTML = '';
-  body.innerHTML = '';
+function removeItem(idx) {
+  currentItems.splice(idx, 1);
+  rebuildAllItems();
+  markDirty();
+}
 
-  if (currentItems.length === 0) {
-    document.getElementById('matrixTable').style.display = 'none';
-    document.getElementById('matrixPlaceholder').style.display = 'block';
-    document.getElementById('matrixPlaceholder').textContent = 'Click "+ Add Item" to add products.';
-    return;
+function rebuildAllItems() {
+  var container = document.getElementById('itemsContainer');
+  // Remove all item blocks
+  var blocks = container.querySelectorAll('.item-block');
+  blocks.forEach(function(b) { b.parentNode.removeChild(b); });
+  document.getElementById('noItemsMsg').style.display = currentItems.length === 0 ? 'block' : 'none';
+  currentItems.forEach(function(_, i) { renderItem(i); });
+}
+
+function renderItem(idx) {
+  var item = currentItems[idx];
+  var container = document.getElementById('itemsContainer');
+
+  var block = document.createElement('div');
+  block.className = 'item-block';
+  block.id = 'item_block_' + idx;
+
+  // Header
+  var header = document.createElement('div');
+  header.className = 'item-block-header';
+  header.innerHTML = '<span>Item ' + (idx + 1) + '</span>';
+  var removeBtn = document.createElement('button');
+  removeBtn.textContent = '×';
+  removeBtn.title = 'Remove item';
+  removeBtn.onclick = (function(i) { return function() { removeItem(i); }; })(idx);
+  header.appendChild(removeBtn);
+  block.appendChild(header);
+
+  var body = document.createElement('div');
+  body.className = 'item-block-body';
+
+  // Material select
+  var matField = document.createElement('div');
+  matField.className = 'field';
+  var matLabel = document.createElement('label');
+  matLabel.textContent = 'Product / FG Material';
+  var matSel = document.createElement('select');
+  matSel.id = 'mat_sel_' + idx;
+  var defOpt = document.createElement('option');
+  defOpt.value = ''; defOpt.textContent = '— Select FG —';
+  matSel.appendChild(defOpt);
+  if (FG_MATS.length === 0) {
+    var noOpt = document.createElement('option');
+    noOpt.disabled = true; noOpt.textContent = '(No FG materials — add in Masters)';
+    matSel.appendChild(noOpt);
+  } else {
+    FG_MATS.forEach(function(m) {
+      var o = document.createElement('option');
+      o.value = m.code;
+      o.textContent = m.desc.length > 32 ? m.desc.substring(0, 32) + '…' : m.desc;
+      o.dataset.desc = m.desc;
+      if (m.code === item.materialCode) o.selected = true;
+      matSel.appendChild(o);
+    });
   }
+  matSel.onchange = (function(i) {
+    return function() {
+      var opt = this.options[this.selectedIndex];
+      currentItems[i].materialCode = this.value;
+      currentItems[i].materialDesc = opt ? (opt.dataset.desc || this.value) : this.value;
+      checkIPQCStatus(i);
+      markDirty();
+    };
+  })(idx);
+  matField.appendChild(matLabel);
+  matField.appendChild(matSel);
+  body.appendChild(matField);
 
-  // --- Header row ---
-  var hRow = document.createElement('tr');
-  var thLabel = document.createElement('th');
-  thLabel.className = 'matrix-th-label';
-  thLabel.textContent = '# Check';
-  hRow.appendChild(thLabel);
+  // Batch
+  var batchField = document.createElement('div');
+  batchField.className = 'field';
+  var batchLabel = document.createElement('label');
+  batchLabel.textContent = 'Batch / PO';
+  var batchInp = document.createElement('input');
+  batchInp.type = 'text'; batchInp.id = 'batch_inp_' + idx;
+  batchInp.placeholder = 'Batch number or PO reference';
+  batchInp.value = item.batchPO || '';
+  batchInp.oninput  = (function(i) { return function() { currentItems[i].batchPO = this.value; markDirty(); }; })(idx);
+  batchInp.onblur   = (function(i) { return function() { checkIPQCStatus(i); }; })(idx);
+  batchField.appendChild(batchLabel);
+  batchField.appendChild(batchInp);
+  body.appendChild(batchField);
 
-  currentItems.forEach(function(item, ci) {
-    var th = document.createElement('th');
-    th.className = 'matrix-th-item';
+  // IPQC advisory
+  var ipqcDiv = document.createElement('div');
+  ipqcDiv.id = 'ipqc_info_' + idx;
+  ipqcDiv.className = 'ipqc-info';
+  body.appendChild(ipqcDiv);
 
-    var matSel = document.createElement('select');
-    matSel.id = 'mat_sel_' + ci;
-    matSel.className = 'col-mat-sel';
-    var defOpt = document.createElement('option');
-    defOpt.value = ''; defOpt.textContent = '— Select FG —';
-    matSel.appendChild(defOpt);
-    if (FG_MATS.length === 0) {
-      var noOpt = document.createElement('option');
-      noOpt.disabled = true;
-      noOpt.textContent = '(No FG materials — add in Masters)';
-      matSel.appendChild(noOpt);
-    } else {
-      FG_MATS.forEach(function(m) {
-        var o = document.createElement('option');
-        o.value = m.code;
-        o.textContent = m.desc.length > 28 ? m.desc.substring(0, 28) + '…' : m.desc;
-        o.dataset.desc = m.desc;
-        if (m.code === item.materialCode) o.selected = true;
-        matSel.appendChild(o);
-      });
+  // Param cards
+  OQC_CHECKS.forEach(function(chk) {
+    var card = document.createElement('div');
+    card.className = 'param-card';
+
+    var top = document.createElement('div');
+    top.className = 'param-card-top';
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'param-card-name';
+    nameEl.textContent = chk.label;
+    if (chk.ccp) {
+      var star = document.createElement('span');
+      star.className = 'ccp-star'; star.title = 'Critical Control Point'; star.textContent = '★';
+      nameEl.appendChild(star);
     }
-    matSel.onchange = (function(colI) {
+    top.appendChild(nameEl);
+    card.appendChild(top);
+
+    var specEl = document.createElement('div');
+    specEl.className = 'param-card-spec';
+    specEl.textContent = 'Spec: ' + chk.spec;
+    card.appendChild(specEl);
+
+    var btns = document.createElement('div');
+    btns.className = 'param-card-btns';
+    var curVal = (item.checks && item.checks[chk.id]) || '';
+
+    ['Pass', 'Fail', 'NA'].forEach(function(opt) {
+      var btn = document.createElement('button');
+      btn.textContent = opt;
+      btn.id = 'chk_' + idx + '_' + chk.id + '_' + opt.toLowerCase();
+      if (curVal === opt.toUpperCase()) btn.className = opt.toLowerCase();
+      btn.onclick = (function(i, cid, v, b) {
+        return function() { setCheck(i, cid, v, b); };
+      })(idx, chk.id, opt.toUpperCase(), btn);
+      btns.appendChild(btn);
+    });
+    card.appendChild(btns);
+
+    // Remarks input
+    var remDiv = document.createElement('div');
+    remDiv.className = 'param-card-remarks';
+    var remInp = document.createElement('input');
+    remInp.type = 'text';
+    remInp.id = 'rem_' + idx + '_' + chk.id;
+    remInp.placeholder = 'Remarks (optional)';
+    remInp.value = (item.remarks && item.remarks[chk.id]) || '';
+    remInp.oninput = (function(i, cid) {
       return function() {
-        var opt = this.options[this.selectedIndex];
-        currentItems[colI].materialCode = this.value;
-        currentItems[colI].materialDesc = opt ? (opt.dataset.desc || this.value) : this.value;
-        checkIPQCStatus(colI);
+        if (!currentItems[i].remarks) currentItems[i].remarks = {};
+        currentItems[i].remarks[cid] = this.value;
+        markDirty();
       };
-    })(ci);
+    })(idx, chk.id);
+    remDiv.appendChild(remInp);
+    card.appendChild(remDiv);
 
-    var batchInp = document.createElement('input');
-    batchInp.type = 'text';
-    batchInp.id = 'batch_inp_' + ci;
-    batchInp.className = 'col-batch-inp';
-    batchInp.placeholder = 'Batch / PO';
-    batchInp.value = item.batchPO || '';
-    batchInp.oninput = (function(colI) {
-      return function() { currentItems[colI].batchPO = this.value; };
-    })(ci);
-    batchInp.onblur = (function(colI) {
-      return function() { checkIPQCStatus(colI); };
-    })(ci);
-
-    var ipqcWarnDiv = document.createElement('div');
-    ipqcWarnDiv.id = 'ipqc_warn_' + ci;
-    ipqcWarnDiv.className = 'ipqc-warn';
-
-    var removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-col-btn';
-    removeBtn.textContent = '✕ Remove';
-    removeBtn.onclick = (function(colI) {
-      return function() { removeItem(colI); };
-    })(ci);
-
-    th.appendChild(matSel);
-    th.appendChild(batchInp);
-    th.appendChild(ipqcWarnDiv);
-    th.appendChild(removeBtn);
-    hRow.appendChild(th);
-  });
-  head.appendChild(hRow);
-
-  // --- Check rows ---
-  OQC_CHECKS.forEach(function(chk, pi) {
-    var tr = document.createElement('tr');
-    var tdLabel = document.createElement('td');
-    tdLabel.className = 'matrix-td-label';
-    tdLabel.innerHTML = '<span class="param-num-sm">' + (pi + 1) + '</span>' +
-      chk.label + (chk.ccp ? '<span class="ccp-star" title="Critical Control Point">★</span>' : '');
-    tr.appendChild(tdLabel);
-
-    currentItems.forEach(function(item, ci) {
-      if (!itemCheckVals[ci]) itemCheckVals[ci] = {};
-      var curVal = itemCheckVals[ci][chk.id] || '';
-      var td = document.createElement('td');
-      td.className = 'matrix-td';
-
-      var passBtn = document.createElement('button');
-      passBtn.id = 'pf_pass_' + ci + '_' + chk.id;
-      passBtn.textContent = 'P';
-      if (curVal === 'PASS') passBtn.className = 'pass';
-      passBtn.onclick = (function(colI, checkId) {
-        return function() { setCheck(colI, checkId, 'PASS', this); };
-      })(ci, chk.id);
-
-      var failBtn = document.createElement('button');
-      failBtn.id = 'pf_fail_' + ci + '_' + chk.id;
-      failBtn.textContent = 'F';
-      if (curVal === 'FAIL') failBtn.className = 'fail';
-      failBtn.onclick = (function(colI, checkId) {
-        return function() { setCheck(colI, checkId, 'FAIL', this); };
-      })(ci, chk.id);
-
-      td.appendChild(passBtn);
-      td.appendChild(document.createTextNode(' '));
-      td.appendChild(failBtn);
-      tr.appendChild(td);
-    });
-    body.appendChild(tr);
+    body.appendChild(card);
   });
 
-  // --- Quantity rows ---
-  var qtyDefs = [
+  // Quantity row
+  var qtyGrid = document.createElement('div');
+  qtyGrid.className = 'qty-grid';
+  [
     { key: 'sampleSize',  label: 'Sample Size',  editable: true  },
-    { key: 'acceptedQty', label: 'Accepted Qty', editable: true  },
-    { key: 'rejectedQty', label: 'Rejected Qty', editable: true  },
-    { key: 'shortage',    label: 'Shortage',     editable: false }
-  ];
-  qtyDefs.forEach(function(qr) {
-    var tr = document.createElement('tr');
-    var tdLabel = document.createElement('td');
-    tdLabel.className = 'matrix-td-label matrix-qty-label';
-    tdLabel.textContent = qr.label;
-    tr.appendChild(tdLabel);
-
-    currentItems.forEach(function(item, ci) {
-      var td = document.createElement('td');
-      td.className = 'matrix-td';
-      if (qr.editable) {
-        var inp = document.createElement('input');
-        inp.type = 'number'; inp.id = qr.key + '_' + ci;
-        inp.min = '0'; inp.placeholder = '0';
-        inp.oninput = (function(colI) { return function() { calcShortage(colI); }; })(ci);
-        td.appendChild(inp);
-      } else {
-        var span = document.createElement('span');
-        span.id = 'shortage_' + ci;
-        span.className = 'matrix-shortage';
-        span.textContent = '—';
-        td.appendChild(span);
-      }
-      tr.appendChild(td);
-    });
-    body.appendChild(tr);
+    { key: 'acceptedQty', label: 'Accepted',      editable: true  },
+    { key: 'rejectedQty', label: 'Rejected',      editable: true  },
+    { key: 'shortage',    label: 'Shortage',      editable: false }
+  ].forEach(function(q) {
+    var fld = document.createElement('div');
+    fld.className = 'field';
+    var lbl = document.createElement('label');
+    lbl.textContent = q.label;
+    fld.appendChild(lbl);
+    if (q.editable) {
+      var inp = document.createElement('input');
+      inp.type = 'number'; inp.id = q.key + '_' + idx;
+      inp.min = '0'; inp.placeholder = '0';
+      inp.value = item[q.key] || '';
+      inp.oninput = (function(i, k) {
+        return function() { currentItems[i][k] = this.value; calcShortage(i); markDirty(); };
+      })(idx, q.key);
+      fld.appendChild(inp);
+    } else {
+      var span = document.createElement('span');
+      span.id = 'shortage_' + idx;
+      span.style.cssText = 'display:block;padding:8px 10px;font-size:14px;font-weight:600;color:var(--muted);';
+      span.textContent = '—';
+      fld.appendChild(span);
+    }
+    qtyGrid.appendChild(fld);
   });
+  body.appendChild(qtyGrid);
 
-  document.getElementById('matrixPlaceholder').style.display = 'none';
-  document.getElementById('matrixTable').style.display = 'table';
+  block.appendChild(body);
+
+  // Insert before noItemsMsg
+  var msg = document.getElementById('noItemsMsg');
+  container.insertBefore(block, msg);
 }
 
-function setCheck(colIndex, checkId, val, btn) {
-  if (!itemCheckVals[colIndex]) itemCheckVals[colIndex] = {};
-  itemCheckVals[colIndex][checkId] = val;
-  ['pass', 'fail'].forEach(function(t) {
-    var el = document.getElementById('pf_' + t + '_' + colIndex + '_' + checkId);
+function setCheck(colIndex, checkId, val, clickedBtn) {
+  if (!currentItems[colIndex]) return;
+  if (!currentItems[colIndex].checks) currentItems[colIndex].checks = {};
+  currentItems[colIndex].checks[checkId] = val;
+
+  // Clear siblings
+  ['pass','fail','na'].forEach(function(cls) {
+    var el = document.getElementById('chk_' + colIndex + '_' + checkId + '_' + cls);
     if (el) el.className = '';
   });
-  btn.className = val === 'PASS' ? 'pass' : 'fail';
-  // Auto-suggest HOLD if any CCP fails
-  var ccpIds = ['fillWeight', 'label', 'seal', 'custSpec'];
-  var anyFail = itemCheckVals.some(function(colVals) {
-    return colVals && ccpIds.some(function(id) { return colVals[id] === 'FAIL'; });
+  clickedBtn.className = val.toLowerCase();
+
+  // Auto-suggest HOLD on any CCP fail
+  var ccpIds = ['fillWeight','label','seal','custSpec'];
+  var anyFail = currentItems.some(function(item) {
+    return item.checks && ccpIds.some(function(id) { return item.checks[id] === 'FAIL'; });
   });
   if (anyFail && !releaseDecision) setRelease('HOLD');
+  markDirty();
 }
 
-function calcShortage(colIndex) {
-  var ss  = parseFloat((document.getElementById('sampleSize_'  + colIndex) || {}).value) || 0;
-  var acc = parseFloat((document.getElementById('acceptedQty_' + colIndex) || {}).value) || 0;
-  var rej = parseFloat((document.getElementById('rejectedQty_' + colIndex) || {}).value) || 0;
-  var el  = document.getElementById('shortage_' + colIndex);
-  if (!el) return;
-  el.textContent = (ss === 0 && acc === 0 && rej === 0) ? '—' : (ss - acc - rej);
+function calcShortage(idx) {
+  var ss  = parseFloat((document.getElementById('sampleSize_'  + idx) || {}).value) || 0;
+  var acc = parseFloat((document.getElementById('acceptedQty_' + idx) || {}).value) || 0;
+  var rej = parseFloat((document.getElementById('rejectedQty_' + idx) || {}).value) || 0;
+  var el  = document.getElementById('shortage_' + idx);
+  if (el) el.textContent = (ss === 0 && acc === 0 && rej === 0) ? '—' : String(ss - acc - rej);
+}
+
+function checkIPQCStatus(colIndex) {
+  var matSel  = document.getElementById('mat_sel_'   + colIndex);
+  var batchInp= document.getElementById('batch_inp_' + colIndex);
+  var infoDiv = document.getElementById('ipqc_info_' + colIndex);
+  if (!matSel || !batchInp || !infoDiv) return;
+  var productCode = matSel.value;
+  var batch = batchInp.value.trim();
+  if (!productCode || !batch) { infoDiv.style.display = 'none'; infoDiv.className = 'ipqc-info'; return; }
+
+  google.script.run
+    .withSuccessHandler((function(ci) {
+      return function(res) {
+        var div = document.getElementById('ipqc_info_' + ci);
+        if (!div) return;
+        if (!res.found) {
+          currentItems[ci].ipqcSessionRef = '';
+          div.className = 'ipqc-info amber';
+          div.textContent = 'No IPQC session found for this batch — verify in-process checks were completed.';
+          div.style.display = 'block';
+        } else if (res.status === 'OPEN') {
+          currentItems[ci].ipqcSessionRef = res.sessionId;
+          div.className = 'ipqc-info amber';
+          div.textContent = 'IPQC session is still OPEN for this batch — ensure it is closed before releasing.';
+          div.style.display = 'block';
+        } else {
+          currentItems[ci].ipqcSessionRef = res.sessionId;
+          div.className = 'ipqc-info green';
+          div.textContent = 'IPQC completed for this batch (' + res.rounds + ' rounds).';
+          div.style.display = 'block';
+        }
+      };
+    })(colIndex))
+    .withFailureHandler(function() {})
+    .checkIPQCForBatch(productCode, batch);
 }
 
 function setIPQC(btn, val) {
@@ -492,6 +582,7 @@ function setIPQC(btn, val) {
   document.getElementById('ipqcY').className = '';
   document.getElementById('ipqcN').className = '';
   btn.className = val === 'Y' ? 'active-yes' : 'active-no';
+  markDirty();
 }
 
 function setRelease(val) {
@@ -500,6 +591,7 @@ function setRelease(val) {
   if      (val === 'RELEASED') document.getElementById('r_rel').className = 'disp-btn active-acc';
   else if (val === 'HOLD')     document.getElementById('r_hld').className = 'disp-btn active-hld';
   else if (val === 'REJECTED') document.getElementById('r_rej').className = 'disp-btn active-rej';
+  markDirty();
 }
 
 function submitOQC() {
@@ -512,43 +604,72 @@ function submitOQC() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
-  var items = currentItems.map(function(item, ci) {
-    var matSel   = document.getElementById('mat_sel_'   + ci);
-    var batchInp = document.getElementById('batch_inp_' + ci);
-    var matCode  = matSel   ? matSel.value   : item.materialCode;
-    var matOpt   = matSel   ? matSel.options[matSel.selectedIndex] : null;
-    var matDesc  = matOpt && matOpt.dataset.desc ? matOpt.dataset.desc : (item.materialDesc || matCode);
-    return {
-      materialCode: matCode  || '',
-      materialDesc: matDesc  || '',
-      batchPO:      batchInp ? batchInp.value : (item.batchPO || ''),
-      sampleSize:     parseFloat((document.getElementById('sampleSize_'  + ci) || {}).value) || 0,
-      acceptedQty:    parseFloat((document.getElementById('acceptedQty_' + ci) || {}).value) || 0,
-      rejectedQty:    parseFloat((document.getElementById('rejectedQty_' + ci) || {}).value) || 0,
-      checks:         itemCheckVals[ci] || {},
-      ipqcSessionRef: ipqcSessionRefs[ci] || ''
-    };
+  // Sync any stale DOM values
+  currentItems.forEach(function(item, ci) {
+    var matSel  = document.getElementById('mat_sel_'   + ci);
+    var batchInp= document.getElementById('batch_inp_' + ci);
+    if (matSel) {
+      var opt = matSel.options[matSel.selectedIndex];
+      item.materialCode = matSel.value;
+      item.materialDesc = opt ? (opt.dataset.desc || matSel.value) : matSel.value;
+    }
+    if (batchInp) item.batchPO = batchInp.value;
+    item.sampleSize  = parseFloat((document.getElementById('sampleSize_'  + ci) || {}).value) || 0;
+    item.acceptedQty = parseFloat((document.getElementById('acceptedQty_' + ci) || {}).value) || 0;
+    item.rejectedQty = parseFloat((document.getElementById('rejectedQty_' + ci) || {}).value) || 0;
+    OQC_CHECKS.forEach(function(chk) {
+      var remEl = document.getElementById('rem_' + ci + '_' + chk.id);
+      if (remEl) {
+        if (!item.remarks) item.remarks = {};
+        item.remarks[chk.id] = remEl.value;
+      }
+    });
   });
+
+  var customerSel2 = {};
+  var cSel = document.getElementById('customer');
+  var cOpt = cSel.options[cSel.selectedIndex];
+  if (cOpt && cOpt.dataset.obj) { try { customerSel2 = JSON.parse(cOpt.dataset.obj); } catch(e) {} }
 
   var data = {
     date:           document.getElementById('date').value,
     customerCode:   document.getElementById('customer').value,
-    customerName:   customerSel.name || '',
+    customerName:   customerSel2.name || customerSel.name || '',
     inspector:      document.getElementById('inspector').value,
     ipqcReviewed:   ipqcVal,
     aqlLevel:       document.getElementById('aqlLevel').value,
     releaseDecision:releaseDecision,
     remarks:        document.getElementById('remarks').value,
-    items:          items
+    sessionId:      sessionId,
+    items: currentItems.map(function(item) {
+      return {
+        materialCode:   item.materialCode  || '',
+        materialDesc:   item.materialDesc  || '',
+        batchPO:        item.batchPO       || '',
+        sampleSize:     item.sampleSize    || 0,
+        acceptedQty:    item.acceptedQty   || 0,
+        rejectedQty:    item.rejectedQty   || 0,
+        checks:         item.checks        || {},
+        remarks:        item.remarks       || {},
+        ipqcSessionRef: item.ipqcSessionRef|| ''
+      };
+    })
   };
 
   google.script.run
     .withSuccessHandler(function(res) {
       if (res.success) {
-        savedDocNos = res.docNos;
-        showToast('✅ Saved: ' + res.docNos.join(', '), 'success');
+        savedDocNos = res.docNos || [];
+        _dirty = false;
+        var recordId = res.recordId || savedDocNos[0] || '';
+        var productName = (currentItems[0] && currentItems[0].materialDesc) ? currentItems[0].materialDesc : '';
+        var batchNo     = (currentItems[0] && currentItems[0].batchPO)       ? currentItems[0].batchPO       : '';
+        if (sessionId) {
+          autoQmsTask_(sessionId, 'OQC', 'OQC: ' + productName + ' — ' + batchNo, recordId);
+        }
+        showToast('Saved: ' + savedDocNos.join(', '), 'success');
         document.getElementById('btnWA').style.display = 'block';
-        btn.innerHTML = '✅ Saved';
+        btn.innerHTML = 'Saved';
         setTimeout(function() { goHome(); }, 2500);
       } else {
         showToast('Error: ' + res.error, 'error');
@@ -564,12 +685,23 @@ function submitOQC() {
     .saveOQC(data);
 }
 
+function autoQmsTask_(sid, type, title, linkedRecord) {
+  if (!sid) return;
+  google.script.run
+    .withSuccessHandler(function() {})
+    .withFailureHandler(function() {})
+    .autoQmsTask_(sid, type, title, linkedRecord);
+}
+
 function sendWA() {
   if (!savedDocNos.length) return;
+  var cSel = document.getElementById('customer');
+  var cOpt = cSel.options[cSel.selectedIndex];
+  var custName = (cOpt && cOpt.dataset.obj) ? (JSON.parse(cOpt.dataset.obj).name || '') : '';
   var rec = {
     type: 'OQC', docNo: savedDocNos[0],
     date: document.getElementById('date').value,
-    customer: customerSel.name || '',
+    customer: custName,
     releaseDecision: releaseDecision,
     inspector: document.getElementById('inspector').value
   };

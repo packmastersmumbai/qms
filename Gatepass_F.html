@@ -2,28 +2,112 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Item card */
+    .item-card {
+      background: var(--navy-light);
+      border: 1px solid #C7D7FF;
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      position: relative;
+    }
+    .item-card-remove {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .item-card-remove:hover { color: var(--danger); }
+    .item-card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy);
+      padding-right: 26px;
+    }
+    .item-card-qty {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .item-card-qty b { font-weight: 600; }
+
+    /* Items count badge */
+    .item-badge {
+      background: var(--amber);
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* Section title flex */
+    .section-title-flex {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Add item button */
+    .add-item-btn {
+      width: 100%;
+      background: var(--amber);
+      color: var(--navy);
+      border: none;
+      border-radius: 6px;
+      padding: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 4px;
+    }
+
+    /* Readonly */
+    input[readonly] { background: #F9FAFB; color: var(--muted); }
+
+    /* Search results list */
+    .field select[size] { margin-top: 4px; }
+  </style>
 </head>
 <body>
 
 <div class="pm-header">
-  <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:4px;text-decoration:none;">‹</a>
-  <span class="logo-text">🚚 New Gatepass</span>
+  <button class="back-btn" id="backBtn">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4l-6 6 6 6"/>
+    </svg>
+  </button>
+  <span class="page-title">New Gatepass</span>
   <span class="doc-badge" id="docBadge">Loading…</span>
 </div>
 
-<div style="padding-bottom:80px;">
+<!-- Section 1: Vehicle / Transporter Details -->
+<div class="section">
+  <div class="section-title">Vehicle &amp; Transporter Details</div>
+  <div class="section-body">
 
-  <div class="section">
-    <div class="section-title">Dispatch Details</div>
-    <div class="section-body">
-
+    <div class="two-col">
       <div class="field">
         <label>Date</label>
         <input type="date" id="date">
       </div>
-
       <div class="field">
         <label>Type</label>
         <select id="type">
@@ -33,111 +117,114 @@
           <option value="Other">Other</option>
         </select>
       </div>
+    </div>
 
+    <div class="field">
+      <label>Vehicle No.</label>
+      <input type="text" id="vehicleNo" placeholder="Truck / vehicle registration number">
+    </div>
+
+    <div class="two-col">
       <div class="field">
-        <label>OQC Reference <span style="font-size:10px;color:#9CA3AF;">(if applicable)</span></label>
-        <input type="text" id="oqcRef" placeholder="e.g. PM/OQC/2026-001">
+        <label>Driver Name</label>
+        <input type="text" id="driverName" placeholder="Driver name">
       </div>
-
       <div class="field">
-        <label>Customer / Party</label>
-        <select id="party" onchange="onPartyChange()">
-          <option value="">— Select Party —</option>
-        </select>
+        <label>Transporter</label>
+        <input type="text" id="transporter" placeholder="Transport company">
       </div>
+    </div>
 
-      <div class="field">
-        <label>Vehicle No.</label>
-        <input type="text" id="vehicleNo" placeholder="Truck/vehicle registration number">
-      </div>
+    <div class="field">
+      <label>Dispatch Zone</label>
+      <select id="dispatchZone">
+        <option value="Dispatch Bay">Dispatch Bay</option>
+        <option value="Finished Goods Store">Finished Goods Store</option>
+        <option value="Production Zone">Production Zone</option>
+        <option value="Raw Material Store">Raw Material Store</option>
+        <option value="Quarantine Zone">Quarantine Zone</option>
+      </select>
+    </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div class="field">
-          <label>Driver Name</label>
-          <input type="text" id="driverName" placeholder="Driver name">
-        </div>
-        <div class="field">
-          <label>Transporter</label>
-          <input type="text" id="transporter" placeholder="Transport company">
-        </div>
-      </div>
+  </div>
+</div>
 
-      <div class="field">
-        <label>Dispatch Zone</label>
-        <select id="dispatchZone">
-          <option value="Dispatch Bay">Dispatch Bay</option>
-          <option value="Finished Goods Store">Finished Goods Store</option>
-          <option value="Production Zone">Production Zone</option>
-          <option value="Raw Material Store">Raw Material Store</option>
-          <option value="Quarantine Zone">Quarantine Zone</option>
-        </select>
-      </div>
-
+<!-- Section 2: Material / Goods Details -->
+<div class="section">
+  <div class="section-title">
+    <div class="section-title-flex">
+      <span>Material / Goods Details</span>
+      <span id="itemBadge" class="item-badge">0 items</span>
     </div>
   </div>
+  <div class="section-body">
 
-  <div class="section">
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>Materials / Items</span>
-      <span id="itemBadge" style="background:var(--amber);color:var(--navy);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">0 added</span>
+    <div class="field">
+      <label>Customer / Party</label>
+      <select id="party">
+        <option value="">— Select Party —</option>
+      </select>
     </div>
-    <div class="section-body">
 
+    <div class="field">
+      <label>OQC Reference <span style="font-size:10px;color:var(--muted);">(if applicable)</span></label>
+      <input type="text" id="oqcRef" placeholder="e.g. PM/OQC/2026-001">
+    </div>
+
+    <div class="field">
+      <label>Search Material</label>
+      <input type="text" id="matSearch" placeholder="Type to search material…" autocomplete="off">
+      <select id="material" size="3"></select>
+    </div>
+
+    <div class="two-col">
       <div class="field">
-        <label>Material / Product</label>
-        <input type="text" id="matSearch" placeholder="Type to search material…" oninput="filterMaterials()" autocomplete="off">
-        <select id="material" size="3" style="margin-top:4px;" onchange="onMaterialChange()"></select>
+        <label>Quantity</label>
+        <input type="number" id="qty" min="0" placeholder="0">
       </div>
-
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
-        <div class="field">
-          <label>Quantity</label>
-          <input type="number" id="qty" min="0" placeholder="0">
-        </div>
-        <div class="field">
-          <label>Unit</label>
-          <input type="text" id="unit" placeholder="KG / PC" readonly style="background:#F9FAFB;color:#6B7280;">
-        </div>
+      <div class="field">
+        <label>Unit</label>
+        <input type="text" id="unit" placeholder="KG / PC" readonly>
       </div>
-
-      <button type="button" onclick="addItem()" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px;">+ Add Item</button>
-
-      <div id="itemsList" style="margin-top:8px;">
-        <p style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0;">No items added yet</p>
-      </div>
-
     </div>
+
+    <button class="add-item-btn" id="addItemBtn">+ Add Item</button>
+
+    <div id="itemsList" style="margin-top:8px;">
+      <p style="font-size:12px;color:var(--muted);text-align:center;padding:6px 0;">No items added yet</p>
+    </div>
+
   </div>
+</div>
 
-  <div class="section">
-    <div class="section-title">Authorization</div>
-    <div class="section-body">
+<!-- Section 3: Authorization -->
+<div class="section">
+  <div class="section-title">Authorization</div>
+  <div class="section-body">
 
-      <div class="field">
-        <label>Authorized By</label>
-        <select id="authorizedBy">
-          <option value="">— Select —</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>Security Guard on Duty</label>
-        <input type="text" id="securityGuard" placeholder="Name of security guard on duty">
-      </div>
-
-      <div class="field">
-        <label>Remarks</label>
-        <textarea id="remarks" placeholder="Any notes or observations…"></textarea>
-      </div>
-
+    <div class="field">
+      <label>Authorized By</label>
+      <select id="authorizedBy">
+        <option value="">— Select —</option>
+      </select>
     </div>
-  </div>
 
+    <div class="field">
+      <label>Security Guard on Duty</label>
+      <input type="text" id="securityGuard" placeholder="Name of security guard on duty">
+    </div>
+
+    <div class="field">
+      <label>Remarks</label>
+      <textarea id="remarks" placeholder="Any notes or observations…"></textarea>
+    </div>
+
+  </div>
 </div>
 
 <!-- Sticky footer -->
-<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);">
-  <button class="btn-submit" id="btnSubmit" onclick="submitGatepass()">Issue Gatepass ✓</button>
+<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);z-index:90;">
+  <button class="btn-submit" id="btnSubmit">Issue Gatepass</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -147,19 +234,49 @@ var ALL_PARTIES = [], ALL_MATS = [];
 var partySel = {}, materialSel = {};
 var ITEMS = [];
 var docNo = '';
+var sessionId = sessionStorage.getItem('dwmSessionId') || '';
+var _dirty = false;
+
+function markDirty() { _dirty = true; }
+
+window.addEventListener('beforeunload', function(e) {
+  if (_dirty) {
+    e.preventDefault();
+    e.returnValue = 'You have unsaved changes. Leave anyway?';
+  }
+});
 
 function init() {
-  var today = new Date();
-  document.getElementById('date').value = today.toISOString().split('T')[0];
+  document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+  document.getElementById('backBtn').addEventListener('click', function() {
+    if (_dirty && !confirm('Unsaved changes will be lost. Go back?')) return;
+    goHome();
+  });
+  document.getElementById('addItemBtn').addEventListener('click', addItem);
+  document.getElementById('btnSubmit').addEventListener('click', submitGatepass);
+  document.getElementById('party').addEventListener('change', onPartyChange);
+  document.getElementById('material').addEventListener('change', onMaterialChange);
+  document.getElementById('matSearch').addEventListener('input', filterMaterials);
+
+  // Dirty tracking on key fields
+  ['vehicleNo','driverName','transporter','oqcRef','securityGuard','remarks','date'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', markDirty);
+  });
+  ['type','dispatchZone','party','authorizedBy'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', markDirty);
+  });
 
   google.script.run
     .withSuccessHandler(function(data) {
       docNo = data.docNumber;
       document.getElementById('docBadge').textContent = docNo;
 
-      ALL_PARTIES = data.parties;
+      ALL_PARTIES = data.parties || [];
       var pSel = document.getElementById('party');
-      data.parties.forEach(function(p) {
+      ALL_PARTIES.forEach(function(p) {
         var opt = document.createElement('option');
         opt.value = p.code;
         opt.textContent = p.name + (p.type ? ' (' + p.type + ')' : '');
@@ -168,14 +285,14 @@ function init() {
       });
 
       var aSel = document.getElementById('authorizedBy');
-      data.personnel.forEach(function(p) {
+      (data.personnel || []).forEach(function(p) {
         var opt = document.createElement('option');
         opt.value = p.name;
         opt.textContent = p.name + ' — ' + p.role;
         aSel.appendChild(opt);
       });
 
-      ALL_MATS = data.materials;
+      ALL_MATS = data.materials || [];
       renderMaterials(ALL_MATS);
     })
     .withFailureHandler(function(e) { showToast(e.message, 'error'); })
@@ -200,7 +317,7 @@ function filterMaterials() {
   var filtered = ALL_MATS.filter(function(m) {
     return m.desc.toLowerCase().indexOf(q) > -1 ||
            String(m.code).toLowerCase().indexOf(q) > -1 ||
-           m.category.toLowerCase().indexOf(q) > -1;
+           (m.category && m.category.toLowerCase().indexOf(q) > -1);
   });
   renderMaterials(filtered);
 }
@@ -215,9 +332,7 @@ function onMaterialChange() {
   var sel = document.getElementById('material');
   var opt = sel.options[sel.selectedIndex];
   materialSel = opt && opt.dataset.obj ? JSON.parse(opt.dataset.obj) : {};
-  if (materialSel.unit) {
-    document.getElementById('unit').value = materialSel.unit;
-  }
+  if (materialSel.unit) document.getElementById('unit').value = materialSel.unit;
 }
 
 function addItem() {
@@ -237,19 +352,19 @@ function addItem() {
     unit:         document.getElementById('unit').value || materialSel.unit || ''
   });
 
-  // Clear item fields
   document.getElementById('matSearch').value = '';
   document.getElementById('qty').value = '';
   document.getElementById('unit').value = '';
   renderMaterials(ALL_MATS);
   materialSel = {};
-
   renderItems();
+  markDirty();
 }
 
 function removeItem(i) {
   ITEMS.splice(i, 1);
   renderItems();
+  markDirty();
 }
 
 function renderItems() {
@@ -258,16 +373,23 @@ function renderItems() {
 
   var el = document.getElementById('itemsList');
   if (!ITEMS.length) {
-    el.innerHTML = '<p style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0;">No items added yet</p>';
+    el.innerHTML = '<p style="font-size:12px;color:var(--muted);text-align:center;padding:6px 0;">No items added yet</p>';
     return;
   }
   el.innerHTML = ITEMS.map(function(item, i) {
-    return '<div style="background:#F0F4FF;border:1px solid #C7D7FF;border-radius:8px;padding:8px 10px;margin-bottom:6px;position:relative;">' +
-      '<button type="button" onclick="removeItem(' + i + ')" style="position:absolute;top:5px;right:8px;background:none;border:none;font-size:18px;cursor:pointer;color:#9CA3AF;line-height:1;">×</button>' +
-      '<div style="font-size:12px;font-weight:600;color:var(--navy);padding-right:24px;">' + escHtml(item.materialDesc) + '</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-top:3px;">Qty: <b>' + escHtml(item.qty) + ' ' + escHtml(item.unit) + '</b></div>' +
+    return '<div class="item-card">' +
+      '<button type="button" class="item-card-remove" data-index="' + i + '">×</button>' +
+      '<div class="item-card-title">' + escHtml(item.materialDesc) + '</div>' +
+      '<div class="item-card-qty">Qty: <b>' + escHtml(item.qty) + ' ' + escHtml(item.unit) + '</b></div>' +
     '</div>';
   }).join('');
+
+  el.querySelectorAll('.item-card-remove').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      removeItem(parseInt(this.dataset.index));
+    });
+  });
 }
 
 function escHtml(str) {
@@ -275,14 +397,16 @@ function escHtml(str) {
 }
 
 function submitGatepass() {
-  if (!document.getElementById('date').value)        { showToast('Please enter a date.', 'error'); return; }
-  if (!document.getElementById('party').value)       { showToast('Please select a party.', 'error'); return; }
-  if (!ITEMS.length)                                  { showToast('Add at least one item.', 'error'); return; }
-  if (!document.getElementById('authorizedBy').value){ showToast('Please select who is authorizing.', 'error'); return; }
+  if (!document.getElementById('date').value)         { showToast('Please enter a date.', 'error'); return; }
+  if (!document.getElementById('party').value)        { showToast('Please select a party.', 'error'); return; }
+  if (!ITEMS.length)                                   { showToast('Add at least one item.', 'error'); return; }
+  if (!document.getElementById('authorizedBy').value) { showToast('Please select who is authorizing.', 'error'); return; }
 
   var btn = document.getElementById('btnSubmit');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  var vehicleNo = document.getElementById('vehicleNo').value;
 
   var data = {
     date:          document.getElementById('date').value,
@@ -290,34 +414,48 @@ function submitGatepass() {
     oqcRef:        document.getElementById('oqcRef').value,
     partyCode:     document.getElementById('party').value,
     partyName:     partySel.name || document.getElementById('party').value,
-    vehicleNo:     document.getElementById('vehicleNo').value,
+    vehicleNo:     vehicleNo,
     driverName:    document.getElementById('driverName').value,
     transporter:   document.getElementById('transporter').value,
     authorizedBy:  document.getElementById('authorizedBy').value,
     securityGuard: document.getElementById('securityGuard').value,
     remarks:       document.getElementById('remarks').value,
     dispatchZone:  document.getElementById('dispatchZone').value,
+    sessionId:     sessionId,
     items:         ITEMS
   };
 
   google.script.run
     .withSuccessHandler(function(res) {
       if (res.success) {
+        _dirty = false;
+        var recordId = res.recordId || res.docNo || '';
+        if (sessionId) {
+          autoQmsTask_(sessionId, 'Gatepass', 'Gatepass: ' + vehicleNo, recordId);
+        }
         showToast('Gatepass Issued: ' + res.docNo, 'success');
-        btn.innerHTML = 'Issued ✓';
+        btn.innerHTML = 'Issued';
         setTimeout(function() { goHome(); }, 1500);
       } else {
         showToast('Error: ' + res.error, 'error');
         btn.disabled = false;
-        btn.innerHTML = 'Issue Gatepass ✓';
+        btn.innerHTML = 'Issue Gatepass';
       }
     })
     .withFailureHandler(function(e) {
       showToast(e.message, 'error');
       btn.disabled = false;
-      btn.innerHTML = 'Issue Gatepass ✓';
+      btn.innerHTML = 'Issue Gatepass';
     })
     .saveGatepass(data);
+}
+
+function autoQmsTask_(sid, type, title, linkedRecord) {
+  if (!sid) return;
+  google.script.run
+    .withSuccessHandler(function() {})
+    .withFailureHandler(function() {})
+    .autoQmsTask_(sid, type, title, linkedRecord);
 }
 
 function showToast(msg, type) {

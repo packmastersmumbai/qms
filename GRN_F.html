@@ -2,18 +2,200 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    /* file-specific styles only — never re-define Theme-owned classes */
+
+    /* ── Touch target and tap contracts ── */
+    button {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s ease;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    /* ── Items list ── */
+    .items-list-container {
+      margin-top: 8px;
+    }
+
+    .item-card {
+      background: var(--navy-light);
+      border: 1px solid #C7D7FF;
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      position: relative;
+    }
+
+    .item-card .item-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy);
+      padding-right: 24px;
+    }
+
+    .item-card .item-detail {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .item-card .remove-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: none;
+      border: none;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+      padding: 0;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      border-radius: 6px;
+    }
+
+    .item-card .remove-btn:hover { color: var(--danger); background: #FEE2E2; }
+    .item-card .remove-btn:active { transform: scale(0.93); }
+
+    /* ── Grid helpers ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* ── Section title with badge layout ── */
+    .section-title-with-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ── Item count badge in section title ── */
+    .item-count-badge {
+      background: var(--amber);
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Secondary action button (Add Item) ── */
+    .btn-secondary {
+      width: 100%;
+      background: var(--navy-light);
+      color: var(--navy);
+      border: 1.5px solid #C7D7FF;
+      border-radius: var(--radius);
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+      margin-top: 4px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 44px;
+    }
+    .btn-secondary:hover  { background: #DDE6FA; }
+    .btn-secondary:active { transform: scale(0.97); background: #C7D7FF; }
+
+    /* ── Sticky footer ── */
+    .sticky-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--white);
+      padding: 10px;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+      z-index: 100;
+    }
+
+    /* ── IQC Prompt Dialog ── */
+    .dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .dialog-overlay.hidden { display: none; }
+    .dialog-sheet {
+      background: var(--white);
+      border-radius: 16px 16px 0 0;
+      padding: 24px 20px 32px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .dialog-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .dialog-body {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .dialog-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .dialog-actions button {
+      flex: 1;
+      padding: 13px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      min-height: 44px;
+    }
+    .btn-dialog-yes {
+      background: var(--navy);
+      color: var(--white);
+    }
+    .btn-dialog-yes:hover { background: #1A2D9E; }
+    .btn-dialog-no {
+      background: var(--navy-light);
+      color: var(--navy);
+    }
+    .btn-dialog-no:hover { background: #DDE6FA; }
+  </style>
 </head>
 <body>
 
 <div class="pm-header">
-  <a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:4px;text-decoration:none;">‹</a>
-  <span class="logo-text">📥 New GRN</span>
+  <button class="back-btn" id="backBtn">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4l-6 6 6 6"/>
+    </svg>
+  </button>
+  <span class="page-title">New GRN</span>
   <span class="doc-badge" id="docBadge">Loading…</span>
 </div>
-
-<div style="padding-bottom:80px;">
 
   <div class="section">
     <div class="section-title">Receipt Details</div>
@@ -26,7 +208,7 @@
 
       <div class="field">
         <label>Supplier</label>
-        <select id="supplier" onchange="onSupplierChange()">
+        <select id="supplier">
           <option value="">— Select Supplier —</option>
         </select>
       </div>
@@ -56,19 +238,19 @@
   </div>
 
   <div class="section">
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="section-title section-title-with-badge">
       <span>Items</span>
-      <span id="itemBadge" style="background:var(--amber);color:var(--navy);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">0 added</span>
+      <span id="itemBadge" class="item-count-badge">0 items</span>
     </div>
     <div class="section-body">
 
       <div class="field">
         <label>Material</label>
-        <input type="text" id="matSearch" placeholder="Type to search material…" oninput="filterMaterials()" autocomplete="off">
-        <select id="material" size="3" style="margin-top:4px;" onchange="onMaterialChange()"></select>
+        <input type="text" id="matSearch" placeholder="Type to search material…" autocomplete="off">
+        <select id="material" size="3" style="margin-top:4px;"></select>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="grid-2">
         <div class="field">
           <label>Qty Ordered</label>
           <input type="number" id="qtyOrdered" min="0" placeholder="0">
@@ -79,18 +261,18 @@
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="grid-2">
         <div class="field">
           <label>Batch / Lot No.</label>
           <input type="text" id="batchNo" placeholder="Batch or lot">
         </div>
         <div class="field">
-          <label>Expiry Date <span style="font-size:10px;color:#9CA3AF;">(opt.)</span></label>
+          <label>Expiry Date <span style="font-size:10px;color:var(--muted);">(opt.)</span></label>
           <input type="date" id="expiryDate">
         </div>
       </div>
 
-      <button type="button" onclick="addItem()" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px;">+ Add Item to GRN</button>
+      <button type="button" id="btnAddItem" class="btn-secondary">+ Add Item to GRN</button>
 
       <div id="itemsList" style="margin-top:8px;">
         <p style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0;">No items added yet</p>
@@ -105,9 +287,9 @@
       <div class="field">
         <label>COA / Test Certificate Received</label>
         <div class="toggle-row">
-          <button onclick="setCOA(this,'Y')"  id="coaY">Yes</button>
-          <button onclick="setCOA(this,'N')"  id="coaN">No</button>
-          <button onclick="setCOA(this,'NA')" id="coaNA" class="active-na">N/A</button>
+          <button id="coaY">Yes</button>
+          <button id="coaN">No</button>
+          <button id="coaNA" class="active-na">N/A</button>
         </div>
       </div>
       <div class="field">
@@ -117,11 +299,21 @@
     </div>
   </div>
 
+<!-- Sticky footer -->
+<div class="sticky-footer">
+  <button class="btn-submit" id="btnSubmit">Save GRN</button>
 </div>
 
-<!-- Sticky footer -->
-<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);">
-  <button class="btn-submit" id="btnSubmit" onclick="submitGRN()">Save GRN</button>
+<!-- IQC Prompt Dialog -->
+<div class="dialog-overlay hidden" id="iqcDialog">
+  <div class="dialog-sheet">
+    <div class="dialog-title">GRN Saved</div>
+    <div class="dialog-body" id="iqcDialogBody">GRN saved successfully. Start IQC inspection for this batch?</div>
+    <div class="dialog-actions">
+      <button class="btn-dialog-yes" id="btnIqcYes">Yes &rarr; IQC</button>
+      <button class="btn-dialog-no" id="btnIqcNo">No, Go Home</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -131,8 +323,40 @@ var SUPPLIERS = [], ALL_MATS = [];
 var coaVal = 'NA', supplierSel = {}, materialSel = {};
 var ITEMS = [];
 var docNo = '';
+var sessionId = null;
+var dwmTimerStarted = false;
+var formSubmitted = false;
+var savedResult = null; // holds { docNo, supplierName, firstItem } after save
 
+// ── DWM session bridge ─────────────────────────────────────────
+function initDwmSession() {
+  try {
+    sessionId = sessionStorage.getItem('dwmSessionId') || null;
+    if (sessionId && !dwmTimerStarted) {
+      dwmTimerStarted = true;
+      // Timer already running from session — no need to start new one
+      // Just register that we entered GRN form in this session
+    }
+  } catch(e) {
+    // sessionStorage unavailable (unlikely in GAS iframe, handle gracefully)
+    sessionId = null;
+  }
+}
+
+// ── beforeunload guard ─────────────────────────────────────────
+window.addEventListener('beforeunload', function() {
+  if (!formSubmitted && sessionId) {
+    // Signal DWM that we left without submitting — fire-and-forget
+    try {
+      google.script.run.dwmStopTimer(sessionId, false);
+    } catch(e) {}
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────
 function init() {
+  initDwmSession();
+
   var today = new Date();
   document.getElementById('date').value = today.toISOString().split('T')[0];
 
@@ -250,10 +474,10 @@ function renderItems() {
     return;
   }
   el.innerHTML = ITEMS.map(function(item, i) {
-    return '<div style="background:#F0F4FF;border:1px solid #C7D7FF;border-radius:8px;padding:8px 10px;margin-bottom:6px;position:relative;">' +
-      '<button type="button" onclick="removeItem(' + i + ')" style="position:absolute;top:5px;right:8px;background:none;border:none;font-size:18px;cursor:pointer;color:#9CA3AF;line-height:1;">×</button>' +
-      '<div style="font-size:12px;font-weight:600;color:var(--navy);padding-right:24px;">' + escHtml(item.materialDesc) + '</div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-top:3px;">' +
+    return '<div class="item-card">' +
+      '<button type="button" class="remove-btn" data-idx="' + i + '">×</button>' +
+      '<div class="item-title">' + escHtml(item.materialDesc) + '</div>' +
+      '<div class="item-detail">' +
         'Ordered: <b>' + (item.qtyOrdered || '—') + '</b> | Received: <b>' + (item.qtyReceived || '—') + '</b> ' + escHtml(item.unit) +
         (item.batchNo   ? ' &nbsp;·&nbsp; Batch: ' + escHtml(item.batchNo) : '') +
         (item.expiryDate ? ' &nbsp;·&nbsp; Exp: ' + escHtml(item.expiryDate) : '') +
@@ -266,6 +490,7 @@ function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// ── Submit ──────────────────────────────────────────────────────
 function submitGRN() {
   if (!document.getElementById('date').value)     { showToast('Please enter date.', 'error'); return; }
   if (!document.getElementById('supplier').value) { showToast('Please select a supplier.', 'error'); return; }
@@ -275,23 +500,43 @@ function submitGRN() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
+  var supplierName = supplierSel.name || document.getElementById('supplier').value;
+
   var data = {
     date:         document.getElementById('date').value,
     supplierCode: document.getElementById('supplier').value,
-    supplierName: supplierSel.name || '',
+    supplierName: supplierName,
     poRef:        document.getElementById('poRef').value,
     invoiceNo:    document.getElementById('invoiceNo').value,
     coaReceived:  coaVal,
     remarks:      document.getElementById('remarks').value,
     storageZone:  document.getElementById('storageZone').value,
-    items:        ITEMS
+    items:        ITEMS,
+    sessionId:    sessionId || ''
   };
 
   google.script.run
     .withSuccessHandler(function(res) {
       if (res.success) {
-        showToast('✅ GRN Saved: ' + res.docNo, 'success');
-        setTimeout(function() { goHome(); }, 1500);
+        formSubmitted = true;
+
+        // DWM auto-task
+        if (sessionId) {
+          var firstItem = ITEMS[0] || {};
+          var taskTitle = 'GRN: ' + supplierName + ' — ' + (firstItem.materialDesc || firstItem.materialCode || '');
+          try {
+            google.script.run.autoQmsTask_(sessionId, 'GRN', taskTitle, res.docNo);
+          } catch(e) {}
+        }
+
+        // Store result for IQC prompt
+        savedResult = {
+          docNo: res.docNo,
+          supplierName: supplierName,
+          firstItem: ITEMS[0] || {}
+        };
+
+        showIqcPrompt(savedResult);
       } else {
         showToast('Error: ' + res.error, 'error');
         btn.disabled = false;
@@ -306,6 +551,36 @@ function submitGRN() {
     .saveGRN(data);
 }
 
+// ── IQC Prompt ─────────────────────────────────────────────────
+function showIqcPrompt(result) {
+  var body = document.getElementById('iqcDialogBody');
+  body.textContent = 'GRN ' + result.docNo + ' saved. Start IQC inspection for this batch?';
+  document.getElementById('iqcDialog').classList.remove('hidden');
+}
+
+function goToIqc() {
+  if (!savedResult) { goHome(); return; }
+  var firstItem = savedResult.firstItem;
+  try {
+    sessionStorage.setItem('iqcPrefill', JSON.stringify({
+      supplier: savedResult.supplierName,
+      material: firstItem.materialDesc || firstItem.materialCode || '',
+      batch:    firstItem.batchNo || '',
+      grnRef:   savedResult.docNo
+    }));
+  } catch(e) {}
+
+  google.script.run
+    .withSuccessHandler(function(html) {
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .withFailureHandler(function() { goHome(); })
+    .getFormHtml('IQC');
+}
+
+// ── Toast ───────────────────────────────────────────────────────
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
@@ -313,11 +588,12 @@ function showToast(msg, type) {
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
 
+// ── Navigation ─────────────────────────────────────────────────
 function goHome() {
   var hasItems = ITEMS.length > 0;
   var hasFields = document.getElementById('supplier').value ||
                   document.getElementById('matSearch').value;
-  if (hasItems || hasFields) {
+  if (!formSubmitted && (hasItems || hasFields)) {
     if (!confirm('You have unsaved changes. Leave anyway?')) return;
   }
   google.script.run
@@ -328,6 +604,23 @@ function goHome() {
     })
     .getLandingHtml();
 }
+
+// ── Event listeners ────────────────────────────────────────────
+document.getElementById('backBtn').addEventListener('click', goHome);
+document.getElementById('itemsList').addEventListener('click', function(e) {
+  var btn = e.target.closest('.remove-btn');
+  if (btn) removeItem(parseInt(btn.dataset.idx, 10));
+});
+document.getElementById('btnAddItem').addEventListener('click', addItem);
+document.getElementById('btnSubmit').addEventListener('click', submitGRN);
+document.getElementById('matSearch').addEventListener('input', filterMaterials);
+document.getElementById('supplier').addEventListener('change', onSupplierChange);
+document.getElementById('material').addEventListener('change', onMaterialChange);
+document.getElementById('coaY').addEventListener('click', function() { setCOA(this, 'Y'); });
+document.getElementById('coaN').addEventListener('click', function() { setCOA(this, 'N'); });
+document.getElementById('coaNA').addEventListener('click', function() { setCOA(this, 'NA'); });
+document.getElementById('btnIqcYes').addEventListener('click', goToIqc);
+document.getElementById('btnIqcNo').addEventListener('click', goHome);
 
 window.onload = init;
 </script>

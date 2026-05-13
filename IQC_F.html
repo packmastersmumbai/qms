@@ -2,104 +2,289 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    body { }
     .two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .ccp-legend { font-size:10px; color:var(--muted); margin-bottom:6px; }
-    .ccp-legend span { color:var(--danger); font-weight:700; }
 
-    /* Matrix table */
-    .matrix-th-label {
-      position: sticky;
-      left: 0;
-      background: var(--white);
-      z-index: 2;
-      min-width: 200px;
-      text-align: left;
-      padding: 6px 10px;
-      border: 1px solid var(--border);
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-    }
-    .matrix-td-label {
-      position: sticky;
-      left: 0;
-      background: var(--white);
-      z-index: 1;
-      min-width: 200px;
-      padding: 6px 10px;
-      border: 1px solid var(--border);
-      font-size: 12px;
-      color: var(--text);
-      white-space: nowrap;
-    }
-    .matrix-th-item {
-      min-width: 130px;
-      padding: 6px 8px;
-      border: 1px solid var(--border);
-      text-align: center;
-      font-size: 11px;
-      font-weight: 600;
-      background: #F8FAFC;
-      vertical-align: top;
-      line-height: 1.4;
-    }
-    .matrix-td {
-      min-width: 130px;
-      padding: 5px 6px;
-      border: 1px solid var(--border);
-      text-align: center;
-      vertical-align: middle;
-    }
-    .matrix-td input[type=number] {
-      width: 80px;
-      padding: 4px 6px;
-      border: 1px solid var(--border);
+    /* Progress bar */
+    .progress-bar-wrap {
+      background: var(--border);
       border-radius: 4px;
-      font-size: 12px;
-      text-align: center;
+      height: 6px;
+      margin: 8px 0 4px;
+      overflow: hidden;
     }
-    .matrix-shortage {
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 600;
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--navy);
+      border-radius: 4px;
+      transition: width 0.3s ease;
     }
-    .matrix-qty-label {
+    .progress-label {
       font-size: 11px;
-      font-weight: 600;
       color: var(--muted);
+      text-align: right;
     }
-    .ccp-star { color: var(--danger); font-weight: 700; margin-left: 3px; }
-    .param-num-sm { color: var(--muted); font-size: 10px; margin-right: 4px; }
 
-    /* Matrix P/F/NA buttons */
-    .matrix-td button {
-      padding: 4px 10px;
-      border: 1.5px solid var(--border);
-      border-radius: 4px;
-      background: var(--white);
-      font-size: 11px;
+    /* Item navigator */
+    .item-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--navy-light);
+      border-bottom: 1px solid var(--border);
+    }
+    .item-nav-label {
+      flex: 1;
+      font-size: 12px;
       font-weight: 600;
+      color: var(--navy);
+    }
+    .item-nav-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .btn-next-item {
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
       cursor: pointer;
       font-family: inherit;
     }
-    .matrix-td button.pass { background:#E8F5E9; border-color:var(--success); color:var(--success); }
-    .matrix-td button.fail { background:#FFEBEE; border-color:var(--danger);  color:var(--danger);  }
-    .matrix-td button.na   { background:#F3F4F6; border-color:#9CA3AF;        color:#6B7280;        }
+    .btn-next-item:disabled {
+      background: var(--muted);
+      cursor: not-allowed;
+    }
+
+    /* Parameter card */
+    .param-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 8px;
+      transition: border-color 0.15s;
+    }
+    .param-card.card-active {
+      border-color: var(--navy);
+      box-shadow: var(--shadow-1);
+    }
+    .param-card.card-pass {
+      border-color: var(--success);
+      background: #F0FDF4;
+    }
+    .param-card.card-fail {
+      border-color: var(--danger);
+      background: #FFF5F5;
+    }
+    .param-card.card-na {
+      border-color: #9CA3AF;
+      background: #F9FAFB;
+    }
+    .param-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .param-card-num {
+      width: 22px;
+      height: 22px;
+      background: var(--navy-light);
+      color: var(--navy);
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .param-card-info {
+      flex: 1;
+    }
+    .param-card-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .param-card-spec {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .param-card-ccp {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--danger);
+      background: #FEE2E2;
+      padding: 1px 6px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .param-card-status {
+      flex-shrink: 0;
+    }
+    .chip-pass {
+      display: inline-block;
+      background: #DCFCE7;
+      color: #15803D;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .chip-fail {
+      display: inline-block;
+      background: #FEE2E2;
+      color: #B91C1C;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .chip-na {
+      display: inline-block;
+      background: #F3F4F6;
+      color: #6B7280;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .param-card-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .pf-btn {
+      flex: 1;
+      padding: 8px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: all 0.1s ease;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pf-btn:active { transform: scale(0.96); }
+    .pf-btn.pass { background: #E8F5E9; border-color: var(--success); color: var(--success); }
+    .pf-btn.fail { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
+    .pf-btn.na   { background: #F3F4F6; border-color: #9CA3AF; color: #6B7280; }
+    .param-card-remarks {
+      margin-top: 2px;
+    }
+    .param-card-remarks input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+    }
+    .param-card-remarks input:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+
+    /* Quantity row */
+    .qty-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .qty-item label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .qty-item input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 8px;
+      font-size: 14px;
+      font-family: inherit;
+      text-align: center;
+      color: var(--text);
+    }
+    .qty-item input:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    .shortage-display {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Disposition buttons */
+    .disp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .disp-btn {
+      padding: 10px 6px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--white);
+      color: var(--text);
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .disp-btn.active-accept { background: #E8F5E9; border-color: var(--success); color: var(--success); }
+    .disp-btn.active-reject { background: #FFEBEE; border-color: var(--danger);  color: var(--danger);  }
+    .disp-btn.active-hold   { background: #FEF3C7; border-color: var(--hold);    color: var(--hold);    }
+    .disp-btn.active-awd    { background: #FFEDD5; border-color: var(--deviation); color: var(--deviation); }
+
+    /* Params placeholder */
+    .params-placeholder {
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
 
-<div class="pm-header"><a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:4px;text-decoration:none;">‹</a>
-  <span class="logo-text"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>Incoming Quality Check</span>
+<div class="pm-header">
+  <button class="back-btn" id="backBtn">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4l-6 6 6 6"/>
+    </svg>
+  </button>
+  <span class="page-title">Incoming Quality Check</span>
   <span class="doc-badge" id="docBadge">Loading…</span>
 </div>
 
-<div style="padding-bottom:80px; overflow-y:auto;">
+<div style="padding-bottom:80px;">
 
   <!-- Header Info -->
   <div class="section">
@@ -120,22 +305,22 @@
 
       <div class="field">
         <label>Linked GRN No.</label>
-        <select id="grnNo" onchange="onGRNChange()">
+        <select id="grnNo">
           <option value="">— Select GRN —</option>
         </select>
       </div>
 
-      <div class="field">
-        <label>Supplier</label>
-        <input type="text" id="supplierName" readonly placeholder="Auto-filled from GRN">
+      <div class="two-col">
+        <div class="field">
+          <label>Supplier</label>
+          <input type="text" id="supplierName" readonly placeholder="Auto-filled from GRN">
+        </div>
+        <div class="field">
+          <label>GRN Ref</label>
+          <input type="text" id="grnRef" readonly placeholder="—">
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Sampling (shared) -->
-  <div class="section">
-    <div class="section-title">Sampling</div>
-    <div class="section-body">
       <div class="two-col">
         <div class="field">
           <label>AQL Level</label>
@@ -155,35 +340,91 @@
     </div>
   </div>
 
-  <!-- Inspection Matrix -->
-  <div class="section">
-    <div class="section-title">Inspection Parameters
-      <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:8px;">
-        ★ = Critical Control Point
-      </span>
+  <!-- Item navigator (shown only after GRN selected with multiple items) -->
+  <div id="itemNavWrap" style="display:none;" class="section" style="overflow:hidden;">
+    <div class="item-nav">
+      <div class="param-card-info">
+        <div class="item-nav-label" id="itemNavLabel">Item 1 of 1</div>
+        <div class="item-nav-sub" id="itemNavSub">—</div>
+      </div>
+      <button class="btn-next-item" id="btnNextItem">Next item →</button>
     </div>
-    <div class="section-body" style="padding:0;">
-      <div id="matrixWrap" style="overflow-x:auto;">
-        <div id="matrixPlaceholder" style="padding:16px;color:var(--muted);font-size:13px;">
-          Select a GRN to load inspection items.
-        </div>
-        <table id="matrixTable" style="display:none;border-collapse:collapse;width:100%;min-width:400px;">
-          <thead id="matrixHead"></thead>
-          <tbody id="matrixBody"></tbody>
-        </table>
+    <!-- Progress -->
+    <div style="padding:6px 12px 8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--muted);">Parameters completed</span>
+        <span class="progress-label" id="progressLabel">0 / 12</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
       </div>
     </div>
   </div>
 
-  <!-- Disposition -->
+  <!-- Single-item progress (no navigator) -->
+  <div id="singleProgressWrap" style="display:none;" class="section">
+    <div style="padding:8px 12px 10px;">
+      <div id="singleItemLabel" style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px;">—</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--muted);">Parameters completed</span>
+        <span class="progress-label" id="progressLabel2">0 / 12</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill2" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inspection Parameters (card-per-parameter) -->
   <div class="section">
+    <div class="section-title">
+      Inspection Parameters
+      <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-left:8px;">★ = Critical Control Point</span>
+    </div>
+    <div class="section-body" id="paramCardsBody">
+      <div class="params-placeholder" id="paramPlaceholder">Select a GRN to load inspection parameters.</div>
+    </div>
+  </div>
+
+  <!-- Quantities (per current item) -->
+  <div class="section" id="qtySection" style="display:none;">
+    <div class="section-title" id="qtySectionTitle">Quantities</div>
+    <div class="section-body">
+      <div class="qty-row">
+        <div class="qty-item">
+          <label>Sample Size</label>
+          <input type="number" id="sampleSize" min="0" placeholder="0">
+        </div>
+        <div class="qty-item">
+          <label>Accepted Qty</label>
+          <input type="number" id="acceptedQty" min="0" placeholder="0">
+        </div>
+        <div class="qty-item">
+          <label>Rejected Qty</label>
+          <input type="number" id="rejectedQty" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="shortage-display" id="shortageDisplay">Shortage: —</div>
+    </div>
+  </div>
+
+  <!-- Disposition -->
+  <div class="section" id="dispositionSection" style="display:none;">
     <div class="section-title">Disposition</div>
     <div class="section-body">
       <div class="disp-grid">
-        <button class="disp-btn" id="d_acc" onclick="setDisp('ACCEPTED')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>ACCEPT</button>
-        <button class="disp-btn" id="d_hld" onclick="setDisp('HOLD')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>HOLD</button>
-        <button class="disp-btn" id="d_rej" onclick="setDisp('REJECTED')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>REJECT</button>
-        <button class="disp-btn" id="d_awd" onclick="setDisp('ACCEPTED WITH DEVIATION')"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>WITH DEVIATION</button>
+        <button class="disp-btn" id="d_acc" onclick="setDisp('ACCEPTED')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>ACCEPT
+        </button>
+        <button class="disp-btn" id="d_hld" onclick="setDisp('HOLD')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>HOLD
+        </button>
+        <button class="disp-btn" id="d_rej" onclick="setDisp('REJECTED')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>REJECT
+        </button>
+        <button class="disp-btn" id="d_awd" onclick="setDisp('ACCEPTED WITH DEVIATION')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>WITH DEVIATION
+        </button>
       </div>
       <div class="two-col" style="margin-top:10px;">
         <div class="field">
@@ -196,7 +437,7 @@
         </div>
       </div>
       <div class="field">
-        <label>Remarks</label>
+        <label>Overall Remarks</label>
         <textarea id="remarks" placeholder="Inspector observations…"></textarea>
       </div>
     </div>
@@ -205,34 +446,66 @@
 </div>
 
 <!-- Sticky footer -->
-<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;padding-bottom:max(10px, env(safe-area-inset-bottom));border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;">
+<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;">
   <button class="btn-submit" id="btnSubmit" onclick="submitIQC()" style="flex:2;">Save IQC Record</button>
-  <button class="btn-wa" id="btnWA" onclick="sendWA()" style="flex:1;margin-top:0;display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>WhatsApp</button>
+  <button class="btn-wa" id="btnWA" onclick="sendWA()" style="flex:1;margin-top:0;display:none;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>WhatsApp
+  </button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-var PARAMS = [], INSPECTORS = [], GRNS = [], GRN_MAP = {};
-var disposition = '', savedRecord = null;
+// ── State ──────────────────────────────────────────────────────────────────
+var sessionId   = sessionStorage.getItem('dwmSessionId') || '';
+var PARAMS      = [];
+var INSPECTORS  = [];
+var GRNS        = [];
+var GRN_MAP     = {};
+var currentItems = [];   // all items for selected GRN
+var currentItemIndex = 0; // which item is active
 
-// itemParamVals[colIndex][paramId] = 'PASS' | 'FAIL' | 'NA' | ''
-var itemParamVals = [];
-// currentItems holds the array returned by getGRNItems for the selected GRN
-var currentItems = [];
+// itemData[i] = { paramVals:{id:'PASS'|'FAIL'|'NA'|''}, paramRemarks:{id:str},
+//                 sampleSize, acceptedQty, rejectedQty }
+var itemData    = [];
+var disposition = '';
+var savedRecord = null;
+var formSubmitted = false;
 
+// ── DWM session bridge: beforeunload guard ────────────────────────────────
+window.addEventListener('beforeunload', function() {
+  if (!formSubmitted && sessionId) {
+    try { google.script.run.pauseDwmTimer(sessionId); } catch(e) {}
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
 function init() {
   var today = new Date();
   document.getElementById('date').value = today.toISOString().split('T')[0];
+
+  // sessionStorage prefill
+  var prefillRaw = sessionStorage.getItem('iqcPrefill');
+  if (prefillRaw) {
+    try {
+      var pf = JSON.parse(prefillRaw);
+      if (pf.supplierName) document.getElementById('supplierName').value = pf.supplierName;
+      if (pf.grnRef)       document.getElementById('grnRef').value       = pf.grnRef;
+      // grnNo and batch will be set after GRN list loads
+      window._prefillGrnNo = pf.grnNo || '';
+      window._prefillBatch = pf.batchNo || '';
+    } catch(e) {}
+    sessionStorage.removeItem('iqcPrefill');
+  }
 
   google.script.run
     .withSuccessHandler(function(d) {
       document.getElementById('docBadge').textContent = d.docNumber;
       PARAMS     = d.params;
       INSPECTORS = d.inspectors;
-      GRNS       = d.recentGRNs;
+      GRNS       = d.recentGRNs || [];
 
-      // Populate inspectors dropdown
+      // Populate inspectors
       var iSel = document.getElementById('inspector');
       INSPECTORS.forEach(function(p) {
         var o = document.createElement('option');
@@ -241,37 +514,50 @@ function init() {
         iSel.appendChild(o);
       });
 
-      // Populate GRN dropdown (now deduplicated by grnNo)
+      // Populate GRN dropdown
       var gSel = document.getElementById('grnNo');
       GRNS.forEach(function(g) {
         GRN_MAP[g.grnNo] = g;
         var o = document.createElement('option');
         o.value = g.grnNo;
-        o.textContent = g.grnNo + ' | ' + g.material.substring(0, 30) +
-          (g.iqcStatus !== 'PENDING' ? ' [' + g.iqcStatus + ']' : '');
+        o.textContent = g.grnNo + ' | ' + (g.material || '').substring(0, 28) +
+          (g.iqcStatus && g.iqcStatus !== 'PENDING' ? ' [' + g.iqcStatus + ']' : '');
         gSel.appendChild(o);
       });
+
+      // Apply prefill GRN if present
+      if (window._prefillGrnNo) {
+        gSel.value = window._prefillGrnNo;
+        if (gSel.value) onGRNChange();
+      }
     })
     .withFailureHandler(function(e) { showToast(e.message, 'error'); })
     .getIQCFormInit();
+
+  // GRN change listener
+  document.getElementById('grnNo').addEventListener('change', onGRNChange);
+
+  // Quantity inputs — recalculate shortage
+  ['sampleSize','acceptedQty','rejectedQty'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', calcShortage);
+  });
 }
 
-// Called when GRN dropdown changes
+// ── GRN change ────────────────────────────────────────────────────────────
 function onGRNChange() {
   var grnNo = document.getElementById('grnNo').value;
   var g = GRN_MAP[grnNo];
-
-  // Auto-fill supplier using renamed key
   document.getElementById('supplierName').value = g ? (g.supplierName || '') : '';
+  document.getElementById('grnRef').value       = grnNo || '';
 
-  // Reset matrix state
-  currentItems = [];
-  itemParamVals = [];
-  clearMatrix();
+  // Reset state
+  currentItems     = [];
+  currentItemIndex = 0;
+  itemData         = [];
+  clearParamCards();
 
   if (!grnNo) return;
 
-  // Fetch all items for this GRN and build the matrix
   google.script.run
     .withSuccessHandler(function(items) {
       if (!items || items.length === 0) {
@@ -279,221 +565,309 @@ function onGRNChange() {
         return;
       }
       currentItems = items;
-      items.forEach(function() { itemParamVals.push({}); });
-      buildMatrix(items);
+      // Init per-item data
+      items.forEach(function() {
+        itemData.push({ paramVals: {}, paramRemarks: {},
+                        sampleSize: 0, acceptedQty: 0, rejectedQty: 0 });
+      });
+      currentItemIndex = 0;
+      renderCurrentItem();
     })
     .withFailureHandler(function(e) { showToast(e.message, 'error'); })
     .getGRNItems(grnNo);
 }
 
-function clearMatrix() {
-  document.getElementById('matrixTable').style.display = 'none';
-  document.getElementById('matrixPlaceholder').style.display = 'block';
-  document.getElementById('matrixPlaceholder').textContent = 'Select a GRN to load inspection items.';
-  document.getElementById('matrixHead').innerHTML = '';
-  document.getElementById('matrixBody').innerHTML = '';
+// ── Render current item's cards ────────────────────────────────────────────
+function renderCurrentItem() {
+  var item = currentItems[currentItemIndex];
+  var total = currentItems.length;
+
+  // Show/hide item navigator
+  if (total > 1) {
+    document.getElementById('itemNavWrap').style.display = '';
+    document.getElementById('singleProgressWrap').style.display = 'none';
+    document.getElementById('itemNavLabel').textContent =
+      'Item ' + (currentItemIndex + 1) + ' of ' + total;
+    document.getElementById('itemNavSub').textContent =
+      (item.materialDesc || 'Material') + (item.batchNo ? ' · Batch: ' + item.batchNo : '');
+    document.getElementById('btnNextItem').disabled = (currentItemIndex >= total - 1);
+  } else {
+    document.getElementById('itemNavWrap').style.display = 'none';
+    document.getElementById('singleProgressWrap').style.display = '';
+    document.getElementById('singleItemLabel').textContent =
+      (item.materialDesc || 'Material') + (item.batchNo ? ' · Batch: ' + item.batchNo : '');
+  }
+
+  // Show qty + disposition sections
+  document.getElementById('qtySection').style.display = '';
+  document.getElementById('dispositionSection').style.display = '';
+  document.getElementById('qtySectionTitle').textContent =
+    'Quantities — ' + (item.materialDesc || 'Item ' + (currentItemIndex + 1));
+
+  // Restore qty values for this item
+  var d = itemData[currentItemIndex];
+  document.getElementById('sampleSize').value  = d.sampleSize  || '';
+  document.getElementById('acceptedQty').value = d.acceptedQty || '';
+  document.getElementById('rejectedQty').value = d.rejectedQty || '';
+  calcShortage();
+
+  // Build param cards
+  buildParamCards();
+  updateProgress();
 }
 
-// Builds the parameter matrix table given an array of GRN items
-function buildMatrix(items) {
-  var head = document.getElementById('matrixHead');
-  var body = document.getElementById('matrixBody');
-  head.innerHTML = '';
+// ── Build parameter cards ─────────────────────────────────────────────────
+function buildParamCards() {
+  var body = document.getElementById('paramCardsBody');
   body.innerHTML = '';
+  document.getElementById('paramPlaceholder').style.display = 'none';
 
-  // --- Header row ---
-  var hRow = document.createElement('tr');
+  var d = itemData[currentItemIndex];
 
-  // Sticky label column header
-  var thLabel = document.createElement('th');
-  thLabel.className = 'matrix-th-label';
-  thLabel.textContent = '# Parameter';
-  hRow.appendChild(thLabel);
-
-  // One column header per item
-  items.forEach(function(item, ci) {
-    var th = document.createElement('th');
-    th.className = 'matrix-th-item';
-    var name  = item.materialDesc ? item.materialDesc.substring(0, 20) : 'Item ' + (ci + 1);
-    var batch = item.batchNo ? item.batchNo : '—';
-    var rcvd  = (item.qtyReceived && item.qtyReceived > 0)
-      ? 'Rcvd: ' + item.qtyReceived + (item.unit ? ' ' + item.unit : '')
-      : '';
-    th.innerHTML = '<div>' + name + '</div>' +
-                   '<div style="font-weight:400;color:var(--muted)">Batch: ' + batch + '</div>' +
-                   (rcvd ? '<div style="font-weight:400;color:var(--muted)">' + rcvd + '</div>' : '');
-    hRow.appendChild(th);
-  });
-  head.appendChild(hRow);
-
-  // --- Parameter rows ---
   PARAMS.forEach(function(p, pi) {
-    var tr = document.createElement('tr');
+    var card = document.createElement('div');
+    card.id        = 'pcard_' + p.id;
+    card.className = 'param-card';
+    var currentVal = d.paramVals[p.id] || '';
+    if (currentVal === 'PASS') card.className += ' card-pass';
+    else if (currentVal === 'FAIL') card.className += ' card-fail';
+    else if (currentVal === 'NA')   card.className += ' card-na';
 
-    // Sticky label cell
-    var tdLabel = document.createElement('td');
-    tdLabel.className = 'matrix-td-label';
-    tdLabel.innerHTML = '<span class="param-num-sm">' + (pi + 1) + '</span>' +
-      p.label + (p.ccp ? '<span class="ccp-star" title="Critical Control Point">★</span>' : '');
-    tr.appendChild(tdLabel);
+    // Header
+    var headerDiv = document.createElement('div');
+    headerDiv.className = 'param-card-header';
 
-    // One P/F cell per item
-    items.forEach(function(item, ci) {
-      itemParamVals[ci][p.id] = '';
-      var td = document.createElement('td');
-      td.className = 'matrix-td';
+    var numDiv = document.createElement('div');
+    numDiv.className = 'param-card-num';
+    numDiv.textContent = pi + 1;
 
-      var passBtn = document.createElement('button');
-      passBtn.id  = 'pf_pass_' + ci + '_' + p.id;
-      passBtn.textContent = 'P';
-      passBtn.onclick = (function(colI, paramId) {
-        return function() { setParam(colI, paramId, 'PASS', this); };
-      })(ci, p.id);
+    var infoDiv = document.createElement('div');
+    infoDiv.className = 'param-card-info';
+    infoDiv.innerHTML =
+      '<div class="param-card-name">' + p.label + '</div>' +
+      '<div class="param-card-spec">' + (p.spec || '') + '</div>';
 
-      var failBtn = document.createElement('button');
-      failBtn.id  = 'pf_fail_' + ci + '_' + p.id;
-      failBtn.textContent = 'F';
-      failBtn.onclick = (function(colI, paramId) {
-        return function() { setParam(colI, paramId, 'FAIL', this); };
-      })(ci, p.id);
+    headerDiv.appendChild(numDiv);
+    headerDiv.appendChild(infoDiv);
 
-      td.appendChild(passBtn);
-      td.appendChild(document.createTextNode(' '));
-      td.appendChild(failBtn);
+    if (p.ccp) {
+      var ccpSpan = document.createElement('span');
+      ccpSpan.className = 'param-card-ccp';
+      ccpSpan.textContent = '★ CCP';
+      headerDiv.appendChild(ccpSpan);
+    }
 
-      // N/A only for MSDS
-      if (p.id === 'msds') {
-        var naBtn = document.createElement('button');
-        naBtn.id  = 'pf_na_' + ci + '_' + p.id;
-        naBtn.textContent = 'N/A';
-        naBtn.onclick = (function(colI, paramId) {
-          return function() { setParam(colI, paramId, 'NA', this); };
-        })(ci, p.id);
-        td.appendChild(document.createTextNode(' '));
-        td.appendChild(naBtn);
-      }
+    if (currentVal) {
+      var chipDiv = document.createElement('div');
+      chipDiv.className = 'param-card-status';
+      chipDiv.id = 'chip_' + p.id;
+      chipDiv.innerHTML = currentVal === 'PASS'
+        ? '<span class="chip-pass">PASS</span>'
+        : currentVal === 'FAIL'
+          ? '<span class="chip-fail">FAIL</span>'
+          : '<span class="chip-na">N/A</span>';
+      headerDiv.appendChild(chipDiv);
+    } else {
+      var chipDiv = document.createElement('div');
+      chipDiv.className = 'param-card-status';
+      chipDiv.id = 'chip_' + p.id;
+      headerDiv.appendChild(chipDiv);
+    }
 
-      tr.appendChild(td);
-    });
-    body.appendChild(tr);
+    card.appendChild(headerDiv);
+
+    // P/F/NA buttons
+    var actionsDiv = document.createElement('div');
+    actionsDiv.className = 'param-card-actions';
+
+    var passBtn = document.createElement('button');
+    passBtn.className = 'pf-btn' + (currentVal === 'PASS' ? ' pass' : '');
+    passBtn.textContent = 'Pass';
+    passBtn.onclick = (function(paramId) {
+      return function() { setPF(paramId, 'PASS'); };
+    })(p.id);
+
+    var failBtn = document.createElement('button');
+    failBtn.className = 'pf-btn' + (currentVal === 'FAIL' ? ' fail' : '');
+    failBtn.textContent = 'Fail';
+    failBtn.onclick = (function(paramId) {
+      return function() { setPF(paramId, 'FAIL'); };
+    })(p.id);
+
+    actionsDiv.appendChild(passBtn);
+    actionsDiv.appendChild(failBtn);
+
+    if (p.id === 'msds') {
+      var naBtn = document.createElement('button');
+      naBtn.className = 'pf-btn' + (currentVal === 'NA' ? ' na' : '');
+      naBtn.textContent = 'N/A';
+      naBtn.onclick = (function(paramId) {
+        return function() { setPF(paramId, 'NA'); };
+      })(p.id);
+      actionsDiv.appendChild(naBtn);
+    }
+
+    card.appendChild(actionsDiv);
+
+    // Remarks field
+    var rmkDiv = document.createElement('div');
+    rmkDiv.className = 'param-card-remarks';
+    var rmkInput = document.createElement('input');
+    rmkInput.type        = 'text';
+    rmkInput.id          = 'rmk_' + p.id;
+    rmkInput.placeholder = 'Remarks (optional)';
+    rmkInput.value       = d.paramRemarks[p.id] || '';
+    rmkInput.oninput = (function(paramId) {
+      return function() {
+        itemData[currentItemIndex].paramRemarks[paramId] = this.value;
+      };
+    })(p.id);
+    rmkDiv.appendChild(rmkInput);
+    card.appendChild(rmkDiv);
+
+    body.appendChild(card);
   });
-
-  // --- Quantity rows ---
-  var qtyRows = [
-    { key: 'sampleSize',  label: 'Sample Size',  editable: true  },
-    { key: 'acceptedQty', label: 'Accepted Qty', editable: true  },
-    { key: 'rejectedQty', label: 'Rejected Qty', editable: true  },
-    { key: 'shortage',    label: 'Shortage',      editable: false }
-  ];
-
-  qtyRows.forEach(function(qr) {
-    var tr = document.createElement('tr');
-
-    var tdLabel = document.createElement('td');
-    tdLabel.className = 'matrix-td-label matrix-qty-label';
-    tdLabel.textContent = qr.label;
-    tr.appendChild(tdLabel);
-
-    items.forEach(function(item, ci) {
-      var td = document.createElement('td');
-      td.className = 'matrix-td';
-
-      if (qr.editable) {
-        var inp = document.createElement('input');
-        inp.type = 'number';
-        inp.id   = qr.key + '_' + ci;
-        inp.min  = '0';
-        inp.placeholder = '0';
-        inp.oninput = (function(colI) {
-          return function() { calcShortage(colI); };
-        })(ci);
-        td.appendChild(inp);
-      } else {
-        // Shortage — readonly display
-        var span = document.createElement('span');
-        span.id = 'shortage_' + ci;
-        span.className = 'matrix-shortage';
-        span.textContent = '—';
-        td.appendChild(span);
-      }
-
-      tr.appendChild(td);
-    });
-    body.appendChild(tr);
-  });
-
-  // Show table, hide placeholder
-  document.getElementById('matrixPlaceholder').style.display = 'none';
-  document.getElementById('matrixTable').style.display = 'table';
 }
 
-// Sets a P/F/NA value for a specific column+parameter and triggers CCP check
-function setParam(colIndex, paramId, val, btn) {
-  itemParamVals[colIndex][paramId] = val;
+// ── Set Pass/Fail/NA for a parameter ─────────────────────────────────────
+function setPF(paramId, val) {
+  var d = itemData[currentItemIndex];
+  d.paramVals[paramId] = val;
 
-  // Reset button styles for this cell
-  ['pass', 'fail', 'na'].forEach(function(t) {
-    var el = document.getElementById('pf_' + t + '_' + colIndex + '_' + paramId);
-    if (el) el.className = '';
-  });
-  btn.className = val === 'PASS' ? 'pass' : val === 'FAIL' ? 'fail' : 'na';
+  // Update card style
+  var card = document.getElementById('pcard_' + paramId);
+  if (card) {
+    card.className = 'param-card ' +
+      (val === 'PASS' ? 'card-pass' : val === 'FAIL' ? 'card-fail' : 'card-na');
+  }
 
+  // Update chip
+  var chip = document.getElementById('chip_' + paramId);
+  if (chip) {
+    chip.innerHTML = val === 'PASS'
+      ? '<span class="chip-pass">PASS</span>'
+      : val === 'FAIL'
+        ? '<span class="chip-fail">FAIL</span>'
+        : '<span class="chip-na">N/A</span>';
+  }
+
+  // Update button highlight — find buttons in this card
+  if (card) {
+    var btns = card.querySelectorAll('.pf-btn');
+    btns.forEach(function(btn) {
+      var t = btn.textContent.trim();
+      btn.className = 'pf-btn' +
+        (t === 'Pass' && val === 'PASS' ? ' pass' :
+         t === 'Fail' && val === 'FAIL' ? ' fail' :
+         t === 'N/A'  && val === 'NA'   ? ' na' : '');
+    });
+  }
+
+  updateProgress();
   autoSuggestDisp();
 }
 
-// Suggests REJECTED if any CCP fails in any column
+// ── Progress update ───────────────────────────────────────────────────────
+function updateProgress() {
+  if (!PARAMS.length) return;
+  var d = itemData[currentItemIndex];
+  var done = 0;
+  PARAMS.forEach(function(p) { if (d.paramVals[p.id]) done++; });
+  var total = PARAMS.length;
+  var pct   = Math.round(done / total * 100) + '%';
+
+  document.getElementById('progressLabel').textContent  = done + ' / ' + total;
+  document.getElementById('progressFill').style.width   = pct;
+  document.getElementById('progressLabel2').textContent = done + ' / ' + total;
+  document.getElementById('progressFill2').style.width  = pct;
+}
+
+// ── Shortage calc ─────────────────────────────────────────────────────────
+function calcShortage() {
+  var ss  = parseFloat(document.getElementById('sampleSize').value)  || 0;
+  var acc = parseFloat(document.getElementById('acceptedQty').value) || 0;
+  var rej = parseFloat(document.getElementById('rejectedQty').value) || 0;
+
+  // Save to itemData
+  if (itemData[currentItemIndex]) {
+    itemData[currentItemIndex].sampleSize  = ss;
+    itemData[currentItemIndex].acceptedQty = acc;
+    itemData[currentItemIndex].rejectedQty = rej;
+  }
+
+  var el = document.getElementById('shortageDisplay');
+  el.textContent = (ss === 0 && acc === 0 && rej === 0)
+    ? 'Shortage: —'
+    : 'Shortage: ' + (ss - acc - rej);
+}
+
+// ── CCP auto-suggest disposition ─────────────────────────────────────────
+var CCP_IDS = ['qty', 'colour', 'dims', 'weight', 'clean', 'shelf', 'coa'];
 function autoSuggestDisp() {
-  var ccpIds = ['qty', 'colour', 'dims', 'weight', 'clean', 'shelf', 'coa'];
-  var anyFail = itemParamVals.some(function(colVals) {
-    return ccpIds.some(function(id) { return colVals[id] === 'FAIL'; });
+  var anyFail = itemData.some(function(d) {
+    return CCP_IDS.some(function(id) { return d.paramVals[id] === 'FAIL'; });
   });
   if (anyFail && !disposition) setDisp('REJECTED');
 }
 
-// Recalculates shortage for one column: shortage = sampleSize - accepted - rejected
-function calcShortage(colIndex) {
-  var ss  = parseFloat((document.getElementById('sampleSize_'  + colIndex) || {}).value) || 0;
-  var acc = parseFloat((document.getElementById('acceptedQty_' + colIndex) || {}).value) || 0;
-  var rej = parseFloat((document.getElementById('rejectedQty_' + colIndex) || {}).value) || 0;
-  var el  = document.getElementById('shortage_' + colIndex);
-  if (!el) return;
-  if (ss === 0 && acc === 0 && rej === 0) {
-    el.textContent = '—';
-  } else {
-    el.textContent = ss - acc - rej;
-  }
+// ── Next item ─────────────────────────────────────────────────────────────
+function nextItem() {
+  if (currentItemIndex >= currentItems.length - 1) return;
+  currentItemIndex++;
+  renderCurrentItem();
+  // Scroll to param cards
+  document.getElementById('paramCardsBody').scrollIntoView({ behavior: 'smooth' });
 }
 
+// ── Clear param cards ─────────────────────────────────────────────────────
+function clearParamCards() {
+  var body = document.getElementById('paramCardsBody');
+  body.innerHTML = '';
+  var ph = document.createElement('div');
+  ph.className = 'params-placeholder';
+  ph.id = 'paramPlaceholder';
+  ph.textContent = 'Select a GRN to load inspection parameters.';
+  body.appendChild(ph);
+
+  document.getElementById('itemNavWrap').style.display     = 'none';
+  document.getElementById('singleProgressWrap').style.display = 'none';
+  document.getElementById('qtySection').style.display      = 'none';
+  document.getElementById('dispositionSection').style.display = 'none';
+}
+
+// ── Disposition ───────────────────────────────────────────────────────────
 function setDisp(val) {
   disposition = val;
-  ['d_acc', 'd_hld', 'd_rej', 'd_awd'].forEach(function(id) {
+  ['d_acc','d_hld','d_rej','d_awd'].forEach(function(id) {
     document.getElementById(id).className = 'disp-btn';
   });
-  if      (val === 'ACCEPTED')               document.getElementById('d_acc').className = 'disp-btn active-acc';
-  else if (val === 'HOLD')                   document.getElementById('d_hld').className = 'disp-btn active-hld';
-  else if (val === 'REJECTED')               document.getElementById('d_rej').className = 'disp-btn active-rej';
+  if      (val === 'ACCEPTED')               document.getElementById('d_acc').className = 'disp-btn active-accept';
+  else if (val === 'HOLD')                   document.getElementById('d_hld').className = 'disp-btn active-hold';
+  else if (val === 'REJECTED')               document.getElementById('d_rej').className = 'disp-btn active-reject';
   else if (val === 'ACCEPTED WITH DEVIATION') document.getElementById('d_awd').className = 'disp-btn active-awd';
 }
 
+// ── Submit ────────────────────────────────────────────────────────────────
 function submitIQC() {
   if (!document.getElementById('grnNo').value)     { showToast('Please select a GRN.', 'error'); return; }
-  if (!disposition)                                 { showToast('Please select a Disposition.', 'error'); return; }
   if (!document.getElementById('inspector').value) { showToast('Please select an Inspector.', 'error'); return; }
+  if (!disposition)                                { showToast('Please select a Disposition.', 'error'); return; }
   if (currentItems.length === 0)                   { showToast('No items loaded. Select a GRN first.', 'error'); return; }
 
   var btn = document.getElementById('btnSubmit');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
-  // Build items array from matrix state
   var items = currentItems.map(function(item, ci) {
+    var d = itemData[ci] || {};
     return {
       materialDesc: item.materialDesc || '',
       batchNo:      item.batchNo      || '',
-      sampleSize:   parseFloat((document.getElementById('sampleSize_'  + ci) || {}).value) || 0,
-      acceptedQty:  parseFloat((document.getElementById('acceptedQty_' + ci) || {}).value) || 0,
-      rejectedQty:  parseFloat((document.getElementById('rejectedQty_' + ci) || {}).value) || 0,
-      params:       itemParamVals[ci] || {}
+      sampleSize:   d.sampleSize  || 0,
+      acceptedQty:  d.acceptedQty || 0,
+      rejectedQty:  d.rejectedQty || 0,
+      params:       d.paramVals   || {},
+      paramRemarks: d.paramRemarks || {}
     };
   });
 
@@ -508,24 +882,34 @@ function submitIQC() {
     remarks:      document.getElementById('remarks').value,
     grnNo:        document.getElementById('grnNo').value,
     supplierName: document.getElementById('supplierName').value,
+    sessionId:    sessionId,
     items:        items
   };
+
+  var materialName = currentItems[0] ? (currentItems[0].materialDesc || '') : '';
+  var batchNo      = currentItems[0] ? (currentItems[0].batchNo      || '') : '';
 
   google.script.run
     .withSuccessHandler(function(res) {
       if (res.success) {
+        formSubmitted = true;
         savedRecord = {
           type:        'IQC',
           docNo:       res.docNos[0],
           date:        data.date,
           grnNo:       data.grnNo,
           supplier:    data.supplierName,
-          material:    currentItems[0] ? currentItems[0].materialDesc : '',
-          batch:       currentItems[0] ? currentItems[0].batchNo : '',
+          material:    materialName,
+          batch:       batchNo,
           inspector:   data.inspector,
           disposition: data.disposition,
           ncrRef:      document.getElementById('ncrRef').value
         };
+
+        // Auto-task
+        var title = 'IQC: ' + materialName + ' — ' + batchNo;
+        autoQmsTask_(sessionId, 'IQC', title, res.docNos[0]);
+
         showToast('Saved: ' + res.docNos.join(', '), 'success');
         document.getElementById('btnWA').style.display = 'block';
         btn.innerHTML = 'Saved';
@@ -544,6 +928,15 @@ function submitIQC() {
     .saveIQC(data);
 }
 
+// ── autoQmsTask_ bridge ───────────────────────────────────────────────────
+function autoQmsTask_(sid, type, title, linkedRecord) {
+  if (!sid) return;
+  google.script.run
+    .withFailureHandler(function() {})
+    .autoQmsTask_(sid, type, title, linkedRecord);
+}
+
+// ── WhatsApp ──────────────────────────────────────────────────────────────
 function sendWA() {
   if (!savedRecord) return;
   google.script.run
@@ -551,12 +944,17 @@ function sendWA() {
     .getWhatsAppURLForRecord(savedRecord);
 }
 
+// ── Toast ─────────────────────────────────────────────────────────────────
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
+
+// ── Wire up back + next-item buttons ─────────────────────────────────────
+document.getElementById('backBtn').addEventListener('click', goHome);
+document.getElementById('btnNextItem').addEventListener('click', nextItem);
 
 window.onload = init;
 </script>
