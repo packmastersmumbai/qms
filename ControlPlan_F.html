@@ -3,13 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    /* Tab panels */
+    :root {
+      --navy-hover:    #1A2D9E;
+      --navy-active:   #0A1450;
+      --disabled-bg:   #9CA3AF;
+      --enabled-row:   #F0FFF4;
+    }
+
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* Product selector bar */
     .product-bar {
       display: flex;
       align-items: center;
@@ -45,6 +53,7 @@
       outline: none;
       border-color: var(--navy);
     }
+
     .btn-save-plan {
       background: var(--navy);
       color: var(--white);
@@ -58,16 +67,17 @@
       white-space: nowrap;
       transition: background 0.15s;
       touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn-save-plan:hover { background: #1A2D9E; }
+    .btn-save-plan:hover  { background: var(--navy-hover); }
     .btn-save-plan:active { transform: scale(0.97); }
-    .btn-save-plan:disabled { background: #9CA3AF; cursor: not-allowed; }
+    .btn-save-plan:disabled { background: var(--disabled-bg); cursor: not-allowed; }
 
-    /* ── Process step section header ── */
     .step-section {
       margin: 10px 12px 0;
     }
     .step-section:last-child { margin-bottom: 10px; }
+
     .step-header {
       display: flex;
       align-items: center;
@@ -96,6 +106,7 @@
       flex-shrink: 0;
     }
     .step-section.collapsed .step-chevron { transform: rotate(-90deg); }
+
     .step-body {
       background: var(--white);
       border-radius: 0 0 8px 8px;
@@ -104,7 +115,6 @@
     }
     .step-section.collapsed .step-body { display: none; }
 
-    /* ── Desktop: table with sticky first col ── */
     .matrix-scroll {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -125,7 +135,6 @@
       white-space: nowrap;
       border-bottom: 2px solid var(--border);
     }
-    /* Sticky parameter name column */
     .matrix-table thead th:nth-child(2),
     .matrix-table tbody td:nth-child(2) {
       position: sticky;
@@ -144,14 +153,14 @@
       box-shadow: 2px 0 4px rgba(0,0,0,0.05);
     }
     .matrix-table tbody tr.enabled-row td:nth-child(2) {
-      background: #F0FFF4;
+      background: var(--enabled-row);
     }
     .matrix-table tbody tr {
       border-bottom: 1px solid var(--border);
       transition: background 0.1s;
     }
     .matrix-table tbody tr:last-child { border-bottom: none; }
-    .matrix-table tbody tr.enabled-row { background: #F0FFF4; }
+    .matrix-table tbody tr.enabled-row { background: var(--enabled-row); }
     .matrix-table tbody td {
       padding: 8px 10px;
       font-size: 12px;
@@ -159,7 +168,6 @@
       vertical-align: middle;
     }
 
-    /* Toggle button */
     .param-toggle {
       padding: 3px 10px;
       border-radius: 12px;
@@ -175,7 +183,6 @@
     .param-toggle.off { background: var(--border);  color: var(--muted); }
     .param-toggle:active { transform: scale(0.97); }
 
-    /* Override input */
     .override-input {
       width: 72px;
       padding: 5px 8px;
@@ -186,21 +193,9 @@
       background: var(--white);
       color: var(--text);
     }
-    .override-input:focus { border-color: var(--navy); outline: none; }
-    .override-input:disabled { background: var(--bg); color: #9CA3AF; }
+    .override-input:focus   { border-color: var(--navy); outline: none; }
+    .override-input:disabled { background: var(--bg); color: var(--disabled-bg); }
 
-    /* Method badge */
-    .method-badge {
-      display: inline-block;
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 12px;
-      background: var(--navy-light);
-      color: var(--navy);
-      font-weight: 600;
-    }
-
-    /* ── Mobile: card layout ── */
     .param-cards { display: none; }
     .param-card {
       padding: 10px 12px;
@@ -242,27 +237,24 @@
       margin-bottom: 2px;
     }
 
-    /* Responsive breakpoint */
     @media (max-width: 540px) {
       .matrix-scroll { display: none; }
-      .param-cards { display: block; }
-      .product-bar { top: 106px; }
+      .param-cards   { display: block; }
+      .product-bar   { top: 106px; }
     }
 
-    /* Skeleton */
     .skel-cell {
       height: 12px;
-      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background: linear-gradient(90deg, var(--border) 25%, #f3f4f6 50%, var(--border) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.2s infinite;
       border-radius: 4px;
     }
     @keyframes shimmer {
-      0% { background-position: 200% 0; }
+      0%   { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
 
-    /* Changes notice */
     .changes-notice {
       display: none;
       position: fixed;
@@ -275,7 +267,7 @@
       border-radius: 8px;
       font-size: 13px;
       font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      box-shadow: var(--shadow-2);
       z-index: 200;
       white-space: nowrap;
     }
@@ -284,7 +276,6 @@
 </head>
 <body>
 
-<!-- Header -->
 <div class="pm-header">
   <button class="back-btn" id="backBtn">
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -292,40 +283,37 @@
     </svg>
   </button>
   <span class="page-title">Control Plans</span>
-  <span class="doc-badge" id="docBadge">QMS-CP</span>
+  <span class="doc-badge">QMS-CP</span>
 </div>
 
-<!-- Plan type tabs -->
 <div class="tab-bar">
-  <button class="tab-btn active" id="tab-rm" onclick="switchPlan('rm')">RM Control Plan</button>
-  <button class="tab-btn" id="tab-fg" onclick="switchPlan('fg')">FG Control Plan</button>
+  <button class="tab-btn active" id="tab-rm">RM Control Plan</button>
+  <button class="tab-btn" id="tab-fg">FG Control Plan</button>
 </div>
 
-<!-- ════ RM PLAN ════ -->
 <div class="tab-panel active" id="panel-rm">
   <div class="product-bar">
     <label>RM Item:</label>
-    <select id="rm-product-select" onchange="loadPlan('rm')">
+    <select id="rm-product-select">
       <option value="">— Select Item —</option>
     </select>
-    <button class="btn-save-plan" id="rm-save-btn" onclick="savePlan('rm')" disabled>Save Plan</button>
+    <button class="btn-save-plan" id="rm-save-btn" disabled>Save Plan</button>
   </div>
   <div id="rm-content">
-    <div class="empty-state">Select an item above to view or edit its control plan.</div>
+    <div class="empty-state"><span class="icon">📋</span>Select an item above to view or edit its control plan.</div>
   </div>
 </div>
 
-<!-- ════ FG PLAN ════ -->
 <div class="tab-panel" id="panel-fg">
   <div class="product-bar">
     <label>FG:</label>
-    <select id="fg-product-select" onchange="loadPlan('fg')">
+    <select id="fg-product-select">
       <option value="">— Select FG —</option>
     </select>
-    <button class="btn-save-plan" id="fg-save-btn" onclick="savePlan('fg')" disabled>Save Plan</button>
+    <button class="btn-save-plan" id="fg-save-btn" disabled>Save Plan</button>
   </div>
   <div id="fg-content">
-    <div class="empty-state">Select a finished good above to view or edit its control plan.</div>
+    <div class="empty-state"><span class="icon">📋</span>Select a finished good above to view or edit its control plan.</div>
   </div>
 </div>
 
@@ -334,20 +322,25 @@
 <div class="changes-notice" id="fg-changes-notice">Unsaved changes — tap Save Plan</div>
 
 <script>
-  // ── State ──────────────────────────────────────────────────────
   var allParameters = [];
   var allRM         = [];
   var allFG         = [];
   var rmPlanData    = {};
   var fgPlanData    = {};
   var activePlan    = 'rm';
-  var SESSION_ID    = (function() {
-    try { return window.sessionId || (window.parent && window.parent.sessionId) || ''; } catch(e) { return ''; }
-  })();
 
-  // ── Init ───────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('backBtn').addEventListener('click', goHome);
+
+    document.getElementById('tab-rm').addEventListener('click', function() { switchPlan('rm'); });
+    document.getElementById('tab-fg').addEventListener('click', function() { switchPlan('fg'); });
+
+    document.getElementById('rm-product-select').addEventListener('change', function() { loadPlan('rm'); });
+    document.getElementById('fg-product-select').addEventListener('change', function() { loadPlan('fg'); });
+
+    document.getElementById('rm-save-btn').addEventListener('click', function() { savePlan('rm'); });
+    document.getElementById('fg-save-btn').addEventListener('click', function() { savePlan('fg'); });
+
     google.script.run
       .withSuccessHandler(function(data) {
         allParameters = data.parameters || [];
@@ -373,7 +366,6 @@
     });
   }
 
-  // ── Tab switch ─────────────────────────────────────────────────
   function switchPlan(plan) {
     activePlan = plan;
     ['rm', 'fg'].forEach(function(p) {
@@ -382,21 +374,18 @@
     });
   }
 
-  // ── Load plan ──────────────────────────────────────────────────
   function loadPlan(planType) {
-    var selectId = planType + '-product-select';
-    var itemCode = document.getElementById(selectId).value;
-    var contentId = planType + '-content';
+    var itemCode  = document.getElementById(planType + '-product-select').value;
+    var contentEl = document.getElementById(planType + '-content');
 
     if (!itemCode) {
-      document.getElementById(contentId).innerHTML = '<div class="empty-state">Select an item above to view or edit its control plan.</div>';
+      contentEl.innerHTML = '<div class="empty-state"><span class="icon">📋</span>Select an item above to view or edit its control plan.</div>';
       document.getElementById(planType + '-save-btn').disabled = true;
       hideNotice(planType);
       return;
     }
 
-    // Skeleton
-    document.getElementById(contentId).innerHTML = renderSkeletonSections();
+    contentEl.innerHTML = renderSkeletonSections();
 
     google.script.run
       .withSuccessHandler(function(rows) {
@@ -414,7 +403,6 @@
       .getControlPlan(planType, itemCode);
   }
 
-  // ── Group parameters by methodType (process step proxy) ────────
   function groupByStep(params) {
     var groups = {};
     var order  = [];
@@ -426,26 +414,25 @@
     return { groups: groups, order: order };
   }
 
-  // ── Render grouped sections ────────────────────────────────────
   function renderGroupedPlan(planType, itemCode) {
-    var planData = planType === 'rm' ? rmPlanData : fgPlanData;
+    var planData  = planType === 'rm' ? rmPlanData : fgPlanData;
     var contentEl = document.getElementById(planType + '-content');
 
     if (!allParameters.length) {
-      contentEl.innerHTML = '<div class="empty-state">No parameters defined yet. Add them in Masters → Parameters.</div>';
+      contentEl.innerHTML = '<div class="empty-state"><span class="icon">⚙️</span>No parameters defined yet. Add them in Masters → Parameters.</div>';
       return;
     }
 
-    var grouped = groupByStep(allParameters);
-    var html = '';
-    var globalIdx = 0;
+    var grouped    = groupByStep(allParameters);
+    var html       = '';
+    var globalIdx  = 0;
 
     grouped.order.forEach(function(step) {
-      var params = grouped.groups[step];
+      var params       = grouped.groups[step];
       var enabledCount = params.filter(function(p) { return (planData[p.code] || {}).enabled; }).length;
 
       html += '<div class="step-section" id="step-' + planType + '-' + esc(step) + '">';
-      html += '<div class="step-header" onclick="toggleSection(this.parentNode)">';
+      html += '<div class="step-header">';
       html += '<svg class="step-chevron" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l5 5 5-5"/></svg>';
       html += esc(step);
       if (enabledCount > 0) {
@@ -454,7 +441,6 @@
       html += '</div>';
       html += '<div class="step-body">';
 
-      // Desktop table
       html += '<div class="matrix-scroll">';
       html += '<table class="matrix-table">';
       html += '<thead><tr>' +
@@ -472,7 +458,6 @@
         '</tr></thead>';
       html += '<tbody>';
 
-      // Mobile cards wrapper (inside same step-body, shown on narrow screens)
       var cardsHtml = '<div class="param-cards">';
 
       params.forEach(function(p) {
@@ -487,7 +472,6 @@
         var btnCls   = enabled ? 'on' : 'off';
         var btnTxt   = enabled ? 'ON' : 'OFF';
 
-        // Table row
         html += '<tr class="' + rowClass + '" id="' + rowId + '" data-code="' + esc(p.code) + '" data-enabled="' + (enabled ? '1' : '0') + '" data-plantype="' + planType + '">' +
           '<td style="text-align:center;">' +
             '<button class="param-toggle ' + btnCls + '" data-plantype="' + planType + '">' + btnTxt + '</button>' +
@@ -495,32 +479,31 @@
           '<td>' + esc(p.name) + ' <span style="font-size:10px;color:var(--muted);font-family:monospace;">' + esc(p.code) + '</span></td>' +
           '<td style="color:var(--muted);">' + esc(p.unit || '') + '</td>' +
           '<td style="color:var(--muted);">' + esc(p.stdValue || '') + '</td>' +
-          '<td><input class="override-input ov-std" type="text" ' + dis + ' value="' + esc(stdOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+          '<td><input class="override-input ov-std" type="text" ' + dis + ' value="' + esc(stdOvr) + '" placeholder="—"></td>' +
           '<td style="color:var(--muted);">' + esc(p.tolMin || '') + '</td>' +
-          '<td><input class="override-input ov-min" type="text" ' + dis + ' value="' + esc(minOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+          '<td><input class="override-input ov-min" type="text" ' + dis + ' value="' + esc(minOvr) + '" placeholder="—"></td>' +
           '<td style="color:var(--muted);">' + esc(p.tolMax || '') + '</td>' +
-          '<td><input class="override-input ov-max" type="text" ' + dis + ' value="' + esc(maxOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></td>' +
+          '<td><input class="override-input ov-max" type="text" ' + dis + ' value="' + esc(maxOvr) + '" placeholder="—"></td>' +
           '<td style="font-size:11px;color:var(--muted);">' + esc(p.tools || '') + '</td>' +
           '<td style="font-size:11px;color:var(--muted);max-width:160px;">' + esc(p.checkBrief || '') + '</td>' +
           '</tr>';
 
-        // Mobile card
         cardsHtml += '<div class="param-card" id="card-' + rowId + '" data-code="' + esc(p.code) + '" data-enabled="' + (enabled ? '1' : '0') + '">' +
           '<div class="param-card-row">' +
             '<div class="param-card-name">' + esc(p.name) + ' <span style="font-size:10px;color:var(--muted);font-family:monospace;">' + esc(p.code) + '</span></div>' +
             '<button class="param-toggle ' + btnCls + '" data-rowid="' + rowId + '" data-plantype="' + planType + '">' + btnTxt + '</button>' +
           '</div>' +
           '<div class="param-card-meta">' +
-            (p.unit ? '<span>Unit: ' + esc(p.unit) + '</span>' : '') +
-            (p.stdValue ? '<span>Std: ' + esc(p.stdValue) + '</span>' : '') +
-            (p.tolMin ? '<span>Min: ' + esc(p.tolMin) + '</span>' : '') +
-            (p.tolMax ? '<span>Max: ' + esc(p.tolMax) + '</span>' : '') +
-            (p.tools ? '<span>Tools: ' + esc(p.tools) + '</span>' : '') +
+            (p.unit     ? '<span>Unit: '  + esc(p.unit)     + '</span>' : '') +
+            (p.stdValue ? '<span>Std: '   + esc(p.stdValue) + '</span>' : '') +
+            (p.tolMin   ? '<span>Min: '   + esc(p.tolMin)   + '</span>' : '') +
+            (p.tolMax   ? '<span>Max: '   + esc(p.tolMax)   + '</span>' : '') +
+            (p.tools    ? '<span>Tools: ' + esc(p.tools)    + '</span>' : '') +
           '</div>' +
           '<div class="param-card-overrides">' +
-            '<div class="ov-group"><label>Ovr Std</label><input class="override-input ov-std" type="text" ' + dis + ' value="' + esc(stdOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></div>' +
-            '<div class="ov-group"><label>Ovr Min</label><input class="override-input ov-min" type="text" ' + dis + ' value="' + esc(minOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></div>' +
-            '<div class="ov-group"><label>Ovr Max</label><input class="override-input ov-max" type="text" ' + dis + ' value="' + esc(maxOvr) + '" placeholder="—" oninput="markChanged(\'' + planType + '\')"></div>' +
+            '<div class="ov-group"><label>Ovr Std</label><input class="override-input ov-std" type="text" ' + dis + ' value="' + esc(stdOvr) + '" placeholder="—"></div>' +
+            '<div class="ov-group"><label>Ovr Min</label><input class="override-input ov-min" type="text" ' + dis + ' value="' + esc(minOvr) + '" placeholder="—"></div>' +
+            '<div class="ov-group"><label>Ovr Max</label><input class="override-input ov-max" type="text" ' + dis + ' value="' + esc(maxOvr) + '" placeholder="—"></div>' +
           '</div>' +
         '</div>';
 
@@ -530,35 +513,49 @@
       cardsHtml += '</div>';
       html += '</tbody></table></div>';
       html += cardsHtml;
-      html += '</div></div>'; // step-body + step-section
+      html += '</div></div>';
     });
 
     contentEl.innerHTML = html;
+    attachContentListeners(planType);
     attachToggleListeners(planType);
   }
 
-  // ── Toggle section collapse ────────────────────────────────────
+  function attachContentListeners(planType) {
+    var contentEl = document.getElementById(planType + '-content');
+    if (!contentEl) return;
+
+    contentEl.addEventListener('click', function(e) {
+      var header = e.target.closest('.step-header');
+      if (header) {
+        toggleSection(header.parentNode);
+      }
+    });
+
+    contentEl.addEventListener('input', function(e) {
+      if (e.target.classList.contains('override-input')) {
+        markChanged(planType);
+      }
+    });
+  }
+
   function toggleSection(sectionEl) {
     sectionEl.classList.toggle('collapsed');
   }
 
-  // ── Wire toggle buttons ────────────────────────────────────────
   function attachToggleListeners(planType) {
     var contentEl = document.getElementById(planType + '-content');
     if (!contentEl) return;
     var buttons = contentEl.querySelectorAll('.param-toggle');
     for (var i = 0; i < buttons.length; i++) {
       (function(btn) {
-        btn.onclick = function() {
-          // Find the associated row/card
+        btn.addEventListener('click', function() {
           var rowId = btn.getAttribute('data-rowid');
           var row, card;
           if (rowId) {
-            // mobile card button — sync to table row too
             row  = document.getElementById(rowId);
             card = document.getElementById('card-' + rowId);
           } else {
-            // table button — find sibling card
             row  = btn.parentNode.parentNode;
             var code = row.getAttribute('data-code');
             card = contentEl.querySelector('[id^="card-"][data-code="' + code + '"]');
@@ -566,32 +563,34 @@
 
           var target = row || card;
           if (!target) return;
-          var isOn = target.getAttribute('data-enabled') === '1';
-          var nowOn = !isOn;
+          var nowOn = target.getAttribute('data-enabled') !== '1';
 
-          // Update row
           if (row) {
             row.setAttribute('data-enabled', nowOn ? '1' : '0');
             row.classList.toggle('enabled-row', nowOn);
             var rowBtn = row.querySelector('.param-toggle');
-            if (rowBtn) { rowBtn.textContent = nowOn ? 'ON' : 'OFF'; rowBtn.className = 'param-toggle ' + (nowOn ? 'on' : 'off'); }
+            if (rowBtn) {
+              rowBtn.textContent = nowOn ? 'ON' : 'OFF';
+              rowBtn.className   = 'param-toggle ' + (nowOn ? 'on' : 'off');
+            }
             row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !nowOn; });
           }
-          // Update card
           if (card) {
             card.setAttribute('data-enabled', nowOn ? '1' : '0');
             var cardBtn = card.querySelector('.param-toggle');
-            if (cardBtn) { cardBtn.textContent = nowOn ? 'ON' : 'OFF'; cardBtn.className = 'param-toggle ' + (nowOn ? 'on' : 'off'); }
+            if (cardBtn) {
+              cardBtn.textContent = nowOn ? 'ON' : 'OFF';
+              cardBtn.className   = 'param-toggle ' + (nowOn ? 'on' : 'off');
+            }
             card.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !nowOn; });
           }
 
           markChanged(planType);
-        };
+        });
       })(buttons[i]);
     }
   }
 
-  // ── Mark unsaved ──────────────────────────────────────────────
   function markChanged(planType) {
     document.getElementById(planType + '-changes-notice').classList.add('show');
   }
@@ -599,12 +598,10 @@
     document.getElementById(planType + '-changes-notice').classList.remove('show');
   }
 
-  // ── Collect rows ──────────────────────────────────────────────
   function collectPlanRows(planType, itemCode) {
     var contentEl = document.getElementById(planType + '-content');
-    // Collect from table rows (authoritative); mobile cards are mirrors
-    var rows = contentEl ? contentEl.querySelectorAll('tr[data-code]') : [];
-    var result = [];
+    var rows      = contentEl ? contentEl.querySelectorAll('tr[data-code]') : [];
+    var result    = [];
     rows.forEach(function(row) {
       if (row.getAttribute('data-enabled') !== '1') return;
       var stdInp = row.querySelector('.ov-std');
@@ -622,27 +619,28 @@
     return result;
   }
 
-  // ── Save plan ──────────────────────────────────────────────────
   function savePlan(planType) {
     var itemCode = document.getElementById(planType + '-product-select').value;
     if (!itemCode) return;
     var rows = collectPlanRows(planType, itemCode);
-    var btn = document.getElementById(planType + '-save-btn');
-    btn.disabled = true; btn.textContent = 'Saving…';
+    var btn  = document.getElementById(planType + '-save-btn');
+    btn.disabled    = true;
+    btn.innerHTML   = '<span class="spinner"></span>Saving…';
     google.script.run
       .withSuccessHandler(function() {
         showToast('Control Plan saved (' + rows.length + ' parameters)', 'success');
         hideNotice(planType);
-        btn.disabled = false; btn.textContent = 'Save Plan';
+        btn.disabled  = false;
+        btn.textContent = 'Save Plan';
       })
       .withFailureHandler(function(err) {
         showToast('Save failed: ' + (err.message || err), 'error');
-        btn.disabled = false; btn.textContent = 'Save Plan';
+        btn.disabled  = false;
+        btn.textContent = 'Save Plan';
       })
       .saveControlPlan(planType, itemCode, rows);
   }
 
-  // ── Skeleton ──────────────────────────────────────────────────
   function renderSkeletonSections() {
     var html = '';
     for (var s = 0; s < 2; s++) {
@@ -651,7 +649,7 @@
       for (var i = 0; i < 3; i++) {
         html += '<tr>';
         for (var j = 0; j < 9; j++) {
-          html += '<td><div class="skel-cell" style="width:' + (40 + Math.random()*40|0) + '%"></div></td>';
+          html += '<td><div class="skel-cell" style="width:' + (40 + Math.floor(Math.random() * 40)) + '%"></div></td>';
         }
         html += '</tr>';
       }
@@ -660,25 +658,21 @@
     return html;
   }
 
-  // ── Toast ──────────────────────────────────────────────────────
   function showToast(msg, type) {
     var t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = 'toast show' + (type ? ' ' + type : '');
+    t.className   = 'toast show' + (type ? ' ' + type : '');
     setTimeout(function() { t.className = 'toast'; }, 2800);
   }
 
-  // ── HTML escape ────────────────────────────────────────────────
   function esc(str) {
     if (str === null || str === undefined) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-
-  // ── goHome ─────────────────────────────────────────────────────
-  function goHome() {
-    google.script.run.withSuccessHandler(function(html) {
-      document.open(); document.write(html); document.close();
-    }).getLandingHtml();
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 </script>
 </body>

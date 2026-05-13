@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    /* Per-item card */
     .item-block {
       background: var(--navy-light);
       border: 1px solid var(--border);
@@ -37,7 +39,6 @@
     .item-block-header button:hover { color: var(--white); }
     .item-block-body { padding: 10px 12px; }
 
-    /* IPQC advisory */
     .ipqc-info {
       margin-top: 6px;
       padding: 7px 10px;
@@ -48,7 +49,6 @@
     .ipqc-info.amber { background: #FFF3CD; border: 1px solid var(--hold); color: #92600A; }
     .ipqc-info.green { background: #DCFCE7; border: 1px solid var(--success); color: #15803D; }
 
-    /* Param card layout */
     .param-card {
       background: var(--white);
       border: 1px solid var(--border);
@@ -95,9 +95,7 @@
     .param-card-btns button.pass { background: #E8F5E9; border-color: var(--success); color: var(--success); }
     .param-card-btns button.fail { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
     .param-card-btns button.na   { background: #F3F4F6; border-color: #9CA3AF; color: #9CA3AF; }
-    .param-card-remarks {
-      margin-top: 6px;
-    }
+    .param-card-remarks { margin-top: 6px; }
     .param-card-remarks input {
       width: 100%;
       border: 1px solid var(--border);
@@ -110,7 +108,6 @@
     }
     .param-card-remarks input:focus { outline: none; border-color: var(--navy); }
 
-    /* Qty row */
     .qty-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -119,7 +116,6 @@
     }
     .qty-grid .field { margin-bottom: 0; }
 
-    /* Add item btn */
     .add-item-btn {
       width: 100%;
       background: var(--amber);
@@ -132,6 +128,8 @@
       cursor: pointer;
       font-family: inherit;
       margin-bottom: 4px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
   </style>
 </head>
@@ -139,15 +137,14 @@
 
 <div class="pm-header">
   <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <svg viewBox="0 0 20 20">
       <path d="M12 4l-6 6 6 6"/>
     </svg>
   </button>
   <span class="page-title">Outgoing Quality Check</span>
-  <span class="doc-badge" id="docBadge">Loading…</span>
+  <span class="doc-badge" id="docBadge">OQC</span>
 </div>
 
-<!-- Dispatch Details -->
 <div class="section">
   <div class="section-title">Dispatch Details</div>
   <div class="section-body">
@@ -168,16 +165,15 @@
   </div>
 </div>
 
-<!-- Sampling -->
 <div class="section">
   <div class="section-title">Sampling</div>
   <div class="section-body">
     <div class="two-col">
       <div class="field">
         <label>IPQC Records Reviewed</label>
-        <div class="toggle-row">
-          <button id="ipqcY" onclick="setIPQC(this,'Y')" class="active-yes">Yes</button>
-          <button id="ipqcN" onclick="setIPQC(this,'N')">No</button>
+        <div class="toggle-row" id="ipqcToggle">
+          <button id="ipqcY" class="active-yes">Yes</button>
+          <button id="ipqcN">No</button>
         </div>
       </div>
       <div class="field">
@@ -194,11 +190,10 @@
   </div>
 </div>
 
-<!-- Items & Quality Checks -->
 <div class="section">
   <div class="section-title">Items &amp; Quality Checks <span style="font-size:10px;font-weight:400;opacity:0.7;margin-left:6px;">★ = CCP</span></div>
   <div class="section-body">
-    <button class="add-item-btn" onclick="addItem()">+ Add Item</button>
+    <button class="add-item-btn" id="addItemBtn">+ Add Item</button>
     <div id="itemsContainer">
       <div id="noItemsMsg" style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">
         Click "+ Add Item" to add products for this dispatch.
@@ -207,14 +202,13 @@
   </div>
 </div>
 
-<!-- Release Decision -->
 <div class="section">
   <div class="section-title">Release Decision</div>
   <div class="section-body">
     <div class="disp-grid">
-      <button class="disp-btn" id="r_rel" onclick="setRelease('RELEASED')">RELEASE</button>
-      <button class="disp-btn" id="r_hld" onclick="setRelease('HOLD')">HOLD</button>
-      <button class="disp-btn" id="r_rej" onclick="setRelease('REJECTED')" style="grid-column:span 2;">REJECT</button>
+      <button class="disp-btn" id="r_rel">RELEASE</button>
+      <button class="disp-btn" id="r_hld">HOLD</button>
+      <button class="disp-btn" id="r_rej" style="grid-column:span 2;">REJECT</button>
     </div>
     <div class="field" style="margin-top:10px;">
       <label>Remarks</label>
@@ -223,10 +217,9 @@
   </div>
 </div>
 
-<!-- Sticky footer -->
 <div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;z-index:90;">
-  <button class="btn-submit" id="btnSubmit" onclick="submitOQC()" style="flex:2;">Save OQC Record</button>
-  <button class="btn-wa" id="btnWA" onclick="sendWA()" style="flex:1;margin-top:0;display:none;">WA</button>
+  <button class="btn-submit" id="btnSubmit" style="flex:2;">Save OQC Record</button>
+  <button class="btn-wa" id="btnWA" style="flex:1;margin-top:0;display:none;">WA</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -241,9 +234,8 @@ var OQC_CHECKS = [
 ];
 
 var FG_MATS = [], CUSTOMERS = [], INSPECTORS = [];
-var currentItems    = [];   // [{materialCode, materialDesc, batchPO, checks:{}, remarks:{}, sampleSize, acceptedQty, rejectedQty, ipqcSessionRef}]
+var currentItems = [];
 var ipqcVal = 'Y', releaseDecision = '', savedDocNos = [];
-var customerSel = {};
 var sessionId = sessionStorage.getItem('dwmSessionId') || '';
 var _dirty = false;
 
@@ -256,16 +248,41 @@ window.addEventListener('beforeunload', function(e) {
   }
 });
 
+function showErr(e) { showToast(e.message || 'Error', 'error'); }
+
 function init() {
   document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
   document.getElementById('backBtn').addEventListener('click', function() {
     if (_dirty && !confirm('Unsaved changes will be lost. Go back?')) return;
     goHome();
   });
 
+  document.getElementById('addItemBtn').addEventListener('click', addItem);
+
+  document.getElementById('ipqcToggle').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var val = btn.id === 'ipqcY' ? 'Y' : 'N';
+    setIPQC(val);
+  });
+
+  document.getElementById('r_rel').addEventListener('click', function() { setRelease('RELEASED'); });
+  document.getElementById('r_hld').addEventListener('click', function() { setRelease('HOLD'); });
+  document.getElementById('r_rej').addEventListener('click', function() { setRelease('REJECTED'); });
+
+  document.getElementById('btnSubmit').addEventListener('click', submitOQC);
+  document.getElementById('btnWA').addEventListener('click', sendWA);
+
+  document.getElementById('customer').addEventListener('change', markDirty);
+  document.getElementById('inspector').addEventListener('change', markDirty);
+  document.getElementById('aqlLevel').addEventListener('change', markDirty);
+  document.getElementById('date').addEventListener('change', markDirty);
+  document.getElementById('remarks').addEventListener('input', markDirty);
+
   google.script.run
     .withSuccessHandler(function(d) {
-      document.getElementById('docBadge').textContent = d.docNumber;
+      document.getElementById('docBadge').textContent = d.docNumber || 'OQC';
       FG_MATS    = d.materials  || [];
       CUSTOMERS  = d.customers  || [];
       INSPECTORS = d.inspectors || [];
@@ -273,7 +290,8 @@ function init() {
       var cSel = document.getElementById('customer');
       CUSTOMERS.forEach(function(c) {
         var o = document.createElement('option');
-        o.value = c.code; o.textContent = c.name;
+        o.value = c.code;
+        o.textContent = c.name;
         o.dataset.obj = JSON.stringify(c);
         cSel.appendChild(o);
       });
@@ -285,22 +303,10 @@ function init() {
         o.textContent = p.name + ' — ' + p.role;
         iSel.appendChild(o);
       });
-
-      // Bind change listeners for dirty tracking
-      ['customer','inspector','aqlLevel','date','remarks'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.addEventListener('change', markDirty);
-      });
     })
-    .withFailureHandler(function(e) { showToast(e.message, 'error'); })
+    .withFailureHandler(showErr)
     .getOQCFormInit();
 }
-
-document.getElementById('customer').addEventListener('change', function() {
-  var sel = this;
-  var opt = sel.options[sel.selectedIndex];
-  customerSel = opt && opt.dataset.obj ? JSON.parse(opt.dataset.obj) : {};
-});
 
 function addItem() {
   var idx = currentItems.length;
@@ -323,7 +329,6 @@ function removeItem(idx) {
 
 function rebuildAllItems() {
   var container = document.getElementById('itemsContainer');
-  // Remove all item blocks
   var blocks = container.querySelectorAll('.item-block');
   blocks.forEach(function(b) { b.parentNode.removeChild(b); });
   document.getElementById('noItemsMsg').style.display = currentItems.length === 0 ? 'block' : 'none';
@@ -338,21 +343,19 @@ function renderItem(idx) {
   block.className = 'item-block';
   block.id = 'item_block_' + idx;
 
-  // Header
   var header = document.createElement('div');
   header.className = 'item-block-header';
   header.innerHTML = '<span>Item ' + (idx + 1) + '</span>';
   var removeBtn = document.createElement('button');
   removeBtn.textContent = '×';
   removeBtn.title = 'Remove item';
-  removeBtn.onclick = (function(i) { return function() { removeItem(i); }; })(idx);
+  removeBtn.addEventListener('click', (function(i) { return function() { removeItem(i); }; })(idx));
   header.appendChild(removeBtn);
   block.appendChild(header);
 
   var body = document.createElement('div');
   body.className = 'item-block-body';
 
-  // Material select
   var matField = document.createElement('div');
   matField.className = 'field';
   var matLabel = document.createElement('label');
@@ -376,7 +379,7 @@ function renderItem(idx) {
       matSel.appendChild(o);
     });
   }
-  matSel.onchange = (function(i) {
+  matSel.addEventListener('change', (function(i) {
     return function() {
       var opt = this.options[this.selectedIndex];
       currentItems[i].materialCode = this.value;
@@ -384,12 +387,11 @@ function renderItem(idx) {
       checkIPQCStatus(i);
       markDirty();
     };
-  })(idx);
+  })(idx));
   matField.appendChild(matLabel);
   matField.appendChild(matSel);
   body.appendChild(matField);
 
-  // Batch
   var batchField = document.createElement('div');
   batchField.className = 'field';
   var batchLabel = document.createElement('label');
@@ -398,19 +400,17 @@ function renderItem(idx) {
   batchInp.type = 'text'; batchInp.id = 'batch_inp_' + idx;
   batchInp.placeholder = 'Batch number or PO reference';
   batchInp.value = item.batchPO || '';
-  batchInp.oninput  = (function(i) { return function() { currentItems[i].batchPO = this.value; markDirty(); }; })(idx);
-  batchInp.onblur   = (function(i) { return function() { checkIPQCStatus(i); }; })(idx);
+  batchInp.addEventListener('input', (function(i) { return function() { currentItems[i].batchPO = this.value; markDirty(); }; })(idx));
+  batchInp.addEventListener('blur', (function(i) { return function() { checkIPQCStatus(i); }; })(idx));
   batchField.appendChild(batchLabel);
   batchField.appendChild(batchInp);
   body.appendChild(batchField);
 
-  // IPQC advisory
   var ipqcDiv = document.createElement('div');
   ipqcDiv.id = 'ipqc_info_' + idx;
   ipqcDiv.className = 'ipqc-info';
   body.appendChild(ipqcDiv);
 
-  // Param cards
   OQC_CHECKS.forEach(function(chk) {
     var card = document.createElement('div');
     card.className = 'param-card';
@@ -443,14 +443,13 @@ function renderItem(idx) {
       btn.textContent = opt;
       btn.id = 'chk_' + idx + '_' + chk.id + '_' + opt.toLowerCase();
       if (curVal === opt.toUpperCase()) btn.className = opt.toLowerCase();
-      btn.onclick = (function(i, cid, v, b) {
+      btn.addEventListener('click', (function(i, cid, v, b) {
         return function() { setCheck(i, cid, v, b); };
-      })(idx, chk.id, opt.toUpperCase(), btn);
+      })(idx, chk.id, opt.toUpperCase(), btn));
       btns.appendChild(btn);
     });
     card.appendChild(btns);
 
-    // Remarks input
     var remDiv = document.createElement('div');
     remDiv.className = 'param-card-remarks';
     var remInp = document.createElement('input');
@@ -458,27 +457,26 @@ function renderItem(idx) {
     remInp.id = 'rem_' + idx + '_' + chk.id;
     remInp.placeholder = 'Remarks (optional)';
     remInp.value = (item.remarks && item.remarks[chk.id]) || '';
-    remInp.oninput = (function(i, cid) {
+    remInp.addEventListener('input', (function(i, cid) {
       return function() {
         if (!currentItems[i].remarks) currentItems[i].remarks = {};
         currentItems[i].remarks[cid] = this.value;
         markDirty();
       };
-    })(idx, chk.id);
+    })(idx, chk.id));
     remDiv.appendChild(remInp);
     card.appendChild(remDiv);
 
     body.appendChild(card);
   });
 
-  // Quantity row
   var qtyGrid = document.createElement('div');
   qtyGrid.className = 'qty-grid';
   [
-    { key: 'sampleSize',  label: 'Sample Size',  editable: true  },
-    { key: 'acceptedQty', label: 'Accepted',      editable: true  },
-    { key: 'rejectedQty', label: 'Rejected',      editable: true  },
-    { key: 'shortage',    label: 'Shortage',      editable: false }
+    { key: 'sampleSize',  label: 'Sample Size', editable: true  },
+    { key: 'acceptedQty', label: 'Accepted',     editable: true  },
+    { key: 'rejectedQty', label: 'Rejected',     editable: true  },
+    { key: 'shortage',    label: 'Shortage',     editable: false }
   ].forEach(function(q) {
     var fld = document.createElement('div');
     fld.className = 'field';
@@ -490,9 +488,9 @@ function renderItem(idx) {
       inp.type = 'number'; inp.id = q.key + '_' + idx;
       inp.min = '0'; inp.placeholder = '0';
       inp.value = item[q.key] || '';
-      inp.oninput = (function(i, k) {
+      inp.addEventListener('input', (function(i, k) {
         return function() { currentItems[i][k] = this.value; calcShortage(i); markDirty(); };
-      })(idx, q.key);
+      })(idx, q.key));
       fld.appendChild(inp);
     } else {
       var span = document.createElement('span');
@@ -507,7 +505,6 @@ function renderItem(idx) {
 
   block.appendChild(body);
 
-  // Insert before noItemsMsg
   var msg = document.getElementById('noItemsMsg');
   container.insertBefore(block, msg);
 }
@@ -517,14 +514,12 @@ function setCheck(colIndex, checkId, val, clickedBtn) {
   if (!currentItems[colIndex].checks) currentItems[colIndex].checks = {};
   currentItems[colIndex].checks[checkId] = val;
 
-  // Clear siblings
   ['pass','fail','na'].forEach(function(cls) {
     var el = document.getElementById('chk_' + colIndex + '_' + checkId + '_' + cls);
     if (el) el.className = '';
   });
   clickedBtn.className = val.toLowerCase();
 
-  // Auto-suggest HOLD on any CCP fail
   var ccpIds = ['fillWeight','label','seal','custSpec'];
   var anyFail = currentItems.some(function(item) {
     return item.checks && ccpIds.some(function(id) { return item.checks[id] === 'FAIL'; });
@@ -542,9 +537,9 @@ function calcShortage(idx) {
 }
 
 function checkIPQCStatus(colIndex) {
-  var matSel  = document.getElementById('mat_sel_'   + colIndex);
-  var batchInp= document.getElementById('batch_inp_' + colIndex);
-  var infoDiv = document.getElementById('ipqc_info_' + colIndex);
+  var matSel   = document.getElementById('mat_sel_'   + colIndex);
+  var batchInp = document.getElementById('batch_inp_' + colIndex);
+  var infoDiv  = document.getElementById('ipqc_info_' + colIndex);
   if (!matSel || !batchInp || !infoDiv) return;
   var productCode = matSel.value;
   var batch = batchInp.value.trim();
@@ -577,20 +572,18 @@ function checkIPQCStatus(colIndex) {
     .checkIPQCForBatch(productCode, batch);
 }
 
-function setIPQC(btn, val) {
+function setIPQC(val) {
   ipqcVal = val;
-  document.getElementById('ipqcY').className = '';
-  document.getElementById('ipqcN').className = '';
-  btn.className = val === 'Y' ? 'active-yes' : 'active-no';
+  document.getElementById('ipqcY').className = val === 'Y' ? 'active-yes' : '';
+  document.getElementById('ipqcN').className = val === 'N' ? 'active-no'  : '';
   markDirty();
 }
 
 function setRelease(val) {
   releaseDecision = val;
-  ['r_rel','r_hld','r_rej'].forEach(function(id) { document.getElementById(id).className = 'disp-btn'; });
-  if      (val === 'RELEASED') document.getElementById('r_rel').className = 'disp-btn active-acc';
-  else if (val === 'HOLD')     document.getElementById('r_hld').className = 'disp-btn active-hld';
-  else if (val === 'REJECTED') document.getElementById('r_rej').className = 'disp-btn active-rej';
+  document.getElementById('r_rel').className = 'disp-btn' + (val === 'RELEASED' ? ' active-acc' : '');
+  document.getElementById('r_hld').className = 'disp-btn' + (val === 'HOLD'     ? ' active-hld' : '');
+  document.getElementById('r_rej').className = 'disp-btn' + (val === 'REJECTED' ? ' active-rej' : '');
   markDirty();
 }
 
@@ -604,10 +597,9 @@ function submitOQC() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
-  // Sync any stale DOM values
   currentItems.forEach(function(item, ci) {
-    var matSel  = document.getElementById('mat_sel_'   + ci);
-    var batchInp= document.getElementById('batch_inp_' + ci);
+    var matSel   = document.getElementById('mat_sel_'   + ci);
+    var batchInp = document.getElementById('batch_inp_' + ci);
     if (matSel) {
       var opt = matSel.options[matSel.selectedIndex];
       item.materialCode = matSel.value;
@@ -626,32 +618,32 @@ function submitOQC() {
     });
   });
 
-  var customerSel2 = {};
+  var customerObj = {};
   var cSel = document.getElementById('customer');
   var cOpt = cSel.options[cSel.selectedIndex];
-  if (cOpt && cOpt.dataset.obj) { try { customerSel2 = JSON.parse(cOpt.dataset.obj); } catch(e) {} }
+  if (cOpt && cOpt.dataset.obj) { try { customerObj = JSON.parse(cOpt.dataset.obj); } catch(e) {} }
 
   var data = {
-    date:           document.getElementById('date').value,
-    customerCode:   document.getElementById('customer').value,
-    customerName:   customerSel2.name || customerSel.name || '',
-    inspector:      document.getElementById('inspector').value,
-    ipqcReviewed:   ipqcVal,
-    aqlLevel:       document.getElementById('aqlLevel').value,
-    releaseDecision:releaseDecision,
-    remarks:        document.getElementById('remarks').value,
-    sessionId:      sessionId,
+    date:            document.getElementById('date').value,
+    customerCode:    document.getElementById('customer').value,
+    customerName:    customerObj.name || '',
+    inspector:       document.getElementById('inspector').value,
+    ipqcReviewed:    ipqcVal,
+    aqlLevel:        document.getElementById('aqlLevel').value,
+    releaseDecision: releaseDecision,
+    remarks:         document.getElementById('remarks').value,
+    sessionId:       sessionId,
     items: currentItems.map(function(item) {
       return {
-        materialCode:   item.materialCode  || '',
-        materialDesc:   item.materialDesc  || '',
-        batchPO:        item.batchPO       || '',
-        sampleSize:     item.sampleSize    || 0,
-        acceptedQty:    item.acceptedQty   || 0,
-        rejectedQty:    item.rejectedQty   || 0,
-        checks:         item.checks        || {},
-        remarks:        item.remarks       || {},
-        ipqcSessionRef: item.ipqcSessionRef|| ''
+        materialCode:    item.materialCode   || '',
+        materialDesc:    item.materialDesc   || '',
+        batchPO:         item.batchPO        || '',
+        sampleSize:      item.sampleSize     || 0,
+        acceptedQty:     item.acceptedQty    || 0,
+        rejectedQty:     item.rejectedQty    || 0,
+        checks:          item.checks         || {},
+        remarks:         item.remarks        || {},
+        ipqcSessionRef:  item.ipqcSessionRef || ''
       };
     })
   };
@@ -661,9 +653,9 @@ function submitOQC() {
       if (res.success) {
         savedDocNos = res.docNos || [];
         _dirty = false;
-        var recordId = res.recordId || savedDocNos[0] || '';
+        var recordId    = res.recordId || savedDocNos[0] || '';
         var productName = (currentItems[0] && currentItems[0].materialDesc) ? currentItems[0].materialDesc : '';
-        var batchNo     = (currentItems[0] && currentItems[0].batchPO)       ? currentItems[0].batchPO       : '';
+        var batchNo     = (currentItems[0] && currentItems[0].batchPO)      ? currentItems[0].batchPO      : '';
         if (sessionId) {
           autoQmsTask_(sessionId, 'OQC', 'OQC: ' + productName + ' — ' + batchNo, recordId);
         }
@@ -678,7 +670,7 @@ function submitOQC() {
       }
     })
     .withFailureHandler(function(e) {
-      showToast(e.message, 'error');
+      showToast(e.message || 'Save failed', 'error');
       btn.disabled = false;
       btn.innerHTML = 'Save OQC Record';
     })
@@ -707,6 +699,7 @@ function sendWA() {
   };
   google.script.run
     .withSuccessHandler(function(url) { window.open(url, '_blank'); })
+    .withFailureHandler(showErr)
     .getWhatsAppURLForRecord(rec);
 }
 
@@ -717,7 +710,7 @@ function showToast(msg, type) {
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
 
-window.onload = init;
+window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>

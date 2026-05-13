@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    /* Tab panels */
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* Toolbar */
     .table-toolbar {
       display: flex;
       align-items: center;
@@ -40,7 +41,6 @@
     }
     .search-input:focus { outline: none; border-color: var(--navy); }
 
-    /* Add button */
     .btn-add {
       display: inline-flex;
       align-items: center;
@@ -59,9 +59,8 @@
       touch-action: manipulation;
       flex-shrink: 0;
     }
-    .btn-add:hover { background: #1A2D9E; }
+    .btn-add:hover { background: var(--navy-hover, #1A2D9E); }
 
-    /* Inline form panel */
     .inline-form {
       display: none;
       background: var(--navy-light);
@@ -80,10 +79,17 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
-    @media (max-width: 480px) {
-      .form-grid { grid-template-columns: 1fr; }
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
     }
-    .form-grid .field { margin-bottom: 0; }
+    @media (max-width: 480px) {
+      .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
+    }
+    .form-grid .field,
+    .form-grid-3 .field { margin-bottom: 0; }
+    .field-full { grid-column: 1 / -1; }
     .field .field-error {
       font-size: 11px;
       color: var(--danger);
@@ -127,7 +133,6 @@
     }
     .btn-cancel:hover { border-color: var(--navy); }
 
-    /* Approved / notify toggle in form */
     .appr-toggle-wrap { display: flex; gap: 8px; }
     .appr-toggle {
       flex: 1;
@@ -142,10 +147,9 @@
       transition: all 0.15s;
       touch-action: manipulation;
     }
-    .appr-toggle.sel-yes { background: #DCFCE7; border-color: #16A34A; color: #15803D; }
-    .appr-toggle.sel-no  { background: #F3F4F6; border-color: #9CA3AF; color: #6B7280; }
+    .appr-toggle.sel-yes { background: #DCFCE7; border-color: var(--success); color: #15803D; }
+    .appr-toggle.sel-no  { background: #F3F4F6; border-color: #9CA3AF; color: var(--muted); }
 
-    /* ── Desktop table ── */
     .table-wrap { overflow-x: auto; background: var(--white); }
     .masters-table {
       width: 100%;
@@ -176,7 +180,6 @@
     }
     .masters-table td.actions { white-space: nowrap; text-align: right; padding-right: 8px; }
 
-    /* Icon action buttons */
     .icon-btn {
       display: inline-flex;
       align-items: center;
@@ -189,12 +192,13 @@
       transition: all 0.15s;
       padding: 0;
       touch-action: manipulation;
+      color: var(--navy);
     }
     .icon-btn:hover { border-color: var(--navy); background: var(--navy-light); }
+    .icon-btn.danger { color: var(--danger); }
     .icon-btn.danger:hover { border-color: var(--danger); background: #FEE2E2; }
     .icon-btn svg { pointer-events: none; }
 
-    /* Approved pill */
     .appr-pill {
       display: inline-block;
       padding: 3px 10px;
@@ -207,9 +211,17 @@
       transition: all 0.15s;
     }
     .appr-pill.yes { background: #DCFCE7; color: #15803D; }
-    .appr-pill.no  { background: #F3F4F6; color: #6B7280; }
+    .appr-pill.no  { background: #F3F4F6; color: var(--muted); }
 
-    /* ── Mobile card list ── */
+    .method-chip {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: var(--navy-light);
+      color: var(--navy);
+      font-weight: 600;
+    }
+
     .card-list { display: none; }
     .entry-card {
       background: var(--white);
@@ -242,16 +254,14 @@
       line-height: 1.6;
     }
 
-    /* Responsive switch */
     @media (max-width: 540px) {
       .table-wrap { display: none; }
       .card-list { display: block; }
     }
 
-    /* Skeleton */
     .skel-cell {
       height: 14px;
-      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background: linear-gradient(90deg, var(--border) 25%, #f3f4f6 50%, var(--border) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.2s infinite;
       border-radius: 4px;
@@ -261,11 +271,12 @@
       0%   { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
+
+    .req-star { color: var(--danger); }
   </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="pm-header">
   <button class="back-btn" id="backBtn">
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -273,25 +284,24 @@
     </svg>
   </button>
   <span class="page-title">Masters</span>
-  <span class="doc-badge" id="docBadge">QMS-MST</span>
+  <span class="doc-badge">QMS-MST</span>
 </div>
 
-<!-- Tab Bar -->
 <div class="tab-bar">
-  <button class="tab-btn active" id="tab-suppliers"  onclick="switchTab('suppliers')">Suppliers</button>
-  <button class="tab-btn" id="tab-materials"         onclick="switchTab('materials')">Items (RM)</button>
-  <button class="tab-btn" id="tab-fg"                onclick="switchTab('fg')">FG</button>
-  <button class="tab-btn" id="tab-parameters"        onclick="switchTab('parameters')">Parameters</button>
-  <button class="tab-btn" id="tab-customers"         onclick="switchTab('customers')">Customers</button>
-  <button class="tab-btn" id="tab-inspectors"        onclick="switchTab('inspectors')">Inspectors</button>
+  <button class="tab-btn active" id="tab-suppliers">Suppliers</button>
+  <button class="tab-btn" id="tab-materials">Items (RM)</button>
+  <button class="tab-btn" id="tab-fg">FG</button>
+  <button class="tab-btn" id="tab-parameters">Parameters</button>
+  <button class="tab-btn" id="tab-customers">Customers</button>
+  <button class="tab-btn" id="tab-inspectors">Inspectors</button>
 </div>
 
 <!-- ════ SUPPLIERS ════ -->
 <div class="tab-panel active" id="panel-suppliers">
   <div class="table-toolbar">
     <h2>Suppliers</h2>
-    <input class="search-input" id="search-suppliers" type="search" placeholder="Search…" oninput="filterList('suppliers')">
-    <button class="btn-add" onclick="openForm('supplier', 'add')">
+    <input class="search-input" id="search-suppliers" type="search" placeholder="Search…">
+    <button class="btn-add" id="add-supplier-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Supplier
     </button>
@@ -300,12 +310,12 @@
     <h3 id="supplier-form-title">Add Supplier</h3>
     <div class="form-grid">
       <div class="field">
-        <label>Code <span style="color:var(--danger)">*</span></label>
+        <label>Code <span class="req-star">*</span></label>
         <input type="text" id="s-code" placeholder="e.g. SUP001" autocomplete="off">
         <div class="field-error" id="s-code-err">Code is required</div>
       </div>
       <div class="field">
-        <label>Name <span style="color:var(--danger)">*</span></label>
+        <label>Name <span class="req-star">*</span></label>
         <input type="text" id="s-name" placeholder="Supplier name" autocomplete="off">
         <div class="field-error" id="s-name-err">Name is required</div>
       </div>
@@ -328,14 +338,14 @@
       <div class="field">
         <label>Approved</label>
         <div class="appr-toggle-wrap">
-          <button type="button" class="appr-toggle sel-yes" id="s-appr-yes" onclick="setApproved('s','Y')">Yes</button>
-          <button type="button" class="appr-toggle" id="s-appr-no" onclick="setApproved('s','N')">No</button>
+          <button type="button" class="appr-toggle sel-yes" id="s-appr-yes">Yes</button>
+          <button type="button" class="appr-toggle" id="s-appr-no">No</button>
         </div>
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="supplier-save-btn" onclick="saveRecord('supplier')">Save</button>
-      <button class="btn-cancel" onclick="closeForm('supplier')">Cancel</button>
+      <button class="btn-save" id="supplier-save-btn">Save</button>
+      <button class="btn-cancel" id="supplier-cancel-btn">Cancel</button>
     </div>
   </div>
   <div class="table-wrap">
@@ -353,8 +363,8 @@
 <div class="tab-panel" id="panel-materials">
   <div class="table-toolbar">
     <h2>Items (RM)</h2>
-    <input class="search-input" id="search-materials" type="search" placeholder="Search…" oninput="filterList('materials')">
-    <button class="btn-add" onclick="openForm('material', 'add')">
+    <input class="search-input" id="search-materials" type="search" placeholder="Search…">
+    <button class="btn-add" id="add-material-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Item
     </button>
@@ -363,12 +373,12 @@
     <h3 id="material-form-title">Add Item</h3>
     <div class="form-grid">
       <div class="field">
-        <label>Code <span style="color:var(--danger)">*</span></label>
+        <label>Code <span class="req-star">*</span></label>
         <input type="text" id="m-code" placeholder="e.g. MAT001" autocomplete="off">
         <div class="field-error" id="m-code-err">Code is required</div>
       </div>
       <div class="field">
-        <label>Description <span style="color:var(--danger)">*</span></label>
+        <label>Description <span class="req-star">*</span></label>
         <input type="text" id="m-desc" placeholder="Item description" autocomplete="off">
         <div class="field-error" id="m-desc-err">Description is required</div>
       </div>
@@ -389,8 +399,8 @@
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="material-save-btn" onclick="saveRecord('material')">Save</button>
-      <button class="btn-cancel" onclick="closeForm('material')">Cancel</button>
+      <button class="btn-save" id="material-save-btn">Save</button>
+      <button class="btn-cancel" id="material-cancel-btn">Cancel</button>
     </div>
   </div>
   <div class="table-wrap">
@@ -408,8 +418,8 @@
 <div class="tab-panel" id="panel-fg">
   <div class="table-toolbar">
     <h2>Finished Goods</h2>
-    <input class="search-input" id="search-fg" type="search" placeholder="Search…" oninput="filterList('fg')">
-    <button class="btn-add" onclick="openForm('fg', 'add')">
+    <input class="search-input" id="search-fg" type="search" placeholder="Search…">
+    <button class="btn-add" id="add-fg-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add FG
     </button>
@@ -418,12 +428,12 @@
     <h3 id="fg-form-title">Add Finished Good</h3>
     <div class="form-grid">
       <div class="field">
-        <label>Code <span style="color:var(--danger)">*</span></label>
+        <label>Code <span class="req-star">*</span></label>
         <input type="text" id="fg-code" placeholder="e.g. FG001" autocomplete="off">
         <div class="field-error" id="fg-code-err">Code is required</div>
       </div>
       <div class="field">
-        <label>Name <span style="color:var(--danger)">*</span></label>
+        <label>Name <span class="req-star">*</span></label>
         <input type="text" id="fg-name" placeholder="FG name" autocomplete="off">
         <div class="field-error" id="fg-name-err">Name is required</div>
       </div>
@@ -438,14 +448,14 @@
           <option value="LTR">LTR</option><option value="BOX">BOX</option><option value="ROLL">ROLL</option>
         </select>
       </div>
-      <div class="field" style="grid-column:1/-1">
+      <div class="field field-full">
         <label>Description</label>
         <input type="text" id="fg-desc" placeholder="Brief description" autocomplete="off">
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="fg-save-btn" onclick="saveRecord('fg')">Save</button>
-      <button class="btn-cancel" onclick="closeForm('fg')">Cancel</button>
+      <button class="btn-save" id="fg-save-btn">Save</button>
+      <button class="btn-cancel" id="fg-cancel-btn">Cancel</button>
     </div>
   </div>
   <div class="table-wrap">
@@ -463,22 +473,22 @@
 <div class="tab-panel" id="panel-parameters">
   <div class="table-toolbar">
     <h2>Quality Parameters</h2>
-    <input class="search-input" id="search-parameters" type="search" placeholder="Search…" oninput="filterList('parameters')">
-    <button class="btn-add" onclick="openForm('parameter', 'add')">
+    <input class="search-input" id="search-parameters" type="search" placeholder="Search…">
+    <button class="btn-add" id="add-parameter-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Parameter
     </button>
   </div>
   <div class="inline-form" id="parameter-form">
     <h3 id="parameter-form-title">Add Quality Parameter</h3>
-    <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="form-grid-3">
       <div class="field">
-        <label>Code <span style="color:var(--danger)">*</span></label>
+        <label>Code <span class="req-star">*</span></label>
         <input type="text" id="p-code" placeholder="e.g. QP001" autocomplete="off">
         <div class="field-error" id="p-code-err">Code is required</div>
       </div>
       <div class="field">
-        <label>Name <span style="color:var(--danger)">*</span></label>
+        <label>Name <span class="req-star">*</span></label>
         <input type="text" id="p-name" placeholder="Parameter name" autocomplete="off">
         <div class="field-error" id="p-name-err">Name is required</div>
       </div>
@@ -520,14 +530,14 @@
         <label>Doc Number</label>
         <input type="text" id="p-docno" placeholder="e.g. PM/QC/001" autocomplete="off">
       </div>
-      <div class="field" style="grid-column:1/-1">
-        <label>Check Brief (How to check)</label>
+      <div class="field field-full">
+        <label>Check Brief</label>
         <input type="text" id="p-checkbrief" placeholder="Brief description of how to perform this check" autocomplete="off">
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="parameter-save-btn" onclick="saveRecord('parameter')">Save</button>
-      <button class="btn-cancel" onclick="closeForm('parameter')">Cancel</button>
+      <button class="btn-save" id="parameter-save-btn">Save</button>
+      <button class="btn-cancel" id="parameter-cancel-btn">Cancel</button>
     </div>
   </div>
   <div class="table-wrap">
@@ -545,8 +555,8 @@
 <div class="tab-panel" id="panel-customers">
   <div class="table-toolbar">
     <h2>Customers</h2>
-    <input class="search-input" id="search-customers" type="search" placeholder="Search…" oninput="filterList('customers')">
-    <button class="btn-add" onclick="openForm('customer', 'add')">
+    <input class="search-input" id="search-customers" type="search" placeholder="Search…">
+    <button class="btn-add" id="add-customer-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Customer
     </button>
@@ -555,12 +565,12 @@
     <h3 id="customer-form-title">Add Customer</h3>
     <div class="form-grid">
       <div class="field">
-        <label>Code <span style="color:var(--danger)">*</span></label>
+        <label>Code <span class="req-star">*</span></label>
         <input type="text" id="c-code" placeholder="e.g. CUST001" autocomplete="off">
         <div class="field-error" id="c-code-err">Code is required</div>
       </div>
       <div class="field">
-        <label>Name <span style="color:var(--danger)">*</span></label>
+        <label>Name <span class="req-star">*</span></label>
         <input type="text" id="c-name" placeholder="Customer name" autocomplete="off">
         <div class="field-error" id="c-name-err">Name is required</div>
       </div>
@@ -586,8 +596,8 @@
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="customer-save-btn" onclick="saveRecord('customer')">Save</button>
-      <button class="btn-cancel" onclick="closeForm('customer')">Cancel</button>
+      <button class="btn-save" id="customer-save-btn">Save</button>
+      <button class="btn-cancel" id="customer-cancel-btn">Cancel</button>
     </div>
   </div>
   <div class="table-wrap">
@@ -605,8 +615,8 @@
 <div class="tab-panel" id="panel-inspectors">
   <div class="table-toolbar">
     <h2>Inspectors / Personnel</h2>
-    <input class="search-input" id="search-inspectors" type="search" placeholder="Search…" oninput="filterList('inspectors')">
-    <button class="btn-add" onclick="openForm('inspector', 'add')">
+    <input class="search-input" id="search-inspectors" type="search" placeholder="Search…">
+    <button class="btn-add" id="add-inspector-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Inspector
     </button>
@@ -615,12 +625,12 @@
     <h3 id="inspector-form-title">Add Inspector</h3>
     <div class="form-grid">
       <div class="field">
-        <label>Name <span style="color:var(--danger)">*</span></label>
+        <label>Name <span class="req-star">*</span></label>
         <input type="text" id="i-name" placeholder="Full name" autocomplete="off">
         <div class="field-error" id="i-name-err">Name is required</div>
       </div>
       <div class="field">
-        <label>Role / Designation <span style="color:var(--danger)">*</span></label>
+        <label>Role / Designation <span class="req-star">*</span></label>
         <input type="text" id="i-role" placeholder="e.g. QC Inspector" autocomplete="off">
         <div class="field-error" id="i-role-err">Role is required</div>
       </div>
@@ -635,14 +645,14 @@
       <div class="field">
         <label>Notify</label>
         <div class="appr-toggle-wrap">
-          <button type="button" class="appr-toggle sel-yes" id="i-notify-yes" onclick="setNotify('Y')">Yes</button>
-          <button type="button" class="appr-toggle" id="i-notify-no" onclick="setNotify('N')">No</button>
+          <button type="button" class="appr-toggle sel-yes" id="i-notify-yes">Yes</button>
+          <button type="button" class="appr-toggle" id="i-notify-no">No</button>
         </div>
       </div>
     </div>
     <div class="form-actions">
-      <button class="btn-save" id="inspector-save-btn" onclick="saveRecord('inspector')">Save</button>
-      <button class="btn-cancel" onclick="closeForm('inspector')">Cancel</button>
+      <button class="btn-save" id="inspector-save-btn">Save</button>
+      <button class="btn-cancel" id="inspector-cancel-btn">Cancel</button>
     </div>
   </div>
   <div class="table-wrap">
@@ -659,7 +669,6 @@
 <div id="toast" class="toast"></div>
 
 <script>
-  // ── State ──────────────────────────────────────────────────────
   var suppliersData  = [];
   var materialsData  = [];
   var fgData         = [];
@@ -668,7 +677,6 @@
   var inspectorsData = [];
   var activeTab      = 'suppliers';
 
-  // Per-type edit state
   var formState = {
     supplier:  { mode: null, editKey: null },
     material:  { mode: null, editKey: null },
@@ -681,17 +689,68 @@
   var supplierApproved = 'Y';
   var inspectorNotify  = 'Y';
 
-  var SESSION_ID = (function() {
-    try { return window.sessionId || (window.parent && window.parent.sessionId) || ''; } catch(e) { return ''; }
-  })();
+  var pendingDelete = { type: null, key: null, timer: null };
 
   var ALL_TABS = ['suppliers','materials','fg','parameters','customers','inspectors'];
 
-  // ── Init ───────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('backBtn').addEventListener('click', goHome);
 
-    // Show skeleton
+    // Tab switching
+    ALL_TABS.forEach(function(t) {
+      document.getElementById('tab-' + t).addEventListener('click', function() { switchTab(t); });
+    });
+
+    // Search inputs
+    ALL_TABS.forEach(function(t) {
+      var el = document.getElementById('search-' + t);
+      if (el) el.addEventListener('input', function() { filterList(t); });
+    });
+
+    // Add buttons
+    document.getElementById('add-supplier-btn').addEventListener('click', function() { openForm('supplier', 'add'); });
+    document.getElementById('add-material-btn').addEventListener('click', function() { openForm('material', 'add'); });
+    document.getElementById('add-fg-btn').addEventListener('click', function() { openForm('fg', 'add'); });
+    document.getElementById('add-parameter-btn').addEventListener('click', function() { openForm('parameter', 'add'); });
+    document.getElementById('add-customer-btn').addEventListener('click', function() { openForm('customer', 'add'); });
+    document.getElementById('add-inspector-btn').addEventListener('click', function() { openForm('inspector', 'add'); });
+
+    // Save buttons
+    document.getElementById('supplier-save-btn').addEventListener('click', function() { saveRecord('supplier'); });
+    document.getElementById('material-save-btn').addEventListener('click', function() { saveRecord('material'); });
+    document.getElementById('fg-save-btn').addEventListener('click', function() { saveRecord('fg'); });
+    document.getElementById('parameter-save-btn').addEventListener('click', function() { saveRecord('parameter'); });
+    document.getElementById('customer-save-btn').addEventListener('click', function() { saveRecord('customer'); });
+    document.getElementById('inspector-save-btn').addEventListener('click', function() { saveRecord('inspector'); });
+
+    // Cancel buttons
+    document.getElementById('supplier-cancel-btn').addEventListener('click', function() { closeForm('supplier'); });
+    document.getElementById('material-cancel-btn').addEventListener('click', function() { closeForm('material'); });
+    document.getElementById('fg-cancel-btn').addEventListener('click', function() { closeForm('fg'); });
+    document.getElementById('parameter-cancel-btn').addEventListener('click', function() { closeForm('parameter'); });
+    document.getElementById('customer-cancel-btn').addEventListener('click', function() { closeForm('customer'); });
+    document.getElementById('inspector-cancel-btn').addEventListener('click', function() { closeForm('inspector'); });
+
+    // Approved toggles
+    document.getElementById('s-appr-yes').addEventListener('click', function() { setApproved('s', 'Y'); });
+    document.getElementById('s-appr-no').addEventListener('click', function() { setApproved('s', 'N'); });
+    document.getElementById('i-notify-yes').addEventListener('click', function() { setNotify('Y'); });
+    document.getElementById('i-notify-no').addEventListener('click', function() { setNotify('N'); });
+
+    // Event delegation for dynamically rendered buttons
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-action');
+      var type   = btn.getAttribute('data-type');
+      var key    = btn.getAttribute('data-key');
+      if (action === 'edit')            openForm(type, 'edit', key);
+      if (action === 'delete')          handleDelete(type, key, btn);
+      if (action === 'toggle-approved') toggleApproved(key);
+      if (action === 'toggle-notify')   toggleNotify(key);
+    });
+
+    // Show skeleton while loading
     ALL_TABS.forEach(function(t) { renderSkeleton(t); });
 
     google.script.run
@@ -710,14 +769,7 @@
       .getMastersData();
   });
 
-  // ── Tab switching ──────────────────────────────────────────────
   function switchTab(tab) {
-    // Check for open forms with unsaved changes
-    var currentType = tabToType(activeTab);
-    if (formState[currentType] && formState[currentType].mode && tab !== activeTab) {
-      if (!confirm('You have unsaved changes. Discard and switch tab?')) return;
-    }
-    // Close all forms
     ALL_TABS.forEach(function(t) { closeForm(tabToType(t)); });
     activeTab = tab;
     ALL_TABS.forEach(function(t) {
@@ -727,11 +779,10 @@
   }
 
   function tabToType(tab) {
-    var map = { suppliers: 'supplier', materials: 'material', fg: 'fg', parameters: 'parameter', customers: 'customer', inspectors: 'inspector' };
+    var map = { suppliers:'supplier', materials:'material', fg:'fg', parameters:'parameter', customers:'customer', inspectors:'inspector' };
     return map[tab] || tab;
   }
 
-  // ── Render all ─────────────────────────────────────────────────
   function renderAll() {
     renderSuppliers();
     renderMaterials();
@@ -741,10 +792,9 @@
     renderInspectors();
   }
 
-  // ── Filter/search ──────────────────────────────────────────────
   function filterList(tab) {
-    var query = (document.getElementById('search-' + tab) || {}).value || '';
-    query = query.toLowerCase();
+    var el = document.getElementById('search-' + tab);
+    var query = el ? el.value.toLowerCase() : '';
     var type = tabToType(tab);
     switch(type) {
       case 'supplier':  renderSuppliers(query);  break;
@@ -756,49 +806,48 @@
     }
   }
 
-  // ── Render suppliers ───────────────────────────────────────────
+  function emptyRow(colspan, icon, label) {
+    return '<tr><td colspan="' + colspan + '"><div class="empty-state"><span class="icon">' + icon + '</span>' + label + '</div></td></tr>';
+  }
+  function emptyCard(icon, label) {
+    return '<div class="empty-state"><span class="icon">' + icon + '</span>' + label + '</div>';
+  }
+
   function renderSuppliers(q) {
     var items = q ? suppliersData.filter(function(s) {
       return (s.code + s.name + (s.material||'')).toLowerCase().indexOf(q) !== -1;
     }) : suppliersData;
 
-    // Table
     var tbody = document.getElementById('suppliers-tbody');
     if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No suppliers found.</td></tr>';
+      tbody.innerHTML = emptyRow(8, '🏭', 'No suppliers found');
     } else {
       tbody.innerHTML = items.map(function(s) {
-        var pill = '<button class="appr-pill ' + (s.approved === 'Y' ? 'yes' : 'no') +
-          '" onclick="toggleApproved(\'' + esc(s.code) + '\')">' + (s.approved === 'Y' ? 'Approved' : 'Pending') + '</button>';
-        return '<tr>' +
-          td(s.code) + td(s.name) + td(s.contact) + td(s.phone) + td(s.material) + td(s.city) +
+        var pillCls = s.approved === 'Y' ? 'yes' : 'no';
+        var pillTxt = s.approved === 'Y' ? 'Approved' : 'Pending';
+        var pill = '<button class="appr-pill ' + pillCls + '" data-action="toggle-approved" data-key="' + esc(s.code) + '">' + pillTxt + '</button>';
+        return '<tr>' + td(s.code) + td(s.name) + td(s.contact) + td(s.phone) + td(s.material) + td(s.city) +
           '<td>' + pill + '</td>' +
-          '<td class="actions">' + editBtn('supplier', esc(s.code)) + ' ' + delBtn('supplier', esc(s.code)) + '</td>' +
-          '</tr>';
+          '<td class="actions">' + editBtn('supplier', s.code) + ' ' + delBtn('supplier', s.code) + '</td></tr>';
       }).join('');
     }
 
-    // Cards
     var cards = document.getElementById('suppliers-cards');
     if (!items.length) {
-      cards.innerHTML = '<div class="empty-state">No suppliers found.</div>';
+      cards.innerHTML = emptyCard('🏭', 'No suppliers found');
     } else {
       cards.innerHTML = items.map(function(s) {
         return '<div class="entry-card">' +
           '<div class="entry-card-top">' +
             '<div><div class="entry-card-name">' + esc(s.name) + '</div><div class="entry-card-code">' + esc(s.code) + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('supplier', esc(s.code)) + ' ' + delBtn('supplier', esc(s.code)) + '</div>' +
+            '<div class="entry-card-actions">' + editBtn('supplier', s.code) + ' ' + delBtn('supplier', s.code) + '</div>' +
           '</div>' +
-          '<div class="entry-card-meta">' +
-            (s.phone ? 'Phone: ' + esc(s.phone) + ' &nbsp;' : '') +
-            (s.city ? 'City: ' + esc(s.city) : '') +
-          '</div>' +
+          '<div class="entry-card-meta">' + (s.phone ? 'Phone: ' + esc(s.phone) + ' &nbsp;' : '') + (s.city ? 'City: ' + esc(s.city) : '') + '</div>' +
         '</div>';
       }).join('');
     }
   }
 
-  // ── Render materials ───────────────────────────────────────────
   function renderMaterials(q) {
     var items = q ? materialsData.filter(function(m) {
       return (m.code + (m.desc||'')).toLowerCase().indexOf(q) !== -1;
@@ -806,24 +855,23 @@
 
     var tbody = document.getElementById('materials-tbody');
     tbody.innerHTML = !items.length
-      ? '<tr><td colspan="5" class="empty-state">No items found.</td></tr>'
+      ? emptyRow(5, '📦', 'No items found')
       : items.map(function(m) {
           return '<tr>' + td(m.code) + td(m.desc||m.description||'') + td(m.unit) + td(m.category) +
-            '<td class="actions">' + editBtn('material', esc(m.code)) + ' ' + delBtn('material', esc(m.code)) + '</td></tr>';
+            '<td class="actions">' + editBtn('material', m.code) + ' ' + delBtn('material', m.code) + '</td></tr>';
         }).join('');
 
     var cards = document.getElementById('materials-cards');
     cards.innerHTML = !items.length
-      ? '<div class="empty-state">No items found.</div>'
+      ? emptyCard('📦', 'No items found')
       : items.map(function(m) {
           return '<div class="entry-card"><div class="entry-card-top">' +
             '<div><div class="entry-card-name">' + esc(m.desc||m.description||'') + '</div><div class="entry-card-code">' + esc(m.code) + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('material', esc(m.code)) + ' ' + delBtn('material', esc(m.code)) + '</div>' +
+            '<div class="entry-card-actions">' + editBtn('material', m.code) + ' ' + delBtn('material', m.code) + '</div>' +
             '</div><div class="entry-card-meta">Unit: ' + esc(m.unit||'') + ' &nbsp; Cat: ' + esc(m.category||'') + '</div></div>';
         }).join('');
   }
 
-  // ── Render FG ──────────────────────────────────────────────────
   function renderFG(q) {
     var items = q ? fgData.filter(function(f) {
       return (f.code + f.name + (f.description||'')).toLowerCase().indexOf(q) !== -1;
@@ -831,24 +879,23 @@
 
     var tbody = document.getElementById('fg-tbody');
     tbody.innerHTML = !items.length
-      ? '<tr><td colspan="6" class="empty-state">No finished goods found.</td></tr>'
+      ? emptyRow(6, '🏷️', 'No finished goods found')
       : items.map(function(f) {
           return '<tr>' + td(f.code) + td(f.name) + td(f.category) + td(f.uom) + td(f.description) +
-            '<td class="actions">' + editBtn('fg', esc(f.code)) + ' ' + delBtn('fg', esc(f.code)) + '</td></tr>';
+            '<td class="actions">' + editBtn('fg', f.code) + ' ' + delBtn('fg', f.code) + '</td></tr>';
         }).join('');
 
     var cards = document.getElementById('fg-cards');
     cards.innerHTML = !items.length
-      ? '<div class="empty-state">No finished goods found.</div>'
+      ? emptyCard('🏷️', 'No finished goods found')
       : items.map(function(f) {
           return '<div class="entry-card"><div class="entry-card-top">' +
             '<div><div class="entry-card-name">' + esc(f.name) + '</div><div class="entry-card-code">' + esc(f.code) + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('fg', esc(f.code)) + ' ' + delBtn('fg', esc(f.code)) + '</div>' +
+            '<div class="entry-card-actions">' + editBtn('fg', f.code) + ' ' + delBtn('fg', f.code) + '</div>' +
             '</div><div class="entry-card-meta">UOM: ' + esc(f.uom||'') + ' &nbsp; Cat: ' + esc(f.category||'') + '</div></div>';
         }).join('');
   }
 
-  // ── Render parameters ──────────────────────────────────────────
   function renderParameters(q) {
     var items = q ? parametersData.filter(function(p) {
       return (p.code + p.name + (p.methodType||'')).toLowerCase().indexOf(q) !== -1;
@@ -856,21 +903,21 @@
 
     var tbody = document.getElementById('parameters-tbody');
     tbody.innerHTML = !items.length
-      ? '<tr><td colspan="11" class="empty-state">No parameters found.</td></tr>'
+      ? emptyRow(11, '📏', 'No parameters found')
       : items.map(function(p) {
           return '<tr>' + td(p.code) + td(p.name) + td(p.unit) + td(p.stdValue) + td(p.tolMin) + td(p.tolMax) +
-            '<td><span style="font-size:10px;padding:2px 7px;border-radius:12px;background:var(--navy-light);color:var(--navy);font-weight:600;">' + esc(p.methodType||'') + '</span></td>' +
+            '<td><span class="method-chip">' + esc(p.methodType||'') + '</span></td>' +
             td(p.tools) + td(p.docRef) + td(p.docNumber) +
-            '<td class="actions">' + editBtn('parameter', esc(p.code)) + ' ' + delBtn('parameter', esc(p.code)) + '</td></tr>';
+            '<td class="actions">' + editBtn('parameter', p.code) + ' ' + delBtn('parameter', p.code) + '</td></tr>';
         }).join('');
 
     var cards = document.getElementById('parameters-cards');
     cards.innerHTML = !items.length
-      ? '<div class="empty-state">No parameters found.</div>'
+      ? emptyCard('📏', 'No parameters found')
       : items.map(function(p) {
           return '<div class="entry-card"><div class="entry-card-top">' +
             '<div><div class="entry-card-name">' + esc(p.name) + '</div><div class="entry-card-code">' + esc(p.code) + (p.unit ? ' &bull; ' + esc(p.unit) : '') + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('parameter', esc(p.code)) + ' ' + delBtn('parameter', esc(p.code)) + '</div>' +
+            '<div class="entry-card-actions">' + editBtn('parameter', p.code) + ' ' + delBtn('parameter', p.code) + '</div>' +
             '</div><div class="entry-card-meta">' +
               (p.stdValue ? 'Std: ' + esc(p.stdValue) + ' &nbsp;' : '') +
               (p.tolMin ? 'Min: ' + esc(p.tolMin) + ' &nbsp;' : '') +
@@ -880,7 +927,6 @@
         }).join('');
   }
 
-  // ── Render customers ───────────────────────────────────────────
   function renderCustomers(q) {
     var items = q ? customersData.filter(function(c) {
       return (c.code + c.name + (c.city||'')).toLowerCase().indexOf(q) !== -1;
@@ -888,24 +934,23 @@
 
     var tbody = document.getElementById('customers-tbody');
     tbody.innerHTML = !items.length
-      ? '<tr><td colspan="8" class="empty-state">No customers found.</td></tr>'
+      ? emptyRow(8, '🤝', 'No customers found')
       : items.map(function(c) {
           return '<tr>' + td(c.code) + td(c.name) + td(c.contact) + td(c.phone) + td(c.email) + td(c.products) + td(c.city) +
-            '<td class="actions">' + editBtn('customer', esc(c.code)) + ' ' + delBtn('customer', esc(c.code)) + '</td></tr>';
+            '<td class="actions">' + editBtn('customer', c.code) + ' ' + delBtn('customer', c.code) + '</td></tr>';
         }).join('');
 
     var cards = document.getElementById('customers-cards');
     cards.innerHTML = !items.length
-      ? '<div class="empty-state">No customers found.</div>'
+      ? emptyCard('🤝', 'No customers found')
       : items.map(function(c) {
           return '<div class="entry-card"><div class="entry-card-top">' +
             '<div><div class="entry-card-name">' + esc(c.name) + '</div><div class="entry-card-code">' + esc(c.code) + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('customer', esc(c.code)) + ' ' + delBtn('customer', esc(c.code)) + '</div>' +
+            '<div class="entry-card-actions">' + editBtn('customer', c.code) + ' ' + delBtn('customer', c.code) + '</div>' +
             '</div><div class="entry-card-meta">' + (c.phone ? 'Phone: ' + esc(c.phone) + ' &nbsp;' : '') + (c.city ? 'City: ' + esc(c.city) : '') + '</div></div>';
         }).join('');
   }
 
-  // ── Render inspectors ──────────────────────────────────────────
   function renderInspectors(q) {
     var items = q ? inspectorsData.filter(function(p) {
       return (p.name + (p.role||'')).toLowerCase().indexOf(q) !== -1;
@@ -913,33 +958,30 @@
 
     var tbody = document.getElementById('inspectors-tbody');
     tbody.innerHTML = !items.length
-      ? '<tr><td colspan="6" class="empty-state">No inspectors found.</td></tr>'
+      ? emptyRow(6, '👤', 'No inspectors found')
       : items.map(function(p) {
-          var pill = '<button class="appr-pill ' + (p.notify === 'Y' ? 'yes' : 'no') +
-            '" onclick="toggleNotify(\'' + esc(p.name) + '\')">' + (p.notify === 'Y' ? 'Yes' : 'No') + '</button>';
+          var pillCls = p.notify === 'Y' ? 'yes' : 'no';
+          var pill = '<button class="appr-pill ' + pillCls + '" data-action="toggle-notify" data-key="' + esc(p.name) + '">' + (p.notify === 'Y' ? 'Yes' : 'No') + '</button>';
           return '<tr>' + td(p.name) + td(p.role) + td(p.dept) + td(p.phone) +
             '<td>' + pill + '</td>' +
-            '<td class="actions">' + editBtn('inspector', esc(p.name)) + ' ' + delBtn('inspector', esc(p.name)) + '</td></tr>';
+            '<td class="actions">' + editBtn('inspector', p.name) + ' ' + delBtn('inspector', p.name) + '</td></tr>';
         }).join('');
 
     var cards = document.getElementById('inspectors-cards');
     cards.innerHTML = !items.length
-      ? '<div class="empty-state">No inspectors found.</div>'
+      ? emptyCard('👤', 'No inspectors found')
       : items.map(function(p) {
           return '<div class="entry-card"><div class="entry-card-top">' +
             '<div><div class="entry-card-name">' + esc(p.name) + '</div><div class="entry-card-code">' + esc(p.role||'') + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('inspector', esc(p.name)) + ' ' + delBtn('inspector', esc(p.name)) + '</div>' +
+            '<div class="entry-card-actions">' + editBtn('inspector', p.name) + ' ' + delBtn('inspector', p.name) + '</div>' +
             '</div><div class="entry-card-meta">' + (p.dept ? 'Dept: ' + esc(p.dept) + ' &nbsp;' : '') + (p.phone ? 'WA: ' + esc(p.phone) : '') + '</div></div>';
         }).join('');
   }
 
-  // ── Skeleton ───────────────────────────────────────────────────
   function renderSkeleton(tab) {
     var type = tabToType(tab);
-    var tbody = document.getElementById(type === 'inspector' ? 'inspectors-tbody' : type + (type === 'inspector' ? '' : 's-tbody'));
-    // Correct tbody id lookup
     var tbodyId = type + 's-tbody';
-    if (type === 'material') tbodyId = 'materials-tbody';
+    if (type === 'material')  tbodyId = 'materials-tbody';
     if (type === 'parameter') tbodyId = 'parameters-tbody';
     if (type === 'inspector') tbodyId = 'inspectors-tbody';
     var tbodyEl = document.getElementById(tbodyId);
@@ -949,24 +991,20 @@
     for (var i = 0; i < 3; i++) {
       html += '<tr>';
       for (var j = 0; j < cols; j++) {
-        html += '<td><span class="skel-cell" style="width:' + (50 + Math.random()*35|0) + '%">&nbsp;</span></td>';
+        html += '<td><span class="skel-cell" style="width:' + (50 + (Math.random()*35|0)) + '%">&nbsp;</span></td>';
       }
       html += '</tr>';
     }
     tbodyEl.innerHTML = html;
   }
 
-  // ── Open form ──────────────────────────────────────────────────
   function openForm(type, mode, key) {
     var formEl = document.getElementById(type + '-form');
     if (!formEl) return;
-
     formState[type].mode = mode;
     formState[type].editKey = key || null;
-
     var titleEl = document.getElementById(type + '-form-title');
     var saveBtn = document.getElementById(type + '-save-btn');
-
     if (mode === 'add') {
       clearForm(type);
       if (titleEl) titleEl.textContent = 'Add ' + typeName(type);
@@ -976,7 +1014,6 @@
       if (titleEl) titleEl.textContent = 'Edit ' + typeName(type) + ': ' + key;
       if (saveBtn) saveBtn.textContent = 'Update';
     }
-
     formEl.classList.add('open');
     formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -986,14 +1023,12 @@
     return m[type] || type;
   }
 
-  // ── Close form ─────────────────────────────────────────────────
   function closeForm(type) {
     var formEl = document.getElementById(type + '-form');
     if (formEl) formEl.classList.remove('open');
     if (formState[type]) { formState[type].mode = null; formState[type].editKey = null; }
   }
 
-  // ── Clear form fields ──────────────────────────────────────────
   function clearForm(type) {
     var maps = {
       supplier:  { fields: ['s-code','s-name','s-contact','s-phone','s-material','s-city'], req: ['s-code','s-name'] },
@@ -1013,7 +1048,6 @@
       var err = document.getElementById(id + '-err');
       if (err) err.style.display = 'none';
     });
-    // Reset selects
     if (type === 'material')  { setIfEl('m-unit','KG'); setIfEl('m-cat','BULK'); }
     if (type === 'fg')        { setIfEl('fg-uom','PC'); }
     if (type === 'parameter') { setIfEl('p-method','Visual'); }
@@ -1026,30 +1060,29 @@
     if (el) el.value = val;
   }
 
-  // ── Populate form for edit ─────────────────────────────────────
   function populateForm(type, key) {
     clearForm(type);
     var item;
     switch(type) {
       case 'supplier':
-        item = suppliersData.find(function(x) { return x.code === key; }); if (!item) return;
+        item = suppliersData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
         setIfEl('s-code', item.code); setIfEl('s-name', item.name); setIfEl('s-contact', item.contact);
         setIfEl('s-phone', item.phone); setIfEl('s-material', item.material); setIfEl('s-city', item.city);
         setApproved('s', item.approved || 'Y');
         break;
       case 'material':
-        item = materialsData.find(function(x) { return x.code === key; }); if (!item) return;
+        item = materialsData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
         setIfEl('m-code', item.code); setIfEl('m-desc', item.desc || item.description || '');
         setIfEl('m-unit', item.unit || 'KG'); setIfEl('m-cat', item.category || 'BULK');
         break;
       case 'fg':
-        item = fgData.find(function(x) { return x.code === key; }); if (!item) return;
+        item = fgData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
         setIfEl('fg-code', item.code); setIfEl('fg-name', item.name || '');
         setIfEl('fg-category', item.category || ''); setIfEl('fg-uom', item.uom || 'PC');
         setIfEl('fg-desc', item.description || '');
         break;
       case 'parameter':
-        item = parametersData.find(function(x) { return x.code === key; }); if (!item) return;
+        item = parametersData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
         setIfEl('p-code', item.code); setIfEl('p-name', item.name); setIfEl('p-unit', item.unit || '');
         setIfEl('p-std', item.stdValue || ''); setIfEl('p-min', item.tolMin || ''); setIfEl('p-max', item.tolMax || '');
         setIfEl('p-method', item.methodType || 'Visual'); setIfEl('p-tools', item.tools || '');
@@ -1057,13 +1090,13 @@
         setIfEl('p-checkbrief', item.checkBrief || '');
         break;
       case 'customer':
-        item = customersData.find(function(x) { return x.code === key; }); if (!item) return;
+        item = customersData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
         setIfEl('c-code', item.code); setIfEl('c-name', item.name); setIfEl('c-contact', item.contact || '');
         setIfEl('c-phone', item.phone || ''); setIfEl('c-email', item.email || '');
         setIfEl('c-products', item.products || ''); setIfEl('c-city', item.city || '');
         break;
       case 'inspector':
-        item = inspectorsData.find(function(x) { return x.name === key; }); if (!item) return;
+        item = inspectorsData.filter(function(x) { return x.name === key; })[0]; if (!item) return;
         setIfEl('i-name', item.name); setIfEl('i-role', item.role || '');
         setIfEl('i-dept', item.dept || ''); setIfEl('i-phone', item.phone || '');
         setNotify(item.notify || 'Y');
@@ -1071,9 +1104,8 @@
     }
   }
 
-  // ── Collect form data ──────────────────────────────────────────
   function collectForm(type) {
-    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var g  = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
     var gs = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
     switch(type) {
       case 'supplier':  return { code: g('s-code'), name: g('s-name'), contact: g('s-contact'), phone: g('s-phone'), material: g('s-material'), city: g('s-city'), approved: supplierApproved };
@@ -1085,7 +1117,6 @@
     }
   }
 
-  // ── Validate form ──────────────────────────────────────────────
   function validateForm(type, data) {
     var required = {
       supplier:  [['code','s-code','s-code-err'],['name','s-name','s-name-err']],
@@ -1113,27 +1144,27 @@
     return valid;
   }
 
-  // ── Save record (unified) ──────────────────────────────────────
   function saveRecord(type) {
     var data = collectForm(type);
     if (!validateForm(type, data)) return;
-
     var mode = formState[type].mode;
     var editKey = formState[type].editKey;
     var btn = document.getElementById(type + '-save-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>' + (mode === 'edit' ? 'Updating…' : 'Saving…');
+    }
     google.script.run
       .withSuccessHandler(function() {
-        // Update local data
         var arr = getDataArray(type);
         var keyField = type === 'inspector' ? 'name' : 'code';
         if (mode === 'add') {
           arr.push(data);
           showToast(typeName(type) + ' added', 'success');
         } else {
-          var idx = arr.findIndex(function(x) { return x[keyField] === editKey; });
-          if (idx !== -1) arr[idx] = data;
+          for (var i = 0; i < arr.length; i++) {
+            if (arr[i][keyField] === editKey) { arr[i] = data; break; }
+          }
           showToast(typeName(type) + ' updated', 'success');
         }
         closeForm(type);
@@ -1170,63 +1201,31 @@
     }
   }
 
-  // ── Toggle approved inline ─────────────────────────────────────
-  function toggleApproved(code) {
-    var s = suppliersData.find(function(x) { return x.code === code; });
-    if (!s) return;
-    var newVal = s.approved === 'Y' ? 'N' : 'Y';
-    var updated = Object.assign({}, s, { approved: newVal });
-    google.script.run
-      .withSuccessHandler(function() { s.approved = newVal; renderSuppliers(); showToast(code + ' approval updated', 'success'); })
-      .withFailureHandler(function(err) { showToast('Update failed: ' + (err.message || err), 'error'); })
-      .saveMaster('supplier', updated);
+  function handleDelete(type, key, btn) {
+    if (pendingDelete.type === type && pendingDelete.key === key) {
+      clearTimeout(pendingDelete.timer);
+      pendingDelete = { type: null, key: null, timer: null };
+      executeDelete(type, key);
+    } else {
+      if (pendingDelete.timer) {
+        clearTimeout(pendingDelete.timer);
+        pendingDelete = { type: null, key: null, timer: null };
+      }
+      pendingDelete.type = type;
+      pendingDelete.key = key;
+      showToast('Tap delete again to confirm removal', '');
+      pendingDelete.timer = setTimeout(function() {
+        pendingDelete = { type: null, key: null, timer: null };
+      }, 3000);
+    }
   }
 
-  // ── Toggle notify inline ───────────────────────────────────────
-  function toggleNotify(name) {
-    var p = inspectorsData.find(function(x) { return x.name === name; });
-    if (!p) return;
-    var newVal = p.notify === 'Y' ? 'N' : 'Y';
-    var updated = Object.assign({}, p, { notify: newVal });
-    google.script.run
-      .withSuccessHandler(function() { p.notify = newVal; renderInspectors(); showToast(name + ' notify updated', 'success'); })
-      .withFailureHandler(function(err) { showToast('Update failed: ' + (err.message || err), 'error'); })
-      .saveMaster('inspector', updated);
-  }
-
-  // ── Approved toggle state ──────────────────────────────────────
-  function setApproved(prefix, val) {
-    supplierApproved = val;
-    var y = document.getElementById(prefix + '-appr-yes');
-    var n = document.getElementById(prefix + '-appr-no');
-    if (y) y.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
-    if (n) n.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
-  }
-  function setNotify(val) {
-    inspectorNotify = val;
-    var y = document.getElementById('i-notify-yes');
-    var n = document.getElementById('i-notify-no');
-    if (y) y.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
-    if (n) n.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
-  }
-
-  // ── Edit shortcuts (called from inline onclick in rendered HTML) ─
-  function editSupplier(code) { openForm('supplier', 'edit', code); }
-  function editMaterial(code) { openForm('material', 'edit', code); }
-  function editFG(code)       { openForm('fg', 'edit', code); }
-  function editParameter(code){ openForm('parameter', 'edit', code); }
-  function editCustomer(code) { openForm('customer', 'edit', code); }
-  function editInspector(name){ openForm('inspector', 'edit', name); }
-
-  // ── Delete record ──────────────────────────────────────────────
-  function deleteRecord(type, key) {
-    if (!confirm('Delete ' + typeName(type) + ' "' + key + '"? This cannot be undone.')) return;
+  function executeDelete(type, key) {
     google.script.run
       .withSuccessHandler(function() {
-        var arr = getDataArray(type);
         var keyField = type === 'inspector' ? 'name' : 'code';
+        var arr = getDataArray(type);
         var filtered = arr.filter(function(x) { return x[keyField] !== key; });
-        // Replace in-place
         switch(type) {
           case 'supplier':  suppliersData  = filtered; break;
           case 'material':  materialsData  = filtered; break;
@@ -1245,39 +1244,82 @@
       .deleteMaster(type, key);
   }
 
-  // ── HTML helpers ───────────────────────────────────────────────
+  function toggleApproved(code) {
+    var s;
+    for (var i = 0; i < suppliersData.length; i++) {
+      if (suppliersData[i].code === code) { s = suppliersData[i]; break; }
+    }
+    if (!s) return;
+    var newVal = s.approved === 'Y' ? 'N' : 'Y';
+    var updated = {};
+    for (var k in s) updated[k] = s[k];
+    updated.approved = newVal;
+    google.script.run
+      .withSuccessHandler(function() { s.approved = newVal; renderSuppliers(); showToast(code + ' approval updated', 'success'); })
+      .withFailureHandler(function(err) { showToast('Update failed: ' + (err.message || err), 'error'); })
+      .saveMaster('supplier', updated);
+  }
+
+  function toggleNotify(name) {
+    var p;
+    for (var i = 0; i < inspectorsData.length; i++) {
+      if (inspectorsData[i].name === name) { p = inspectorsData[i]; break; }
+    }
+    if (!p) return;
+    var newVal = p.notify === 'Y' ? 'N' : 'Y';
+    var updated = {};
+    for (var k in p) updated[k] = p[k];
+    updated.notify = newVal;
+    google.script.run
+      .withSuccessHandler(function() { p.notify = newVal; renderInspectors(); showToast(name + ' notify updated', 'success'); })
+      .withFailureHandler(function(err) { showToast('Update failed: ' + (err.message || err), 'error'); })
+      .saveMaster('inspector', updated);
+  }
+
+  function setApproved(prefix, val) {
+    supplierApproved = val;
+    var y = document.getElementById(prefix + '-appr-yes');
+    var n = document.getElementById(prefix + '-appr-no');
+    if (y) y.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
+    if (n) n.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
+  }
+
+  function setNotify(val) {
+    inspectorNotify = val;
+    var y = document.getElementById('i-notify-yes');
+    var n = document.getElementById('i-notify-no');
+    if (y) y.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
+    if (n) n.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
+  }
+
   function td(val) { return '<td>' + esc(val || '') + '</td>'; }
+
   function editBtn(type, key) {
-    return '<button class="icon-btn" title="Edit" onclick="edit' +
-      type.charAt(0).toUpperCase() + type.slice(1) + '(\'' + key + '\')">' + iconPencil() + '</button>';
+    return '<button class="icon-btn" title="Edit" data-action="edit" data-type="' + type + '" data-key="' + esc(key) + '">' + iconPencil() + '</button>';
   }
+
   function delBtn(type, key) {
-    return '<button class="icon-btn danger" title="Delete" onclick="deleteRecord(\'' + type + '\',\'' + key + '\')">' + iconTrash() + '</button>';
+    return '<button class="icon-btn danger" title="Delete" data-action="delete" data-type="' + type + '" data-key="' + esc(key) + '">' + iconTrash() + '</button>';
   }
+
   function iconPencil() {
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0D1B6E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
   }
+
   function iconTrash() {
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
   }
+
   function esc(str) {
     if (str === null || str === undefined) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
-  // ── Toast ──────────────────────────────────────────────────────
   function showToast(msg, type) {
     var t = document.getElementById('toast');
     t.textContent = msg;
     t.className = 'toast show' + (type ? ' ' + type : '');
     setTimeout(function() { t.className = 'toast'; }, 2800);
-  }
-
-  // ── goHome ─────────────────────────────────────────────────────
-  function goHome() {
-    google.script.run.withSuccessHandler(function(html) {
-      document.open(); document.write(html); document.close();
-    }).getLandingHtml();
   }
 </script>
 </body>

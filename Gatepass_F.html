@@ -7,10 +7,9 @@
   <style>
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    /* Item card */
     .item-card {
       background: var(--navy-light);
-      border: 1px solid #C7D7FF;
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 8px 10px;
       margin-bottom: 6px;
@@ -47,7 +46,6 @@
     }
     .item-card-qty b { font-weight: 600; }
 
-    /* Items count badge */
     .item-badge {
       background: var(--amber);
       color: var(--navy);
@@ -57,14 +55,12 @@
       border-radius: 10px;
     }
 
-    /* Section title flex */
     .section-title-flex {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
-    /* Add item button */
     .add-item-btn {
       width: 100%;
       background: var(--amber);
@@ -79,11 +75,30 @@
       margin-top: 4px;
     }
 
-    /* Readonly */
-    input[readonly] { background: #F9FAFB; color: var(--muted); }
+    input[readonly] { background: var(--surface); color: var(--muted); }
 
-    /* Search results list */
-    .field select[size] { margin-top: 4px; }
+    .items-empty {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      padding: 6px 0;
+    }
+
+    .items-list { margin-top: 8px; }
+
+    .oqc-hint { font-size: 10px; color: var(--muted); }
+
+    .sticky-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--white);
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 8px var(--shadow);
+      z-index: 90;
+    }
   </style>
 </head>
 <body>
@@ -95,7 +110,7 @@
     </svg>
   </button>
   <span class="page-title">New Gatepass</span>
-  <span class="doc-badge" id="docBadge">Loading…</span>
+  <span class="doc-badge" id="docBadge">GATEPASS</span>
 </div>
 
 <!-- Section 1: Vehicle / Transporter Details -->
@@ -167,7 +182,7 @@
     </div>
 
     <div class="field">
-      <label>OQC Reference <span style="font-size:10px;color:var(--muted);">(if applicable)</span></label>
+      <label>OQC Reference <span class="oqc-hint">(if applicable)</span></label>
       <input type="text" id="oqcRef" placeholder="e.g. PM/OQC/2026-001">
     </div>
 
@@ -190,8 +205,8 @@
 
     <button class="add-item-btn" id="addItemBtn">+ Add Item</button>
 
-    <div id="itemsList" style="margin-top:8px;">
-      <p style="font-size:12px;color:var(--muted);text-align:center;padding:6px 0;">No items added yet</p>
+    <div id="itemsList" class="items-list">
+      <p class="items-empty">No items added yet</p>
     </div>
 
   </div>
@@ -222,8 +237,7 @@
   </div>
 </div>
 
-<!-- Sticky footer -->
-<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);z-index:90;">
+<div class="sticky-footer">
   <button class="btn-submit" id="btnSubmit">Issue Gatepass</button>
 </div>
 
@@ -253,13 +267,21 @@ function init() {
     if (_dirty && !confirm('Unsaved changes will be lost. Go back?')) return;
     goHome();
   });
+
   document.getElementById('addItemBtn').addEventListener('click', addItem);
   document.getElementById('btnSubmit').addEventListener('click', submitGatepass);
   document.getElementById('party').addEventListener('change', onPartyChange);
   document.getElementById('material').addEventListener('change', onMaterialChange);
   document.getElementById('matSearch').addEventListener('input', filterMaterials);
 
-  // Dirty tracking on key fields
+  document.getElementById('itemsList').addEventListener('click', function(e) {
+    var btn = e.target.closest('.item-card-remove');
+    if (btn) {
+      e.preventDefault();
+      removeItem(parseInt(btn.dataset.index));
+    }
+  });
+
   ['vehicleNo','driverName','transporter','oqcRef','securityGuard','remarks','date'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('input', markDirty);
@@ -373,7 +395,7 @@ function renderItems() {
 
   var el = document.getElementById('itemsList');
   if (!ITEMS.length) {
-    el.innerHTML = '<p style="font-size:12px;color:var(--muted);text-align:center;padding:6px 0;">No items added yet</p>';
+    el.innerHTML = '<p class="items-empty">No items added yet</p>';
     return;
   }
   el.innerHTML = ITEMS.map(function(item, i) {
@@ -383,13 +405,6 @@ function renderItems() {
       '<div class="item-card-qty">Qty: <b>' + escHtml(item.qty) + ' ' + escHtml(item.unit) + '</b></div>' +
     '</div>';
   }).join('');
-
-  el.querySelectorAll('.item-card-remove').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      removeItem(parseInt(this.dataset.index));
-    });
-  });
 }
 
 function escHtml(str) {

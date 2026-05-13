@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
     body {
@@ -10,42 +13,10 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ── Module tabs sticky below header ── */
-    .type-tabs {
-      display: flex;
-      background: var(--white);
-      border-bottom: 2px solid var(--border);
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      position: sticky;
+    .tab-bar {
       top: 56px;
-      z-index: 90;
-    }
-    .type-tabs::-webkit-scrollbar { display: none; }
-    .type-tab {
-      flex: 1;
-      min-width: 60px;
-      padding: 10px 6px 8px;
-      border: none;
-      border-bottom: 3px solid transparent;
-      background: transparent;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
-      white-space: nowrap;
-      margin-bottom: -2px;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      transition: color 0.15s, border-color 0.15s;
-    }
-    .type-tab.active {
-      color: var(--navy);
-      border-bottom-color: var(--amber);
     }
 
-    /* ── Filter + refresh bar ── */
     .dash-filter {
       display: flex;
       align-items: center;
@@ -68,6 +39,7 @@
       -webkit-appearance: none;
       cursor: pointer;
       flex: 1;
+      transition: border-color 0.15s;
     }
     .dash-filter select:focus { outline: none; border-color: var(--navy); }
     .dash-filter .btn-refresh {
@@ -81,11 +53,11 @@
       cursor: pointer;
       font-family: inherit;
       white-space: nowrap;
+      transition: background 0.15s;
     }
     .dash-filter .btn-refresh:active { background: #0A1450; }
     #lastRefresh { font-size: 10px; color: var(--muted); white-space: nowrap; }
 
-    /* ── Summary cards — 3-wide ── */
     .sum-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -94,9 +66,30 @@
       background: var(--white);
       border-bottom: 1px solid var(--border);
     }
-    /* sum-card, sum-card.total/pass/fail/hold/pending — all from Theme */
 
-    /* ── Recent entries section ── */
+    .sum-card-defect {
+      background: var(--navy);
+      color: var(--white);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .sum-card-defect .sc-num {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--white);
+    }
+    .sum-card-defect .sc-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: rgba(255,255,255,0.75);
+    }
+
     .recent-section {
       padding: 0 10px 80px;
     }
@@ -118,11 +111,9 @@
       color: var(--muted);
     }
 
-    /* ── Record card (recent list) ── */
     .r-card {
       background: var(--white);
       border: 1.5px solid var(--border);
-      border-left: 4px solid var(--navy);
       border-radius: var(--radius);
       padding: 10px 12px;
       margin-bottom: 6px;
@@ -132,12 +123,13 @@
     }
     .r-card:hover  { border-color: var(--navy); box-shadow: var(--shadow-1); }
     .r-card:active { background: #F0F4FF; }
-    .r-card[data-type="GRN"]      { border-left-color: #1D4ED8; }
-    .r-card[data-type="IQC"]      { border-left-color: #0D1B6E; }
-    .r-card[data-type="OQC"]      { border-left-color: #BE185D; }
-    .r-card[data-type="IPQC"]     { border-left-color: #D97706; }
-    .r-card[data-type="GP"]       { border-left-color: #059669; }
-    .r-card[data-type="Gatepass"] { border-left-color: #059669; }
+
+    .r-card[data-type="GRN"]      { background: #EDE9FE22; }
+    .r-card[data-type="IQC"]      { background: #DBEAFE22; }
+    .r-card[data-type="OQC"]      { background: #FCE7F322; }
+    .r-card[data-type="IPQC"]     { background: #FFF3CD22; }
+    .r-card[data-type="GP"],
+    .r-card[data-type="Gatepass"] { background: #DCFCE722; }
 
     .r-top {
       display: flex;
@@ -166,8 +158,7 @@
     }
     .r-inspector { font-size: 10px; color: var(--muted); }
 
-    /* ── Inline detail panel ── */
-    .detail-panel {
+    .rec-detail-panel {
       background: var(--white);
       border-top: 2px solid var(--navy);
       border-radius: 0 0 var(--radius) var(--radius);
@@ -175,8 +166,8 @@
       overflow: hidden;
       display: none;
     }
-    .detail-panel.open { display: block; }
-    .detail-panel-hdr {
+    .rec-detail-panel.open { display: block; }
+    .rec-detail-hdr {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -184,8 +175,8 @@
       background: var(--navy-light);
       border-bottom: 1px solid var(--border);
     }
-    .detail-panel-title { font-size: 12px; font-weight: 700; color: var(--navy); }
-    .detail-close {
+    .rec-detail-title { font-size: 12px; font-weight: 700; color: var(--navy); }
+    .rec-detail-close {
       background: none;
       border: none;
       cursor: pointer;
@@ -194,26 +185,26 @@
       padding: 0 4px;
       font-family: inherit;
     }
-    .detail-grid {
+    .rec-detail-grid {
       display: grid;
       grid-template-columns: 110px 1fr;
       gap: 0;
       padding: 8px 12px;
     }
-    .detail-grid .di-label {
+    .rec-detail-grid .di-label {
       font-size: 11px;
       font-weight: 600;
       color: var(--muted);
       padding: 5px 8px 5px 0;
       border-bottom: 1px solid var(--border);
     }
-    .detail-grid .di-value {
+    .rec-detail-grid .di-value {
       font-size: 12px;
       color: var(--text);
       padding: 5px 0;
       border-bottom: 1px solid var(--border);
     }
-    .detail-actions {
+    .rec-detail-actions {
       display: flex;
       gap: 8px;
       padding: 10px 12px 12px;
@@ -229,7 +220,9 @@
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
+      transition: background 0.15s;
     }
+    .btn-detail-wa:hover { background: #1EBA59; }
     .btn-detail-open {
       background: transparent;
       color: var(--navy);
@@ -240,9 +233,10 @@
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
+      transition: background 0.15s;
     }
+    .btn-detail-open:hover { background: var(--navy-light); }
 
-    /* ── Loading / empty ── */
     .state-box {
       text-align: center;
       padding: 48px 20px;
@@ -254,28 +248,23 @@
 </head>
 <body>
 
-<!-- Header -->
 <div class="pm-header">
-  <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
-  </button>
-  <span class="page-title">QMS Dashboard</span>
-  <span class="doc-badge">Dashboard</span>
+  <div class="logo-box">PM</div>
+  <div class="header-text">
+    <span class="logo-text">QMS Dashboard</span>
+    <span class="logo-sub">Pack Masters</span>
+  </div>
 </div>
 
-<!-- Module tabs -->
-<div class="type-tabs">
-  <button class="type-tab active" data-type="ALL">All</button>
-  <button class="type-tab" data-type="GRN">GRN</button>
-  <button class="type-tab" data-type="IQC">IQC</button>
-  <button class="type-tab" data-type="IPQC">IPQC</button>
-  <button class="type-tab" data-type="OQC">OQC</button>
-  <button class="type-tab" data-type="GP">Gatepass</button>
+<div class="tab-bar" id="typeTabs">
+  <button class="tab-btn active" data-type="ALL">All</button>
+  <button class="tab-btn" data-type="GRN">GRN</button>
+  <button class="tab-btn" data-type="IQC">IQC</button>
+  <button class="tab-btn" data-type="IPQC">IPQC</button>
+  <button class="tab-btn" data-type="OQC">OQC</button>
+  <button class="tab-btn" data-type="GP">Gatepass</button>
 </div>
 
-<!-- Filter / Refresh bar -->
 <div class="dash-filter">
   <select id="fRange">
     <option value="TODAY">Today</option>
@@ -287,20 +276,18 @@
   <span id="lastRefresh"></span>
 </div>
 
-<!-- Summary cards -->
 <div class="sum-row" id="sumRow">
   <div class="sum-card total">  <div class="sc-num" id="cTotal">—</div><div class="sc-lbl">Total</div></div>
   <div class="sum-card pass">   <div class="sc-num" id="cPass">—</div> <div class="sc-lbl">Accepted</div></div>
   <div class="sum-card fail">   <div class="sc-num" id="cFail">—</div> <div class="sc-lbl">Rejected</div></div>
   <div class="sum-card hold">   <div class="sc-num" id="cHold">—</div> <div class="sc-lbl">Hold</div></div>
   <div class="sum-card pending"><div class="sc-num" id="cPend">—</div> <div class="sc-lbl">Pending</div></div>
-  <div class="sum-card total" id="cIPQCCard" style="background:var(--navy);color:#fff;">
-    <div class="sc-num" id="cIPQCRate" style="color:#fff;font-size:28px;">—</div>
-    <div class="sc-lbl" style="color:rgba(255,255,255,0.75);">Defect Rate</div>
+  <div class="sum-card-defect" id="cIPQCCard">
+    <div class="sc-num" id="cIPQCRate">—</div>
+    <div class="sc-lbl">Defect Rate</div>
   </div>
 </div>
 
-<!-- Recent entries -->
 <div class="recent-section">
   <div class="recent-hdr">
     <span class="recent-hdr-title" id="recentTitle">Recent Entries</span>
@@ -314,52 +301,55 @@
   </div>
 </div>
 
-<!-- Inline detail panel (moved by JS next to selected card) -->
-<div class="detail-panel" id="detailPanel">
-  <div class="detail-panel-hdr">
-    <span class="detail-panel-title" id="detailTitle">Detail</span>
-    <button class="detail-close" id="detailClose">✕</button>
+<div class="rec-detail-panel" id="detailPanel">
+  <div class="rec-detail-hdr">
+    <span class="rec-detail-title" id="detailTitle">Detail</span>
+    <button class="rec-detail-close" id="detailClose">✕</button>
   </div>
-  <div class="detail-grid" id="detailGrid"></div>
-  <div class="detail-actions" id="detailActions"></div>
+  <div class="rec-detail-grid" id="detailGrid"></div>
+  <div class="rec-detail-actions" id="detailActions"></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Session bridge ────────────────────────────────────────
 var sessionId = sessionStorage.getItem('dwmSessionId') || '';
 
-// ── State ─────────────────────────────────────────────────
-var allRows   = [];
-var activeTab = 'ALL';
+var allRows    = [];
+var activeTab  = 'ALL';
 var openCardEl = null;
+var currentSlice = [];
 
-// ── Init ──────────────────────────────────────────────────
-document.getElementById('backBtn').addEventListener('click', function() {
-  if (typeof goHome === 'function') goHome();
-});
-document.getElementById('btnRefresh').addEventListener('click', loadData);
-document.getElementById('detailClose').addEventListener('click', closeDetail);
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('btnRefresh').addEventListener('click', loadData);
+  document.getElementById('detailClose').addEventListener('click', closeDetail);
 
-// Tab delegation
-document.querySelector('.type-tabs').addEventListener('click', function(e) {
-  var btn = e.target.closest('.type-tab');
-  if (!btn) return;
-  switchTab(btn.dataset.type);
-});
+  document.getElementById('typeTabs').addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    switchTab(btn.dataset.type);
+  });
 
-// Auto-load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', loadData);
-} else {
+  document.getElementById('recList').addEventListener('click', function(e) {
+    var card = e.target.closest('.r-card');
+    if (!card) return;
+    var idx = parseInt(card.dataset.idx, 10);
+    showDetail(currentSlice[idx], card);
+  });
+
+  document.getElementById('detailActions').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    if (btn.dataset.action === 'wa')   sendWADetail();
+    if (btn.dataset.action === 'open') openFullRecord();
+  });
+
   loadData();
-}
+});
 
-// ── Data load ─────────────────────────────────────────────
 function loadData() {
   document.getElementById('recList').innerHTML =
-    '<div class="state-box"><span class="spinner"></span><div class="msg" style="margin-top:8px;">Loading…</div></div>';
+    '<div class="state-box"><span class="spinner"></span><div class="msg" style="margin-top:8px;">Loading\u2026</div></div>';
   closeDetail();
 
   var range = document.getElementById('fRange').value;
@@ -369,7 +359,7 @@ function loadData() {
       if (!data || !data.rows) {
         var msg = (data && data.error) ? data.error : 'No data. Run Setup from QMS System menu first.';
         document.getElementById('recList').innerHTML =
-          '<div class="state-box"><span class="icon">⚠️</span><div class="msg">' + esc(msg) + '</div></div>';
+          '<div class="state-box"><span class="icon">\u26a0\ufe0f</span><div class="msg">' + esc(msg) + '</div></div>';
         return;
       }
       allRows = data.rows;
@@ -380,7 +370,7 @@ function loadData() {
     })
     .withFailureHandler(function(e) {
       document.getElementById('recList').innerHTML =
-        '<div class="state-box"><span class="icon">⚠️</span><div class="msg">Load error: ' +
+        '<div class="state-box"><span class="icon">\u26a0\ufe0f</span><div class="msg">Load error: ' +
         esc((e && e.message) || String(e)) + '</div></div>';
     })
     .getDashboardData({ type: 'ALL', range: range });
@@ -391,10 +381,9 @@ function loadData() {
     .getIPQCDefectRate();
 }
 
-// ── Tab switch ────────────────────────────────────────────
 function switchTab(type) {
   activeTab = type;
-  document.querySelectorAll('.type-tab').forEach(function(b) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
     b.classList.toggle('active', b.dataset.type === type);
   });
   closeDetail();
@@ -406,11 +395,9 @@ function filteredRows() {
   return allRows.filter(function(r) { return r.type === activeTab; });
 }
 
-// ── Render summary counts ─────────────────────────────────
 function renderCounts(c) {
   if (!c) return;
   var rows = filteredRows();
-  // Recompute from filtered view when tab is not ALL
   if (activeTab !== 'ALL') {
     c = buildCounts(rows);
   }
@@ -443,27 +430,26 @@ function renderIPQCRate(data) {
   }
   var rate = parseFloat(data.rate) || 0;
   el.textContent = data.rate;
-  card.style.background = rate === 0 ? '#10B981' : rate > 5 ? '#D97706' : 'var(--navy)';
+  card.style.background = rate === 0 ? 'var(--success)' : rate > 5 ? 'var(--hold)' : 'var(--navy)';
 }
 
-// ── Render recent list ────────────────────────────────────
 function renderList(rows) {
-  var title = activeTab === 'ALL' ? 'Recent Entries' : activeTab + ' — Recent';
+  var title = activeTab === 'ALL' ? 'Recent Entries' : activeTab + ' \u2014 Recent';
   document.getElementById('recentTitle').textContent = title;
 
-  // Update summary cards when tab changes
   renderCounts(buildCounts(rows));
 
   if (!rows || rows.length === 0) {
     document.getElementById('recentCount').textContent = '';
     document.getElementById('recList').innerHTML =
-      '<div class="state-box"><span class="icon">📭</span>' +
+      '<div class="state-box"><span class="icon">\ud83d\udcad</span>' +
       '<div class="msg">No records for this period</div></div>';
+    currentSlice = [];
     return;
   }
 
-  // Show last 10
   var slice = rows.slice(0, 10);
+  currentSlice = slice;
   document.getElementById('recentCount').textContent = rows.length + ' total, showing ' + slice.length;
 
   var html = '';
@@ -486,17 +472,8 @@ function renderList(rows) {
   });
 
   document.getElementById('recList').innerHTML = html;
-
-  // Event delegation
-  document.getElementById('recList').addEventListener('click', function(e) {
-    var card = e.target.closest('.r-card');
-    if (!card) return;
-    var idx = parseInt(card.dataset.idx, 10);
-    showDetail(slice[idx], card);
-  });
 }
 
-// ── Inline detail panel ───────────────────────────────────
 function showDetail(r, cardEl) {
   if (openCardEl === cardEl) {
     closeDetail();
@@ -504,15 +481,15 @@ function showDetail(r, cardEl) {
   }
   openCardEl = cardEl;
 
-  var panel = document.getElementById('detailPanel');
-  var d = r.detail || {};
+  var panel    = document.getElementById('detailPanel');
+  var d        = r.detail || {};
   var dispType = r.type === 'GP' ? 'Gatepass' : r.type;
 
   document.getElementById('detailTitle').innerHTML =
     '<span class="badge badge-' + (r.type || '').toLowerCase() + '">' + esc(dispType) + '</span> ' +
     esc(r.docNo);
 
-  var items = buildDetailItems(r, d);
+  var items    = buildDetailItems(r, d);
   var gridHtml = '';
   items.forEach(function(item) {
     var val = (item[1] !== undefined && item[1] !== null && item[1] !== '') ? item[1] : '—';
@@ -525,12 +502,11 @@ function showDetail(r, cardEl) {
   var actHtml = '';
   if (r.type !== 'IPQC') {
     actHtml +=
-      '<button class="btn-detail-wa" onclick="sendWADetail()">Send WhatsApp</button>' +
-      '<button class="btn-detail-open" onclick="openFullRecord()">Open Record</button>';
+      '<button class="btn-detail-wa" data-action="wa">Send WhatsApp</button>' +
+      '<button class="btn-detail-open" data-action="open">Open Record</button>';
   }
   document.getElementById('detailActions').innerHTML = actHtml;
 
-  // Insert panel right after the clicked card
   cardEl.parentNode.insertBefore(panel, cardEl.nextSibling);
   panel.classList.add('open');
   panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -560,18 +536,18 @@ function buildDetailItems(r, d) {
     ];
   } else if (r.type === 'IQC') {
     return [
-      ['IQC No.',    d.iqcNo    || r.docNo],
-      ['GRN Ref',    d.grnRef],
-      ['Date',       r.date],
-      ['Supplier',   d.supplier || r.party],
-      ['Material',   d.material || r.material],
-      ['Batch',      d.batch    || r.batch],
-      ['Inspector',  d.inspector|| r.inspector],
-      ['Sample Size',d.sampleSize],
-      ['Disposition',statusBadge(d.disposition)],
-      ['Accepted Qty',d.acceptedQty !== undefined ? d.acceptedQty : '—'],
-      ['Rejected Qty',d.rejectedQty !== undefined ? d.rejectedQty : '—'],
-      ['Remarks',    d.remarks  || '—']
+      ['IQC No.',      d.iqcNo    || r.docNo],
+      ['GRN Ref',      d.grnRef],
+      ['Date',         r.date],
+      ['Supplier',     d.supplier || r.party],
+      ['Material',     d.material || r.material],
+      ['Batch',        d.batch    || r.batch],
+      ['Inspector',    d.inspector|| r.inspector],
+      ['Sample Size',  d.sampleSize],
+      ['Disposition',  statusBadge(d.disposition)],
+      ['Accepted Qty', d.acceptedQty !== undefined ? d.acceptedQty : '—'],
+      ['Rejected Qty', d.rejectedQty !== undefined ? d.rejectedQty : '—'],
+      ['Remarks',      d.remarks  || '—']
     ];
   } else if (r.type === 'OQC') {
     return [
@@ -587,38 +563,36 @@ function buildDetailItems(r, d) {
     ];
   } else if (r.type === 'IPQC') {
     return [
-      ['Session',    d.sessionId  || r.docNo],
-      ['Product',    d.productName|| r.material],
-      ['Batch',      d.batch      || r.batch],
-      ['Inspector',  d.inspector  || r.inspector],
-      ['Line',       d.line       || '—'],
-      ['Rounds',     d.rounds     || '—'],
-      ['Start',      d.startTime  || '—'],
-      ['End',        d.endTime    || '—'],
+      ['Session',    d.sessionId   || r.docNo],
+      ['Product',    d.productName || r.material],
+      ['Batch',      d.batch       || r.batch],
+      ['Inspector',  d.inspector   || r.inspector],
+      ['Line',       d.line        || '—'],
+      ['Rounds',     d.rounds      || '—'],
+      ['Start',      d.startTime   || '—'],
+      ['End',        d.endTime     || '—'],
       ['Status',     statusBadge(r.status)]
     ];
   } else if (r.type === 'GP') {
     return [
-      ['Gatepass No.', d.gpNo     || r.docNo],
-      ['Date',         r.date],
-      ['Dispatch Type',d.dispatchType],
-      ['Party',        d.party    || r.party],
-      ['Material',     d.materialDesc || r.material],
-      ['Qty',          d.qty],
-      ['Vehicle No.',  d.vehicleNo|| '—'],
-      ['Authorized By',d.authorizedBy || '—'],
-      ['Status',       statusBadge(r.status)]
+      ['Gatepass No.',  d.gpNo     || r.docNo],
+      ['Date',          r.date],
+      ['Dispatch Type', d.dispatchType],
+      ['Party',         d.party    || r.party],
+      ['Material',      d.materialDesc || r.material],
+      ['Qty',           d.qty],
+      ['Vehicle No.',   d.vehicleNo|| '—'],
+      ['Authorized By', d.authorizedBy || '—'],
+      ['Status',        statusBadge(r.status)]
     ];
   }
   return [['Doc No.', r.docNo], ['Date', r.date], ['Status', statusBadge(r.status)]];
 }
 
-// ── Actions ───────────────────────────────────────────────
 function openFullRecord() {
   if (!openCardEl) return;
-  var idx  = parseInt(openCardEl.dataset.idx, 10);
-  var rows = filteredRows().slice(0, 10);
-  var r    = rows[idx];
+  var idx = parseInt(openCardEl.dataset.idx, 10);
+  var r   = currentSlice[idx];
   if (!r) return;
   var docType = r.type === 'GP' ? 'Gatepass' : r.type;
   google.script.run
@@ -633,30 +607,33 @@ function openFullRecord() {
 
 function sendWADetail() {
   if (!openCardEl) return;
-  var idx  = parseInt(openCardEl.dataset.idx, 10);
-  var rows = filteredRows().slice(0, 10);
-  var r    = rows[idx];
+  var idx = parseInt(openCardEl.dataset.idx, 10);
+  var r   = currentSlice[idx];
   if (!r) return;
   var rec = {
     type: r.type, docNo: r.docNo, date: r.date,
     supplier: r.party, material: r.material, batch: r.batch,
     inspector: r.inspector, status: r.status,
-    disposition: r.status, releaseDecision: r.status, customer: r.party, batchPO: r.batch,
-    grnNo: r.detail && r.detail.grnRef, ncrRef: r.detail && r.detail.ncrRef
+    disposition: r.status, releaseDecision: r.status,
+    customer: r.party, batchPO: r.batch,
+    grnNo: r.detail && r.detail.grnRef,
+    ncrRef: r.detail && r.detail.ncrRef
   };
   google.script.run
     .withSuccessHandler(function(url) { window.open(url, '_blank'); })
+    .withFailureHandler(function(err) {
+      showToast('WhatsApp error: ' + ((err && err.message) || String(err)), 'error');
+    })
     .getWhatsAppURLForRecord(rec);
 }
 
-// ── Helpers ───────────────────────────────────────────────
 function statusBadge(s) {
   if (!s) s = 'PENDING';
-  var su = s.toUpperCase();
+  var su  = s.toUpperCase();
   var cls = (su === 'ACCEPTED' || su === 'RELEASED' || su === 'CLOSED') ? 'pass' :
-            su === 'REJECTED'    ? 'fail' :
-            su === 'HOLD'        ? 'hold' :
-            (su === 'ISSUED' || su === 'OPEN') ? 'awd' : 'pending';
+             su === 'REJECTED'                                           ? 'fail' :
+             su === 'HOLD'                                               ? 'hold' :
+            (su === 'ISSUED'   || su === 'OPEN')                        ? 'awd'  : 'pending';
   return '<span class="badge badge-' + cls + '">' + esc(s) + '</span>';
 }
 

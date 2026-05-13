@@ -9,9 +9,6 @@
 <script>var __DWM_SCRIPT_URL__ = '<?!= scriptUrl ?>';</script>
 <?!= include('DwmTheme') ?>
 <style>
-/* ── Dashboard-specific overrides ── */
-
-/* Header action buttons */
 .dh {
   position: sticky; top: 0; z-index: 100;
   background: var(--navy); color: #fff;
@@ -36,145 +33,111 @@
   transition: background 0.15s;
 }
 .dh-actions button:hover { background: rgba(255,255,255,0.25); }
-.dh-actions button:active { background: rgba(255,255,255,0.35); }
 
-/* ── 2-Tab bar (sits under sticky header) ── */
-.ktabs {
+/* ── 4-Tab bar ── */
+.tab-bar {
   display: flex; background: #fff;
   border-bottom: 2px solid var(--border);
   position: sticky; top: 52px; z-index: 90;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
 }
-.ktab {
-  flex: 1; text-align: center; padding: 10px 6px 8px;
-  font-size: 13px; font-weight: 700; cursor: pointer;
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 1; min-width: 72px; text-align: center; padding: 10px 4px 8px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
   background: transparent; color: var(--muted);
   border: none; border-bottom: 3px solid transparent;
   margin-bottom: -2px; transition: all 0.15s;
-  font-family: inherit;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  font-family: inherit; white-space: nowrap;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.ktab.active { color: var(--navy); border-bottom-color: var(--amber); }
-.ktab .kcount {
-  display: inline-block; padding: 1px 6px; border-radius: 10px;
-  font-size: 10px; font-weight: 600; margin-left: 4px;
+.tab-btn.active { color: var(--navy); border-bottom-color: var(--amber); }
+.tab-count {
+  display: inline-block; padding: 1px 5px; border-radius: 10px;
+  font-size: 10px; font-weight: 600; margin-left: 3px;
   background: var(--navy-light); color: var(--navy);
 }
-.ktab.active .kcount { background: #FFF3CD; color: #92600A; }
+.tab-btn.active .tab-count { background: #FFF3CD; color: #92600A; }
 
-/* ── Filter chips (sticky below tab bar) ── */
-.chip-bar {
-  display: flex; gap: 6px; padding: 8px 12px;
+/* ── Filter chips (inline below tab bar) ── */
+.filter-row {
+  display: flex; gap: 6px; padding: 7px 12px;
   background: #fff; border-bottom: 1px solid var(--border);
   overflow-x: auto; -webkit-overflow-scrolling: touch;
   position: sticky; top: 94px; z-index: 89;
 }
-.chip-bar::-webkit-scrollbar { display: none; }
+.filter-row::-webkit-scrollbar { display: none; }
 .chip {
-  flex-shrink: 0; padding: 5px 12px; border-radius: 20px;
-  font-size: 12px; font-weight: 600; cursor: pointer;
+  flex-shrink: 0; padding: 4px 11px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
   border: 1.5px solid var(--border); background: #fff; color: var(--muted);
   font-family: inherit; transition: all 0.15s;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
-.chip.overdue-chip.active { background: var(--danger); border-color: var(--danger); }
-
-/* ── Date filter (completed tab) ── */
-.date-filter {
-  display: flex; gap: 6px; padding: 8px 12px;
-  background: #fff; border-bottom: 1px solid var(--border);
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  position: sticky; top: 94px; z-index: 89;
-  align-items: center;
+.chip.overdue.active { background: var(--danger); border-color: var(--danger); }
+.df-custom {
+  border: 1.5px solid var(--border); border-radius: 6px;
+  padding: 4px 8px; font-size: 11px; font-family: inherit;
+  color: var(--text); background: #fff; outline: none; display: none;
 }
-.date-filter::-webkit-scrollbar { display: none; }
-.df-chip {
-  flex-shrink: 0; padding: 5px 12px; border-radius: 20px;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  border: 1.5px solid var(--border); background: #fff; color: var(--muted);
-  font-family: inherit; transition: all 0.15s;
+.df-custom.visible { display: block; }
+.df-custom:focus { border-color: var(--navy); }
+
+/* ── Category group header ── */
+.grp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--navy-light); padding: 6px 12px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  color: var(--navy); letter-spacing: 0.5px; cursor: pointer;
+  border-bottom: 1px solid var(--border); user-select: none;
+}
+.grp-header .grp-toggle { font-size: 10px; opacity: 0.6; }
+.grp-body { overflow: hidden; transition: max-height 0.2s ease; }
+.grp-body.collapsed { max-height: 0 !important; }
+
+/* ── Task row ── */
+.task-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  background: #fff; cursor: pointer; min-height: 0;
+  transition: background 0.1s;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.df-chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
-.df-custom-input {
-  border: 1.5px solid var(--border); border-radius: 6px;
-  padding: 5px 8px; font-size: 12px; font-family: inherit;
-  color: var(--text); background: #fff; outline: none;
-  display: none;
-}
-.df-custom-input.visible { display: block; }
-.df-custom-input:focus { border-color: var(--navy); }
+.task-row:active { background: #F0F4FF; }
+.task-row.done-row { opacity: 0.7; }
 
-/* ── Task card ── */
-.tk-card {
-  display: flex; background: #fff;
-  border-bottom: 1px solid var(--border);
-  min-height: 64px; cursor: pointer;
-  transition: background 0.1s;
-  position: relative;
+/* Priority dot */
+.prio-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
 }
-.tk-card:active { background: #F0F4FF; }
-.tk-card.done-card { opacity: 0.72; }
+.dot-high   { background: var(--danger); }
+.dot-medium { background: var(--amber); }
+.dot-low    { background: #D1D5DB; }
 
-/* Left priority stripe */
-.tk-stripe {
-  width: 4px; flex-shrink: 0; border-radius: 0;
-  align-self: stretch;
-}
-.stripe-high   { background: var(--danger); }
-.stripe-medium { background: var(--amber); }
-.stripe-low    { background: #D1D5DB; }
-
-/* Card body */
-.tk-body { flex: 1; min-width: 0; padding: 10px 8px 10px 10px; }
-.tk-title {
+/* Row title */
+.row-title {
   font-size: 13px; font-weight: 600; color: var(--text);
-  line-height: 1.4; margin-bottom: 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex-shrink: 1; min-width: 0; flex: 1;
 }
-.tk-title.done-text { text-decoration: line-through; color: var(--muted); }
-.tk-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.row-title.done-text { text-decoration: line-through; color: var(--muted); }
 
-/* Meta chips */
+/* Row meta group */
+.row-meta {
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  overflow: hidden;
+}
 .mc {
-  display: inline-block; font-size: 11px; font-weight: 500;
-  padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+  display: inline-block; font-size: 10px; font-weight: 500;
+  padding: 2px 5px; border-radius: 4px; white-space: nowrap;
 }
-.mc-proj { background: var(--navy-light); color: var(--navy); }
-.mc-cat  { background: #F3F4F6; color: var(--muted); }
+.mc-proj     { background: var(--navy-light); color: var(--navy); }
+.mc-cat      { background: #F3F4F6; color: var(--muted); }
 .mc-assignee { background: #F0FDF4; color: #166534; }
-.mc-elapsed  { font-size: 11px; font-weight: 700; color: var(--danger); font-variant-numeric: tabular-nums; }
-
-/* Status chip */
-.s-chip {
-  font-size: 11px; font-weight: 700; padding: 3px 7px;
-  border-radius: 5px; white-space: nowrap; flex-shrink: 0;
-  margin-left: 2px; align-self: flex-start; margin-top: 10px;
-}
-.sc-open        { background: #F3F4F6; color: var(--muted); }
-.sc-in_progress { background: #DBEAFE; color: #1E40AF; }
-.sc-not_done    { background: #FEE2E2; color: #991B1B; }
-.sc-done        { background: #DCFCE7; color: #166534; }
-
-/* Completion time */
-.tk-done-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
-
-/* ── Card right gutter ── */
-.tk-right {
-  display: flex; flex-direction: column; align-items: flex-end;
-  justify-content: space-between; padding: 10px 10px 10px 4px; flex-shrink: 0;
-}
-.due-badge {
-  font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px;
-  white-space: nowrap;
-}
-.due-overdue { background: #FEE2E2; color: #991B1B; }
-.due-today   { background: #FEF3C7; color: #92400E; }
-.due-future  { background: #F3F4F6; color: var(--muted); }
-
-/* ── Board container ── */
-#board { min-height: 200px; }
+.mc-due-over { background: #FEE2E2; color: #991B1B; font-weight: 600; }
+.mc-due-today{ background: #FEF3C7; color: #92400E; font-weight: 600; }
+.mc-elapsed  { font-size: 10px; font-weight: 700; color: var(--danger); font-variant-numeric: tabular-nums; }
 
 /* ── Loading / empty ── */
 .ld-center {
@@ -216,112 +179,118 @@
 }
 .fab:active { transform: scale(0.94); }
 
-/* ── Optimistic update flash ── */
-@keyframes flash-green {
+@keyframes flash-ok {
   0% { background: #D1FAE5; }
   100% { background: #fff; }
 }
-.flash-ok { animation: flash-green 0.6s ease; }
+.flash-ok { animation: flash-ok 0.6s ease; }
 </style>
 </head>
 <body>
 
-<!-- ── HEADER ── -->
+<!-- HEADER -->
 <div class="dh">
   <div class="dh-left">
     <span class="dh-name" id="dName">…</span>
     <span class="dh-role" id="dRole"></span>
   </div>
   <div class="dh-actions">
-    <button id="adminBtn" onclick="dwmGoto('admin')" style="display:none" title="Admin">⚙</button>
-    <button onclick="loadFull()" title="Refresh" id="refreshBtn">↻</button>
-    <button onclick="onLogout()" title="Logout">⏻</button>
+    <button id="adminBtn" style="display:none" title="Admin" id="adminBtn">⚙</button>
+    <button id="refreshBtn" title="Refresh">↻</button>
+    <button id="logoutBtn" title="Logout">⏻</button>
   </div>
 </div>
 
-<!-- ── 2-TAB BAR ── -->
-<div class="ktabs" id="ktabs">
-  <button class="ktab active" data-tab="open" id="tab-open" onclick="switchTab('open')">
-    Open <span class="kcount" id="kc-open">0</span>
-  </button>
-  <button class="ktab" data-tab="done" id="tab-done" onclick="switchTab('done')">
-    Completed <span class="kcount" id="kc-done">0</span>
-  </button>
+<!-- 4-TAB BAR -->
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-tab="active">Active <span class="tab-count" id="tc-active">0</span></button>
+  <button class="tab-btn" data-tab="open">Open <span class="tab-count" id="tc-open">0</span></button>
+  <button class="tab-btn" data-tab="done">Done <span class="tab-count" id="tc-done">0</span></button>
+  <button class="tab-btn" data-tab="blocked">Blocked <span class="tab-count" id="tc-blocked">0</span></button>
 </div>
 
-<!-- ── FILTER BAR (Open tab) ── -->
-<div class="chip-bar" id="chipBar">
-  <button class="chip active" data-filter="all"     onclick="setFilter('all')">All</button>
-  <button class="chip"        data-filter="mine"    onclick="setFilter('mine')">Mine</button>
-  <button class="chip overdue-chip" data-filter="overdue" onclick="setFilter('overdue')">Overdue</button>
+<!-- FILTER ROW (Active / Open tabs) -->
+<div class="filter-row" id="filterRow">
+  <button class="chip active" data-filter="all">All</button>
+  <button class="chip" data-filter="mine">Mine</button>
+  <button class="chip overdue" data-filter="overdue">Overdue</button>
 </div>
 
-<!-- ── DATE FILTER (Completed tab, hidden initially) ── -->
-<div class="date-filter" id="dateFilter" style="display:none">
-  <button class="df-chip active" data-df="today"    onclick="setDateFilter('today')">Today</button>
-  <button class="df-chip"        data-df="week"     onclick="setDateFilter('week')">This Week</button>
-  <button class="df-chip"        data-df="custom"   onclick="setDateFilter('custom')">Custom</button>
-  <input  class="df-custom-input" id="customDate" type="date" onchange="onCustomDate(this.value)">
+<!-- DATE FILTER ROW (Done tab) -->
+<div class="filter-row" id="dateRow" style="display:none">
+  <button class="chip active" data-df="today">Today</button>
+  <button class="chip" data-df="week">This Week</button>
+  <button class="chip" data-df="custom">Custom</button>
+  <input class="df-custom" id="customDate" type="date">
 </div>
 
-<!-- ── BOARD ── -->
+<!-- BOARD -->
 <div id="board">
-  <div class="ld-center">
-    <div class="ld-spin"></div>
-    <span>Loading…</span>
-  </div>
+  <div class="ld-center"><div class="ld-spin"></div><span>Loading…</span></div>
 </div>
 
-<!-- ── FAB ── -->
-<button class="fab" onclick="newTask()">+</button>
+<!-- FAB -->
+<button class="fab" id="fabBtn">+</button>
 
 <script>
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // STATE
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 var S = {
   me: {}, projects: [], categories: [],
-  shared: [], own: [],           // all tasks from server
-  activeTimer: null,             // { logId, taskId, startTime }
-  tab: 'open',                   // 'open' | 'done'
-  filter: 'all',                 // 'all' | 'mine' | 'overdue'
-  dateFilter: 'today',           // 'today' | 'week' | 'custom'
-  customDate: '',                // yyyy-MM-dd when dateFilter=custom
+  shared: [], own: [],
+  activeTimer: null,
+  tab: 'active',
+  filter: 'all',
+  dateFilter: 'today',
+  customDate: '',
   page: 1,
-  pageSize: 50
+  pageSize: 50,
+  collapsed: {}   // grpKey → true
 };
 
 var tickInterval = null;
-var PRIO = { high: 0, medium: 1, low: 2 };
+var PRIO_ORDER = { high: 0, medium: 1, low: 2 };
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // BOOT
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 window.addEventListener('load', function () {
   if (!dwmGetSession()) { dwmGoto('login'); return; }
-  // Restore cached header
+
   var n = localStorage.getItem('dwmUserName');
   var r = localStorage.getItem('dwmUserRole');
   if (n) document.getElementById('dName').textContent = n;
   if (r) { document.getElementById('dRole').textContent = r; setAdminBtn(r); }
+
+  document.getElementById('tabBar').addEventListener('click', onTabClick);
+  document.getElementById('filterRow').addEventListener('click', onFilterClick);
+  document.getElementById('dateRow').addEventListener('click', onDateChipClick);
+  document.getElementById('customDate').addEventListener('change', onCustomDate);
+  document.getElementById('refreshBtn').addEventListener('click', loadFull);
+  document.getElementById('logoutBtn').addEventListener('click', onLogout);
+  document.getElementById('adminBtn').addEventListener('click', function () { dwmGoto('admin'); });
+  document.getElementById('fabBtn').addEventListener('click', newTask);
+  document.getElementById('board').addEventListener('click', onBoardClick);
+
   loadFull();
 });
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // DATA LOAD
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function loadFull() {
   var sid = dwmGetSession();
   if (!sid) { dwmGoto('login'); return; }
   var btn = document.getElementById('refreshBtn');
-  if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+  btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none';
   document.getElementById('board').innerHTML =
     '<div class="ld-center"><div class="ld-spin"></div><span>Loading…</span></div>';
 
   google.script.run
     .withSuccessHandler(onData)
     .withFailureHandler(function (e) {
-      if (btn) { btn.style.opacity = ''; btn.style.pointerEvents = ''; }
+      btn.style.opacity = ''; btn.style.pointerEvents = '';
       dwmShowToast('Connection error', 'error');
       console.error(e);
     })
@@ -330,7 +299,7 @@ function loadFull() {
 
 function onData(d) {
   var btn = document.getElementById('refreshBtn');
-  if (btn) { btn.style.opacity = ''; btn.style.pointerEvents = ''; }
+  btn.style.opacity = ''; btn.style.pointerEvents = '';
 
   if (d.status !== 'success') {
     if (d.message && d.message.indexOf('Session expired') >= 0) {
@@ -338,7 +307,7 @@ function onData(d) {
     }
     dwmShowToast(d.message || 'Error loading data', 'error');
     document.getElementById('board').innerHTML =
-      '<div class="ld-center"><span>' + dwmEscape(d.message || 'Error') + '</span></div>';
+      '<div class="ld-center"><span>' + esc(d.message || 'Error') + '</span></div>';
     return;
   }
 
@@ -362,317 +331,297 @@ function onData(d) {
   renderBoard();
 }
 
-// ═══════════════════════════════════════════════════════════
-// TAB & FILTER SWITCHING
-// ═══════════════════════════════════════════════════════════
-function switchTab(tab) {
+// ═══════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════
+function onTabClick(e) {
+  var btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  var tab = btn.dataset.tab;
+  if (!tab || tab === S.tab) return;
   S.tab = tab;
   S.page = 1;
-  // Update tab buttons
-  document.querySelectorAll('.ktab').forEach(function (el) {
+  document.querySelectorAll('.tab-btn').forEach(function (el) {
     el.classList.toggle('active', el.dataset.tab === tab);
   });
-  // Show/hide filter bars
-  document.getElementById('chipBar').style.display   = (tab === 'open') ? '' : 'none';
-  document.getElementById('dateFilter').style.display = (tab === 'done') ? '' : 'none';
+  var showFilter = (tab === 'active' || tab === 'open');
+  var showDate   = (tab === 'done');
+  document.getElementById('filterRow').style.display = showFilter ? '' : 'none';
+  document.getElementById('dateRow').style.display   = showDate   ? '' : 'none';
   renderBoard();
 }
 
-function setFilter(f) {
-  S.filter = f;
+function onFilterClick(e) {
+  var btn = e.target.closest('.chip');
+  if (!btn || !btn.dataset.filter) return;
+  S.filter = btn.dataset.filter;
   S.page = 1;
-  document.querySelectorAll('.chip').forEach(function (el) {
-    el.classList.toggle('active', el.dataset.filter === f);
+  document.querySelectorAll('#filterRow .chip').forEach(function (el) {
+    el.classList.toggle('active', el.dataset.filter === S.filter);
   });
   renderBoard();
 }
 
-function setDateFilter(df) {
-  S.dateFilter = df;
+function onDateChipClick(e) {
+  var btn = e.target.closest('.chip');
+  if (!btn || !btn.dataset.df) return;
+  S.dateFilter = btn.dataset.df;
   S.page = 1;
-  document.querySelectorAll('.df-chip').forEach(function (el) {
-    el.classList.toggle('active', el.dataset.df === df);
+  document.querySelectorAll('#dateRow .chip').forEach(function (el) {
+    el.classList.toggle('active', el.dataset.df === S.dateFilter);
   });
   var ci = document.getElementById('customDate');
-  ci.classList.toggle('visible', df === 'custom');
-  if (df !== 'custom') renderBoard();
+  ci.classList.toggle('visible', S.dateFilter === 'custom');
+  if (S.dateFilter !== 'custom') renderBoard();
 }
 
-function onCustomDate(val) {
-  S.customDate = val;
+function onCustomDate(e) {
+  S.customDate = e.target.value;
   S.page = 1;
-  if (val) renderBoard();
+  if (S.customDate) renderBoard();
 }
 
-// ═══════════════════════════════════════════════════════════
+function onBoardClick(e) {
+  // Group header collapse toggle
+  var grp = e.target.closest('.grp-header');
+  if (grp) {
+    var key = grp.dataset.grp;
+    S.collapsed[key] = !S.collapsed[key];
+    var body = document.querySelector('.grp-body[data-grp="' + key + '"]');
+    if (body) body.classList.toggle('collapsed', !!S.collapsed[key]);
+    var tog = grp.querySelector('.grp-toggle');
+    if (tog) tog.textContent = S.collapsed[key] ? '▶' : '▼';
+    return;
+  }
+  // Task row tap
+  var row = e.target.closest('.task-row');
+  if (row && row.dataset.taskId) onRowTap(row.dataset.taskId);
+}
+
+// ═══════════════════════════════════════════════
 // COUNTS
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function updateCounts() {
-  var all = S.own.concat(S.shared);
-
-  // Open tab = open + in_progress + not_done
-  var openCount = all.filter(function (t) {
-    return t.status === 'open' || t.status === 'in_progress' || t.status === 'not_done';
-  }).length;
-
-  // Done tab = done tasks (server already filters to today via getDashboardFull)
-  var doneCount = all.filter(function (t) { return t.status === 'done'; }).length;
-
-  document.getElementById('kc-open').textContent = openCount > 0 ? openCount : '0';
-  document.getElementById('kc-done').textContent = doneCount > 0 ? doneCount : '0';
+  var all = allTasks();
+  document.getElementById('tc-active').textContent  = all.filter(function (t) { return t.status === 'in_progress'; }).length;
+  document.getElementById('tc-open').textContent    = all.filter(function (t) { return t.status === 'open'; }).length;
+  document.getElementById('tc-done').textContent    = all.filter(function (t) { return t.status === 'done'; }).length;
+  document.getElementById('tc-blocked').textContent = all.filter(function (t) { return t.status === 'not_done'; }).length;
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // RENDER
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function renderBoard() {
   stopTick();
-  S.tab === 'open' ? renderOpen() : renderDone();
-}
+  var tab = S.tab;
+  var all = allTasks();
+  var tasks;
 
-/* ── OPEN TAB ── */
-function renderOpen() {
-  var all = S.own.concat(S.shared);
+  if (tab === 'active')  tasks = all.filter(function (t) { return t.status === 'in_progress'; });
+  else if (tab === 'open')    tasks = all.filter(function (t) { return t.status === 'open'; });
+  else if (tab === 'done')    tasks = all.filter(function (t) { return t.status === 'done'; });
+  else                        tasks = all.filter(function (t) { return t.status === 'not_done'; });
 
-  // Status filter: open + in_progress + not_done
-  var tasks = all.filter(function (t) {
-    return t.status === 'open' || t.status === 'in_progress' || t.status === 'not_done';
-  });
-
-  // Chip filter
-  if (S.filter === 'mine') {
-    tasks = tasks.filter(function (t) { return t.assignedTo === S.me.userId; });
-  } else if (S.filter === 'overdue') {
-    var today = todayStr();
-    tasks = tasks.filter(function (t) { return t.dueDate && t.dueDate < today; });
+  // Chip filter for active/open
+  if (tab === 'active' || tab === 'open') {
+    if (S.filter === 'mine') {
+      tasks = tasks.filter(function (t) { return t.assignedTo === S.me.userId; });
+    } else if (S.filter === 'overdue') {
+      var today = todayStr();
+      tasks = tasks.filter(function (t) { return t.dueDate && t.dueDate < today; });
+    }
   }
 
-  // Sort: in_progress first, then not_done (blocked), then open; within group by priority asc
+  // Date filter for done
+  if (tab === 'done') {
+    var td = todayStr();
+    if (S.dateFilter === 'today') {
+      tasks = tasks.filter(function (t) { return (t.updatedAt || '').substring(0, 10) === td; });
+    } else if (S.dateFilter === 'week') {
+      var wa = weekAgoStr();
+      tasks = tasks.filter(function (t) {
+        var d = (t.updatedAt || '').substring(0, 10);
+        return d >= wa && d <= td;
+      });
+    } else if (S.dateFilter === 'custom' && S.customDate) {
+      tasks = tasks.filter(function (t) {
+        return (t.updatedAt || '').substring(0, 10) === S.customDate;
+      });
+    }
+  }
+
+  // Sort
   tasks.sort(function (a, b) {
-    var ao = statusOrder(a.status), bo = statusOrder(b.status);
-    if (ao !== bo) return ao - bo;
-    return (PRIO[a.priority] || 1) - (PRIO[b.priority] || 1);
+    if (tab === 'done') return (b.updatedAt || '') > (a.updatedAt || '') ? 1 : -1;
+    return (PRIO_ORDER[a.priority] || 1) - (PRIO_ORDER[b.priority] || 1);
   });
 
   if (!tasks.length) {
-    document.getElementById('board').innerHTML =
-      '<div class="ld-center"><span style="font-size:32px;margin-bottom:4px">✓</span>' +
-      '<span>' + filterEmptyMsg() + '</span></div>';
+    document.getElementById('board').innerHTML = emptyHtml(tab);
     return;
   }
 
+  // Pagination for done
   var html = '';
-  tasks.forEach(function (t) { html += cardHtml(t, false); });
+  if (tab === 'done') {
+    var total  = tasks.length;
+    var pages  = Math.ceil(total / S.pageSize);
+    var start  = (S.page - 1) * S.pageSize;
+    var slice  = tasks.slice(start, start + S.pageSize);
+    // Group by date for done tab
+    html = renderGrouped(slice, function (t) { return (t.updatedAt || '').substring(0, 10) || 'Unknown'; }, true);
+    if (pages > 1) {
+      html += '<div class="pagination">';
+      html += '<button class="pg-btn" data-pg="-1"' + (S.page <= 1 ? ' disabled' : '') + '>← Prev</button>';
+      html += '<span class="pg-info">Page ' + S.page + ' / ' + pages + ' (' + total + ')</span>';
+      html += '<button class="pg-btn" data-pg="1"' + (S.page >= pages ? ' disabled' : '') + '>Next →</button>';
+      html += '</div>';
+    }
+  } else {
+    // Group by category
+    html = renderGrouped(tasks, function (t) { return cname(t.categoryId) || 'Uncategorised'; }, tab === 'done');
+  }
+
   document.getElementById('board').innerHTML = html;
-  startTick();
-}
 
-function statusOrder(s) {
-  if (s === 'in_progress') return 0;
-  if (s === 'not_done')    return 1;
-  return 2; // open
-}
+  // Restore collapse state
+  Object.keys(S.collapsed).forEach(function (key) {
+    if (!S.collapsed[key]) return;
+    var body = document.querySelector('.grp-body[data-grp="' + key + '"]');
+    var hdr  = document.querySelector('.grp-header[data-grp="' + key + '"]');
+    if (body) body.classList.add('collapsed');
+    if (hdr) { var tog = hdr.querySelector('.grp-toggle'); if (tog) tog.textContent = '▶'; }
+  });
 
-function filterEmptyMsg() {
-  if (S.filter === 'mine')    return 'No tasks assigned to you';
-  if (S.filter === 'overdue') return 'Nothing overdue';
-  return 'No open tasks';
-}
-
-/* ── COMPLETED TAB ── */
-function renderDone() {
-  var all = S.own.concat(S.shared);
-  var tasks = all.filter(function (t) { return t.status === 'done'; });
-
-  // Date filter
-  var today = todayStr();
-  if (S.dateFilter === 'today') {
-    tasks = tasks.filter(function (t) { return isDateToday(t.updatedAt); });
-  } else if (S.dateFilter === 'week') {
-    var weekAgo = weekAgoStr();
-    tasks = tasks.filter(function (t) {
-      var d = (t.updatedAt || '').substring(0, 10);
-      return d >= weekAgo && d <= today;
+  // Pagination click
+  document.querySelectorAll('.pg-btn[data-pg]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      S.page += parseInt(btn.dataset.pg, 10);
+      renderBoard();
+      window.scrollTo(0, 0);
     });
-  } else if (S.dateFilter === 'custom' && S.customDate) {
-    tasks = tasks.filter(function (t) {
-      return (t.updatedAt || '').substring(0, 10) === S.customDate;
-    });
-  }
+  });
 
-  // Sort by updatedAt desc
-  tasks.sort(function (a, b) { return (b.updatedAt || '') > (a.updatedAt || '') ? 1 : -1; });
+  if (tab === 'active') startTick();
+}
 
-  if (!tasks.length) {
-    document.getElementById('board').innerHTML =
-      '<div class="ld-center"><span style="font-size:32px;margin-bottom:4px">📋</span>' +
-      '<span>No completed tasks for this period</span></div>';
-    return;
-  }
-
-  // Pagination
-  var total  = tasks.length;
-  var pages  = Math.ceil(total / S.pageSize);
-  var start  = (S.page - 1) * S.pageSize;
-  var slice  = tasks.slice(start, start + S.pageSize);
+function renderGrouped(tasks, keyFn, isDone) {
+  var groups = {};
+  var order  = [];
+  tasks.forEach(function (t) {
+    var k = keyFn(t);
+    if (!groups[k]) { groups[k] = []; order.push(k); }
+    groups[k].push(t);
+  });
 
   var html = '';
-  slice.forEach(function (t) { html += cardHtml(t, true); });
-
-  // Pagination controls
-  if (pages > 1) {
-    html += '<div class="pagination">';
-    html += '<button class="pg-btn" onclick="changePage(-1)"' + (S.page <= 1 ? ' disabled' : '') + '>← Prev</button>';
-    html += '<span class="pg-info">Page ' + S.page + ' / ' + pages + ' (' + total + ' tasks)</span>';
-    html += '<button class="pg-btn" onclick="changePage(1)"' + (S.page >= pages ? ' disabled' : '') + '>Next →</button>';
+  order.forEach(function (key) {
+    var rows = groups[key];
+    var collapsed = !!S.collapsed[key];
+    html += '<div class="grp-header" data-grp="' + esc(key) + '">';
+    html += esc(key) + ' <span style="opacity:0.5;font-size:10px;font-weight:500">(' + rows.length + ')</span>';
+    html += '<span class="grp-toggle">' + (collapsed ? '▶' : '▼') + '</span></div>';
+    html += '<div class="grp-body' + (collapsed ? ' collapsed' : '') + '" data-grp="' + esc(key) + '" style="max-height:9999px">';
+    rows.forEach(function (t) { html += rowHtml(t, isDone); });
     html += '</div>';
-  }
-
-  document.getElementById('board').innerHTML = html;
+  });
+  return html;
 }
 
-function changePage(delta) {
-  S.page += delta;
-  renderBoard();
-  window.scrollTo(0, 0);
+function emptyHtml(tab) {
+  var msgs = { active: 'No active tasks', open: 'No open tasks', done: 'No completed tasks', blocked: 'No blocked tasks' };
+  var icons = { active: '▶', open: '○', done: '✓', blocked: '✕' };
+  return '<div class="ld-center"><span style="font-size:32px;margin-bottom:4px">' + (icons[tab] || '○') + '</span>' +
+         '<span>' + (msgs[tab] || 'No tasks') + '</span></div>';
 }
 
-// ═══════════════════════════════════════════════════════════
-// CARD HTML
-// ═══════════════════════════════════════════════════════════
-function cardHtml(t, isDone) {
-  var proj  = pname(t.projectId);
-  var cat   = cname(t.categoryId);
-  var prio  = t.priority || 'medium';
-  var status = t.status || 'open';
+// ═══════════════════════════════════════════════
+// ROW HTML
+// ═══════════════════════════════════════════════
+function rowHtml(t, isDone) {
+  var prio = t.priority || 'medium';
+  var dotCls = 'dot-' + prio;
 
-  // Priority stripe
-  var stripeClass = 'stripe-' + prio;
+  var titleCls = 'row-title' + (isDone ? ' done-text' : '');
 
-  // Status chip label + class
-  var chipLabel, chipClass;
-  if (status === 'in_progress') { chipLabel = 'Active';   chipClass = 'sc-in_progress'; }
-  else if (status === 'not_done') { chipLabel = 'Blocked'; chipClass = 'sc-not_done'; }
-  else if (status === 'done')   { chipLabel = 'Done';    chipClass = 'sc-done'; }
-  else                          { chipLabel = 'Todo';    chipClass = 'sc-open'; }
+  var proj = pname(t.projectId);
+  var cat  = cname(t.categoryId);
 
-  // Assignee display
   var assigneeName = '';
-  // S.shared tasks: show assignee; S.own is the current user
-  if (t.isShared || t.assignedTo !== S.me.userId) {
-    // We don't have a user map, use userId as fallback
-    assigneeName = t.assignedTo || '';
+  if (t.assignedTo && t.assignedTo !== S.me.userId) assigneeName = t.assignedTo;
+
+  var today = todayStr();
+  var dueMc = '';
+  if (t.dueDate && !isDone) {
+    if (t.dueDate < today) dueMc = '<span class="mc mc-due-over">⚠ ' + esc(t.dueDate) + '</span>';
+    else if (t.dueDate === today) dueMc = '<span class="mc mc-due-today">Today</span>';
   }
 
-  // Elapsed timer
   var elapsed = '';
   if (S.activeTimer && S.activeTimer.taskId === t.taskId) {
     elapsed = '<span class="mc mc-elapsed" id="el-' + esc(t.taskId) +
               '" data-start="' + esc(S.activeTimer.startTime) + '">0:00</span>';
   }
 
-  // Due date badge
-  var dueBadge = '';
-  if (t.dueDate) {
-    var today = todayStr();
-    var dc = t.dueDate < today ? 'due-overdue' : (t.dueDate === today ? 'due-today' : 'due-future');
-    var dlabel = t.dueDate < today ? 'Overdue ' + t.dueDate : t.dueDate;
-    dueBadge = '<span class="due-badge ' + dc + '">' + esc(dlabel) + '</span>';
-  }
-
-  // Completion time for done tasks
-  var doneTime = '';
-  if (isDone && t.updatedAt) {
-    var dt = new Date(t.updatedAt);
-    doneTime = '<div class="tk-done-time">Done ' + fmtTime(dt) + '</div>';
-  }
-
-  var titleClass = isDone ? 'tk-title done-text' : 'tk-title';
-  var cardClass  = isDone ? 'tk-card done-card' : 'tk-card';
-
-  return '<div class="' + cardClass + '" onclick="onCardTap(\'' + esc(t.taskId) + '\')" id="card-' + esc(t.taskId) + '">' +
-    '<div class="tk-stripe ' + stripeClass + '"></div>' +
-    '<div class="tk-body">' +
-      '<div class="' + titleClass + '">' + esc(t.title) + '</div>' +
-      '<div class="tk-meta">' +
-        (proj   ? '<span class="mc mc-proj">' + esc(proj) + '</span>' : '') +
-        (cat    ? '<span class="mc mc-cat">'  + esc(cat)  + '</span>' : '') +
-        (assigneeName ? '<span class="mc mc-assignee">' + esc(assigneeName) + '</span>' : '') +
-        elapsed +
-      '</div>' +
-      doneTime +
-    '</div>' +
-    '<div class="tk-right">' +
-      '<span class="s-chip ' + chipClass + '">' + chipLabel + '</span>' +
-      dueBadge +
-    '</div>' +
+  return '<div class="task-row' + (isDone ? ' done-row' : '') + '" data-task-id="' + esc(t.taskId) + '">' +
+    '<span class="prio-dot ' + dotCls + '"></span>' +
+    '<span class="' + titleCls + '">' + esc(t.title) + '</span>' +
+    '<span class="row-meta">' +
+      (proj ? '<span class="mc mc-proj">' + esc(proj) + '</span>' : '') +
+      (cat  ? '<span class="mc mc-cat">'  + esc(cat)  + '</span>' : '') +
+      (assigneeName ? '<span class="mc mc-assignee">' + esc(assigneeName) + '</span>' : '') +
+      dueMc +
+      elapsed +
+    '</span>' +
   '</div>';
 }
 
-// ═══════════════════════════════════════════════════════════
-// CARD TAP → OPTIMISTIC STATUS CYCLE (open tab only)
-// ═══════════════════════════════════════════════════════════
-function onCardTap(taskId) {
-  // Done tab → go to edit form
+// ═══════════════════════════════════════════════
+// ROW TAP → OPTIMISTIC STATUS CYCLE
+// ═══════════════════════════════════════════════
+function onRowTap(taskId) {
   if (S.tab === 'done') { editTask(taskId); return; }
 
   var task = findTask(taskId);
   if (!task) return;
 
-  // Cycle: open → in_progress → done; blocked (not_done) → open
   var next;
-  if (task.status === 'open')        next = 'in_progress';
+  if      (task.status === 'open')        next = 'in_progress';
   else if (task.status === 'in_progress') next = 'done';
   else if (task.status === 'not_done')    next = 'open';
   else { editTask(taskId); return; }
 
-  // Optimistic: update local state immediately
+  var prev = task.status;
   task.status = next;
-  renderBoard();
   updateCounts();
+  renderBoard();
 
-  // Flash card
-  var card = document.getElementById('card-' + taskId);
-  if (card) { card.classList.add('flash-ok'); }
-
-  // Confirm with server
   var sid = dwmGetSession();
   google.script.run
     .withSuccessHandler(function (r) {
       if (r.status !== 'success') {
         dwmShowToast(r.message || 'Update failed', 'error');
-        // Rollback
         task.status = prev;
-        renderBoard(); updateCounts();
+        updateCounts(); renderBoard();
       } else {
-        dwmShowToast('Status → ' + next.replace('_', ' '), 'success');
+        dwmShowToast('→ ' + next.replace('_', ' '), 'success');
       }
     })
     .withFailureHandler(function () {
       dwmShowToast('Network error — retry', 'error');
       task.status = prev;
-      renderBoard(); updateCounts();
+      updateCounts(); renderBoard();
     })
     .changeStatus(sid, taskId, next);
-
-  var prev = (next === 'in_progress') ? 'open'
-           : (next === 'done')        ? 'in_progress'
-           : 'not_done';
 }
 
-// Long-press or double-tap → edit form
-var _tapTimer = null;
-document.addEventListener('click', function (e) {
-  // handled via onclick on cards
-});
-
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // ELAPSED TICKER
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function startTick() {
   stopTick();
-  var els = document.querySelectorAll('[data-start]');
-  if (!els.length) return;
+  if (!document.querySelector('[data-start]')) return;
   tickInterval = setInterval(function () {
     var nodes = document.querySelectorAll('[data-start]');
     if (!nodes.length) { stopTick(); return; }
@@ -686,9 +635,9 @@ function stopTick() {
   if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // NAVIGATION
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function editTask(taskId) {
   var url = __DWM_SCRIPT_URL__ + '?app=dwm&page=taskform&taskId=' + encodeURIComponent(taskId);
   try { window.top.location.href = url; }
@@ -701,9 +650,9 @@ function newTask() {
   catch (e) { dwmShowContinueOverlay_url(url, 'New Task'); }
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // LOGOUT
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function onLogout() {
   var sid = dwmGetSession();
   google.script.run
@@ -712,10 +661,11 @@ function onLogout() {
     .logout(sid);
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // UTILS
-// ═══════════════════════════════════════════════════════════
-function esc(s) { return dwmEscape(s); }
+// ═══════════════════════════════════════════════
+function esc(s) { return dwmEscape(String(s || '')); }
+function allTasks() { return S.own.concat(S.shared); }
 
 function pname(id) {
   var p = (S.projects || []).find(function (x) { return x.id === id; });
@@ -726,40 +676,23 @@ function cname(id) {
   return c ? c.name : '';
 }
 function findTask(taskId) {
-  var all = S.own.concat(S.shared);
+  var all = allTasks();
   for (var i = 0; i < all.length; i++) if (all[i].taskId === taskId) return all[i];
   return null;
 }
-
 function setAdminBtn(role) {
   var el = document.getElementById('adminBtn');
   if (el) el.style.display = (role === 'owner' || role === 'master') ? '' : 'none';
 }
-
 function todayStr() {
   var d = new Date();
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
 }
-
 function weekAgoStr() {
   var d = new Date(Date.now() - 7 * 24 * 3600 * 1000);
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
 }
-
-function isDateToday(iso) {
-  if (!iso) return false;
-  return iso.substring(0, 10) === todayStr();
-}
-
-function fmtTime(dt) {
-  try {
-    return dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch (e) { return ''; }
-}
+function pad2(n) { return String(n).padStart(2, '0'); }
 </script>
 </body>
 </html>

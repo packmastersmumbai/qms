@@ -7,7 +7,13 @@
   <style>
     /* file-specific styles only — never re-define Theme-owned classes */
 
-    /* ── Touch target and tap contracts ── */
+    :root {
+      --navy-hover:   #DDE6FA;
+      --navy-active:  #C7D7FF;
+      --navy-dark:    #1A2D9E;
+      --danger-light: #FEE2E2;
+    }
+
     button {
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
@@ -18,14 +24,13 @@
       transform: scale(0.97);
     }
 
-    /* ── Items list ── */
     .items-list-container {
       margin-top: 8px;
     }
 
     .item-card {
       background: var(--navy-light);
-      border: 1px solid #C7D7FF;
+      border: 1px solid var(--navy-active);
       border-radius: var(--radius);
       padding: 8px 10px;
       margin-bottom: 6px;
@@ -66,24 +71,21 @@
       border-radius: 6px;
     }
 
-    .item-card .remove-btn:hover { color: var(--danger); background: #FEE2E2; }
+    .item-card .remove-btn:hover  { color: var(--danger); background: var(--danger-light); }
     .item-card .remove-btn:active { transform: scale(0.93); }
 
-    /* ── Grid helpers ── */
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
 
-    /* ── Section title with badge layout ── */
     .section-title-with-badge {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
-    /* ── Item count badge in section title ── */
     .item-count-badge {
       background: var(--amber);
       color: var(--navy);
@@ -94,12 +96,11 @@
       letter-spacing: 0.3px;
     }
 
-    /* ── Secondary action button (Add Item) ── */
     .btn-secondary {
       width: 100%;
       background: var(--navy-light);
       color: var(--navy);
-      border: 1.5px solid #C7D7FF;
+      border: 1.5px solid var(--navy-active);
       border-radius: var(--radius);
       padding: 10px;
       font-size: 13px;
@@ -112,10 +113,9 @@
       -webkit-tap-highlight-color: transparent;
       min-height: 44px;
     }
-    .btn-secondary:hover  { background: #DDE6FA; }
-    .btn-secondary:active { transform: scale(0.97); background: #C7D7FF; }
+    .btn-secondary:hover  { background: var(--navy-hover); }
+    .btn-secondary:active { transform: scale(0.97); background: var(--navy-active); }
 
-    /* ── Sticky footer ── */
     .sticky-footer {
       position: fixed;
       bottom: 0;
@@ -128,61 +128,29 @@
       z-index: 100;
     }
 
-    /* ── IQC Prompt Dialog ── */
-    .dialog-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.45);
-      z-index: 200;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
+    /* IQC inline prompt — no modal overlay */
+    .iqc-prompt {
+      margin-bottom: 80px;
     }
-    .dialog-overlay.hidden { display: none; }
-    .dialog-sheet {
-      background: var(--white);
-      border-radius: 16px 16px 0 0;
-      padding: 24px 20px 32px;
-      width: 100%;
-      max-width: 480px;
-    }
-    .dialog-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--navy);
-      margin-bottom: 6px;
-    }
-    .dialog-body {
+    .iqc-prompt .iqc-body {
       font-size: 13px;
       color: var(--muted);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       line-height: 1.5;
     }
-    .dialog-actions {
+    .iqc-prompt .iqc-actions {
       display: flex;
       gap: 10px;
     }
-    .dialog-actions button {
+    .iqc-prompt .iqc-actions .btn-submit {
       flex: 1;
-      padding: 13px;
-      border-radius: var(--radius);
-      font-size: 14px;
-      font-weight: 700;
-      font-family: inherit;
-      border: none;
-      cursor: pointer;
-      min-height: 44px;
     }
-    .btn-dialog-yes {
-      background: var(--navy);
-      color: var(--white);
+    .iqc-prompt .iqc-actions .btn-secondary {
+      flex: 1;
+      margin-top: 0;
     }
-    .btn-dialog-yes:hover { background: #1A2D9E; }
-    .btn-dialog-no {
-      background: var(--navy-light);
-      color: var(--navy);
-    }
-    .btn-dialog-no:hover { background: #DDE6FA; }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -196,6 +164,8 @@
   <span class="page-title">New GRN</span>
   <span class="doc-badge" id="docBadge">Loading…</span>
 </div>
+
+<div id="formSections">
 
   <div class="section">
     <div class="section-title">Receipt Details</div>
@@ -299,21 +269,22 @@
     </div>
   </div>
 
-<!-- Sticky footer -->
-<div class="sticky-footer">
-  <button class="btn-submit" id="btnSubmit">Save GRN</button>
-</div>
+</div><!-- /#formSections -->
 
-<!-- IQC Prompt Dialog -->
-<div class="dialog-overlay hidden" id="iqcDialog">
-  <div class="dialog-sheet">
-    <div class="dialog-title">GRN Saved</div>
-    <div class="dialog-body" id="iqcDialogBody">GRN saved successfully. Start IQC inspection for this batch?</div>
-    <div class="dialog-actions">
-      <button class="btn-dialog-yes" id="btnIqcYes">Yes &rarr; IQC</button>
-      <button class="btn-dialog-no" id="btnIqcNo">No, Go Home</button>
+<!-- IQC inline prompt — shown after successful save, replaces sticky footer -->
+<div id="iqcPrompt" class="section iqc-prompt hidden">
+  <div class="section-title">GRN Saved</div>
+  <div class="section-body">
+    <p id="iqcPromptBody" class="iqc-body"></p>
+    <div class="iqc-actions">
+      <button class="btn-submit" id="btnIqcYes">Yes &#8594; IQC</button>
+      <button class="btn-secondary" id="btnIqcNo">No, Go Home</button>
     </div>
   </div>
+</div>
+
+<div class="sticky-footer" id="stickyFooter">
+  <button class="btn-submit" id="btnSubmit">Save GRN</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -326,30 +297,31 @@ var docNo = '';
 var sessionId = null;
 var dwmTimerStarted = false;
 var formSubmitted = false;
-var savedResult = null; // holds { docNo, supplierName, firstItem } after save
+var savedResult = null;
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+function showError(e) {
+  showToast(e.message || String(e), 'error');
+}
 
 // ── DWM session bridge ─────────────────────────────────────────
 function initDwmSession() {
   try {
     sessionId = sessionStorage.getItem('dwmSessionId') || null;
-    if (sessionId && !dwmTimerStarted) {
-      dwmTimerStarted = true;
-      // Timer already running from session — no need to start new one
-      // Just register that we entered GRN form in this session
-    }
   } catch(e) {
-    // sessionStorage unavailable (unlikely in GAS iframe, handle gracefully)
     sessionId = null;
   }
 }
 
-// ── beforeunload guard ─────────────────────────────────────────
 window.addEventListener('beforeunload', function() {
   if (!formSubmitted && sessionId) {
-    // Signal DWM that we left without submitting — fire-and-forget
-    try {
-      google.script.run.dwmStopTimer(sessionId, false);
-    } catch(e) {}
+    try { google.script.run.dwmStopTimer(sessionId, false); } catch(e) {}
   }
 });
 
@@ -379,7 +351,7 @@ function init() {
 
       renderMaterials(ALL_MATS);
     })
-    .withFailureHandler(function(e) { showToast(e.message, 'error'); })
+    .withFailureHandler(showError)
     .getGRNFormInit();
 }
 
@@ -421,7 +393,7 @@ function onMaterialChange() {
 function setCOA(btn, val) {
   coaVal = val;
   ['Y','N','NA'].forEach(function(v) {
-    document.getElementById('coa'+v).className = '';
+    document.getElementById('coa' + v).className = '';
   });
   btn.className = 'active-' + (val === 'Y' ? 'yes' : val === 'N' ? 'no' : 'na');
 }
@@ -447,7 +419,6 @@ function addItem() {
     expiryDate:   document.getElementById('expiryDate').value
   });
 
-  // Clear item entry fields for next entry
   document.getElementById('matSearch').value = '';
   document.getElementById('qtyOrdered').value = '';
   document.getElementById('qtyReceived').value = '';
@@ -479,8 +450,8 @@ function renderItems() {
       '<div class="item-title">' + escHtml(item.materialDesc) + '</div>' +
       '<div class="item-detail">' +
         'Ordered: <b>' + (item.qtyOrdered || '—') + '</b> | Received: <b>' + (item.qtyReceived || '—') + '</b> ' + escHtml(item.unit) +
-        (item.batchNo   ? ' &nbsp;·&nbsp; Batch: ' + escHtml(item.batchNo) : '') +
-        (item.expiryDate ? ' &nbsp;·&nbsp; Exp: ' + escHtml(item.expiryDate) : '') +
+        (item.batchNo    ? ' &nbsp;·&nbsp; Batch: ' + escHtml(item.batchNo) : '') +
+        (item.expiryDate ? ' &nbsp;·&nbsp; Exp: '   + escHtml(item.expiryDate) : '') +
       '</div>' +
     '</div>';
   }).join('');
@@ -520,16 +491,15 @@ function submitGRN() {
       if (res.success) {
         formSubmitted = true;
 
-        // DWM auto-task
         if (sessionId) {
           var firstItem = ITEMS[0] || {};
           var taskTitle = 'GRN: ' + supplierName + ' — ' + (firstItem.materialDesc || firstItem.materialCode || '');
-          try {
-            google.script.run.autoQmsTask_(sessionId, 'GRN', taskTitle, res.docNo);
-          } catch(e) {}
+          google.script.run
+            .withSuccessHandler(function() {})
+            .withFailureHandler(function() {})
+            .autoQmsTask_(sessionId, 'GRN', taskTitle, res.docNo);
         }
 
-        // Store result for IQC prompt
         savedResult = {
           docNo: res.docNo,
           supplierName: supplierName,
@@ -544,18 +514,20 @@ function submitGRN() {
       }
     })
     .withFailureHandler(function(e) {
-      showToast(e.message, 'error');
+      showError(e);
       btn.disabled = false;
       btn.innerHTML = 'Save GRN';
     })
     .saveGRN(data);
 }
 
-// ── IQC Prompt ─────────────────────────────────────────────────
+// ── IQC Inline Prompt ──────────────────────────────────────────
 function showIqcPrompt(result) {
-  var body = document.getElementById('iqcDialogBody');
-  body.textContent = 'GRN ' + result.docNo + ' saved. Start IQC inspection for this batch?';
-  document.getElementById('iqcDialog').classList.remove('hidden');
+  document.getElementById('iqcPromptBody').textContent =
+    'GRN ' + result.docNo + ' saved. Start IQC inspection for this batch?';
+  document.getElementById('stickyFooter').classList.add('hidden');
+  document.getElementById('iqcPrompt').classList.remove('hidden');
+  document.getElementById('iqcPrompt').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function goToIqc() {
@@ -580,14 +552,6 @@ function goToIqc() {
     .getFormHtml('IQC');
 }
 
-// ── Toast ───────────────────────────────────────────────────────
-function showToast(msg, type) {
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  setTimeout(function() { t.className = 'toast'; }, 3500);
-}
-
 // ── Navigation ─────────────────────────────────────────────────
 function goHome() {
   var hasItems = ITEMS.length > 0;
@@ -602,27 +566,30 @@ function goHome() {
       document.write(html);
       document.close();
     })
+    .withFailureHandler(showError)
     .getLandingHtml();
 }
 
 // ── Event listeners ────────────────────────────────────────────
-document.getElementById('backBtn').addEventListener('click', goHome);
-document.getElementById('itemsList').addEventListener('click', function(e) {
-  var btn = e.target.closest('.remove-btn');
-  if (btn) removeItem(parseInt(btn.dataset.idx, 10));
-});
-document.getElementById('btnAddItem').addEventListener('click', addItem);
-document.getElementById('btnSubmit').addEventListener('click', submitGRN);
-document.getElementById('matSearch').addEventListener('input', filterMaterials);
-document.getElementById('supplier').addEventListener('change', onSupplierChange);
-document.getElementById('material').addEventListener('change', onMaterialChange);
-document.getElementById('coaY').addEventListener('click', function() { setCOA(this, 'Y'); });
-document.getElementById('coaN').addEventListener('click', function() { setCOA(this, 'N'); });
-document.getElementById('coaNA').addEventListener('click', function() { setCOA(this, 'NA'); });
-document.getElementById('btnIqcYes').addEventListener('click', goToIqc);
-document.getElementById('btnIqcNo').addEventListener('click', goHome);
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('backBtn').addEventListener('click', goHome);
+  document.getElementById('itemsList').addEventListener('click', function(e) {
+    var btn = e.target.closest('.remove-btn');
+    if (btn) removeItem(parseInt(btn.dataset.idx, 10));
+  });
+  document.getElementById('btnAddItem').addEventListener('click', addItem);
+  document.getElementById('btnSubmit').addEventListener('click', submitGRN);
+  document.getElementById('matSearch').addEventListener('input', filterMaterials);
+  document.getElementById('supplier').addEventListener('change', onSupplierChange);
+  document.getElementById('material').addEventListener('change', onMaterialChange);
+  document.getElementById('coaY').addEventListener('click',  function() { setCOA(this, 'Y');  });
+  document.getElementById('coaN').addEventListener('click',  function() { setCOA(this, 'N');  });
+  document.getElementById('coaNA').addEventListener('click', function() { setCOA(this, 'NA'); });
+  document.getElementById('btnIqcYes').addEventListener('click', goToIqc);
+  document.getElementById('btnIqcNo').addEventListener('click', goHome);
 
-window.onload = init;
+  init();
+});
 </script>
 </body>
 </html>

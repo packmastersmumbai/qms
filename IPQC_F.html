@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
     body { max-width: 480px; margin: 0 auto; }
 
-    /* ── Loading overlay ── */
     #loading {
       position: fixed; inset: 0; background: rgba(13,27,110,0.85);
       display: flex; align-items: center; justify-content: center;
@@ -21,7 +23,6 @@
     }
     #loading p { color: rgba(255,255,255,0.8); font-size: 13px; }
 
-    /* ── State 1: Setup ── */
     .setup-hero {
       background: var(--navy); margin: 10px; border-radius: 12px;
       padding: 20px 16px; color: var(--white); text-align: center;
@@ -30,7 +31,6 @@
     .setup-hero h2 { font-size: 18px; font-weight: 700; }
     .setup-hero p  { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 3px; }
 
-    /* Machine grid */
     .machine-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -55,13 +55,9 @@
     }
     .machine-btn:hover  { background: var(--navy-light); border-color: var(--navy); }
     .machine-btn:active { transform: scale(0.96); transition: transform 0.08s ease; }
-    .machine-btn.active {
-      background: var(--navy); color: var(--white);
-      border-color: var(--navy);
-    }
+    .machine-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
     .machine-icon { font-size: 20px; display: block; margin-bottom: 4px; }
 
-    /* ── State 2: Active round ── */
     .round-hdr {
       background: var(--navy); color: var(--white);
       padding: 10px 14px;
@@ -83,9 +79,8 @@
       border-radius: 4px; font-variant-numeric: tabular-nums; min-width: 56px; text-align: center;
     }
 
-    /* Progress bar */
     .round-progress {
-      background: rgba(255,255,255,0.12);
+      background: rgba(13,27,110,0.12);
       height: 4px; margin: 0; position: sticky; top: calc(56px + 44px); z-index: 89;
     }
     .round-progress-fill {
@@ -93,7 +88,6 @@
       transition: width 0.3s ease;
     }
 
-    /* Parameter card */
     .param-card {
       background: var(--white); margin: 10px;
       border-radius: 12px; box-shadow: var(--shadow-1);
@@ -125,12 +119,11 @@
       font-size: 14px; flex-shrink: 0;
       background: #F3F4F6;
     }
-    .param-card .pc-status.ok   { background: #DCFCE7; }
-    .param-card .pc-status.ng   { background: #FEE2E2; }
-    .param-card .pc-status.na   { background: #F3F4F6; }
+    .param-card .pc-status.ok { background: #DCFCE7; }
+    .param-card .pc-status.ng { background: #FEE2E2; }
+    .param-card .pc-status.na { background: #F3F4F6; }
     .param-card .pc-body { padding: 14px; }
 
-    /* 3-tap buttons */
     .tap-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -155,16 +148,9 @@
       letter-spacing: 0.3px;
     }
     .tap-btn:active { transform: scale(0.96); transition: transform 0.08s ease; }
-    .tap-btn.sel-ok {
-      background: #DCFCE7; border-color: var(--success); color: var(--success);
-    }
-    .tap-btn.sel-ng {
-      background: #FEE2E2; border-color: var(--danger); color: var(--danger);
-      animation: shake 0.3s ease;
-    }
-    .tap-btn.sel-na {
-      background: #F3F4F6; border-color: #9CA3AF; color: #9CA3AF;
-    }
+    .tap-btn.pass { background: #DCFCE7; border-color: var(--success); color: var(--success); }
+    .tap-btn.fail { background: #FEE2E2; border-color: var(--danger); color: var(--danger); animation: shake 0.3s ease; }
+    .tap-btn.na   { background: #F3F4F6; border-color: #9CA3AF; color: #9CA3AF; }
 
     .pc-remark {
       width: 100%; padding: 8px 10px; border: 1.5px solid var(--border);
@@ -177,7 +163,6 @@
     .pc-remark-hint  { font-size: 10px; color: var(--danger); margin-top: 3px; display: none; }
     .pc-remark-hint.show { display: block; }
 
-    /* Sticky round footer */
     .round-footer {
       position: fixed; bottom: 0; left: 0; right: 0;
       max-width: 480px; margin: 0 auto;
@@ -195,7 +180,7 @@
     }
     .btn-save-round:hover { background: #1A2D9E; }
     .btn-save-round:active { transform: scale(0.97); }
-    .btn-save-round:disabled { background: #9CA3AF; cursor: not-allowed; }
+    .btn-save-round:disabled { background: var(--muted); cursor: not-allowed; }
     .btn-end-session {
       flex: 1; background: var(--white); color: var(--danger);
       border: 2px solid var(--danger); border-radius: 8px; padding: 12px 8px;
@@ -205,7 +190,6 @@
     .btn-end-session:hover { background: #FEE2E2; }
     .btn-end-session:active { transform: scale(0.97); }
 
-    /* ── State 3: Round complete ── */
     .round-summary-wrap { padding: 10px 10px 100px; }
     .rs-hero {
       background: var(--navy); border-radius: 12px; padding: 20px 16px; color: var(--white);
@@ -264,10 +248,9 @@
     .btn-end-now:hover { background: #FEE2E2; }
     .btn-end-now:active { transform: scale(0.97); }
 
-    /* ── State 4: Session ended ── */
     .final-wrap { padding: 10px 10px 80px; }
     .final-hero {
-      background: linear-gradient(135deg, #15803D 0%, #16A34A 100%);
+      background: var(--success);
       border-radius: 12px; padding: 24px 16px; color: var(--white);
       text-align: center; margin-bottom: 12px;
     }
@@ -287,9 +270,29 @@
       width: 100%; background: var(--navy); color: var(--white);
       border: none; border-radius: 10px; padding: 14px; font-size: 15px;
       font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
     }
     .btn-go-home:hover { background: #1A2D9E; }
     .btn-go-home:active { transform: scale(0.97); }
+
+    .confirm-overlay {
+      position: fixed; inset: 0; background: rgba(13,27,110,0.6);
+      display: flex; align-items: flex-end; justify-content: center;
+      z-index: 9998; padding: 0 0 env(safe-area-inset-bottom);
+    }
+    .confirm-overlay.hidden { display: none; }
+    .confirm-sheet {
+      background: var(--white); border-radius: 12px 12px 0 0;
+      padding: 20px 16px 24px; width: 100%; max-width: 480px;
+    }
+    .confirm-sheet h4 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .confirm-sheet p  { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+    .confirm-btns { display: flex; gap: 8px; }
+    .confirm-btns button { flex: 1; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s ease; border: none; }
+    .confirm-cancel { background: var(--bg); color: var(--text); }
+    .confirm-cancel:hover { background: var(--border); }
+    .confirm-ok { background: var(--danger); color: var(--white); }
+    .confirm-ok:hover { background: #B91C1C; }
   </style>
 </head>
 <body>
@@ -299,16 +302,26 @@
   <p id="loadingMsg">Loading…</p>
 </div>
 
-<!-- PM Header -->
+<div class="confirm-overlay hidden" id="confirmOverlay">
+  <div class="confirm-sheet">
+    <h4 id="confirmTitle">Confirm</h4>
+    <p id="confirmMsg"></p>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="confirmCancelBtn">Cancel</button>
+      <button class="confirm-ok" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <header class="pm-header">
-  <button class="back-btn" id="headerBackBtn" onclick="headerBack()" style="display:none;">
+  <button class="back-btn" id="headerBackBtn" style="display:none;">
     <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
   </button>
   <span class="page-title" id="headerTitle">&#9881; IPQC</span>
-  <span class="doc-badge" id="roundBadge" style="display:none;">R1</span>
+  <span class="doc-badge" id="roundBadge" style="display:none;">IPQC</span>
 </header>
 
-<!-- ═══ STATE 1: SETUP ═══ -->
+<!-- STATE 1: SETUP -->
 <div id="state1" style="display:block;">
   <div class="setup-hero">
     <span class="hero-icon">&#9881;</span>
@@ -355,11 +368,11 @@
   </div>
 
   <div style="padding: 0 10px 24px;">
-    <button class="btn-submit" onclick="startCheck()">Start Inspection &#187;</button>
+    <button class="btn-submit" id="btnStartCheck">Start Inspection &#187;</button>
   </div>
 </div>
 
-<!-- ═══ STATE 2: ACTIVE ROUND ═══ -->
+<!-- STATE 2: ACTIVE ROUND -->
 <div id="state2" style="display:none;">
   <div class="round-hdr">
     <div class="rh-title" id="roundHdrTitle">Product — Batch</div>
@@ -373,12 +386,12 @@
   <div id="paramCards" style="padding-bottom: 90px;"></div>
 
   <div class="round-footer">
-    <button class="btn-save-round" id="btnSaveRound" onclick="saveRound()">&#10003; Save Round</button>
-    <button class="btn-end-session" onclick="endSessionEarly()">&#x25A0; End</button>
+    <button class="btn-save-round" id="btnSaveRound">&#10003; Save Round</button>
+    <button class="btn-end-session" id="btnEndSessionEarly">&#x25A0; End</button>
   </div>
 </div>
 
-<!-- ═══ STATE 3: ROUND COMPLETE ═══ -->
+<!-- STATE 3: ROUND COMPLETE -->
 <div id="state3" style="display:none;">
   <div class="round-summary-wrap">
     <div class="rs-hero" id="rsSummaryHero">
@@ -406,12 +419,12 @@
   </div>
 
   <div class="rs-footer">
-    <button class="btn-next-round" onclick="nextRound()">&#9654; Next Round</button>
-    <button class="btn-end-now" onclick="endSessionFull()">&#x25A0; End Session</button>
+    <button class="btn-next-round" id="btnNextRound">&#9654; Next Round</button>
+    <button class="btn-end-now" id="btnEndSessionFull">&#x25A0; End Session</button>
   </div>
 </div>
 
-<!-- ═══ STATE 4: SESSION ENDED ═══ -->
+<!-- STATE 4: SESSION ENDED -->
 <div id="state4" style="display:none;">
   <div class="final-wrap">
     <div class="final-hero">
@@ -439,16 +452,13 @@
       </div>
     </div>
 
-    <button class="btn-go-home" onclick="goHome()">&#8962; Back to Home</button>
+    <button class="btn-go-home" id="btnGoHome">&#8962; Back to Home</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ─────────────────────────────────────────────────────────
-// State
-// ─────────────────────────────────────────────────────────
 var DWM_SESSION_ID = null;
 var SESSION_ID = null;
 var SESSION_PRODUCT_CODE = '';
@@ -458,9 +468,8 @@ var SESSION_INSPECTOR = '';
 var SESSION_LINE = '';
 var ROUND_NO = 1;
 
-var PARAMS = [];           // [{paramCode, paramName, stdValue, unit, tolMin, tolMax, methodType}]
-var ROUND_DATA = [];       // [{paramCode, paramName, stdValue, unit, result, remark}]
-var CURRENT_PARAM_IDX = 0; // which card is focused
+var PARAMS = [];
+var ROUND_DATA = [];
 
 var timerInterval = null;
 var ROUND_START_TS = null;
@@ -473,15 +482,38 @@ var SESSION_TOTAL_NA = 0;
 var MACHINES = ['Line 1', 'Line 2', 'Line 3', 'Other'];
 var SELECTED_MACHINE = '';
 
-// ─────────────────────────────────────────────────────────
-// Init
-// ─────────────────────────────────────────────────────────
-window.onload = function() {
+var _confirmCallback = null;
+
+document.addEventListener('DOMContentLoaded', function() {
   DWM_SESSION_ID = (typeof sessionStorage !== 'undefined')
-    ? (sessionStorage.getItem('dwmSessionId') || null)
-    : null;
+    ? (sessionStorage.getItem('dwmSessionId') || null) : null;
 
   buildMachineGrid();
+
+  document.getElementById('btnStartCheck').addEventListener('click', startCheck);
+  document.getElementById('btnSaveRound').addEventListener('click', saveRound);
+  document.getElementById('btnEndSessionEarly').addEventListener('click', function() {
+    showConfirm(
+      'End Session Early',
+      'End session without saving current round? Unsaved data will be lost.',
+      closeIPQCSession
+    );
+  });
+  document.getElementById('btnNextRound').addEventListener('click', nextRound);
+  document.getElementById('btnEndSessionFull').addEventListener('click', function() {
+    showConfirm(
+      'End Session',
+      'End this IPQC session? No further rounds can be added.',
+      closeIPQCSession
+    );
+  });
+  document.getElementById('btnGoHome').addEventListener('click', goHome);
+  document.getElementById('headerBackBtn').addEventListener('click', headerBack);
+  document.getElementById('confirmCancelBtn').addEventListener('click', hideConfirm);
+  document.getElementById('confirmOkBtn').addEventListener('click', function() {
+    hideConfirm();
+    if (_confirmCallback) _confirmCallback();
+  });
 
   showLoading('Loading…');
   google.script.run
@@ -496,7 +528,6 @@ window.onload = function() {
         o.setAttribute('data-desc', label);
         pSel.appendChild(o);
       });
-
       var iSel = document.getElementById('setupInspector');
       (d.inspectors || []).forEach(function(p) {
         var o = document.createElement('option');
@@ -510,22 +541,31 @@ window.onload = function() {
       showToast('Failed to load form: ' + e.message, 'error');
     })
     .getIPQCFormInit();
-};
+});
 
-// ─────────────────────────────────────────────────────────
-// Machine grid
-// ─────────────────────────────────────────────────────────
+function showConfirm(title, msg, cb) {
+  _confirmCallback = cb;
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmOverlay').classList.remove('hidden');
+}
+
+function hideConfirm() {
+  document.getElementById('confirmOverlay').classList.add('hidden');
+  _confirmCallback = null;
+}
+
 function buildMachineGrid() {
   var grid = document.getElementById('machineGrid');
   grid.innerHTML = '';
   MACHINES.forEach(function(m) {
     var btn = document.createElement('button');
     btn.className = 'machine-btn';
-    btn.id = 'mbtn_' + m.replace(/\s+/g,'_');
+    btn.id = 'mbtn_' + m.replace(/\s+/g, '_');
     btn.innerHTML = '<span class="machine-icon">&#9881;</span>' + m;
-    btn.onclick = (function(name) {
+    btn.addEventListener('click', (function(name) {
       return function() { selectMachine(name); };
-    })(m);
+    })(m));
     grid.appendChild(btn);
   });
 }
@@ -533,16 +573,13 @@ function buildMachineGrid() {
 function selectMachine(name) {
   SELECTED_MACHINE = name;
   MACHINES.forEach(function(m) {
-    var btn = document.getElementById('mbtn_' + m.replace(/\s+/g,'_'));
+    var btn = document.getElementById('mbtn_' + m.replace(/\s+/g, '_'));
     if (btn) btn.className = 'machine-btn' + (m === name ? ' active' : '');
   });
   var otherField = document.getElementById('machineOtherField');
   if (otherField) otherField.style.display = (name === 'Other') ? 'block' : 'none';
 }
 
-// ─────────────────────────────────────────────────────────
-// State 1 → Start
-// ─────────────────────────────────────────────────────────
 function startCheck() {
   var pSel = document.getElementById('setupProduct');
   var productCode = pSel.value;
@@ -555,10 +592,10 @@ function startCheck() {
     line = document.getElementById('machineOtherInput').value.trim();
   }
 
-  if (!inspector)    { showToast('Please select an inspector.', 'error'); return; }
-  if (!productCode)  { showToast('Please select a product.', 'error'); return; }
-  if (!batch)        { showToast('Please enter a batch number.', 'error'); return; }
-  if (!line)         { showToast('Please select a line / machine.', 'error'); return; }
+  if (!inspector)   { showToast('Please select an inspector.', 'error'); return; }
+  if (!productCode) { showToast('Please select a product.', 'error'); return; }
+  if (!batch)       { showToast('Please enter a batch number.', 'error'); return; }
+  if (!SELECTED_MACHINE) { showToast('Please select a line / machine.', 'error'); return; }
   if (SELECTED_MACHINE === 'Other' && !line) {
     showToast('Please specify the line name.', 'error'); return;
   }
@@ -569,10 +606,16 @@ function startCheck() {
   SESSION_INSPECTOR = inspector;
   SESSION_LINE = line;
 
+  var btn = document.getElementById('btnStartCheck');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Starting…';
+
   showLoading('Starting session…');
   google.script.run
     .withSuccessHandler(function(res) {
       hideLoading();
+      btn.disabled = false;
+      btn.textContent = 'Start Inspection »';
       if (!res.ok) { showToast('Error: ' + (res.error || 'Could not start session.'), 'error'); return; }
       SESSION_ID = res.sessionId;
       ROUND_NO = res.resumed ? (res.rounds || 0) + 1 : 1;
@@ -581,14 +624,13 @@ function startCheck() {
     })
     .withFailureHandler(function(e) {
       hideLoading();
+      btn.disabled = false;
+      btn.textContent = 'Start Inspection »';
       showToast('Error: ' + e.message, 'error');
     })
     .startSession({ productCode: productCode, productName: productName, batch: batch, inspector: inspector, line: line });
 }
 
-// ─────────────────────────────────────────────────────────
-// Load params then enter round
-// ─────────────────────────────────────────────────────────
 function loadParamsAndBeginRound() {
   showLoading('Loading parameters…');
   google.script.run
@@ -602,22 +644,19 @@ function loadParamsAndBeginRound() {
     })
     .withFailureHandler(function(e) {
       hideLoading();
+      showToast('Could not load parameters: ' + e.message, 'error');
       PARAMS = [];
       enterRound();
     })
     .getIPQCParams(SESSION_PRODUCT_CODE);
 }
 
-// ─────────────────────────────────────────────────────────
-// State 2: Active Round
-// ─────────────────────────────────────────────────────────
 function enterRound() {
   ROUND_DATA = PARAMS.map(function(p) {
     return { paramCode: p.paramCode, paramName: p.paramName,
              stdValue: p.stdValue || '', unit: p.unit || '',
              result: '', remark: '' };
   });
-  CURRENT_PARAM_IDX = 0;
 
   var shortName = SESSION_PRODUCT_NAME.length > 22
     ? SESSION_PRODUCT_NAME.substring(0, 22) + '…' : SESSION_PRODUCT_NAME;
@@ -636,7 +675,7 @@ function buildParamCards() {
   container.innerHTML = '';
 
   if (PARAMS.length === 0) {
-    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px;">No parameters configured for this product.</div>';
+    container.innerHTML = '<div class="empty-state"><span class="icon">&#128203;</span>No parameters configured for this product.</div>';
     return;
   }
 
@@ -645,7 +684,6 @@ function buildParamCards() {
     card.className = 'param-card' + (idx === 0 ? ' highlight' : '');
     card.id = 'pcard_' + idx;
 
-    // Header
     var hdr = document.createElement('div');
     hdr.className = 'pc-header';
 
@@ -684,7 +722,6 @@ function buildParamCards() {
     hdr.appendChild(statusEl);
     card.appendChild(hdr);
 
-    // Body: 3-tap buttons
     var body = document.createElement('div');
     body.className = 'pc-body';
     body.id = 'pcbody_' + idx;
@@ -693,22 +730,21 @@ function buildParamCards() {
     tapRow.className = 'tap-row';
 
     [
-      { val: 'OK', cls: 'sel-ok', label: '✓ OK' },
-      { val: 'NG', cls: 'sel-ng', label: '✗ NG' },
-      { val: 'NA', cls: 'sel-na', label: '— NA' }
+      { val: 'OK', cls: 'pass', label: '✓ OK' },
+      { val: 'NG', cls: 'fail', label: '✗ NG' },
+      { val: 'NA', cls: 'na',   label: '— NA' }
     ].forEach(function(opt) {
       var btn = document.createElement('button');
       btn.className = 'tap-btn';
       btn.id = 'tap_' + idx + '_' + opt.val;
       btn.textContent = opt.label;
-      btn.onclick = (function(i, v, c) {
+      btn.addEventListener('click', (function(i, v, c) {
         return function() { tapResult(i, v, c); };
-      })(idx, opt.val, opt.cls);
+      })(idx, opt.val, opt.cls));
       tapRow.appendChild(btn);
     });
     body.appendChild(tapRow);
 
-    // Remark (shown for NG)
     var remark = document.createElement('textarea');
     remark.className = 'pc-remark';
     remark.id = 'pcremark_' + idx;
@@ -730,39 +766,37 @@ function buildParamCards() {
 }
 
 function tapResult(idx, val, cls) {
-  // Set result in data
   ROUND_DATA[idx].result = val;
 
-  // Update button styles
-  ['OK','NG','NA'].forEach(function(v) {
+  ['OK', 'NG', 'NA'].forEach(function(v) {
     var btn = document.getElementById('tap_' + idx + '_' + v);
-    if (btn) btn.className = 'tap-btn' + (v === val ? ' ' + cls : '');
+    if (!btn) return;
+    if (v === val) {
+      btn.className = 'tap-btn ' + cls;
+    } else {
+      btn.className = 'tap-btn';
+    }
   });
 
-  // Update card status icon
   var statusEl = document.getElementById('pcstatus_' + idx);
   if (statusEl) {
     statusEl.textContent = val === 'OK' ? '✓' : (val === 'NG' ? '✗' : '—');
     statusEl.className = 'pc-status ' + val.toLowerCase();
   }
 
-  // Show/hide remark
   var remarkEl = document.getElementById('pcremark_' + idx);
   var hintEl   = document.getElementById('pcremarkhint_' + idx);
   if (remarkEl) remarkEl.style.display = (val === 'NG') ? 'block' : 'none';
   if (val !== 'NG') { ROUND_DATA[idx].remark = ''; }
 
-  // Remove highlight from this card
   var card = document.getElementById('pcard_' + idx);
   if (card) card.classList.remove('highlight');
 
-  // Auto-advance to next unanswered param
   var nextIdx = -1;
   for (var i = idx + 1; i < PARAMS.length; i++) {
     if (!ROUND_DATA[i].result) { nextIdx = i; break; }
   }
   if (nextIdx === -1) {
-    // check before idx too
     for (var j = 0; j < idx; j++) {
       if (!ROUND_DATA[j].result) { nextIdx = j; break; }
     }
@@ -788,9 +822,6 @@ function updateProgress() {
   if (fill) fill.style.width = pct + '%';
 }
 
-// ─────────────────────────────────────────────────────────
-// Timer
-// ─────────────────────────────────────────────────────────
 function startTimer() {
   stopTimer();
   ROUND_START_TS = new Date();
@@ -820,24 +851,18 @@ function fmtTime(dt) {
   return pad2(dt.getHours()) + ':' + pad2(dt.getMinutes()) + ':' + pad2(dt.getSeconds());
 }
 
-// ─────────────────────────────────────────────────────────
-// Save Round
-// ─────────────────────────────────────────────────────────
 function saveRound() {
   if (PARAMS.length === 0) {
-    // No params — save empty round
     doSaveRound([]);
     return;
   }
 
-  // Validate: all params must have a result
   var unanswered = [];
   ROUND_DATA.forEach(function(d, idx) {
     if (!d.result) unanswered.push(idx);
   });
   if (unanswered.length > 0) {
     showToast(unanswered.length + ' parameter(s) still need a result.', 'error');
-    // Highlight first unanswered
     var card = document.getElementById('pcard_' + unanswered[0]);
     if (card) {
       card.classList.add('highlight');
@@ -846,7 +871,6 @@ function saveRound() {
     return;
   }
 
-  // Validate NG remarks
   var missingRemark = false;
   ROUND_DATA.forEach(function(d, idx) {
     if (d.result === 'NG') {
@@ -858,7 +882,7 @@ function saveRound() {
         if (remarkEl) remarkEl.className = 'pc-remark req';
         var hintEl = document.getElementById('pcremarkhint_' + idx);
         if (hintEl) hintEl.className = 'pc-remark-hint show';
-        remarkEl && remarkEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (remarkEl) remarkEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } else {
       var remarkEl2 = document.getElementById('pcremark_' + idx);
@@ -881,7 +905,10 @@ function doSaveRound(params) {
   var elapsed      = ROUND_ELAPSED_S;
 
   var btn = document.getElementById('btnSaveRound');
-  if (btn) btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Saving…';
+  }
 
   var roundPayload = {
     productCode:     SESSION_PRODUCT_CODE,
@@ -897,25 +924,25 @@ function doSaveRound(params) {
   google.script.run
     .withSuccessHandler(function(res) {
       hideLoading();
-      if (btn) btn.disabled = false;
+      if (btn) { btn.disabled = false; btn.textContent = '✓ Save Round'; }
       if (!res.ok) {
         showToast('Save error: ' + (res.error || 'Unknown error'), 'error');
-        startTimer(); // resume
+        startTimer();
         return;
       }
       var savedRound = ROUND_NO;
       ROUND_NO = res.roundNo + 1;
 
-      // Fire auto-task (DWM integration)
       if (DWM_SESSION_ID && SESSION_ID) {
-        google.script.run.autoQmsTask_(
-          DWM_SESSION_ID, 'IPQC',
-          'IPQC: ' + SESSION_LINE + ' — Round ' + savedRound,
-          SESSION_ID
-        );
+        google.script.run
+          .withFailureHandler(function() {})
+          .autoQmsTask_(
+            DWM_SESSION_ID, 'IPQC',
+            'IPQC: ' + SESSION_LINE + ' — Round ' + savedRound,
+            SESSION_ID
+          );
       }
 
-      // Accumulate totals
       var ok = 0, ng = 0, na = 0;
       params.forEach(function(d) {
         if (d.result === 'OK') ok++;
@@ -930,16 +957,13 @@ function doSaveRound(params) {
     })
     .withFailureHandler(function(e) {
       hideLoading();
-      if (btn) btn.disabled = false;
+      if (btn) { btn.disabled = false; btn.textContent = '✓ Save Round'; }
       showToast('Error: ' + e.message, 'error');
       startTimer();
     })
     .saveRound(SESSION_ID, roundPayload);
 }
 
-// ─────────────────────────────────────────────────────────
-// State 3: Round Summary
-// ─────────────────────────────────────────────────────────
 function showRoundSummary(roundNo, ok, ng, na, params) {
   document.getElementById('rsSummaryMeta').textContent =
     SESSION_PRODUCT_NAME + ' · ' + SESSION_BATCH + ' · ' + SESSION_LINE;
@@ -948,11 +972,7 @@ function showRoundSummary(roundNo, ok, ng, na, params) {
   document.getElementById('rsCountNa').textContent = na;
 
   var hero = document.getElementById('rsSummaryHero');
-  if (ng > 0) {
-    hero.style.background = 'var(--danger)';
-  } else {
-    hero.style.background = 'var(--navy)';
-  }
+  hero.style.background = ng > 0 ? 'var(--danger)' : 'var(--navy)';
 
   var list = document.getElementById('rsParamList');
   list.innerHTML = '';
@@ -979,31 +999,21 @@ function showRoundSummary(roundNo, ok, ng, na, params) {
   }
 
   var rsBadge = document.getElementById('roundBadge');
-  if (rsBadge) { rsBadge.textContent = 'R' + roundNo + ' Done'; }
+  if (rsBadge) rsBadge.textContent = 'R' + roundNo + ' Done';
   document.getElementById('headerTitle').textContent = 'Round ' + roundNo + ' Summary';
 
   showState(3);
 }
 
-// ─────────────────────────────────────────────────────────
-// State 3 actions
-// ─────────────────────────────────────────────────────────
 function nextRound() {
-  document.getElementById('headerTitle').textContent = '&#9881; IPQC';
+  document.getElementById('headerTitle').textContent = '⚙ IPQC';
   enterRound();
 }
 
-function endSessionFull() {
-  if (!confirm('End this IPQC session? No further rounds can be added.')) return;
-  closeIPQCSession();
-}
-
-function endSessionEarly() {
-  if (!confirm('End session without saving current round? Unsaved data will be lost.')) return;
-  closeIPQCSession();
-}
-
 function closeIPQCSession() {
+  var saveBtn = document.getElementById('btnSaveRound');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<span class="spinner"></span> Closing…'; }
+
   showLoading('Closing session…');
   google.script.run
     .withSuccessHandler(function(res) {
@@ -1021,9 +1031,6 @@ function closeIPQCSession() {
     .closeSession(SESSION_ID);
 }
 
-// ─────────────────────────────────────────────────────────
-// State 4: Final Summary
-// ─────────────────────────────────────────────────────────
 function showFinalSummary() {
   stopTimer();
   var completedRounds = ROUND_NO - 1;
@@ -1040,30 +1047,18 @@ function showFinalSummary() {
   showState(4);
 }
 
-function goHome() {
-  google.script.run
-    .withSuccessHandler(function(html) {
-      document.open(); document.write(html); document.close();
-    })
-    .getLandingHtml();
-}
-
-// ─────────────────────────────────────────────────────────
-// Navigation helpers
-// ─────────────────────────────────────────────────────────
 function showState(n) {
   [1, 2, 3, 4].forEach(function(i) {
     var el = document.getElementById('state' + i);
     if (el) el.style.display = (i === n) ? 'block' : 'none';
   });
-
   var backBtn = document.getElementById('headerBackBtn');
   if (n === 1) {
     backBtn.style.display = 'none';
     document.getElementById('headerTitle').textContent = '⚙ IPQC';
     document.getElementById('roundBadge').style.display = 'none';
   } else if (n === 2) {
-    backBtn.style.display = 'none'; // no back during active round
+    backBtn.style.display = 'none';
     document.getElementById('roundBadge').style.display = 'inline-block';
   } else if (n === 3) {
     backBtn.style.display = 'none';
@@ -1073,17 +1068,11 @@ function showState(n) {
 }
 
 function headerBack() {
-  // Only used on state 1 in future; currently back btn is hidden in all states
   showState(1);
 }
 
-// ─────────────────────────────────────────────────────────
-// beforeunload guard
-// ─────────────────────────────────────────────────────────
 window.addEventListener('beforeunload', function(e) {
-  // Stop DWM timer if active round is in progress
-  if (timerInterval) { stopTimer(); }
-  // Warn if round is in progress (state 2 visible)
+  if (timerInterval) stopTimer();
   var s2 = document.getElementById('state2');
   if (s2 && s2.style.display !== 'none' && PARAMS.length > 0) {
     e.preventDefault();
@@ -1091,9 +1080,6 @@ window.addEventListener('beforeunload', function(e) {
   }
 });
 
-// ─────────────────────────────────────────────────────────
-// Toast / Loading
-// ─────────────────────────────────────────────────────────
 function showLoading(msg) {
   document.getElementById('loadingMsg').textContent = msg || 'Loading…';
   document.getElementById('loading').classList.remove('hidden');

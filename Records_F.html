@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
     body {
@@ -10,10 +13,6 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ── Tab bar sticky below header (top: 56px from Theme) ── */
-    /* Tab bar z-index: 90, filter bar z-index: 85 */
-
-    /* ── Filter bar ── */
     .rec-filter {
       display: flex;
       gap: 6px;
@@ -23,7 +22,7 @@
       background: var(--white);
       border-bottom: 1px solid var(--border);
       position: sticky;
-      top: 103px; /* 56px header + 47px tab-bar */
+      top: 103px;
       z-index: 85;
     }
     .rec-filter input[type="date"],
@@ -64,35 +63,37 @@
       font-family: inherit;
     }
 
-    /* ── Record list ── */
     .rec-list {
       padding: 8px 10px 80px;
     }
 
-    /* ── Record card ── */
     .rec-card {
       background: var(--white);
-      border: 1.5px solid var(--border);
-      border-left: 4px solid var(--navy);
       border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
       padding: 11px 12px;
       margin-bottom: 6px;
       display: flex;
       align-items: center;
       gap: 10px;
       cursor: pointer;
-      transition: border-color 0.12s, box-shadow 0.12s;
+      transition: box-shadow 0.12s;
       -webkit-tap-highlight-color: transparent;
     }
-    .rec-card:hover  { border-color: var(--navy); box-shadow: var(--shadow-1); }
-    .rec-card:active { background: #F0F4FF; }
+    .rec-card:hover  { box-shadow: var(--shadow-2); }
+    .rec-card:active { background: var(--navy-light); }
 
-    /* Module accent colors — left border */
-    .rec-card[data-type="GRN"]      { border-left-color: #1D4ED8; }
-    .rec-card[data-type="IQC"]      { border-left-color: #0D1B6E; }
-    .rec-card[data-type="OQC"]      { border-left-color: #BE185D; }
-    .rec-card[data-type="IPQC"]     { border-left-color: #D97706; }
-    .rec-card[data-type="Gatepass"] { border-left-color: #059669; }
+    .rec-card-accent {
+      width: 4px;
+      border-radius: 4px;
+      align-self: stretch;
+      flex-shrink: 0;
+    }
+    .rec-card[data-type="GRN"]      .rec-card-accent { background: #1D4ED8; }
+    .rec-card[data-type="IQC"]      .rec-card-accent { background: var(--navy); }
+    .rec-card[data-type="OQC"]      .rec-card-accent { background: #BE185D; }
+    .rec-card[data-type="IPQC"]     .rec-card-accent { background: var(--hold); }
+    .rec-card[data-type="Gatepass"] .rec-card-accent { background: var(--success); }
 
     .rec-main { flex: 1; min-width: 0; }
     .rec-docno {
@@ -125,7 +126,6 @@
     }
     .rec-chevron { font-size: 18px; color: var(--muted); }
 
-    /* ── Loading / empty states ── */
     .state-box {
       text-align: center;
       padding: 48px 20px;
@@ -135,25 +135,42 @@
     .state-box .msg  { font-size: 13px; font-weight: 500; }
     .state-box .sub  { font-size: 11px; margin-top: 4px; }
 
-    /* ── Status badge overrides ── */
     .badge-accepted { background: #DCFCE7; color: #15803D; }
     .badge-released { background: #DCFCE7; color: #15803D; }
     .badge-rejected { background: #FEE2E2; color: #B91C1C; }
-    .badge-hold     { background: #FEF3C7; color: #B45309; }
-    .badge-pending  { background: #F3F4F6; color: #6B7280; }
-    .badge-pass     { background: #DCFCE7; color: #15803D; }
-    .badge-fail     { background: #FEE2E2; color: #B91C1C; }
     .badge-open     { background: #FFF3CD; color: #B45309; }
     .badge-closed   { background: #DCFCE7; color: #15803D; }
     .badge-issued   { background: #DBEAFE; color: #1D4ED8; }
+
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy);
+      color: var(--white);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+      max-width: 88vw;
+      text-align: center;
+    }
+    .toast.show    { opacity: 1; pointer-events: auto; }
+    .toast.error   { background: var(--danger); }
+    .toast.success { background: var(--success); }
   </style>
 </head>
 <body>
 
-<!-- Header -->
 <div class="pm-header">
   <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <svg viewBox="0 0 20 20">
       <path d="M12 4l-6 6 6 6"/>
     </svg>
   </button>
@@ -161,16 +178,14 @@
   <span class="doc-badge" id="totalBadge" style="display:none;"></span>
 </div>
 
-<!-- Module tab bar (sticky at top:56px from Theme) -->
-<div class="tab-bar">
-  <button class="tab-btn active" id="tab-GRN"      data-type="GRN">GRN <span class="tab-count" id="cnt-GRN">—</span></button>
-  <button class="tab-btn"        id="tab-IQC"      data-type="IQC">IQC <span class="tab-count" id="cnt-IQC">—</span></button>
-  <button class="tab-btn"        id="tab-IPQC"     data-type="IPQC">IPQC <span class="tab-count" id="cnt-IPQC">—</span></button>
-  <button class="tab-btn"        id="tab-OQC"      data-type="OQC">OQC <span class="tab-count" id="cnt-OQC">—</span></button>
-  <button class="tab-btn"        id="tab-Gatepass" data-type="Gatepass">Gatepass <span class="tab-count" id="cnt-Gatepass">—</span></button>
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-type="GRN">GRN <span class="tab-count" id="cnt-GRN">—</span></button>
+  <button class="tab-btn"        data-type="IQC">IQC <span class="tab-count" id="cnt-IQC">—</span></button>
+  <button class="tab-btn"        data-type="IPQC">IPQC <span class="tab-count" id="cnt-IPQC">—</span></button>
+  <button class="tab-btn"        data-type="OQC">OQC <span class="tab-count" id="cnt-OQC">—</span></button>
+  <button class="tab-btn"        data-type="Gatepass">Gatepass <span class="tab-count" id="cnt-Gatepass">—</span></button>
 </div>
 
-<!-- Filter bar -->
 <div class="rec-filter">
   <input type="date" id="fFrom" title="From date">
   <input type="date" id="fTo"   title="To date">
@@ -179,7 +194,6 @@
   <button class="btn-clear"  id="btnClear">Clear</button>
 </div>
 
-<!-- Record list -->
 <div class="rec-list" id="recList">
   <div class="state-box">
     <span class="icon">⏳</span>
@@ -187,55 +201,58 @@
   </div>
 </div>
 
-<script>
-// ── Session bridge ────────────────────────────────────────
-var sessionId = sessionStorage.getItem('dwmSessionId') || '';
+<div class="toast" id="pmToast"></div>
 
-// ── State ─────────────────────────────────────────────────
+<script>
+var sessionId   = sessionStorage.getItem('dwmSessionId') || '';
 var currentTab  = 'GRN';
 var searchTimer = null;
 
-// ── Init ──────────────────────────────────────────────────
-document.getElementById('backBtn').addEventListener('click', function() {
-  if (typeof goHome === 'function') goHome();
-});
-document.getElementById('btnFilter').addEventListener('click', loadList);
-document.getElementById('btnClear').addEventListener('click', clearFilters);
-document.getElementById('fSearch').addEventListener('input', function() {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(loadList, 400);
-});
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('backBtn').addEventListener('click', function() {
+    if (typeof goHome === 'function') goHome();
+  });
 
-// Tab delegation
-document.querySelector('.tab-bar').addEventListener('click', function(e) {
-  var btn = e.target.closest('.tab-btn');
-  if (!btn || !btn.dataset.type) return;
-  switchTab(btn.dataset.type);
-});
+  document.getElementById('btnFilter').addEventListener('click', loadList);
 
-window.addEventListener('load', function() {
+  document.getElementById('btnClear').addEventListener('click', function() {
+    document.getElementById('fFrom').value   = '';
+    document.getElementById('fTo').value     = '';
+    document.getElementById('fSearch').value = '';
+    loadList();
+  });
+
+  document.getElementById('fSearch').addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadList, 400);
+  });
+
+  document.getElementById('tabBar').addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn || !btn.dataset.type) return;
+    switchTab(btn.dataset.type);
+  });
+
+  document.getElementById('recList').addEventListener('click', function(e) {
+    var card = e.target.closest('.rec-card');
+    if (!card) return;
+    openRecord(card.dataset.docno);
+  });
+
   loadCounts();
   loadList();
 });
 
-// ── Tab switch ────────────────────────────────────────────
 function switchTab(type) {
   if (type === currentTab) return;
-  document.getElementById('tab-' + currentTab).classList.remove('active');
+  var prev = document.querySelector('#tabBar .tab-btn.active');
+  if (prev) prev.classList.remove('active');
+  var next = document.querySelector('#tabBar .tab-btn[data-type="' + type + '"]');
+  if (next) next.classList.add('active');
   currentTab = type;
-  document.getElementById('tab-' + type).classList.add('active');
   loadList();
 }
 
-// ── Clear filters ─────────────────────────────────────────
-function clearFilters() {
-  document.getElementById('fFrom').value   = '';
-  document.getElementById('fTo').value     = '';
-  document.getElementById('fSearch').value = '';
-  loadList();
-}
-
-// ── Tab counts ────────────────────────────────────────────
 function loadCounts() {
   google.script.run
     .withSuccessHandler(function(counts) {
@@ -255,7 +272,6 @@ function setCount(type, n) {
   if (el) el.textContent = (n !== undefined && n !== null) ? n : '—';
 }
 
-// ── Load list ─────────────────────────────────────────────
 function loadList() {
   showLoading();
   var filters = {
@@ -283,15 +299,14 @@ function showError(err) {
     '<div class="sub">' + esc((err && err.message) || String(err)) + '</div></div>';
 }
 
-// ── Render list ───────────────────────────────────────────
 function renderList(rows) {
   var badge = document.getElementById('totalBadge');
 
   if (!rows || rows.length === 0) {
     document.getElementById('recList').innerHTML =
-      '<div class="state-box"><span class="icon">📭</span>' +
-      '<div class="msg">No records found</div>' +
-      '<div class="sub">Try adjusting filters or date range</div></div>';
+      '<div class="empty-state"><span class="icon">📭</span>' +
+      '<div>No records found</div>' +
+      '<div style="font-size:11px;margin-top:4px;">Try adjusting filters or date range</div></div>';
     badge.style.display = 'none';
     return;
   }
@@ -304,6 +319,7 @@ function renderList(rows) {
     var r = rows[i];
     html +=
       '<div class="rec-card" data-type="' + esc(currentTab) + '" data-docno="' + esc(r.docNo) + '">' +
+        '<div class="rec-card-accent"></div>' +
         '<div class="rec-main">' +
           '<div class="rec-docno">' + esc(r.docNo) + '</div>' +
           '<div class="rec-meta">' + esc(r.date) + '</div>' +
@@ -317,16 +333,8 @@ function renderList(rows) {
   }
 
   document.getElementById('recList').innerHTML = html;
-
-  // Event delegation — open record on tap
-  document.getElementById('recList').addEventListener('click', function(e) {
-    var card = e.target.closest('.rec-card');
-    if (!card) return;
-    openRecord(card.dataset.docno);
-  });
 }
 
-// ── Status badge ──────────────────────────────────────────
 function statusBadge(status) {
   var s = (status || 'PENDING').toUpperCase();
   var cls = 'badge-pending';
@@ -339,7 +347,6 @@ function statusBadge(status) {
   return '<span class="badge ' + cls + '">' + esc(status || 'PENDING') + '</span>';
 }
 
-// ── Open record (document view) ───────────────────────────
 function openRecord(docNo) {
   if (currentTab === 'IPQC') {
     showToast('Document view not available for IPQC sessions.');
@@ -355,27 +362,14 @@ function openRecord(docNo) {
     .getDocViewHtml(currentTab, docNo);
 }
 
-// ── Toast ─────────────────────────────────────────────────
 function showToast(msg, type) {
   var t = document.getElementById('pmToast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'pmToast';
-    t.style.cssText =
-      'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
-      'background:rgba(30,41,59,0.92);color:#fff;padding:10px 18px;border-radius:8px;' +
-      'font-size:13px;font-family:inherit;z-index:9999;pointer-events:none;' +
-      'opacity:0;transition:opacity 0.2s;max-width:88vw;text-align:center;';
-    document.body.appendChild(t);
-  }
-  if (type === 'error') t.style.background = '#DC2626';
   t.textContent = msg;
-  t.style.opacity = '1';
+  t.className = 'toast show' + (type ? ' ' + type : '');
   clearTimeout(t._tmr);
-  t._tmr = setTimeout(function() { t.style.opacity = '0'; }, 3000);
+  t._tmr = setTimeout(function() { t.className = 'toast'; }, 3000);
 }
 
-// ── HTML escape ───────────────────────────────────────────
 function esc(s) {
   if (!s && s !== 0) return '';
   return String(s)

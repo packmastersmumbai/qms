@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
     .two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 
-    /* Progress bar */
     .progress-bar-wrap {
       background: var(--border);
       border-radius: 4px;
@@ -27,7 +29,6 @@
       text-align: right;
     }
 
-    /* Item navigator */
     .item-nav {
       display: flex;
       align-items: center;
@@ -49,7 +50,7 @@
     }
     .btn-next-item {
       background: var(--navy);
-      color: #fff;
+      color: var(--white);
       border: none;
       border-radius: 6px;
       padding: 6px 14px;
@@ -63,7 +64,6 @@
       cursor: not-allowed;
     }
 
-    /* Parameter card */
     .param-card {
       background: var(--white);
       border: 1.5px solid var(--border);
@@ -154,7 +154,7 @@
     .chip-na {
       display: inline-block;
       background: #F3F4F6;
-      color: #6B7280;
+      color: var(--muted);
       font-size: 11px;
       font-weight: 700;
       padding: 2px 8px;
@@ -183,10 +183,8 @@
     .pf-btn:active { transform: scale(0.96); }
     .pf-btn.pass { background: #E8F5E9; border-color: var(--success); color: var(--success); }
     .pf-btn.fail { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
-    .pf-btn.na   { background: #F3F4F6; border-color: #9CA3AF; color: #6B7280; }
-    .param-card-remarks {
-      margin-top: 2px;
-    }
+    .pf-btn.na   { background: #F3F4F6; border-color: #9CA3AF; color: var(--muted); }
+
     .param-card-remarks input {
       width: 100%;
       border: 1.5px solid var(--border);
@@ -202,7 +200,6 @@
       border-color: var(--navy);
     }
 
-    /* Quantity row */
     .qty-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -225,6 +222,7 @@
       font-family: inherit;
       text-align: center;
       color: var(--text);
+      background: var(--white);
     }
     .qty-item input:focus {
       outline: none;
@@ -238,32 +236,6 @@
       margin-top: 4px;
     }
 
-    /* Disposition buttons */
-    .disp-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 6px;
-    }
-    .disp-btn {
-      padding: 10px 6px;
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      background: var(--white);
-      color: var(--text);
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .disp-btn.active-accept { background: #E8F5E9; border-color: var(--success); color: var(--success); }
-    .disp-btn.active-reject { background: #FFEBEE; border-color: var(--danger);  color: var(--danger);  }
-    .disp-btn.active-hold   { background: #FEF3C7; border-color: var(--hold);    color: var(--hold);    }
-    .disp-btn.active-awd    { background: #FFEDD5; border-color: var(--deviation); color: var(--deviation); }
-
-    /* Params placeholder */
     .params-placeholder {
       padding: 20px;
       text-align: center;
@@ -286,7 +258,6 @@
 
 <div style="padding-bottom:80px;">
 
-  <!-- Header Info -->
   <div class="section">
     <div class="section-title">Inspection Details</div>
     <div class="section-body">
@@ -340,8 +311,7 @@
     </div>
   </div>
 
-  <!-- Item navigator (shown only after GRN selected with multiple items) -->
-  <div id="itemNavWrap" style="display:none;" class="section" style="overflow:hidden;">
+  <div id="itemNavWrap" style="display:none;" class="section">
     <div class="item-nav">
       <div class="param-card-info">
         <div class="item-nav-label" id="itemNavLabel">Item 1 of 1</div>
@@ -349,7 +319,6 @@
       </div>
       <button class="btn-next-item" id="btnNextItem">Next item →</button>
     </div>
-    <!-- Progress -->
     <div style="padding:6px 12px 8px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span style="font-size:11px;color:var(--muted);">Parameters completed</span>
@@ -361,7 +330,6 @@
     </div>
   </div>
 
-  <!-- Single-item progress (no navigator) -->
   <div id="singleProgressWrap" style="display:none;" class="section">
     <div style="padding:8px 12px 10px;">
       <div id="singleItemLabel" style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px;">—</div>
@@ -375,7 +343,6 @@
     </div>
   </div>
 
-  <!-- Inspection Parameters (card-per-parameter) -->
   <div class="section">
     <div class="section-title">
       Inspection Parameters
@@ -386,7 +353,6 @@
     </div>
   </div>
 
-  <!-- Quantities (per current item) -->
   <div class="section" id="qtySection" style="display:none;">
     <div class="section-title" id="qtySectionTitle">Quantities</div>
     <div class="section-body">
@@ -408,21 +374,20 @@
     </div>
   </div>
 
-  <!-- Disposition -->
   <div class="section" id="dispositionSection" style="display:none;">
     <div class="section-title">Disposition</div>
     <div class="section-body">
       <div class="disp-grid">
-        <button class="disp-btn" id="d_acc" onclick="setDisp('ACCEPTED')">
+        <button class="disp-btn" id="d_acc">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>ACCEPT
         </button>
-        <button class="disp-btn" id="d_hld" onclick="setDisp('HOLD')">
+        <button class="disp-btn" id="d_hld">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>HOLD
         </button>
-        <button class="disp-btn" id="d_rej" onclick="setDisp('REJECTED')">
+        <button class="disp-btn" id="d_rej">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>REJECT
         </button>
-        <button class="disp-btn" id="d_awd" onclick="setDisp('ACCEPTED WITH DEVIATION')">
+        <button class="disp-btn" id="d_awd">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>WITH DEVIATION
         </button>
       </div>
@@ -445,10 +410,9 @@
 
 </div>
 
-<!-- Sticky footer -->
 <div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;">
-  <button class="btn-submit" id="btnSubmit" onclick="submitIQC()" style="flex:2;">Save IQC Record</button>
-  <button class="btn-wa" id="btnWA" onclick="sendWA()" style="flex:1;margin-top:0;display:none;">
+  <button class="btn-submit" id="btnSubmit" style="flex:2;">Save IQC Record</button>
+  <button class="btn-wa" id="btnWA" style="flex:1;margin-top:0;display:none;">
     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>WhatsApp
   </button>
 </div>
@@ -456,42 +420,34 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
 var sessionId   = sessionStorage.getItem('dwmSessionId') || '';
 var PARAMS      = [];
 var INSPECTORS  = [];
 var GRNS        = [];
 var GRN_MAP     = {};
-var currentItems = [];   // all items for selected GRN
-var currentItemIndex = 0; // which item is active
-
-// itemData[i] = { paramVals:{id:'PASS'|'FAIL'|'NA'|''}, paramRemarks:{id:str},
-//                 sampleSize, acceptedQty, rejectedQty }
+var currentItems = [];
+var currentItemIndex = 0;
 var itemData    = [];
 var disposition = '';
 var savedRecord = null;
 var formSubmitted = false;
 
-// ── DWM session bridge: beforeunload guard ────────────────────────────────
 window.addEventListener('beforeunload', function() {
   if (!formSubmitted && sessionId) {
     try { google.script.run.pauseDwmTimer(sessionId); } catch(e) {}
   }
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────
 function init() {
   var today = new Date();
   document.getElementById('date').value = today.toISOString().split('T')[0];
 
-  // sessionStorage prefill
   var prefillRaw = sessionStorage.getItem('iqcPrefill');
   if (prefillRaw) {
     try {
       var pf = JSON.parse(prefillRaw);
       if (pf.supplierName) document.getElementById('supplierName').value = pf.supplierName;
       if (pf.grnRef)       document.getElementById('grnRef').value       = pf.grnRef;
-      // grnNo and batch will be set after GRN list loads
       window._prefillGrnNo = pf.grnNo || '';
       window._prefillBatch = pf.batchNo || '';
     } catch(e) {}
@@ -505,7 +461,6 @@ function init() {
       INSPECTORS = d.inspectors;
       GRNS       = d.recentGRNs || [];
 
-      // Populate inspectors
       var iSel = document.getElementById('inspector');
       INSPECTORS.forEach(function(p) {
         var o = document.createElement('option');
@@ -514,7 +469,6 @@ function init() {
         iSel.appendChild(o);
       });
 
-      // Populate GRN dropdown
       var gSel = document.getElementById('grnNo');
       GRNS.forEach(function(g) {
         GRN_MAP[g.grnNo] = g;
@@ -525,7 +479,6 @@ function init() {
         gSel.appendChild(o);
       });
 
-      // Apply prefill GRN if present
       if (window._prefillGrnNo) {
         gSel.value = window._prefillGrnNo;
         if (gSel.value) onGRNChange();
@@ -534,23 +487,29 @@ function init() {
     .withFailureHandler(function(e) { showToast(e.message, 'error'); })
     .getIQCFormInit();
 
-  // GRN change listener
   document.getElementById('grnNo').addEventListener('change', onGRNChange);
 
-  // Quantity inputs — recalculate shortage
   ['sampleSize','acceptedQty','rejectedQty'].forEach(function(id) {
     document.getElementById(id).addEventListener('input', calcShortage);
   });
+
+  document.getElementById('d_acc').addEventListener('click', function() { setDisp('ACCEPTED'); });
+  document.getElementById('d_hld').addEventListener('click', function() { setDisp('HOLD'); });
+  document.getElementById('d_rej').addEventListener('click', function() { setDisp('REJECTED'); });
+  document.getElementById('d_awd').addEventListener('click', function() { setDisp('ACCEPTED WITH DEVIATION'); });
+
+  document.getElementById('btnSubmit').addEventListener('click', submitIQC);
+  document.getElementById('btnWA').addEventListener('click', sendWA);
+  document.getElementById('backBtn').addEventListener('click', goHome);
+  document.getElementById('btnNextItem').addEventListener('click', nextItem);
 }
 
-// ── GRN change ────────────────────────────────────────────────────────────
 function onGRNChange() {
   var grnNo = document.getElementById('grnNo').value;
   var g = GRN_MAP[grnNo];
   document.getElementById('supplierName').value = g ? (g.supplierName || '') : '';
   document.getElementById('grnRef').value       = grnNo || '';
 
-  // Reset state
   currentItems     = [];
   currentItemIndex = 0;
   itemData         = [];
@@ -565,7 +524,6 @@ function onGRNChange() {
         return;
       }
       currentItems = items;
-      // Init per-item data
       items.forEach(function() {
         itemData.push({ paramVals: {}, paramRemarks: {},
                         sampleSize: 0, acceptedQty: 0, rejectedQty: 0 });
@@ -577,12 +535,10 @@ function onGRNChange() {
     .getGRNItems(grnNo);
 }
 
-// ── Render current item's cards ────────────────────────────────────────────
 function renderCurrentItem() {
   var item = currentItems[currentItemIndex];
   var total = currentItems.length;
 
-  // Show/hide item navigator
   if (total > 1) {
     document.getElementById('itemNavWrap').style.display = '';
     document.getElementById('singleProgressWrap').style.display = 'none';
@@ -598,29 +554,24 @@ function renderCurrentItem() {
       (item.materialDesc || 'Material') + (item.batchNo ? ' · Batch: ' + item.batchNo : '');
   }
 
-  // Show qty + disposition sections
   document.getElementById('qtySection').style.display = '';
   document.getElementById('dispositionSection').style.display = '';
   document.getElementById('qtySectionTitle').textContent =
     'Quantities — ' + (item.materialDesc || 'Item ' + (currentItemIndex + 1));
 
-  // Restore qty values for this item
   var d = itemData[currentItemIndex];
   document.getElementById('sampleSize').value  = d.sampleSize  || '';
   document.getElementById('acceptedQty').value = d.acceptedQty || '';
   document.getElementById('rejectedQty').value = d.rejectedQty || '';
   calcShortage();
 
-  // Build param cards
   buildParamCards();
   updateProgress();
 }
 
-// ── Build parameter cards ─────────────────────────────────────────────────
 function buildParamCards() {
   var body = document.getElementById('paramCardsBody');
   body.innerHTML = '';
-  document.getElementById('paramPlaceholder').style.display = 'none';
 
   var d = itemData[currentItemIndex];
 
@@ -629,11 +580,10 @@ function buildParamCards() {
     card.id        = 'pcard_' + p.id;
     card.className = 'param-card';
     var currentVal = d.paramVals[p.id] || '';
-    if (currentVal === 'PASS') card.className += ' card-pass';
+    if (currentVal === 'PASS')      card.className += ' card-pass';
     else if (currentVal === 'FAIL') card.className += ' card-fail';
     else if (currentVal === 'NA')   card.className += ' card-na';
 
-    // Header
     var headerDiv = document.createElement('div');
     headerDiv.className = 'param-card-header';
 
@@ -643,9 +593,22 @@ function buildParamCards() {
 
     var infoDiv = document.createElement('div');
     infoDiv.className = 'param-card-info';
-    infoDiv.innerHTML =
-      '<div class="param-card-name">' + p.label + '</div>' +
-      '<div class="param-card-spec">' + (p.spec || '') + '</div>';
+
+    var nameDiv = document.createElement('div');
+    nameDiv.className = 'param-card-name';
+    nameDiv.textContent = p.label;
+    if (p.ccp) {
+      var dot = document.createElement('span');
+      dot.className = 'ccp-dot';
+      nameDiv.appendChild(dot);
+    }
+
+    var specDiv = document.createElement('div');
+    specDiv.className = 'param-card-spec';
+    specDiv.textContent = p.spec || '';
+
+    infoDiv.appendChild(nameDiv);
+    infoDiv.appendChild(specDiv);
 
     headerDiv.appendChild(numDiv);
     headerDiv.appendChild(infoDiv);
@@ -657,42 +620,36 @@ function buildParamCards() {
       headerDiv.appendChild(ccpSpan);
     }
 
-    if (currentVal) {
-      var chipDiv = document.createElement('div');
-      chipDiv.className = 'param-card-status';
-      chipDiv.id = 'chip_' + p.id;
-      chipDiv.innerHTML = currentVal === 'PASS'
-        ? '<span class="chip-pass">PASS</span>'
-        : currentVal === 'FAIL'
-          ? '<span class="chip-fail">FAIL</span>'
-          : '<span class="chip-na">N/A</span>';
-      headerDiv.appendChild(chipDiv);
-    } else {
-      var chipDiv = document.createElement('div');
-      chipDiv.className = 'param-card-status';
-      chipDiv.id = 'chip_' + p.id;
-      headerDiv.appendChild(chipDiv);
+    var chipDiv = document.createElement('div');
+    chipDiv.className = 'param-card-status';
+    chipDiv.id = 'chip_' + p.id;
+    if (currentVal === 'PASS') {
+      chipDiv.innerHTML = '<span class="chip-pass">PASS</span>';
+    } else if (currentVal === 'FAIL') {
+      chipDiv.innerHTML = '<span class="chip-fail">FAIL</span>';
+    } else if (currentVal === 'NA') {
+      chipDiv.innerHTML = '<span class="chip-na">N/A</span>';
     }
+    headerDiv.appendChild(chipDiv);
 
     card.appendChild(headerDiv);
 
-    // P/F/NA buttons
     var actionsDiv = document.createElement('div');
     actionsDiv.className = 'param-card-actions';
 
     var passBtn = document.createElement('button');
     passBtn.className = 'pf-btn' + (currentVal === 'PASS' ? ' pass' : '');
     passBtn.textContent = 'Pass';
-    passBtn.onclick = (function(paramId) {
+    passBtn.addEventListener('click', (function(paramId) {
       return function() { setPF(paramId, 'PASS'); };
-    })(p.id);
+    })(p.id));
 
     var failBtn = document.createElement('button');
     failBtn.className = 'pf-btn' + (currentVal === 'FAIL' ? ' fail' : '');
     failBtn.textContent = 'Fail';
-    failBtn.onclick = (function(paramId) {
+    failBtn.addEventListener('click', (function(paramId) {
       return function() { setPF(paramId, 'FAIL'); };
-    })(p.id);
+    })(p.id));
 
     actionsDiv.appendChild(passBtn);
     actionsDiv.appendChild(failBtn);
@@ -701,15 +658,14 @@ function buildParamCards() {
       var naBtn = document.createElement('button');
       naBtn.className = 'pf-btn' + (currentVal === 'NA' ? ' na' : '');
       naBtn.textContent = 'N/A';
-      naBtn.onclick = (function(paramId) {
+      naBtn.addEventListener('click', (function(paramId) {
         return function() { setPF(paramId, 'NA'); };
-      })(p.id);
+      })(p.id));
       actionsDiv.appendChild(naBtn);
     }
 
     card.appendChild(actionsDiv);
 
-    // Remarks field
     var rmkDiv = document.createElement('div');
     rmkDiv.className = 'param-card-remarks';
     var rmkInput = document.createElement('input');
@@ -717,11 +673,11 @@ function buildParamCards() {
     rmkInput.id          = 'rmk_' + p.id;
     rmkInput.placeholder = 'Remarks (optional)';
     rmkInput.value       = d.paramRemarks[p.id] || '';
-    rmkInput.oninput = (function(paramId) {
+    rmkInput.addEventListener('input', (function(paramId) {
       return function() {
         itemData[currentItemIndex].paramRemarks[paramId] = this.value;
       };
-    })(p.id);
+    })(p.id));
     rmkDiv.appendChild(rmkInput);
     card.appendChild(rmkDiv);
 
@@ -729,19 +685,16 @@ function buildParamCards() {
   });
 }
 
-// ── Set Pass/Fail/NA for a parameter ─────────────────────────────────────
 function setPF(paramId, val) {
   var d = itemData[currentItemIndex];
   d.paramVals[paramId] = val;
 
-  // Update card style
   var card = document.getElementById('pcard_' + paramId);
   if (card) {
     card.className = 'param-card ' +
       (val === 'PASS' ? 'card-pass' : val === 'FAIL' ? 'card-fail' : 'card-na');
   }
 
-  // Update chip
   var chip = document.getElementById('chip_' + paramId);
   if (chip) {
     chip.innerHTML = val === 'PASS'
@@ -751,7 +704,6 @@ function setPF(paramId, val) {
         : '<span class="chip-na">N/A</span>';
   }
 
-  // Update button highlight — find buttons in this card
   if (card) {
     var btns = card.querySelectorAll('.pf-btn');
     btns.forEach(function(btn) {
@@ -767,7 +719,6 @@ function setPF(paramId, val) {
   autoSuggestDisp();
 }
 
-// ── Progress update ───────────────────────────────────────────────────────
 function updateProgress() {
   if (!PARAMS.length) return;
   var d = itemData[currentItemIndex];
@@ -782,13 +733,11 @@ function updateProgress() {
   document.getElementById('progressFill2').style.width  = pct;
 }
 
-// ── Shortage calc ─────────────────────────────────────────────────────────
 function calcShortage() {
   var ss  = parseFloat(document.getElementById('sampleSize').value)  || 0;
   var acc = parseFloat(document.getElementById('acceptedQty').value) || 0;
   var rej = parseFloat(document.getElementById('rejectedQty').value) || 0;
 
-  // Save to itemData
   if (itemData[currentItemIndex]) {
     itemData[currentItemIndex].sampleSize  = ss;
     itemData[currentItemIndex].acceptedQty = acc;
@@ -801,7 +750,6 @@ function calcShortage() {
     : 'Shortage: ' + (ss - acc - rej);
 }
 
-// ── CCP auto-suggest disposition ─────────────────────────────────────────
 var CCP_IDS = ['qty', 'colour', 'dims', 'weight', 'clean', 'shelf', 'coa'];
 function autoSuggestDisp() {
   var anyFail = itemData.some(function(d) {
@@ -810,16 +758,13 @@ function autoSuggestDisp() {
   if (anyFail && !disposition) setDisp('REJECTED');
 }
 
-// ── Next item ─────────────────────────────────────────────────────────────
 function nextItem() {
   if (currentItemIndex >= currentItems.length - 1) return;
   currentItemIndex++;
   renderCurrentItem();
-  // Scroll to param cards
   document.getElementById('paramCardsBody').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ── Clear param cards ─────────────────────────────────────────────────────
 function clearParamCards() {
   var body = document.getElementById('paramCardsBody');
   body.innerHTML = '';
@@ -829,25 +774,23 @@ function clearParamCards() {
   ph.textContent = 'Select a GRN to load inspection parameters.';
   body.appendChild(ph);
 
-  document.getElementById('itemNavWrap').style.display     = 'none';
+  document.getElementById('itemNavWrap').style.display        = 'none';
   document.getElementById('singleProgressWrap').style.display = 'none';
-  document.getElementById('qtySection').style.display      = 'none';
+  document.getElementById('qtySection').style.display         = 'none';
   document.getElementById('dispositionSection').style.display = 'none';
 }
 
-// ── Disposition ───────────────────────────────────────────────────────────
 function setDisp(val) {
   disposition = val;
   ['d_acc','d_hld','d_rej','d_awd'].forEach(function(id) {
     document.getElementById(id).className = 'disp-btn';
   });
-  if      (val === 'ACCEPTED')               document.getElementById('d_acc').className = 'disp-btn active-accept';
-  else if (val === 'HOLD')                   document.getElementById('d_hld').className = 'disp-btn active-hold';
-  else if (val === 'REJECTED')               document.getElementById('d_rej').className = 'disp-btn active-reject';
+  if      (val === 'ACCEPTED')                document.getElementById('d_acc').className = 'disp-btn active-acc';
+  else if (val === 'HOLD')                    document.getElementById('d_hld').className = 'disp-btn active-hld';
+  else if (val === 'REJECTED')                document.getElementById('d_rej').className = 'disp-btn active-rej';
   else if (val === 'ACCEPTED WITH DEVIATION') document.getElementById('d_awd').className = 'disp-btn active-awd';
 }
 
-// ── Submit ────────────────────────────────────────────────────────────────
 function submitIQC() {
   if (!document.getElementById('grnNo').value)     { showToast('Please select a GRN.', 'error'); return; }
   if (!document.getElementById('inspector').value) { showToast('Please select an Inspector.', 'error'); return; }
@@ -906,9 +849,7 @@ function submitIQC() {
           ncrRef:      document.getElementById('ncrRef').value
         };
 
-        // Auto-task
-        var title = 'IQC: ' + materialName + ' — ' + batchNo;
-        autoQmsTask_(sessionId, 'IQC', title, res.docNos[0]);
+        autoQmsTask_(sessionId, 'IQC', 'IQC: ' + materialName + ' — ' + batchNo, res.docNos[0]);
 
         showToast('Saved: ' + res.docNos.join(', '), 'success');
         document.getElementById('btnWA').style.display = 'block';
@@ -928,7 +869,6 @@ function submitIQC() {
     .saveIQC(data);
 }
 
-// ── autoQmsTask_ bridge ───────────────────────────────────────────────────
 function autoQmsTask_(sid, type, title, linkedRecord) {
   if (!sid) return;
   google.script.run
@@ -936,15 +876,14 @@ function autoQmsTask_(sid, type, title, linkedRecord) {
     .autoQmsTask_(sid, type, title, linkedRecord);
 }
 
-// ── WhatsApp ──────────────────────────────────────────────────────────────
 function sendWA() {
   if (!savedRecord) return;
   google.script.run
     .withSuccessHandler(function(url) { window.open(url, '_blank'); })
+    .withFailureHandler(function(e) { showToast(e.message, 'error'); })
     .getWhatsAppURLForRecord(savedRecord);
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
@@ -952,11 +891,7 @@ function showToast(msg, type) {
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
 
-// ── Wire up back + next-item buttons ─────────────────────────────────────
-document.getElementById('backBtn').addEventListener('click', goHome);
-document.getElementById('btnNextItem').addEventListener('click', nextItem);
-
-window.onload = init;
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
