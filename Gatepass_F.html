@@ -2,475 +2,380 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    .item-card {
-      background: var(--navy-light);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 10px;
-      margin-bottom: 6px;
-      position: relative;
-    }
-    .item-card-remove {
-      position: absolute;
-      top: 6px;
-      right: 8px;
-      background: none;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
-      color: var(--muted);
-      line-height: 1;
-      padding: 0;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .item-card-remove:hover { color: var(--danger); }
-    .item-card-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--navy);
-      padding-right: 26px;
-    }
-    .item-card-qty {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 3px;
-    }
-    .item-card-qty b { font-weight: 600; }
-
-    .item-badge {
-      background: var(--amber);
-      color: var(--navy);
+    /* ── Gatepass-specific styles ── */
+    .gp-section-label {
       font-size: 10px;
       font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 10px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+      padding: 5px 12px 4px;
+      background: var(--navy);
     }
 
-    .section-title-flex {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    /* Disposition row */
+    .disp-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 10px 0;
     }
-
-    .add-item-btn {
-      width: 100%;
-      background: var(--amber);
-      color: var(--navy);
-      border: none;
-      border-radius: 6px;
-      padding: 9px;
+    .disp-pick-btn {
+      height: 52px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--white);
       font-size: 13px;
       font-weight: 700;
-      cursor: pointer;
       font-family: inherit;
-      margin-top: 4px;
+      color: var(--text);
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s ease;
+    }
+    .disp-pick-btn:active {
+      transform: scale(0.97);
+      transition: transform 0.08s ease;
+    }
+    .disp-pick-btn.approved {
+      background: #F0FDF4;
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .disp-pick-btn.rejected {
+      background: #FEF2F2;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .disp-pick-btn.pulse-warn {
+      animation: disp-pulse 0.6s ease;
+    }
+    @keyframes disp-pulse {
+      0%   { border-color: var(--amber); box-shadow: 0 0 0 0 rgba(232,160,32,0.5); }
+      50%  { border-color: var(--amber); box-shadow: 0 0 0 6px rgba(232,160,32,0); }
+      100% { border-color: var(--border); box-shadow: none; }
     }
 
-    input[readonly] { background: var(--surface); color: var(--muted); }
-
-    .items-empty {
-      font-size: 12px;
-      color: var(--muted);
-      text-align: center;
-      padding: 6px 0;
-    }
-
-    .items-list { margin-top: 8px; }
-
-    .oqc-hint { font-size: 10px; color: var(--muted); }
-
-    .sticky-footer {
+    /* Sticky footer — navy bg per spec */
+    .gp-footer {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: var(--white);
+      background: var(--navy);
       padding: 10px 14px;
-      border-top: 1px solid var(--border);
-      box-shadow: 0 -2px 8px var(--shadow);
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
       z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .gp-footer-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.7);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .gp-save-btn {
+      background: var(--amber);
+      color: var(--navy);
+      border: none;
+      border-radius: 8px;
+      padding: 11px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .gp-save-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .gp-save-btn:not(:disabled):active {
+      transform: scale(0.97);
+      transition: transform 0.08s ease;
+    }
+
+    /* Warning chip */
+    .warn-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #FEF3C7;
+      color: #92600A;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 4px 10px;
+      margin-top: 4px;
+    }
+
+    /* Confirmation screen */
+    .confirm-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px 100px;
+      text-align: center;
+    }
+    .confirm-icon-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--amber);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: confirm-pop 0.3s ease forwards;
+    }
+    @keyframes confirm-pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .confirm-icon-circle svg {
+      width: 40px;
+      height: 40px;
+      stroke: var(--navy);
+      stroke-width: 3;
+      fill: none;
+    }
+    .confirm-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .confirm-doc {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--navy);
+      border-bottom: 3px solid var(--amber);
+      padding-bottom: 2px;
+      margin-bottom: 24px;
+      display: inline-block;
+    }
+    .confirm-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 5px 12px;
+      background: var(--navy-light);
+      color: var(--navy);
+    }
+    .chip.approved {
+      background: #DCFCE7;
+      color: #15803D;
+    }
+    .chip.rejected {
+      background: #FEE2E2;
+      color: #B91C1C;
+    }
+    .chip-label {
+      font-weight: 400;
+      opacity: 0.65;
+      margin-right: 2px;
+    }
+    .confirm-home-btn {
+      width: 100%;
+      max-width: 320px;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .confirm-home-btn:active {
+      background: #0A1450;
+    }
+
+    /* Force 16px on all text inputs per spec */
+    .field input[type="text"],
+    .field input[type="number"],
+    .field textarea {
+      font-size: 16px !important;
     }
   </style>
 </head>
 <body>
 
-<div class="pm-header">
-  <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
-  </button>
-  <span class="page-title">New Gatepass</span>
-  <span class="doc-badge" id="docBadge">GATEPASS</span>
-</div>
+<!-- ── SCREEN 1: Entry Form ── -->
+<div id="screenForm">
 
-<!-- Section 1: Vehicle / Transporter Details -->
-<div class="section">
-  <div class="section-title">Vehicle &amp; Transporter Details</div>
-  <div class="section-body">
+  <div class="pm-header">
+    <button class="back-btn" id="backBtn" aria-label="Back">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 4l-6 6 6 6"/>
+      </svg>
+    </button>
+    <span class="page-title">Gatepass</span>
+    <span class="doc-badge" id="docBadge">GATE</span>
+  </div>
 
-    <div class="two-col">
+  <!-- Section 1: MATERIAL -->
+  <div class="section">
+    <div class="gp-section-label">MATERIAL</div>
+    <div class="section-body">
+
       <div class="field">
-        <label>Date</label>
-        <input type="date" id="date">
-      </div>
-      <div class="field">
-        <label>Type</label>
-        <select id="type">
-          <option value="Outgoing Delivery">Outgoing Delivery</option>
-          <option value="Supplier Return">Supplier Return</option>
-          <option value="Job Work">Job Work</option>
+        <label>Material Type</label>
+        <select id="materialType">
+          <option value="Finished Goods">Finished Goods</option>
+          <option value="Raw Material Return">Raw Material Return</option>
+          <option value="Waste">Waste</option>
           <option value="Other">Other</option>
         </select>
       </div>
-    </div>
 
-    <div class="field">
-      <label>Vehicle No.</label>
-      <input type="text" id="vehicleNo" placeholder="Truck / vehicle registration number">
-    </div>
-
-    <div class="two-col">
       <div class="field">
-        <label>Driver Name</label>
-        <input type="text" id="driverName" placeholder="Driver name">
+        <label>Description <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="description" placeholder="Material description" required>
       </div>
+
+      <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label>Qty <span style="color:var(--danger)">*</span></label>
+          <input type="number" id="qty" min="0.01" step="any" inputmode="decimal"
+                 placeholder="0.00" required>
+        </div>
+        <div>
+          <label>Unit</label>
+          <select id="unit">
+            <option value="Pcs">Pcs</option>
+            <option value="Kg">Kg</option>
+            <option value="Ltrs">Ltrs</option>
+            <option value="Boxes">Boxes</option>
+            <option value="Rolls">Rolls</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Section 2: VEHICLE -->
+  <div class="section">
+    <div class="gp-section-label">VEHICLE</div>
+    <div class="section-body">
+
       <div class="field">
-        <label>Transporter</label>
-        <input type="text" id="transporter" placeholder="Transport company">
+        <label>Vehicle No. <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="vehicleNo" placeholder="e.g. MH04 AB 1234" required>
       </div>
-    </div>
 
-    <div class="field">
-      <label>Dispatch Zone</label>
-      <select id="dispatchZone">
-        <option value="Dispatch Bay">Dispatch Bay</option>
-        <option value="Finished Goods Store">Finished Goods Store</option>
-        <option value="Production Zone">Production Zone</option>
-        <option value="Raw Material Store">Raw Material Store</option>
-        <option value="Quarantine Zone">Quarantine Zone</option>
-      </select>
-    </div>
+      <div class="field">
+        <label>Driver Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="driverName" placeholder="Driver's full name" required>
+      </div>
 
+      <div class="field">
+        <label>Purpose</label>
+        <input type="text" id="purpose"
+               placeholder="e.g. Customer delivery, return to supplier">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Section 3: AUTHORIZATION -->
+  <div class="section">
+    <div class="gp-section-label">AUTHORIZATION</div>
+    <div class="section-body">
+
+      <div class="field">
+        <label>Authorized By <span style="color:var(--danger)">*</span></label>
+        <select id="authorizedBy" required>
+          <option value="">— Loading… —</option>
+        </select>
+        <div id="authWarn" style="display:none">
+          <span class="warn-chip">&#9888; No authorized users found.</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Remarks</label>
+        <textarea id="remarks" rows="3" placeholder="Optional notes…"></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Disposition row -->
+  <div class="disp-row">
+    <button class="disp-pick-btn" id="btnApproved" type="button">APPROVED</button>
+    <button class="disp-pick-btn" id="btnRejected" type="button">REJECTED</button>
+  </div>
+  <!-- spacer so content clears sticky footer -->
+  <div style="height:72px;"></div>
+
+</div><!-- #screenForm -->
+
+<!-- ── SCREEN 2: Confirmation ── -->
+<div id="screenConfirm" style="display:none">
+  <div class="pm-header">
+    <span class="page-title" style="text-align:center;flex:1">Gatepass Saved</span>
+  </div>
+  <div class="confirm-wrap">
+    <div class="confirm-icon-circle">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="confirm-title">Gatepass Saved</div>
+    <div class="confirm-doc" id="confirmDocNo">#—</div>
+    <div class="confirm-chips" id="confirmChips"></div>
+    <button class="confirm-home-btn" id="btnHome">Back to Home</button>
   </div>
 </div>
 
-<!-- Section 2: Material / Goods Details -->
-<div class="section">
-  <div class="section-title">
-    <div class="section-title-flex">
-      <span>Material / Goods Details</span>
-      <span id="itemBadge" class="item-badge">0 items</span>
-    </div>
-  </div>
-  <div class="section-body">
-
-    <div class="field">
-      <label>Customer / Party</label>
-      <select id="party">
-        <option value="">— Select Party —</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>OQC Reference <span class="oqc-hint">(if applicable)</span></label>
-      <input type="text" id="oqcRef" placeholder="e.g. PM/OQC/2026-001">
-    </div>
-
-    <div class="field">
-      <label>Search Material</label>
-      <input type="text" id="matSearch" placeholder="Type to search material…" autocomplete="off">
-      <select id="material" size="3"></select>
-    </div>
-
-    <div class="two-col">
-      <div class="field">
-        <label>Quantity</label>
-        <input type="number" id="qty" min="0" placeholder="0">
-      </div>
-      <div class="field">
-        <label>Unit</label>
-        <input type="text" id="unit" placeholder="KG / PC" readonly>
-      </div>
-    </div>
-
-    <button class="add-item-btn" id="addItemBtn">+ Add Item</button>
-
-    <div id="itemsList" class="items-list">
-      <p class="items-empty">No items added yet</p>
-    </div>
-
-  </div>
-</div>
-
-<!-- Section 3: Authorization -->
-<div class="section">
-  <div class="section-title">Authorization</div>
-  <div class="section-body">
-
-    <div class="field">
-      <label>Authorized By</label>
-      <select id="authorizedBy">
-        <option value="">— Select —</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>Security Guard on Duty</label>
-      <input type="text" id="securityGuard" placeholder="Name of security guard on duty">
-    </div>
-
-    <div class="field">
-      <label>Remarks</label>
-      <textarea id="remarks" placeholder="Any notes or observations…"></textarea>
-    </div>
-
-  </div>
-</div>
-
-<div class="sticky-footer">
-  <button class="btn-submit" id="btnSubmit">Issue Gatepass</button>
+<!-- Sticky footer (only visible on screen 1) -->
+<div class="gp-footer" id="gpFooter">
+  <div class="gp-footer-label" id="footerLabel">Finished Goods</div>
+  <button class="gp-save-btn" id="btnSave" disabled>Save Gatepass &#8594;</button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-var ALL_PARTIES = [], ALL_MATS = [];
-var partySel = {}, materialSel = {};
-var ITEMS = [];
-var docNo = '';
-var sessionId = sessionStorage.getItem('dwmSessionId') || '';
-var _dirty = false;
+// ── State ──────────────────────────────────────────────────────────────
+var _today      = '';
+var _docNo      = '';
+var _disposition = '';   // 'APPROVED' | 'REJECTED'
+var _saved      = false;
+var _taskId     = null;
+var _dwmSid     = sessionStorage.getItem('dwmSessionId') || null;
 
-function markDirty() { _dirty = true; }
-
-window.addEventListener('beforeunload', function(e) {
-  if (_dirty) {
-    e.preventDefault();
-    e.returnValue = 'You have unsaved changes. Leave anyway?';
-  }
-});
-
-function init() {
-  document.getElementById('date').value = new Date().toISOString().split('T')[0];
-
-  document.getElementById('backBtn').addEventListener('click', function() {
-    if (_dirty && !confirm('Unsaved changes will be lost. Go back?')) return;
-    goHome();
-  });
-
-  document.getElementById('addItemBtn').addEventListener('click', addItem);
-  document.getElementById('btnSubmit').addEventListener('click', submitGatepass);
-  document.getElementById('party').addEventListener('change', onPartyChange);
-  document.getElementById('material').addEventListener('change', onMaterialChange);
-  document.getElementById('matSearch').addEventListener('input', filterMaterials);
-
-  document.getElementById('itemsList').addEventListener('click', function(e) {
-    var btn = e.target.closest('.item-card-remove');
-    if (btn) {
-      e.preventDefault();
-      removeItem(parseInt(btn.dataset.index));
-    }
-  });
-
-  ['vehicleNo','driverName','transporter','oqcRef','securityGuard','remarks','date'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('input', markDirty);
-  });
-  ['type','dispatchZone','party','authorizedBy'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('change', markDirty);
-  });
-
-  google.script.run
-    .withSuccessHandler(function(data) {
-      docNo = data.docNumber;
-      document.getElementById('docBadge').textContent = docNo;
-
-      ALL_PARTIES = data.parties || [];
-      var pSel = document.getElementById('party');
-      ALL_PARTIES.forEach(function(p) {
-        var opt = document.createElement('option');
-        opt.value = p.code;
-        opt.textContent = p.name + (p.type ? ' (' + p.type + ')' : '');
-        opt.dataset.obj = JSON.stringify(p);
-        pSel.appendChild(opt);
-      });
-
-      var aSel = document.getElementById('authorizedBy');
-      (data.personnel || []).forEach(function(p) {
-        var opt = document.createElement('option');
-        opt.value = p.name;
-        opt.textContent = p.name + ' — ' + p.role;
-        aSel.appendChild(opt);
-      });
-
-      ALL_MATS = data.materials || [];
-      renderMaterials(ALL_MATS);
-    })
-    .withFailureHandler(function(e) { showToast(e.message, 'error'); })
-    .getGatpassFormInit();
-}
-
-function renderMaterials(mats) {
-  var sel = document.getElementById('material');
-  sel.innerHTML = '';
-  mats.slice(0, 50).forEach(function(m) {
-    var opt = document.createElement('option');
-    opt.value = m.code;
-    opt.textContent = '[' + m.code + '] ' + m.desc + ' (' + m.unit + ')';
-    opt.dataset.obj = JSON.stringify(m);
-    sel.appendChild(opt);
-  });
-}
-
-function filterMaterials() {
-  var q = document.getElementById('matSearch').value.toLowerCase();
-  if (!q) { renderMaterials(ALL_MATS); return; }
-  var filtered = ALL_MATS.filter(function(m) {
-    return m.desc.toLowerCase().indexOf(q) > -1 ||
-           String(m.code).toLowerCase().indexOf(q) > -1 ||
-           (m.category && m.category.toLowerCase().indexOf(q) > -1);
-  });
-  renderMaterials(filtered);
-}
-
-function onPartyChange() {
-  var sel = document.getElementById('party');
-  var opt = sel.options[sel.selectedIndex];
-  partySel = opt && opt.dataset.obj ? JSON.parse(opt.dataset.obj) : {};
-}
-
-function onMaterialChange() {
-  var sel = document.getElementById('material');
-  var opt = sel.options[sel.selectedIndex];
-  materialSel = opt && opt.dataset.obj ? JSON.parse(opt.dataset.obj) : {};
-  if (materialSel.unit) document.getElementById('unit').value = materialSel.unit;
-}
-
-function addItem() {
-  var matSel = document.getElementById('material');
-  if (!matSel.value) { showToast('Select a material first.', 'error'); return; }
-
-  var matOpt = matSel.options[matSel.selectedIndex];
-  if (matOpt && matOpt.dataset.obj) materialSel = JSON.parse(matOpt.dataset.obj);
-
-  var qty = document.getElementById('qty').value;
-  if (!qty) { showToast('Enter quantity.', 'error'); return; }
-
-  ITEMS.push({
-    materialCode: matSel.value,
-    materialDesc: materialSel.desc || matSel.value,
-    qty:          qty,
-    unit:         document.getElementById('unit').value || materialSel.unit || ''
-  });
-
-  document.getElementById('matSearch').value = '';
-  document.getElementById('qty').value = '';
-  document.getElementById('unit').value = '';
-  renderMaterials(ALL_MATS);
-  materialSel = {};
-  renderItems();
-  markDirty();
-}
-
-function removeItem(i) {
-  ITEMS.splice(i, 1);
-  renderItems();
-  markDirty();
-}
-
-function renderItems() {
-  var badge = document.getElementById('itemBadge');
-  badge.textContent = ITEMS.length + (ITEMS.length === 1 ? ' item' : ' items');
-
-  var el = document.getElementById('itemsList');
-  if (!ITEMS.length) {
-    el.innerHTML = '<p class="items-empty">No items added yet</p>';
-    return;
-  }
-  el.innerHTML = ITEMS.map(function(item, i) {
-    return '<div class="item-card">' +
-      '<button type="button" class="item-card-remove" data-index="' + i + '">×</button>' +
-      '<div class="item-card-title">' + escHtml(item.materialDesc) + '</div>' +
-      '<div class="item-card-qty">Qty: <b>' + escHtml(item.qty) + ' ' + escHtml(item.unit) + '</b></div>' +
-    '</div>';
-  }).join('');
-}
-
-function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function submitGatepass() {
-  if (!document.getElementById('date').value)         { showToast('Please enter a date.', 'error'); return; }
-  if (!document.getElementById('party').value)        { showToast('Please select a party.', 'error'); return; }
-  if (!ITEMS.length)                                   { showToast('Add at least one item.', 'error'); return; }
-  if (!document.getElementById('authorizedBy').value) { showToast('Please select who is authorizing.', 'error'); return; }
-
-  var btn = document.getElementById('btnSubmit');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Saving…';
-
-  var vehicleNo = document.getElementById('vehicleNo').value;
-
-  var data = {
-    date:          document.getElementById('date').value,
-    type:          document.getElementById('type').value,
-    oqcRef:        document.getElementById('oqcRef').value,
-    partyCode:     document.getElementById('party').value,
-    partyName:     partySel.name || document.getElementById('party').value,
-    vehicleNo:     vehicleNo,
-    driverName:    document.getElementById('driverName').value,
-    transporter:   document.getElementById('transporter').value,
-    authorizedBy:  document.getElementById('authorizedBy').value,
-    securityGuard: document.getElementById('securityGuard').value,
-    remarks:       document.getElementById('remarks').value,
-    dispatchZone:  document.getElementById('dispatchZone').value,
-    sessionId:     sessionId,
-    items:         ITEMS
-  };
-
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (res.success) {
-        _dirty = false;
-        var recordId = res.recordId || res.docNo || '';
-        if (sessionId) {
-          autoQmsTask_(sessionId, 'Gatepass', 'Gatepass: ' + vehicleNo, recordId);
-        }
-        showToast('Gatepass Issued: ' + res.docNo, 'success');
-        btn.innerHTML = 'Issued';
-        setTimeout(function() { goHome(); }, 1500);
-      } else {
-        showToast('Error: ' + res.error, 'error');
-        btn.disabled = false;
-        btn.innerHTML = 'Issue Gatepass';
-      }
-    })
-    .withFailureHandler(function(e) {
-      showToast(e.message, 'error');
-      btn.disabled = false;
-      btn.innerHTML = 'Issue Gatepass';
-    })
-    .saveGatepass(data);
-}
-
-function autoQmsTask_(sid, type, title, linkedRecord) {
-  if (!sid) return;
-  google.script.run
-    .withSuccessHandler(function() {})
-    .withFailureHandler(function() {})
-    .autoQmsTask_(sid, type, title, linkedRecord);
+// ── Utility ────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function showToast(msg, type) {
@@ -480,7 +385,293 @@ function showToast(msg, type) {
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
 
-window.onload = init;
+function trunc(s, n) {
+  s = String(s || '');
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+// ── Validation / save-button state ────────────────────────────────────
+function refreshSaveBtn() {
+  var ok = (
+    document.getElementById('description').value.trim() !== '' &&
+    document.getElementById('qty').value.trim() !== '' &&
+    parseFloat(document.getElementById('qty').value) >= 0.01 &&
+    document.getElementById('vehicleNo').value.trim() !== '' &&
+    document.getElementById('driverName').value.trim() !== '' &&
+    document.getElementById('authorizedBy').value !== '' &&
+    _disposition !== ''
+  );
+  document.getElementById('btnSave').disabled = !ok;
+}
+
+// ── Disposition buttons ────────────────────────────────────────────────
+function setDisposition(val) {
+  _disposition = val;
+  var bA = document.getElementById('btnApproved');
+  var bR = document.getElementById('btnRejected');
+  bA.className = 'disp-pick-btn' + (val === 'APPROVED' ? ' approved' : '');
+  bR.className = 'disp-pick-btn' + (val === 'REJECTED' ? ' rejected' : '');
+  refreshSaveBtn();
+}
+
+function pulseDispBtns() {
+  var bA = document.getElementById('btnApproved');
+  var bR = document.getElementById('btnRejected');
+  bA.classList.remove('pulse-warn');
+  bR.classList.remove('pulse-warn');
+  // force reflow
+  void bA.offsetWidth;
+  bA.classList.add('pulse-warn');
+  bR.classList.add('pulse-warn');
+}
+
+// ── Footer label sync ─────────────────────────────────────────────────
+function syncFooterLabel() {
+  var sel = document.getElementById('materialType');
+  document.getElementById('footerLabel').textContent =
+    sel.options[sel.selectedIndex].text;
+}
+
+// ── DWM bridge ────────────────────────────────────────────────────────
+function startDwmTask() {
+  if (!_dwmSid) return;
+  google.script.run
+    .withSuccessHandler(function(tid) { _taskId = tid || null; })
+    .withFailureHandler(function() {})
+    .autoQmsTask_(_dwmSid, 'Gatepass', 'Gatepass', null);
+}
+
+function stopDwmTask() {
+  if (!_taskId || !_dwmSid) return;
+  google.script.run
+    .withSuccessHandler(function() {})
+    .withFailureHandler(function() {})
+    .stopTimer(_taskId, _dwmSid);
+}
+
+// ── Beforeunload guard ────────────────────────────────────────────────
+window.addEventListener('beforeunload', function() {
+  if (_taskId && !_saved) {
+    // best-effort — no guarantee in Apps Script iframe
+    try { stopDwmTask(); } catch(e) {}
+  }
+});
+
+// ── Load init data ─────────────────────────────────────────────────────
+function loadInit() {
+  google.script.run
+    .withSuccessHandler(onInitData)
+    .withFailureHandler(function(e) { showToast('Load error: ' + e.message, 'error'); })
+    .getGatpassFormInit();
+
+  // Authorized users from listActiveUsersForLogin
+  google.script.run
+    .withSuccessHandler(onUsersLoaded)
+    .withFailureHandler(function() { showAuthWarn(); })
+    .listActiveUsersForLogin();
+}
+
+function onInitData(data) {
+  _today = (data && data.today) || new Date().toISOString().split('T')[0];
+  _docNo = (data && data.docNumber) || '';
+  document.getElementById('docBadge').textContent = _docNo || 'GATE';
+}
+
+function onUsersLoaded(users) {
+  var sel = document.getElementById('authorizedBy');
+  sel.innerHTML = '';
+
+  if (!users || users.length === 0) {
+    showAuthWarn();
+    var opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '— No users found —';
+    sel.appendChild(opt);
+    return;
+  }
+
+  var placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = '— Select —';
+  sel.appendChild(placeholder);
+
+  users.forEach(function(u) {
+    var opt = document.createElement('option');
+    opt.value = u.name;
+    opt.textContent = u.name;
+    sel.appendChild(opt);
+  });
+  refreshSaveBtn();
+}
+
+function showAuthWarn() {
+  document.getElementById('authWarn').style.display = '';
+}
+
+// ── Save ───────────────────────────────────────────────────────────────
+function doSave() {
+  // Validate required
+  var desc    = document.getElementById('description').value.trim();
+  var qtyRaw  = document.getElementById('qty').value.trim();
+  var vehicle = document.getElementById('vehicleNo').value.trim();
+  var driver  = document.getElementById('driverName').value.trim();
+  var authBy  = document.getElementById('authorizedBy').value;
+
+  if (!desc)    { showToast('Description is required.', 'error'); return; }
+  if (!qtyRaw || parseFloat(qtyRaw) < 0.01) {
+    showToast('Enter a valid quantity.', 'error'); return;
+  }
+  if (!vehicle) { showToast('Vehicle number is required.', 'error'); return; }
+  if (!driver)  { showToast('Driver name is required.', 'error'); return; }
+  if (!authBy)  { showToast('Select an authorized user.', 'error'); return; }
+  if (!_disposition) {
+    pulseDispBtns();
+    showToast('Select APPROVED or REJECTED.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  var matType = document.getElementById('materialType').value;
+  var unit    = document.getElementById('unit').value;
+  var purpose = document.getElementById('purpose').value.trim();
+  var remarks = document.getElementById('remarks').value.trim();
+
+  var data = {
+    date:         _today,
+    type:         matType,
+    partyName:    '',
+    vehicleNo:    vehicle,
+    driverName:   driver,
+    transporter:  '',
+    authorizedBy: authBy,
+    disposition:  _disposition,
+    remarks:      (purpose ? 'Purpose: ' + purpose + (remarks ? '. ' + remarks : '') : remarks),
+    sessionId:    _dwmSid || '',
+    items: [{
+      materialCode: '',
+      materialDesc: desc,
+      qty:          parseFloat(qtyRaw),
+      unit:         unit
+    }]
+  };
+
+  // Stop DWM timer first, then save
+  if (_taskId && _dwmSid) {
+    google.script.run
+      .withSuccessHandler(function() { callSaveGatepass(data, matType, desc, parseFloat(qtyRaw), unit, vehicle); })
+      .withFailureHandler(function() { callSaveGatepass(data, matType, desc, parseFloat(qtyRaw), unit, vehicle); })
+      .stopTimer(_taskId, _dwmSid);
+  } else {
+    callSaveGatepass(data, matType, desc, parseFloat(qtyRaw), unit, vehicle);
+  }
+}
+
+function callSaveGatepass(data, matType, desc, qty, unit, vehicle) {
+  google.script.run
+    .withSuccessHandler(function(res) { onSaveSuccess(res, matType, desc, qty, unit, vehicle); })
+    .withFailureHandler(function(e) {
+      showToast('Error: ' + e.message, 'error');
+      var btn = document.getElementById('btnSave');
+      btn.disabled = false;
+      btn.innerHTML = 'Save Gatepass &#8594;';
+    })
+    .saveGatepass(data, _dwmSid || '');
+}
+
+function onSaveSuccess(res, matType, desc, qty, unit, vehicle) {
+  if (!res || !res.success) {
+    showToast('Error: ' + (res ? res.error : 'Unknown'), 'error');
+    var btn = document.getElementById('btnSave');
+    btn.disabled = false;
+    btn.innerHTML = 'Save Gatepass &#8594;';
+    return;
+  }
+  _saved = true;
+  _taskId = null;
+  showConfirmation(res.docNo, matType, desc, qty, unit, vehicle);
+}
+
+// ── Confirmation screen ────────────────────────────────────────────────
+function showConfirmation(docNo, matType, desc, qty, unit, vehicle) {
+  document.getElementById('screenForm').style.display  = 'none';
+  document.getElementById('gpFooter').style.display    = 'none';
+  document.getElementById('screenConfirm').style.display = '';
+
+  document.getElementById('confirmDocNo').textContent = '#' + (docNo || _docNo);
+
+  var chips = document.getElementById('confirmChips');
+  chips.innerHTML = '';
+
+  function makeChip(label, val, extraClass) {
+    var c = document.createElement('span');
+    c.className = 'chip' + (extraClass ? ' ' + extraClass : '');
+    c.innerHTML = '<span class="chip-label">' + escHtml(label) + '</span>' + escHtml(val);
+    return c;
+  }
+
+  chips.appendChild(makeChip('Type', matType));
+  chips.appendChild(makeChip('Item', trunc(desc, 20)));
+  chips.appendChild(makeChip('Qty', qty + ' ' + unit));
+  chips.appendChild(makeChip('Vehicle', vehicle));
+
+  var dispChip = document.createElement('span');
+  dispChip.className = 'chip ' + (_disposition === 'APPROVED' ? 'approved' : 'rejected');
+  dispChip.textContent = _disposition;
+  chips.appendChild(dispChip);
+}
+
+// ── Wire up events ─────────────────────────────────────────────────────
+function bindEvents() {
+  document.getElementById('backBtn').addEventListener('click', function() {
+    if (_saved) { goHome(); return; }
+    if (confirm('Discard this entry and go back?')) goHome();
+  });
+
+  document.getElementById('btnHome').addEventListener('click', function() {
+    goHome();
+  });
+
+  document.getElementById('btnApproved').addEventListener('click', function() {
+    setDisposition('APPROVED');
+  });
+
+  document.getElementById('btnRejected').addEventListener('click', function() {
+    setDisposition('REJECTED');
+  });
+
+  document.getElementById('btnSave').addEventListener('click', doSave);
+
+  // Uppercase vehicle on blur
+  document.getElementById('vehicleNo').addEventListener('blur', function() {
+    this.value = this.value.toUpperCase();
+  });
+
+  // Footer label tracks material type
+  document.getElementById('materialType').addEventListener('change', function() {
+    syncFooterLabel();
+    refreshSaveBtn();
+  });
+
+  // Refresh save state on any required field change
+  var watchIds = ['description', 'qty', 'vehicleNo', 'driverName', 'authorizedBy'];
+  watchIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', refreshSaveBtn);
+    el.addEventListener('change', refreshSaveBtn);
+  });
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────
+window.onload = function() {
+  bindEvents();
+  syncFooterLabel();
+  loadInit();
+  startDwmTask();
+};
 </script>
 </body>
 </html>

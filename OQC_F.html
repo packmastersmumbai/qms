@@ -8,709 +8,912 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @keyframes pulse-amber {
+      0%   { border-color: var(--border); box-shadow: none; }
+      50%  { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,160,32,0.3); }
+      100% { border-color: var(--border); box-shadow: none; }
+    }
+    @keyframes confirm-pop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
 
-    .item-block {
-      background: var(--navy-light);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 12px;
-      overflow: hidden;
+    /* ── Parameter rows ── */
+    .param-row-oqc {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s ease;
     }
-    .item-block-header {
-      background: var(--navy);
-      color: var(--white);
-      font-size: 12px;
-      font-weight: 600;
-      padding: 6px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    .param-row-oqc:last-child { border-bottom: none; }
+    .param-row-oqc.is-fail {
+      background: #FEF2F2;
+      border-left: 3px solid var(--danger);
     }
-    .item-block-header button {
-      background: none;
-      border: none;
-      color: rgba(255,255,255,0.7);
-      cursor: pointer;
-      font-size: 16px;
-      line-height: 1;
-      padding: 0 2px;
-    }
-    .item-block-header button:hover { color: var(--white); }
-    .item-block-body { padding: 10px 12px; }
-
-    .ipqc-info {
-      margin-top: 6px;
-      padding: 7px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      display: none;
-    }
-    .ipqc-info.amber { background: #FFF3CD; border: 1px solid var(--hold); color: #92600A; }
-    .ipqc-info.green { background: #DCFCE7; border: 1px solid var(--success); color: #15803D; }
-
-    .param-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-bottom: 6px;
-    }
-    .param-card-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .param-card-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      flex: 1;
-    }
-    .param-card-name .ccp-star { color: var(--danger); font-size: 10px; margin-left: 3px; }
-    .param-card-spec {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 2px;
-      margin-bottom: 6px;
-    }
-    .param-card-btns {
-      display: flex;
-      gap: 5px;
-    }
-    .param-card-btns button {
-      flex: 1;
-      padding: 6px 10px;
-      border: 1.5px solid var(--border);
-      border-radius: 5px;
-      background: var(--white);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      color: var(--text);
-      transition: all 0.12s ease;
-    }
-    .param-card-btns button.pass { background: #E8F5E9; border-color: var(--success); color: var(--success); }
-    .param-card-btns button.fail { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
-    .param-card-btns button.na   { background: #F3F4F6; border-color: #9CA3AF; color: #9CA3AF; }
-    .param-card-remarks { margin-top: 6px; }
-    .param-card-remarks input {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 5px 8px;
-      font-size: 12px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--white);
-    }
-    .param-card-remarks input:focus { outline: none; border-color: var(--navy); }
-
-    .qty-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 6px;
-      margin-top: 10px;
-    }
-    .qty-grid .field { margin-bottom: 0; }
-
-    .add-item-btn {
-      width: 100%;
-      background: var(--amber);
-      color: var(--navy);
-      border: none;
-      border-radius: 6px;
-      padding: 9px;
+    .param-name {
       font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .param-toggle {
+      display: flex;
+      gap: 6px;
+    }
+    .param-toggle button {
+      flex: 1;
+      min-height: 44px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--muted);
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .param-toggle button:active { transform: scale(0.97); }
+    .param-toggle button.is-pass {
+      background: #F0FDF4;
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .param-toggle button.is-fail {
+      background: #FEF2F2;
+      border-color: var(--danger);
+      color: var(--danger);
+      animation: shake 0.3s ease;
+    }
+    .param-toggle button.is-na {
+      background: var(--navy-light);
+      border-color: var(--navy);
+      color: var(--navy);
+    }
+
+    /* ── Section title check state ── */
+    .section-title.all-done {
+      background: #15803D;
+      transition: background 0.2s ease;
+    }
+
+    /* ── Disposition card ── */
+    .disp-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      margin: 10px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      transition: border-color 0.15s ease;
+    }
+    .disp-card.pulse-amber {
+      animation: pulse-amber 0.4s ease;
+    }
+    .disp-collapsed {
+      padding: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .disp-expanded {
+      padding: 10px 12px 12px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease;
+    }
+    .disp-expanded.open {
+      max-height: 200px;
+    }
+    .disp-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .disp-grid-oqc {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+    .disp-btn-oqc {
+      padding: 10px 6px 8px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--white);
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      margin-bottom: 4px;
+      text-align: center;
+      color: var(--text);
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s ease;
+      line-height: 1.2;
+    }
+    .disp-btn-oqc .disp-sub {
+      display: block;
+      font-size: 10px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .disp-btn-oqc:active { transform: scale(0.97); }
+    .disp-btn-oqc.sel-acc {
+      background: #E8F5E9;
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .disp-btn-oqc.sel-acc .disp-sub { color: var(--success); opacity: 0.7; }
+    .disp-btn-oqc.sel-rej {
+      background: #FEF2F2;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .disp-btn-oqc.sel-rej .disp-sub { color: var(--danger); opacity: 0.7; }
+    .disp-btn-oqc.sel-hld {
+      background: #FEF3C7;
+      border-color: var(--hold);
+      color: var(--hold);
+    }
+    .disp-btn-oqc.sel-hld .disp-sub { color: var(--hold); opacity: 0.7; }
+    .disp-btn-oqc.sel-awd {
+      background: #FFEDD5;
+      border-color: var(--deviation);
+      color: var(--deviation);
+    }
+    .disp-btn-oqc.sel-awd .disp-sub { color: var(--deviation); opacity: 0.7; }
+
+    /* ── Remarks area ── */
+    .remarks-wrap {
+      margin: 0 10px 10px;
+    }
+    .remarks-wrap label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .remarks-wrap textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      resize: vertical;
+      min-height: 72px;
+      -webkit-appearance: none;
+      transition: border-color 0.15s;
+    }
+    .remarks-wrap textarea:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    .remarks-wrap .hint {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* ── Sticky bottom bar ── */
+    .sticky-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--navy);
+      padding: 8px 14px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 50;
+      min-height: 56px;
+    }
+    .bar-batch-info {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.7);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .bar-save-btn {
+      background: var(--amber);
+      color: var(--navy);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      min-height: 44px;
+      white-space: nowrap;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s ease, opacity 0.15s ease;
+      flex-shrink: 0;
+    }
+    .bar-save-btn:disabled {
+      background: #9CA3AF;
+      color: var(--white);
+      cursor: not-allowed;
+      opacity: 1;
+    }
+
+    /* ── Item name hint ── */
+    .item-name-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+      min-height: 16px;
+      font-style: italic;
+    }
+
+    /* ── Confirmation screen ── */
+    .confirm-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 32px 20px 100px;
+      text-align: center;
+      background: var(--bg);
+    }
+    .confirm-icon-wrap {
+      width: 80px;
+      height: 80px;
+      background: var(--amber);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: confirm-pop 0.3s ease both;
+    }
+    .confirm-icon-wrap svg {
+      width: 40px;
+      height: 40px;
+      stroke: var(--white);
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .confirm-heading {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .confirm-id {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .confirm-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+    .chip {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .chip-navy  { background: var(--navy-light); color: var(--navy); }
+    .chip-muted { background: #F3F4F6;           color: var(--muted); }
+    .chip-acc   { background: #DCFCE7;           color: #15803D; }
+    .chip-rej   { background: #FEE2E2;           color: #B91C1C; }
+    .chip-hld   { background: #FEF3C7;           color: #B45309; }
+    .chip-awd   { background: #FFEDD5;           color: #C2410C; }
+    .confirm-home-btn {
+      width: 100%;
+      max-width: 320px;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      touch-action: manipulation;
+    }
+
+    /* ── Amber underline on unfilled required field ── */
+    .field-error input,
+    .field-error select {
+      border-color: var(--amber) !important;
     }
   </style>
 </head>
 <body>
 
-<div class="pm-header">
-  <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
-  </button>
-  <span class="page-title">Outgoing Quality Check</span>
-  <span class="doc-badge" id="docBadge">OQC</span>
-</div>
+<!-- ═══════════════════════════════════════════
+     SCREEN 1: CAPTURE FORM
+════════════════════════════════════════════ -->
+<div id="screen1">
 
-<div class="section">
-  <div class="section-title">Dispatch Details</div>
-  <div class="section-body">
-    <div class="two-col">
-      <div class="field">
-        <label>Date</label>
-        <input type="date" id="date">
-      </div>
-      <div class="field">
-        <label>Inspector</label>
-        <select id="inspector"><option value="">— Select —</option></select>
-      </div>
-    </div>
-    <div class="field">
-      <label>Customer</label>
-      <select id="customer"><option value="">— Select Customer —</option></select>
-    </div>
+  <!-- Header -->
+  <div class="pm-header">
+    <button class="back-btn" id="backBtn">
+      <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
+    </button>
+    <span class="page-title">OQC Inspection</span>
+    <span class="doc-badge" id="docBadge">OQC</span>
   </div>
-</div>
 
-<div class="section">
-  <div class="section-title">Sampling</div>
-  <div class="section-body">
-    <div class="two-col">
-      <div class="field">
-        <label>IPQC Records Reviewed</label>
-        <div class="toggle-row" id="ipqcToggle">
-          <button id="ipqcY" class="active-yes">Yes</button>
-          <button id="ipqcN">No</button>
-        </div>
+  <!-- Batch Info Section -->
+  <div class="section">
+    <div class="section-title" id="batchSectionTitle">BATCH INFO</div>
+    <div class="section-body">
+
+      <div class="field" id="fieldMaterial">
+        <label>Item / Material</label>
+        <select id="selMaterial">
+          <option value="">— Select FG Material —</option>
+        </select>
+        <div class="item-name-hint" id="itemNameHint"></div>
       </div>
-      <div class="field">
-        <label>AQL Level</label>
-        <select id="aqlLevel">
-          <option value="AQL 2.5">AQL 2.5 (Default)</option>
-          <option value="AQL 0.65">AQL 0.65</option>
-          <option value="AQL 1.0">AQL 1.0</option>
-          <option value="AQL 4.0">AQL 4.0</option>
-          <option value="AQL 6.5">AQL 6.5</option>
+
+      <div class="field" id="fieldBatch">
+        <label>Batch No</label>
+        <input type="text" id="inpBatch" placeholder="e.g. B2026-001" autocomplete="off" style="font-size:16px!important;">
+      </div>
+
+      <div class="field" id="fieldCustomer">
+        <label>Customer</label>
+        <select id="selCustomer" style="font-size:16px!important;">
+          <option value="">— Select Customer —</option>
         </select>
       </div>
+
+      <div class="field" id="fieldQty">
+        <label>Qty Checked</label>
+        <input type="number" id="inpQty" inputmode="numeric" min="1" placeholder="0" style="font-size:16px!important;">
+      </div>
+
     </div>
   </div>
-</div>
 
-<div class="section">
-  <div class="section-title">Items &amp; Quality Checks <span style="font-size:10px;font-weight:400;opacity:0.7;margin-left:6px;">★ = CCP</span></div>
-  <div class="section-body">
-    <button class="add-item-btn" id="addItemBtn">+ Add Item</button>
-    <div id="itemsContainer">
-      <div id="noItemsMsg" style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">
-        Click "+ Add Item" to add products for this dispatch.
+  <!-- Inspection Parameters Section -->
+  <div class="section">
+    <div class="section-title" id="inspSectionTitle">INSPECTION</div>
+    <div id="paramRows">
+      <!-- rows rendered by JS -->
+    </div>
+  </div>
+
+  <!-- Disposition Card -->
+  <div class="disp-card" id="dispCard">
+    <div class="disp-collapsed" id="dispCollapsed">Disposition — fill all parameters above</div>
+    <div class="disp-expanded" id="dispExpanded">
+      <div class="disp-label">Release Decision</div>
+      <div class="disp-grid-oqc">
+        <button class="disp-btn-oqc" id="btnAcc"  data-val="ACCEPTED">ACCEPT</button>
+        <button class="disp-btn-oqc" id="btnRej"  data-val="REJECTED">REJECT</button>
+        <button class="disp-btn-oqc" id="btnHld"  data-val="HOLD">HOLD</button>
+        <button class="disp-btn-oqc" id="btnAwd"  data-val="ACCEPTED WITH DEVIATION">AWD<span class="disp-sub">With deviation</span></button>
       </div>
     </div>
   </div>
-</div>
 
-<div class="section">
-  <div class="section-title">Release Decision</div>
-  <div class="section-body">
-    <div class="disp-grid">
-      <button class="disp-btn" id="r_rel">RELEASE</button>
-      <button class="disp-btn" id="r_hld">HOLD</button>
-      <button class="disp-btn" id="r_rej" style="grid-column:span 2;">REJECT</button>
+  <!-- Remarks -->
+  <div class="remarks-wrap">
+    <label for="inpRemarks">Remarks</label>
+    <textarea id="inpRemarks" rows="3" placeholder="Deviations, observations, or dispatch notes…"></textarea>
+    <div class="hint">Optional</div>
+  </div>
+
+  <!-- Spacer for sticky bar -->
+  <div style="height: 72px;"></div>
+
+</div><!-- #screen1 -->
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 2: CONFIRMATION
+════════════════════════════════════════════ -->
+<div id="screen2" style="display:none;">
+  <div class="confirm-screen">
+    <div class="confirm-icon-wrap">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
-    <div class="field" style="margin-top:10px;">
-      <label>Remarks</label>
-      <textarea id="remarks" placeholder="Observations or notes…"></textarea>
-    </div>
+    <div class="confirm-heading">OQC Saved</div>
+    <div class="confirm-id" id="confirmId"></div>
+    <div class="confirm-chips" id="confirmChips"></div>
+    <button class="confirm-home-btn" id="btnHome">Back to Home</button>
   </div>
 </div>
 
-<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;z-index:90;">
-  <button class="btn-submit" id="btnSubmit" style="flex:2;">Save OQC Record</button>
-  <button class="btn-wa" id="btnWA" style="flex:1;margin-top:0;display:none;">WA</button>
+<!-- Sticky Bottom Bar -->
+<div class="sticky-bar" id="stickyBar">
+  <div class="bar-batch-info" id="barBatchInfo">Batch —</div>
+  <button class="bar-save-btn" id="btnSave" disabled>Save OQC →</button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+// ══════════════════════════════════════════════════════════
+// Constants
+// ══════════════════════════════════════════════════════════
 var OQC_CHECKS = [
-  { id: 'fillWeight',  label: 'Fill Weight',        spec: 'As per product spec',       ccp: true  },
-  { id: 'label',       label: 'Label Accuracy',      spec: 'Correct labels, no errors', ccp: true  },
-  { id: 'seal',        label: 'Seal Integrity',      spec: 'No leaks, proper seal',     ccp: true  },
-  { id: 'appearance',  label: 'Appearance / Visual', spec: 'No damage, correct colour', ccp: false },
-  { id: 'custSpec',    label: 'Customer Spec Met',   spec: 'All customer requirements', ccp: true  }
+  { id: 'fillWeight', label: 'Fill Weight / Qty' },
+  { id: 'label',      label: 'Label Accuracy'    },
+  { id: 'seal',       label: 'Seal / Closure'    },
+  { id: 'appearance', label: 'Appearance'         },
+  { id: 'custSpec',   label: 'Customer Spec'      }
 ];
 
-var FG_MATS = [], CUSTOMERS = [], INSPECTORS = [];
-var currentItems = [];
-var ipqcVal = 'Y', releaseDecision = '', savedDocNos = [];
-var sessionId = sessionStorage.getItem('dwmSessionId') || '';
-var _dirty = false;
+var DISP_BTNS = [
+  { id: 'btnAcc', val: 'ACCEPTED',              cls: 'sel-acc' },
+  { id: 'btnRej', val: 'REJECTED',              cls: 'sel-rej' },
+  { id: 'btnHld', val: 'HOLD',                  cls: 'sel-hld' },
+  { id: 'btnAwd', val: 'ACCEPTED WITH DEVIATION', cls: 'sel-awd' }
+];
 
-function markDirty() { _dirty = true; }
+// ══════════════════════════════════════════════════════════
+// State
+// ══════════════════════════════════════════════════════════
+var gMaterials   = [];
+var gCustomers   = [];
+var gToday       = '';
+var gChecks      = {};   // { fillWeight: 'PASS'|'FAIL'|'NA', ... }
+var gDisposition = '';
+var gSaved       = false;
+var dwmSessionId = sessionStorage.getItem('dwmSessionId') || null;
+var dwmTaskId    = null;
 
-window.addEventListener('beforeunload', function(e) {
-  if (_dirty) {
-    e.preventDefault();
-    e.returnValue = 'You have unsaved changes. Leave anyway?';
-  }
+// ══════════════════════════════════════════════════════════
+// Init
+// ══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function() {
+  renderParamRows();
+  bindEvents();
+  loadInit();
 });
 
-function showErr(e) { showToast(e.message || 'Error', 'error'); }
-
-function init() {
-  document.getElementById('date').value = new Date().toISOString().split('T')[0];
-
-  document.getElementById('backBtn').addEventListener('click', function() {
-    if (_dirty && !confirm('Unsaved changes will be lost. Go back?')) return;
-    goHome();
-  });
-
-  document.getElementById('addItemBtn').addEventListener('click', addItem);
-
-  document.getElementById('ipqcToggle').addEventListener('click', function(e) {
-    var btn = e.target.closest('button');
-    if (!btn) return;
-    var val = btn.id === 'ipqcY' ? 'Y' : 'N';
-    setIPQC(val);
-  });
-
-  document.getElementById('r_rel').addEventListener('click', function() { setRelease('RELEASED'); });
-  document.getElementById('r_hld').addEventListener('click', function() { setRelease('HOLD'); });
-  document.getElementById('r_rej').addEventListener('click', function() { setRelease('REJECTED'); });
-
-  document.getElementById('btnSubmit').addEventListener('click', submitOQC);
-  document.getElementById('btnWA').addEventListener('click', sendWA);
-
-  document.getElementById('customer').addEventListener('change', markDirty);
-  document.getElementById('inspector').addEventListener('change', markDirty);
-  document.getElementById('aqlLevel').addEventListener('change', markDirty);
-  document.getElementById('date').addEventListener('change', markDirty);
-  document.getElementById('remarks').addEventListener('input', markDirty);
-
+function loadInit() {
   google.script.run
     .withSuccessHandler(function(d) {
-      document.getElementById('docBadge').textContent = d.docNumber || 'OQC';
-      FG_MATS    = d.materials  || [];
-      CUSTOMERS  = d.customers  || [];
-      INSPECTORS = d.inspectors || [];
+      gToday     = d.today || '';
+      gMaterials = d.materials  || [];
+      gCustomers = d.customers  || [];
 
-      var cSel = document.getElementById('customer');
-      CUSTOMERS.forEach(function(c) {
+      document.getElementById('docBadge').textContent = d.docNumber || 'OQC';
+
+      var matSel = document.getElementById('selMaterial');
+      gMaterials.forEach(function(m) {
+        var o = document.createElement('option');
+        o.value = m.code;
+        o.textContent = (m.desc && m.desc.length > 36) ? m.desc.substring(0, 36) + '…' : (m.desc || m.code);
+        o.dataset.desc = m.desc || m.code;
+        matSel.appendChild(o);
+      });
+
+      var custSel = document.getElementById('selCustomer');
+      gCustomers.forEach(function(c) {
         var o = document.createElement('option');
         o.value = c.code;
         o.textContent = c.name;
-        o.dataset.obj = JSON.stringify(c);
-        cSel.appendChild(o);
+        o.dataset.name = c.name;
+        custSel.appendChild(o);
       });
 
-      var iSel = document.getElementById('inspector');
-      INSPECTORS.forEach(function(p) {
-        var o = document.createElement('option');
-        o.value = p.name;
-        o.textContent = p.name + ' — ' + p.role;
-        iSel.appendChild(o);
-      });
+      // DWM task start (best-effort)
+      if (dwmSessionId) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.taskId) dwmTaskId = res.taskId;
+          })
+          .withFailureHandler(function() {})
+          .autoQmsTask_(dwmSessionId, 'OQC', 'OQC — incoming check', null);
+      }
     })
-    .withFailureHandler(showErr)
+    .withFailureHandler(function(e) {
+      showToast(e.message || 'Load failed', 'error');
+    })
     .getOQCFormInit();
 }
 
-function addItem() {
-  var idx = currentItems.length;
-  currentItems.push({
-    materialCode: '', materialDesc: '', batchPO: '',
-    checks: {}, remarks: {},
-    sampleSize: '', acceptedQty: '', rejectedQty: '',
-    ipqcSessionRef: ''
-  });
-  renderItem(idx);
-  document.getElementById('noItemsMsg').style.display = 'none';
-  markDirty();
-}
-
-function removeItem(idx) {
-  currentItems.splice(idx, 1);
-  rebuildAllItems();
-  markDirty();
-}
-
-function rebuildAllItems() {
-  var container = document.getElementById('itemsContainer');
-  var blocks = container.querySelectorAll('.item-block');
-  blocks.forEach(function(b) { b.parentNode.removeChild(b); });
-  document.getElementById('noItemsMsg').style.display = currentItems.length === 0 ? 'block' : 'none';
-  currentItems.forEach(function(_, i) { renderItem(i); });
-}
-
-function renderItem(idx) {
-  var item = currentItems[idx];
-  var container = document.getElementById('itemsContainer');
-
-  var block = document.createElement('div');
-  block.className = 'item-block';
-  block.id = 'item_block_' + idx;
-
-  var header = document.createElement('div');
-  header.className = 'item-block-header';
-  header.innerHTML = '<span>Item ' + (idx + 1) + '</span>';
-  var removeBtn = document.createElement('button');
-  removeBtn.textContent = '×';
-  removeBtn.title = 'Remove item';
-  removeBtn.addEventListener('click', (function(i) { return function() { removeItem(i); }; })(idx));
-  header.appendChild(removeBtn);
-  block.appendChild(header);
-
-  var body = document.createElement('div');
-  body.className = 'item-block-body';
-
-  var matField = document.createElement('div');
-  matField.className = 'field';
-  var matLabel = document.createElement('label');
-  matLabel.textContent = 'Product / FG Material';
-  var matSel = document.createElement('select');
-  matSel.id = 'mat_sel_' + idx;
-  var defOpt = document.createElement('option');
-  defOpt.value = ''; defOpt.textContent = '— Select FG —';
-  matSel.appendChild(defOpt);
-  if (FG_MATS.length === 0) {
-    var noOpt = document.createElement('option');
-    noOpt.disabled = true; noOpt.textContent = '(No FG materials — add in Masters)';
-    matSel.appendChild(noOpt);
-  } else {
-    FG_MATS.forEach(function(m) {
-      var o = document.createElement('option');
-      o.value = m.code;
-      o.textContent = m.desc.length > 32 ? m.desc.substring(0, 32) + '…' : m.desc;
-      o.dataset.desc = m.desc;
-      if (m.code === item.materialCode) o.selected = true;
-      matSel.appendChild(o);
-    });
-  }
-  matSel.addEventListener('change', (function(i) {
-    return function() {
-      var opt = this.options[this.selectedIndex];
-      currentItems[i].materialCode = this.value;
-      currentItems[i].materialDesc = opt ? (opt.dataset.desc || this.value) : this.value;
-      checkIPQCStatus(i);
-      markDirty();
-    };
-  })(idx));
-  matField.appendChild(matLabel);
-  matField.appendChild(matSel);
-  body.appendChild(matField);
-
-  var batchField = document.createElement('div');
-  batchField.className = 'field';
-  var batchLabel = document.createElement('label');
-  batchLabel.textContent = 'Batch / PO';
-  var batchInp = document.createElement('input');
-  batchInp.type = 'text'; batchInp.id = 'batch_inp_' + idx;
-  batchInp.placeholder = 'Batch number or PO reference';
-  batchInp.value = item.batchPO || '';
-  batchInp.addEventListener('input', (function(i) { return function() { currentItems[i].batchPO = this.value; markDirty(); }; })(idx));
-  batchInp.addEventListener('blur', (function(i) { return function() { checkIPQCStatus(i); }; })(idx));
-  batchField.appendChild(batchLabel);
-  batchField.appendChild(batchInp);
-  body.appendChild(batchField);
-
-  var ipqcDiv = document.createElement('div');
-  ipqcDiv.id = 'ipqc_info_' + idx;
-  ipqcDiv.className = 'ipqc-info';
-  body.appendChild(ipqcDiv);
-
+// ══════════════════════════════════════════════════════════
+// Render parameter rows
+// ══════════════════════════════════════════════════════════
+function renderParamRows() {
+  var container = document.getElementById('paramRows');
+  container.innerHTML = '';
   OQC_CHECKS.forEach(function(chk) {
-    var card = document.createElement('div');
-    card.className = 'param-card';
-
-    var top = document.createElement('div');
-    top.className = 'param-card-top';
+    var row = document.createElement('div');
+    row.className = 'param-row-oqc';
+    row.id = 'prow_' + chk.id;
 
     var nameEl = document.createElement('div');
-    nameEl.className = 'param-card-name';
+    nameEl.className = 'param-name';
     nameEl.textContent = chk.label;
-    if (chk.ccp) {
-      var star = document.createElement('span');
-      star.className = 'ccp-star'; star.title = 'Critical Control Point'; star.textContent = '★';
-      nameEl.appendChild(star);
-    }
-    top.appendChild(nameEl);
-    card.appendChild(top);
+    row.appendChild(nameEl);
 
-    var specEl = document.createElement('div');
-    specEl.className = 'param-card-spec';
-    specEl.textContent = 'Spec: ' + chk.spec;
-    card.appendChild(specEl);
+    var tog = document.createElement('div');
+    tog.className = 'param-toggle';
 
-    var btns = document.createElement('div');
-    btns.className = 'param-card-btns';
-    var curVal = (item.checks && item.checks[chk.id]) || '';
-
-    ['Pass', 'Fail', 'NA'].forEach(function(opt) {
+    ['PASS', 'FAIL', 'NA'].forEach(function(v) {
       var btn = document.createElement('button');
-      btn.textContent = opt;
-      btn.id = 'chk_' + idx + '_' + chk.id + '_' + opt.toLowerCase();
-      if (curVal === opt.toUpperCase()) btn.className = opt.toLowerCase();
-      btn.addEventListener('click', (function(i, cid, v, b) {
-        return function() { setCheck(i, cid, v, b); };
-      })(idx, chk.id, opt.toUpperCase(), btn));
-      btns.appendChild(btn);
+      btn.textContent = v;
+      btn.id = 'ptog_' + chk.id + '_' + v;
+      btn.addEventListener('click', (function(cid, val) {
+        return function() { setCheck(cid, val); };
+      })(chk.id, v));
+      tog.appendChild(btn);
     });
-    card.appendChild(btns);
 
-    var remDiv = document.createElement('div');
-    remDiv.className = 'param-card-remarks';
-    var remInp = document.createElement('input');
-    remInp.type = 'text';
-    remInp.id = 'rem_' + idx + '_' + chk.id;
-    remInp.placeholder = 'Remarks (optional)';
-    remInp.value = (item.remarks && item.remarks[chk.id]) || '';
-    remInp.addEventListener('input', (function(i, cid) {
-      return function() {
-        if (!currentItems[i].remarks) currentItems[i].remarks = {};
-        currentItems[i].remarks[cid] = this.value;
-        markDirty();
-      };
-    })(idx, chk.id));
-    remDiv.appendChild(remInp);
-    card.appendChild(remDiv);
-
-    body.appendChild(card);
+    row.appendChild(tog);
+    container.appendChild(row);
   });
+}
 
-  var qtyGrid = document.createElement('div');
-  qtyGrid.className = 'qty-grid';
-  [
-    { key: 'sampleSize',  label: 'Sample Size', editable: true  },
-    { key: 'acceptedQty', label: 'Accepted',     editable: true  },
-    { key: 'rejectedQty', label: 'Rejected',     editable: true  },
-    { key: 'shortage',    label: 'Shortage',     editable: false }
-  ].forEach(function(q) {
-    var fld = document.createElement('div');
-    fld.className = 'field';
-    var lbl = document.createElement('label');
-    lbl.textContent = q.label;
-    fld.appendChild(lbl);
-    if (q.editable) {
-      var inp = document.createElement('input');
-      inp.type = 'number'; inp.id = q.key + '_' + idx;
-      inp.min = '0'; inp.placeholder = '0';
-      inp.value = item[q.key] || '';
-      inp.addEventListener('input', (function(i, k) {
-        return function() { currentItems[i][k] = this.value; calcShortage(i); markDirty(); };
-      })(idx, q.key));
-      fld.appendChild(inp);
-    } else {
-      var span = document.createElement('span');
-      span.id = 'shortage_' + idx;
-      span.style.cssText = 'display:block;padding:8px 10px;font-size:14px;font-weight:600;color:var(--muted);';
-      span.textContent = '—';
-      fld.appendChild(span);
+// ══════════════════════════════════════════════════════════
+// Events
+// ══════════════════════════════════════════════════════════
+function bindEvents() {
+  document.getElementById('backBtn').addEventListener('click', function() {
+    if (!gSaved && hasAnyInput()) {
+      if (!confirm('Unsaved changes will be lost. Go back?')) return;
     }
-    qtyGrid.appendChild(fld);
+    goHome();
   });
-  body.appendChild(qtyGrid);
 
-  block.appendChild(body);
-
-  var msg = document.getElementById('noItemsMsg');
-  container.insertBefore(block, msg);
-}
-
-function setCheck(colIndex, checkId, val, clickedBtn) {
-  if (!currentItems[colIndex]) return;
-  if (!currentItems[colIndex].checks) currentItems[colIndex].checks = {};
-  currentItems[colIndex].checks[checkId] = val;
-
-  ['pass','fail','na'].forEach(function(cls) {
-    var el = document.getElementById('chk_' + colIndex + '_' + checkId + '_' + cls);
-    if (el) el.className = '';
+  document.getElementById('selMaterial').addEventListener('change', function() {
+    var opt = this.options[this.selectedIndex];
+    var hint = document.getElementById('itemNameHint');
+    hint.textContent = (opt && opt.dataset.desc) ? opt.dataset.desc : '';
+    updateBarBatch();
+    checkSaveReady();
   });
-  clickedBtn.className = val.toLowerCase();
 
-  var ccpIds = ['fillWeight','label','seal','custSpec'];
-  var anyFail = currentItems.some(function(item) {
-    return item.checks && ccpIds.some(function(id) { return item.checks[id] === 'FAIL'; });
+  document.getElementById('inpBatch').addEventListener('input', function() {
+    updateBarBatch();
+    checkSaveReady();
   });
-  if (anyFail && !releaseDecision) setRelease('HOLD');
-  markDirty();
+
+  document.getElementById('selCustomer').addEventListener('change', function() {
+    checkSaveReady();
+  });
+
+  document.getElementById('inpQty').addEventListener('input', function() {
+    checkSaveReady();
+  });
+
+  // Disposition buttons
+  DISP_BTNS.forEach(function(db) {
+    document.getElementById(db.id).addEventListener('click', function() {
+      setDisposition(db.val);
+    });
+  });
+
+  document.getElementById('btnSave').addEventListener('click', function() {
+    onSaveTap();
+  });
+
+  document.getElementById('btnHome').addEventListener('click', function() {
+    goHome();
+  });
+
+  window.addEventListener('beforeunload', function() {
+    if (dwmTaskId && !gSaved) {
+      try {
+        google.script.run.stopTimer(dwmTaskId, dwmSessionId);
+      } catch(e) {}
+    }
+  });
 }
 
-function calcShortage(idx) {
-  var ss  = parseFloat((document.getElementById('sampleSize_'  + idx) || {}).value) || 0;
-  var acc = parseFloat((document.getElementById('acceptedQty_' + idx) || {}).value) || 0;
-  var rej = parseFloat((document.getElementById('rejectedQty_' + idx) || {}).value) || 0;
-  var el  = document.getElementById('shortage_' + idx);
-  if (el) el.textContent = (ss === 0 && acc === 0 && rej === 0) ? '—' : String(ss - acc - rej);
+// ══════════════════════════════════════════════════════════
+// Parameter toggle logic
+// ══════════════════════════════════════════════════════════
+function setCheck(checkId, val) {
+  gChecks[checkId] = val;
+
+  // Update button visual states
+  ['PASS', 'FAIL', 'NA'].forEach(function(v) {
+    var btn = document.getElementById('ptog_' + checkId + '_' + v);
+    if (!btn) return;
+    btn.className = (v === val) ? ('is-' + v.toLowerCase()) : '';
+  });
+
+  // Row background for FAIL
+  var row = document.getElementById('prow_' + checkId);
+  if (row) {
+    if (val === 'FAIL') {
+      row.className = 'param-row-oqc is-fail';
+    } else {
+      row.className = 'param-row-oqc';
+    }
+  }
+
+  checkParamsDone();
+  checkSaveReady();
 }
 
-function checkIPQCStatus(colIndex) {
-  var matSel   = document.getElementById('mat_sel_'   + colIndex);
-  var batchInp = document.getElementById('batch_inp_' + colIndex);
-  var infoDiv  = document.getElementById('ipqc_info_' + colIndex);
-  if (!matSel || !batchInp || !infoDiv) return;
-  var productCode = matSel.value;
-  var batch = batchInp.value.trim();
-  if (!productCode || !batch) { infoDiv.style.display = 'none'; infoDiv.className = 'ipqc-info'; return; }
-
-  google.script.run
-    .withSuccessHandler((function(ci) {
-      return function(res) {
-        var div = document.getElementById('ipqc_info_' + ci);
-        if (!div) return;
-        if (!res.found) {
-          currentItems[ci].ipqcSessionRef = '';
-          div.className = 'ipqc-info amber';
-          div.textContent = 'No IPQC session found for this batch — verify in-process checks were completed.';
-          div.style.display = 'block';
-        } else if (res.status === 'OPEN') {
-          currentItems[ci].ipqcSessionRef = res.sessionId;
-          div.className = 'ipqc-info amber';
-          div.textContent = 'IPQC session is still OPEN for this batch — ensure it is closed before releasing.';
-          div.style.display = 'block';
-        } else {
-          currentItems[ci].ipqcSessionRef = res.sessionId;
-          div.className = 'ipqc-info green';
-          div.textContent = 'IPQC completed for this batch (' + res.rounds + ' rounds).';
-          div.style.display = 'block';
-        }
-      };
-    })(colIndex))
-    .withFailureHandler(function() {})
-    .checkIPQCForBatch(productCode, batch);
+function allParamsFilled() {
+  for (var i = 0; i < OQC_CHECKS.length; i++) {
+    if (!gChecks[OQC_CHECKS[i].id]) return false;
+  }
+  return true;
 }
 
-function setIPQC(val) {
-  ipqcVal = val;
-  document.getElementById('ipqcY').className = val === 'Y' ? 'active-yes' : '';
-  document.getElementById('ipqcN').className = val === 'N' ? 'active-no'  : '';
-  markDirty();
+function checkParamsDone() {
+  var done = allParamsFilled();
+  var titleEl = document.getElementById('inspSectionTitle');
+
+  if (done) {
+    titleEl.className = 'section-title all-done';
+    titleEl.textContent = '✓ INSPECTION';
+    expandDisposition();
+    autoSelectDisposition();
+  } else {
+    titleEl.className = 'section-title';
+    titleEl.textContent = 'INSPECTION';
+    collapseDisposition();
+  }
 }
 
-function setRelease(val) {
-  releaseDecision = val;
-  document.getElementById('r_rel').className = 'disp-btn' + (val === 'RELEASED' ? ' active-acc' : '');
-  document.getElementById('r_hld').className = 'disp-btn' + (val === 'HOLD'     ? ' active-hld' : '');
-  document.getElementById('r_rej').className = 'disp-btn' + (val === 'REJECTED' ? ' active-rej' : '');
-  markDirty();
+// ══════════════════════════════════════════════════════════
+// Disposition
+// ══════════════════════════════════════════════════════════
+function expandDisposition() {
+  document.getElementById('dispCollapsed').style.display = 'none';
+  var exp = document.getElementById('dispExpanded');
+  exp.className = 'disp-expanded open';
 }
 
-function submitOQC() {
-  if (!document.getElementById('customer').value)  { showToast('Please select a Customer.', 'error'); return; }
-  if (!document.getElementById('inspector').value) { showToast('Please select an Inspector.', 'error'); return; }
-  if (!releaseDecision)                            { showToast('Please select a Release Decision.', 'error'); return; }
-  if (currentItems.length === 0)                   { showToast('Add at least one item first.', 'error'); return; }
+function collapseDisposition() {
+  document.getElementById('dispCollapsed').style.display = '';
+  var exp = document.getElementById('dispExpanded');
+  exp.className = 'disp-expanded';
+  gDisposition = '';
+  DISP_BTNS.forEach(function(db) {
+    document.getElementById(db.id).className = 'disp-btn-oqc';
+  });
+}
 
-  var btn = document.getElementById('btnSubmit');
+function autoSelectDisposition() {
+  var anyFail = false;
+  var allPassOrNA = true;
+  OQC_CHECKS.forEach(function(chk) {
+    var v = gChecks[chk.id];
+    if (v === 'FAIL') { anyFail = true; allPassOrNA = false; }
+    if (v !== 'PASS' && v !== 'NA') { allPassOrNA = false; }
+  });
+
+  var auto = '';
+  if (anyFail)      auto = 'REJECTED';
+  else if (allPassOrNA) auto = 'ACCEPTED';
+  else              auto = 'HOLD';
+
+  setDisposition(auto);
+}
+
+function setDisposition(val) {
+  gDisposition = val;
+  DISP_BTNS.forEach(function(db) {
+    var btn = document.getElementById(db.id);
+    btn.className = 'disp-btn-oqc' + (db.val === val ? ' ' + db.cls : '');
+  });
+  checkSaveReady();
+}
+
+// ══════════════════════════════════════════════════════════
+// Save readiness
+// ══════════════════════════════════════════════════════════
+function checkSaveReady() {
+  var mat    = document.getElementById('selMaterial').value;
+  var batch  = document.getElementById('inpBatch').value.trim();
+  var cust   = document.getElementById('selCustomer').value;
+  var qty    = parseFloat(document.getElementById('inpQty').value);
+  var ready  = mat && batch && cust && qty >= 1 && allParamsFilled() && gDisposition;
+  document.getElementById('btnSave').disabled = !ready;
+}
+
+function hasAnyInput() {
+  var mat   = document.getElementById('selMaterial').value;
+  var batch = document.getElementById('inpBatch').value.trim();
+  var cust  = document.getElementById('selCustomer').value;
+  return mat || batch || cust;
+}
+
+function updateBarBatch() {
+  var batch = document.getElementById('inpBatch').value.trim();
+  document.getElementById('barBatchInfo').textContent = batch ? 'Batch ' + batch : 'Batch —';
+}
+
+// ══════════════════════════════════════════════════════════
+// Save tap — validate + highlight + save
+// ══════════════════════════════════════════════════════════
+function onSaveTap() {
+  var matEl   = document.getElementById('selMaterial');
+  var batchEl = document.getElementById('inpBatch');
+  var custEl  = document.getElementById('selCustomer');
+  var qtyEl   = document.getElementById('inpQty');
+  var valid   = true;
+
+  ['fieldMaterial', 'fieldBatch', 'fieldCustomer', 'fieldQty'].forEach(function(fid) {
+    document.getElementById(fid).classList.remove('field-error');
+  });
+
+  if (!matEl.value)             { document.getElementById('fieldMaterial').classList.add('field-error'); valid = false; }
+  if (!batchEl.value.trim())    { document.getElementById('fieldBatch').classList.add('field-error');    valid = false; }
+  if (!custEl.value)            { document.getElementById('fieldCustomer').classList.add('field-error'); valid = false; }
+  if (!(parseFloat(qtyEl.value) >= 1)) { document.getElementById('fieldQty').classList.add('field-error'); valid = false; }
+
+  if (!valid) {
+    showToast('Fill all required fields', 'error');
+    return;
+  }
+
+  if (!allParamsFilled()) {
+    showToast('Complete all inspection parameters', 'error');
+    return;
+  }
+
+  if (!gDisposition) {
+    var card = document.getElementById('dispCard');
+    card.classList.add('pulse-amber');
+    setTimeout(function() { card.classList.remove('pulse-amber'); }, 500);
+    showToast('Select a disposition', 'error');
+    return;
+  }
+
+  doSave();
+}
+
+// ══════════════════════════════════════════════════════════
+// doSave
+// ══════════════════════════════════════════════════════════
+function doSave() {
+  var btn = document.getElementById('btnSave');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
-  currentItems.forEach(function(item, ci) {
-    var matSel   = document.getElementById('mat_sel_'   + ci);
-    var batchInp = document.getElementById('batch_inp_' + ci);
-    if (matSel) {
-      var opt = matSel.options[matSel.selectedIndex];
-      item.materialCode = matSel.value;
-      item.materialDesc = opt ? (opt.dataset.desc || matSel.value) : matSel.value;
-    }
-    if (batchInp) item.batchPO = batchInp.value;
-    item.sampleSize  = parseFloat((document.getElementById('sampleSize_'  + ci) || {}).value) || 0;
-    item.acceptedQty = parseFloat((document.getElementById('acceptedQty_' + ci) || {}).value) || 0;
-    item.rejectedQty = parseFloat((document.getElementById('rejectedQty_' + ci) || {}).value) || 0;
-    OQC_CHECKS.forEach(function(chk) {
-      var remEl = document.getElementById('rem_' + ci + '_' + chk.id);
-      if (remEl) {
-        if (!item.remarks) item.remarks = {};
-        item.remarks[chk.id] = remEl.value;
-      }
-    });
-  });
+  var matSel  = document.getElementById('selMaterial');
+  var matOpt  = matSel.options[matSel.selectedIndex];
+  var matDesc = (matOpt && matOpt.dataset.desc) ? matOpt.dataset.desc : matSel.value;
 
-  var customerObj = {};
-  var cSel = document.getElementById('customer');
-  var cOpt = cSel.options[cSel.selectedIndex];
-  if (cOpt && cOpt.dataset.obj) { try { customerObj = JSON.parse(cOpt.dataset.obj); } catch(e) {} }
+  var custSel  = document.getElementById('selCustomer');
+  var custOpt  = custSel.options[custSel.selectedIndex];
+  var custName = (custOpt && custOpt.dataset.name) ? custOpt.dataset.name : custSel.value;
+
+  var batchNo  = document.getElementById('inpBatch').value.trim();
+  var qty      = parseFloat(document.getElementById('inpQty').value) || 0;
 
   var data = {
-    date:            document.getElementById('date').value,
-    customerCode:    document.getElementById('customer').value,
-    customerName:    customerObj.name || '',
-    inspector:       document.getElementById('inspector').value,
-    ipqcReviewed:    ipqcVal,
-    aqlLevel:        document.getElementById('aqlLevel').value,
-    releaseDecision: releaseDecision,
-    remarks:         document.getElementById('remarks').value,
-    sessionId:       sessionId,
-    items: currentItems.map(function(item) {
-      return {
-        materialCode:    item.materialCode   || '',
-        materialDesc:    item.materialDesc   || '',
-        batchPO:         item.batchPO        || '',
-        sampleSize:      item.sampleSize     || 0,
-        acceptedQty:     item.acceptedQty    || 0,
-        rejectedQty:     item.rejectedQty    || 0,
-        checks:          item.checks         || {},
-        remarks:         item.remarks        || {},
-        ipqcSessionRef:  item.ipqcSessionRef || ''
-      };
-    })
+    date:            gToday || new Date().toISOString().split('T')[0],
+    customerCode:    custSel.value,
+    customerName:    custName,
+    ipqcReviewed:    'Y',
+    inspector:       dwmSessionId || 'QA',
+    releaseDecision: gDisposition,
+    remarks:         document.getElementById('inpRemarks').value,
+    items: [{
+      batchPO:       batchNo,
+      materialDesc:  matDesc,
+      sampleSize:    qty,
+      acceptedQty:   gDisposition === 'ACCEPTED' ? qty : 0,
+      rejectedQty:   gDisposition === 'REJECTED' ? qty : 0,
+      checks: {
+        fillWeight:  gChecks.fillWeight  || '',
+        label:       gChecks.label       || '',
+        seal:        gChecks.seal        || '',
+        appearance:  gChecks.appearance  || '',
+        custSpec:    gChecks.custSpec    || ''
+      },
+      ipqcSessionRef: ''
+    }]
   };
+
+  // Stop DWM timer before saving
+  if (dwmTaskId && dwmSessionId) {
+    google.script.run
+      .withSuccessHandler(function() {})
+      .withFailureHandler(function() {})
+      .stopTimer(dwmTaskId, dwmSessionId);
+  }
 
   google.script.run
     .withSuccessHandler(function(res) {
-      if (res.success) {
-        savedDocNos = res.docNos || [];
-        _dirty = false;
-        var recordId    = res.recordId || savedDocNos[0] || '';
-        var productName = (currentItems[0] && currentItems[0].materialDesc) ? currentItems[0].materialDesc : '';
-        var batchNo     = (currentItems[0] && currentItems[0].batchPO)      ? currentItems[0].batchPO      : '';
-        if (sessionId) {
-          autoQmsTask_(sessionId, 'OQC', 'OQC: ' + productName + ' — ' + batchNo, recordId);
-        }
-        showToast('Saved: ' + savedDocNos.join(', '), 'success');
-        document.getElementById('btnWA').style.display = 'block';
-        btn.innerHTML = 'Saved';
-        setTimeout(function() { goHome(); }, 2500);
+      if (res && res.success) {
+        gSaved = true;
+        var docNo = (res.docNos && res.docNos[0]) ? res.docNos[0] : '';
+        showConfirm(docNo, matDesc, batchNo, custName, gDisposition);
       } else {
-        showToast('Error: ' + res.error, 'error');
+        var msg = (res && res.error) ? res.error : 'Save failed';
+        showToast(msg, 'error');
         btn.disabled = false;
-        btn.innerHTML = 'Save OQC Record';
+        btn.textContent = 'Save OQC →';
       }
     })
     .withFailureHandler(function(e) {
       showToast(e.message || 'Save failed', 'error');
       btn.disabled = false;
-      btn.innerHTML = 'Save OQC Record';
+      btn.textContent = 'Save OQC →';
     })
-    .saveOQC(data);
+    .saveOQC(data, dwmSessionId);
 }
 
-function autoQmsTask_(sid, type, title, linkedRecord) {
-  if (!sid) return;
+// ══════════════════════════════════════════════════════════
+// Confirmation screen
+// ══════════════════════════════════════════════════════════
+function showConfirm(docNo, matDesc, batchNo, custName, disposition) {
+  document.getElementById('screen1').style.display  = 'none';
+  document.getElementById('stickyBar').style.display = 'none';
+  document.getElementById('screen2').style.display  = '';
+
+  document.getElementById('confirmId').textContent = docNo ? 'OQC #' + docNo : 'OQC Saved';
+
+  var chipsEl = document.getElementById('confirmChips');
+  chipsEl.innerHTML = '';
+
+  function addChip(text, cls) {
+    var c = document.createElement('span');
+    c.className = 'chip ' + cls;
+    c.textContent = text;
+    chipsEl.appendChild(c);
+  }
+
+  addChip(matDesc, 'chip-navy');
+  addChip('Batch: ' + batchNo, 'chip-muted');
+  addChip(custName, 'chip-muted');
+
+  var dispCls = 'chip-muted';
+  if (disposition === 'ACCEPTED')               dispCls = 'chip-acc';
+  else if (disposition === 'REJECTED')          dispCls = 'chip-rej';
+  else if (disposition === 'HOLD')              dispCls = 'chip-hld';
+  else if (disposition === 'ACCEPTED WITH DEVIATION') dispCls = 'chip-awd';
+
+  var dispLabel = disposition === 'ACCEPTED WITH DEVIATION' ? 'AWD' : disposition;
+  addChip('Disposition: ' + dispLabel, dispCls);
+}
+
+// ══════════════════════════════════════════════════════════
+// Navigation
+// ══════════════════════════════════════════════════════════
+function goHome() {
   google.script.run
-    .withSuccessHandler(function() {})
+    .withSuccessHandler(function(html) {
+      document.open();
+      document.write(html);
+      document.close();
+    })
     .withFailureHandler(function() {})
-    .autoQmsTask_(sid, type, title, linkedRecord);
+    .getLandingHtml();
 }
 
-function sendWA() {
-  if (!savedDocNos.length) return;
-  var cSel = document.getElementById('customer');
-  var cOpt = cSel.options[cSel.selectedIndex];
-  var custName = (cOpt && cOpt.dataset.obj) ? (JSON.parse(cOpt.dataset.obj).name || '') : '';
-  var rec = {
-    type: 'OQC', docNo: savedDocNos[0],
-    date: document.getElementById('date').value,
-    customer: custName,
-    releaseDecision: releaseDecision,
-    inspector: document.getElementById('inspector').value
-  };
-  google.script.run
-    .withSuccessHandler(function(url) { window.open(url, '_blank'); })
-    .withFailureHandler(showErr)
-    .getWhatsAppURLForRecord(rec);
-}
-
+// ══════════════════════════════════════════════════════════
+// Toast
+// ══════════════════════════════════════════════════════════
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
-
-window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
