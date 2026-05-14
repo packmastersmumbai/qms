@@ -8,166 +8,120 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-
-    .progress-bar-wrap {
-      background: var(--border);
-      border-radius: 4px;
-      height: 6px;
-      margin: 8px 0 4px;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background: var(--navy);
-      border-radius: 4px;
-      transition: width 0.3s ease;
-    }
-    .progress-label {
-      font-size: 11px;
-      color: var(--muted);
-      text-align: right;
+    /* ── IQC-specific styles ── */
+    @keyframes pulseAmber {
+      0%   { box-shadow: 0 0 0 0 rgba(232,160,32,0.6); }
+      50%  { box-shadow: 0 0 0 6px rgba(232,160,32,0.15); }
+      100% { box-shadow: 0 0 0 0 rgba(232,160,32,0); }
     }
 
-    .item-nav {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
+    /* Prefill strip */
+    .prefill-strip {
       background: var(--navy-light);
-      border-bottom: 1px solid var(--border);
-    }
-    .item-nav-label {
-      flex: 1;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--navy);
-    }
-    .item-nav-sub {
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 400;
-    }
-    .btn-next-item {
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-    }
-    .btn-next-item:disabled {
-      background: var(--muted);
-      cursor: not-allowed;
-    }
-
-    .param-card {
-      background: var(--white);
-      border: 1.5px solid var(--border);
+      border-left: 3px solid var(--amber);
       border-radius: var(--radius);
-      padding: 12px;
-      margin-bottom: 8px;
-      transition: border-color 0.15s;
+      padding: 10px 12px;
+      margin: 10px;
     }
-    .param-card.card-active {
-      border-color: var(--navy);
-      box-shadow: var(--shadow-1);
-    }
-    .param-card.card-pass {
-      border-color: var(--success);
-      background: #F0FDF4;
-    }
-    .param-card.card-fail {
-      border-color: var(--danger);
-      background: #FFF5F5;
-    }
-    .param-card.card-na {
-      border-color: #9CA3AF;
-      background: #F9FAFB;
-    }
-    .param-card-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .param-card-num {
-      width: 22px;
-      height: 22px;
-      background: var(--navy-light);
-      color: var(--navy);
-      border-radius: 50%;
-      font-size: 10px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .param-card-info {
-      flex: 1;
-    }
-    .param-card-name {
+    .prefill-strip .pf-item-name {
       font-size: 13px;
       font-weight: 600;
       color: var(--text);
       line-height: 1.3;
     }
-    .param-card-spec {
+    .prefill-strip .pf-meta {
       font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* Item progress (top bar below header) */
+    .item-progress-wrap {
+      background: var(--white);
+      padding: 8px 12px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .item-progress-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+    .item-prog-track {
+      background: var(--border);
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .item-prog-fill {
+      height: 100%;
+      background: var(--navy);
+      border-radius: 6px;
+      transition: width 0.3s ease;
+    }
+
+    /* Parameters section */
+    .params-section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      margin: 10px;
+      overflow: hidden;
+    }
+    .params-section-title {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: background 0.2s;
+    }
+    .params-section-title.all-done {
+      background: #15803D;
+    }
+
+    /* Parameter row */
+    .param-row-iqc {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s, border-left 0.15s;
+    }
+    .param-row-iqc:last-child {
+      border-bottom: none;
+    }
+    .param-row-iqc.row-fail {
+      background: #FEF2F2;
+      border-left: 3px solid var(--danger);
+    }
+    .param-row-iqc.row-pass {
+      background: #F0FDF4;
+    }
+    .param-row-iqc.row-na {
+      background: var(--navy-light);
+    }
+    .param-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .param-spec {
+      font-size: 11px;
+      font-weight: 400;
       color: var(--muted);
       margin-top: 2px;
+      margin-bottom: 7px;
     }
-    .param-card-ccp {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--danger);
-      background: #FEE2E2;
-      padding: 1px 6px;
-      border-radius: 10px;
-      flex-shrink: 0;
-    }
-    .param-card-status {
-      flex-shrink: 0;
-    }
-    .chip-pass {
-      display: inline-block;
-      background: #DCFCE7;
-      color: #15803D;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-    .chip-fail {
-      display: inline-block;
-      background: #FEE2E2;
-      color: #B91C1C;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-    .chip-na {
-      display: inline-block;
-      background: #F3F4F6;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-    .param-card-actions {
+    .param-toggle {
       display: flex;
       gap: 6px;
-      margin-bottom: 8px;
     }
-    .pf-btn {
+    .param-toggle button {
       flex: 1;
-      padding: 8px 6px;
+      min-height: 44px;
       border: 1.5px solid var(--border);
       border-radius: 6px;
       background: var(--white);
@@ -175,36 +129,69 @@
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
-      color: var(--text);
-      transition: all 0.1s ease;
+      color: var(--muted);
+      transition: all 0.15s ease;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
-    .pf-btn:active { transform: scale(0.96); }
-    .pf-btn.pass { background: #E8F5E9; border-color: var(--success); color: var(--success); }
-    .pf-btn.fail { background: #FFEBEE; border-color: var(--danger); color: var(--danger); }
-    .pf-btn.na   { background: #F3F4F6; border-color: #9CA3AF; color: var(--muted); }
-
-    .param-card-remarks input {
-      width: 100%;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 13px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--white);
+    .param-toggle button:active {
+      transform: scale(0.97);
+      transition: transform 0.08s ease;
     }
-    .param-card-remarks input:focus {
-      outline: none;
+    .param-toggle button.sel-pass {
+      background: #F0FDF4;
+      border-color: var(--success);
+      color: var(--success);
+    }
+    .param-toggle button.sel-fail {
+      background: #FEF2F2;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .param-toggle button.sel-na {
+      background: var(--navy-light);
       border-color: var(--navy);
+      color: var(--navy);
     }
 
+    /* Disposition card */
+    .disp-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      margin: 10px;
+      overflow: hidden;
+    }
+    .disp-card-locked {
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .disp-card-body {
+      padding: 10px 12px 12px;
+    }
+    .disp-card-title {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .disp-card.pulse-amber {
+      animation: pulseAmber 0.4s ease;
+    }
+
+    /* Quantities row inside disposition */
     .qty-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
-      margin-top: 6px;
+      margin-bottom: 10px;
     }
     .qty-item label {
       display: block;
@@ -218,302 +205,530 @@
       border: 1.5px solid var(--border);
       border-radius: 6px;
       padding: 7px 8px;
-      font-size: 14px;
+      font-size: 16px;
       font-family: inherit;
       text-align: center;
       color: var(--text);
       background: var(--white);
+      -webkit-appearance: none;
     }
     .qty-item input:focus {
       outline: none;
       border-color: var(--navy);
     }
-    .shortage-display {
-      text-align: center;
+
+    /* Sticky bottom bar */
+    .sticky-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--navy);
+      padding: 10px 14px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.18);
+    }
+    .sticky-bar-label {
       font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.7);
+    }
+    .sticky-bar-btn {
+      background: var(--amber);
+      color: var(--navy);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
       font-weight: 700;
-      color: var(--muted);
-      margin-top: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      min-height: 44px;
+      transition: background 0.15s, opacity 0.15s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sticky-bar-btn:disabled {
+      background: #9CA3AF;
+      color: var(--white);
+      cursor: not-allowed;
     }
 
-    .params-placeholder {
-      padding: 20px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 13px;
+    /* Summary screen */
+    .item-row-summary {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      min-height: 44px;
+      cursor: pointer;
+      transition: background 0.1s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
+    .item-row-summary:last-child {
+      border-bottom: none;
+    }
+    .item-row-summary:active {
+      background: var(--navy-light);
+    }
+    .sum-item-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      flex-shrink: 0;
+      width: 56px;
+    }
+    .sum-item-bar-wrap {
+      flex: 1;
+      background: var(--border);
+      border-radius: 4px;
+      height: 4px;
+      overflow: hidden;
+    }
+    .sum-item-bar-fill {
+      height: 100%;
+      background: var(--success);
+      border-radius: 4px;
+    }
+    .sum-item-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .sum-edit-icon {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* Batch info strip */
+    .batch-info-strip {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .batch-info-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .batch-info-meta {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Disp badges for summary */
+    .disp-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .disp-badge-acc  { background: #DCFCE7; color: #15803D; }
+    .disp-badge-rej  { background: #FEE2E2; color: #B91C1C; }
+    .disp-badge-hld  { background: #FEF3C7; color: #B45309; }
+    .disp-badge-awd  { background: #FFEDD5; color: #C2410C; }
+    .disp-badge-none { background: #F3F4F6; color: #6B7280; }
   </style>
 </head>
 <body>
 
-<div class="pm-header">
-  <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
-  </button>
-  <span class="page-title">Incoming Quality Check</span>
-  <span class="doc-badge" id="docBadge">Loading…</span>
-</div>
+<!-- ══════════════════════════════════════════════════
+     SCREEN 1: PARAMETER CAPTURE
+══════════════════════════════════════════════════ -->
+<div id="screen1">
 
-<div style="padding-bottom:80px;">
+  <div class="pm-header">
+    <button class="back-btn" id="s1BackBtn">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 4l-6 6 6 6"/>
+      </svg>
+    </button>
+    <span class="page-title">IQC Inspection</span>
+    <span class="doc-badge" id="docBadge">IQC</span>
+  </div>
 
-  <div class="section">
+  <!-- Item progress bar (shown after GRN loaded) -->
+  <div class="item-progress-wrap" id="itemProgressWrap" style="display:none;">
+    <div class="item-progress-label" id="itemProgressLabel">Item 1 of 1</div>
+    <div class="item-prog-track">
+      <div class="item-prog-fill" id="itemProgFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Prefill strip (shown if sessionStorage.grnPrefill) -->
+  <div class="prefill-strip" id="prefillStrip" style="display:none;">
+    <div class="prefill-strip pf-item-name" id="pfItemName"></div>
+    <div class="prefill-strip pf-meta" id="pfMeta"></div>
+  </div>
+
+  <!-- Manual entry fields (shown if no prefill) -->
+  <div class="section" id="manualSection">
     <div class="section-title">Inspection Details</div>
     <div class="section-body">
-      <div class="two-col">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field">
           <label>Date</label>
-          <input type="date" id="date">
+          <input type="date" id="dateField">
         </div>
-        <div class="field">
-          <label>Inspector</label>
-          <select id="inspector">
-            <option value="">— Select —</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Linked GRN No.</label>
-        <select id="grnNo">
-          <option value="">— Select GRN —</option>
-        </select>
-      </div>
-
-      <div class="two-col">
-        <div class="field">
-          <label>Supplier</label>
-          <input type="text" id="supplierName" readonly placeholder="Auto-filled from GRN">
-        </div>
-        <div class="field">
-          <label>GRN Ref</label>
-          <input type="text" id="grnRef" readonly placeholder="—">
-        </div>
-      </div>
-
-      <div class="two-col">
         <div class="field">
           <label>AQL Level</label>
           <select id="aqlLevel">
-            <option value="AQL 2.5">AQL 2.5 (Default)</option>
+            <option value="AQL 2.5">AQL 2.5</option>
             <option value="AQL 0.65">AQL 0.65</option>
             <option value="AQL 1.0">AQL 1.0</option>
             <option value="AQL 4.0">AQL 4.0</option>
             <option value="AQL 6.5">AQL 6.5</option>
           </select>
         </div>
-        <div class="field">
-          <label>Sample ID</label>
-          <input type="text" id="sampleId" placeholder="Sample ref">
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="itemNavWrap" style="display:none;" class="section">
-    <div class="item-nav">
-      <div class="param-card-info">
-        <div class="item-nav-label" id="itemNavLabel">Item 1 of 1</div>
-        <div class="item-nav-sub" id="itemNavSub">—</div>
-      </div>
-      <button class="btn-next-item" id="btnNextItem">Next item →</button>
-    </div>
-    <div style="padding:6px 12px 8px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:11px;color:var(--muted);">Parameters completed</span>
-        <span class="progress-label" id="progressLabel">0 / 12</span>
-      </div>
-      <div class="progress-bar-wrap">
-        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="singleProgressWrap" style="display:none;" class="section">
-    <div style="padding:8px 12px 10px;">
-      <div id="singleItemLabel" style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px;">—</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:11px;color:var(--muted);">Parameters completed</span>
-        <span class="progress-label" id="progressLabel2">0 / 12</span>
-      </div>
-      <div class="progress-bar-wrap">
-        <div class="progress-bar-fill" id="progressFill2" style="width:0%"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">
-      Inspection Parameters
-      <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,0.7);margin-left:8px;">★ = Critical Control Point</span>
-    </div>
-    <div class="section-body" id="paramCardsBody">
-      <div class="params-placeholder" id="paramPlaceholder">Select a GRN to load inspection parameters.</div>
-    </div>
-  </div>
-
-  <div class="section" id="qtySection" style="display:none;">
-    <div class="section-title" id="qtySectionTitle">Quantities</div>
-    <div class="section-body">
-      <div class="qty-row">
-        <div class="qty-item">
-          <label>Sample Size</label>
-          <input type="number" id="sampleSize" min="0" placeholder="0">
-        </div>
-        <div class="qty-item">
-          <label>Accepted Qty</label>
-          <input type="number" id="acceptedQty" min="0" placeholder="0">
-        </div>
-        <div class="qty-item">
-          <label>Rejected Qty</label>
-          <input type="number" id="rejectedQty" min="0" placeholder="0">
-        </div>
-      </div>
-      <div class="shortage-display" id="shortageDisplay">Shortage: —</div>
-    </div>
-  </div>
-
-  <div class="section" id="dispositionSection" style="display:none;">
-    <div class="section-title">Disposition</div>
-    <div class="section-body">
-      <div class="disp-grid">
-        <button class="disp-btn" id="d_acc">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>ACCEPT
-        </button>
-        <button class="disp-btn" id="d_hld">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="10" y1="15" x2="10" y2="9"/><line x1="14" y1="15" x2="14" y2="9"/></svg>HOLD
-        </button>
-        <button class="disp-btn" id="d_rej">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>REJECT
-        </button>
-        <button class="disp-btn" id="d_awd">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>WITH DEVIATION
-        </button>
-      </div>
-      <div class="two-col" style="margin-top:10px;">
-        <div class="field">
-          <label>NCR Ref <span style="font-size:10px;font-weight:400;">(if reject)</span></label>
-          <input type="text" id="ncrRef" placeholder="Auto-generated if blank">
-        </div>
-        <div class="field">
-          <label>Deviation Ref <span style="font-size:10px;font-weight:400;">(if deviation)</span></label>
-          <input type="text" id="deviationRef" placeholder="Deviation ref no.">
-        </div>
       </div>
       <div class="field">
-        <label>Overall Remarks</label>
-        <textarea id="remarks" placeholder="Inspector observations…"></textarea>
+        <label>Inspector</label>
+        <select id="inspector">
+          <option value="">— Select Inspector —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>GRN Number</label>
+        <select id="grnNo">
+          <option value="">— Select GRN —</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field">
+          <label>Supplier</label>
+          <input type="text" id="supplierField" readonly placeholder="Auto-filled">
+        </div>
+        <div class="field">
+          <label>Sample ID</label>
+          <input type="text" id="sampleId" placeholder="Optional">
+        </div>
       </div>
     </div>
   </div>
 
-</div>
+  <!-- Parameters section (built dynamically) -->
+  <div id="paramSectionWrap"></div>
 
-<div style="position:fixed;bottom:0;left:0;right:0;background:var(--white);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--border);box-shadow:0 -2px 8px rgba(0,0,0,0.06);display:flex;gap:8px;">
-  <button class="btn-submit" id="btnSubmit" style="flex:2;">Save IQC Record</button>
-  <button class="btn-wa" id="btnWA" style="flex:1;margin-top:0;display:none;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>WhatsApp
-  </button>
-</div>
+  <!-- Disposition card -->
+  <div class="disp-card" id="dispCard" style="display:none;">
+    <div class="disp-card-title">Disposition</div>
+    <div class="disp-card-body">
+      <!-- Locked placeholder -->
+      <div id="dispLocked" class="disp-card-locked">
+        Disposition — complete all parameters above
+      </div>
+      <!-- Expanded grid -->
+      <div id="dispGrid" style="display:none;">
+        <div class="qty-row" style="margin-bottom:10px;">
+          <div class="qty-item">
+            <label>Sample Size</label>
+            <input type="number" id="sampleSize" min="0" placeholder="0" inputmode="numeric">
+          </div>
+          <div class="qty-item">
+            <label>Accepted Qty</label>
+            <input type="number" id="acceptedQty" min="0" placeholder="0" inputmode="numeric">
+          </div>
+          <div class="qty-item">
+            <label>Rejected Qty</label>
+            <input type="number" id="rejectedQty" min="0" placeholder="0" inputmode="numeric">
+          </div>
+        </div>
+        <div class="disp-grid" style="margin-bottom:0;">
+          <button class="disp-btn" id="dAcc" onclick="setItemDisp('ACCEPTED')">ACCEPT</button>
+          <button class="disp-btn" id="dRej" onclick="setItemDisp('REJECTED')">REJECT</button>
+          <button class="disp-btn" id="dHld" onclick="setItemDisp('HOLD')">HOLD</button>
+          <button class="disp-btn" id="dAwd" onclick="setItemDisp('AWD')">WITH DEVIATION</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:80px;"></div>
+
+  <!-- Sticky bottom bar -->
+  <div class="sticky-bar">
+    <span class="sticky-bar-label" id="stickyLabel">—</span>
+    <button class="sticky-bar-btn" id="stickyBtn" disabled onclick="onStickyTap()">Next Item →</button>
+  </div>
+
+</div><!-- /screen1 -->
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 2: SUMMARY
+══════════════════════════════════════════════════ -->
+<div id="screen2" style="display:none;">
+
+  <div class="pm-header">
+    <button class="back-btn" id="s2BackBtn">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 4l-6 6 6 6"/>
+      </svg>
+    </button>
+    <span class="page-title">IQC Summary</span>
+    <span class="doc-badge">IQC</span>
+  </div>
+
+  <!-- Batch info strip -->
+  <div class="section" style="margin:10px;">
+    <div class="batch-info-strip">
+      <div class="batch-info-name" id="sumBatchName"></div>
+      <div class="batch-info-meta" id="sumBatchMeta"></div>
+    </div>
+  </div>
+
+  <!-- Items inspected -->
+  <div class="section" style="margin:10px;">
+    <div class="section-title">Items Inspected</div>
+    <div id="sumItemsList"></div>
+  </div>
+
+  <!-- Overall disposition -->
+  <div class="section" style="margin:10px;">
+    <div class="section-title">Overall Disposition</div>
+    <div class="section-body">
+      <div class="disp-grid">
+        <button class="disp-btn" id="odAcc" onclick="setOverallDisp('ACCEPTED')">ACCEPT</button>
+        <button class="disp-btn" id="odRej" onclick="setOverallDisp('REJECTED')">REJECT</button>
+        <button class="disp-btn" id="odHld" onclick="setOverallDisp('HOLD')">HOLD</button>
+        <button class="disp-btn" id="odAwd" onclick="setOverallDisp('AWD')">WITH DEVIATION</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remarks -->
+  <div class="section" style="margin:10px;">
+    <div class="section-title">Remarks</div>
+    <div class="section-body">
+      <textarea id="remarks" rows="3" placeholder="Any deviations, observations, or notes" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:16px !important;font-family:inherit;color:var(--text);background:var(--white);resize:vertical;-webkit-appearance:none;"></textarea>
+      <div class="hint" style="font-size:10px;color:var(--muted);margin-top:3px;">Optional</div>
+    </div>
+  </div>
+
+  <div style="padding:0 10px 10px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="field">
+        <label>NCR Ref <span style="font-size:10px;font-weight:400;">(if reject)</span></label>
+        <input type="text" id="ncrRef" placeholder="Leave blank to auto-generate">
+      </div>
+      <div class="field">
+        <label>Deviation Ref <span style="font-size:10px;font-weight:400;">(if AWD)</span></label>
+        <input type="text" id="deviationRef" placeholder="Deviation ref no.">
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:0 10px 16px;">
+    <button class="btn-submit" id="saveBtn" disabled onclick="saveIQC()">SAVE IQC RECORD</button>
+  </div>
+
+  <div style="height:20px;"></div>
+
+</div><!-- /screen2 -->
 
 <div class="toast" id="toast"></div>
 
 <script>
-var sessionId   = sessionStorage.getItem('dwmSessionId') || '';
-var PARAMS      = [];
-var INSPECTORS  = [];
-var GRNS        = [];
-var GRN_MAP     = {};
-var currentItems = [];
-var currentItemIndex = 0;
-var itemData    = [];
-var disposition = '';
-var savedRecord = null;
-var formSubmitted = false;
+/* ────────────────────────────────────────────────
+   CONSTANTS
+──────────────────────────────────────────────── */
+var IQC_PARAMS = [
+  {id:'qty',   label:'Quantity',             spec:'As per PO'},
+  {id:'pkg',   label:'Packaging Condition',  spec:'Intact / Undamaged'},
+  {id:'colour',label:'Colour',               spec:'Per approved sample'},
+  {id:'shape', label:'Shape / Form',         spec:'Per specification'},
+  {id:'dims',  label:'Size / Dimensions',    spec:'Per spec sheet'},
+  {id:'weight',label:'Net Weight',           spec:'Per spec (calibrated balance)'},
+  {id:'clean', label:'Cleanliness',          spec:'No contamination'},
+  {id:'odour', label:'Odour',                spec:'Normal / None'},
+  {id:'label', label:'Label Accuracy',       spec:'Matches PO / Spec'},
+  {id:'msds',  label:'MSDS / SDS Available', spec:'Received'},
+  {id:'shelf', label:'Shelf Life / Expiry',  spec:'Min 75% remaining'},
+  {id:'coa',   label:'COA / Test Report',    spec:'Received & Verified'}
+];
+
+/* ────────────────────────────────────────────────
+   STATE
+──────────────────────────────────────────────── */
+var sessionId    = sessionStorage.getItem('dwmSessionId') || null;
+var taskId       = null;
+var formSaved    = false;
+
+/* Prefill data (from sessionStorage.grnPrefill) */
+var prefill      = null;   /* { supplierId, supplierName, itemCode, itemName, batchNo, grnId } */
+
+/* Form init data */
+var initData     = null;   /* { docNumber, recentGRNs, inspectors, aqlLevels, defaultAql, today } */
+var GRN_MAP      = {};
+
+/* Item state */
+var currentItems = [];     /* [{materialDesc, batchNo, qtyReceived, unit}] */
+var currentIdx   = 0;      /* index of item being inspected */
+var itemData     = [];     /* per-item: {params:{}, sampleSize, acceptedQty, rejectedQty, disp} */
+
+/* Summary */
+var overallDisp  = '';
+
+/* ────────────────────────────────────────────────
+   INIT
+──────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  /* Read and clear prefill immediately */
+  var pfRaw = sessionStorage.getItem('grnPrefill');
+  if (pfRaw) {
+    sessionStorage.removeItem('grnPrefill');
+    try { prefill = JSON.parse(pfRaw); } catch(e) { prefill = null; }
+  }
+
+  /* Set today's date */
+  var today = new Date();
+  var yyyy  = today.getFullYear();
+  var mm    = ('0' + (today.getMonth() + 1)).slice(-2);
+  var dd    = ('0' + today.getDate()).slice(-2);
+  var todayStr = yyyy + '-' + mm + '-' + dd;
+  document.getElementById('dateField').value = todayStr;
+
+  /* Wire static events */
+  document.getElementById('s1BackBtn').addEventListener('click', onScreen1Back);
+  document.getElementById('s2BackBtn').addEventListener('click', onScreen2Back);
+  document.getElementById('grnNo').addEventListener('change', onGRNChange);
+  document.getElementById('sampleSize').addEventListener('input', saveQtyState);
+  document.getElementById('acceptedQty').addEventListener('input', saveQtyState);
+  document.getElementById('rejectedQty').addEventListener('input', saveQtyState);
+
+  /* Load init data */
+  google.script.run
+    .withSuccessHandler(onInitLoaded)
+    .withFailureHandler(function(e) { showToast(e.message || 'Load error', 'error'); })
+    .getIQCFormInit();
+});
 
 window.addEventListener('beforeunload', function() {
-  if (!formSubmitted && sessionId) {
-    try { google.script.run.pauseDwmTimer(sessionId); } catch(e) {}
+  if (!formSaved && taskId && sessionId) {
+    try { google.script.run.stopTimer(taskId, sessionId); } catch(e) {}
   }
 });
 
-function init() {
-  var today = new Date();
-  document.getElementById('date').value = today.toISOString().split('T')[0];
+/* ────────────────────────────────────────────────
+   INIT LOADED
+──────────────────────────────────────────────── */
+function onInitLoaded(d) {
+  initData = d;
+  document.getElementById('docBadge').textContent = d.docNumber || 'IQC';
 
-  var prefillRaw = sessionStorage.getItem('iqcPrefill');
-  if (prefillRaw) {
-    try {
-      var pf = JSON.parse(prefillRaw);
-      if (pf.supplierName) document.getElementById('supplierName').value = pf.supplierName;
-      if (pf.grnRef)       document.getElementById('grnRef').value       = pf.grnRef;
-      window._prefillGrnNo = pf.grnNo || '';
-      window._prefillBatch = pf.batchNo || '';
-    } catch(e) {}
-    sessionStorage.removeItem('iqcPrefill');
+  /* Populate inspector select */
+  var iSel = document.getElementById('inspector');
+  var inspectors = d.inspectors || [];
+  for (var i = 0; i < inspectors.length; i++) {
+    var ins = inspectors[i];
+    var o = document.createElement('option');
+    o.value = ins.name || ins;
+    o.textContent = ins.name ? (ins.name + (ins.role ? ' — ' + ins.role : '')) : ins;
+    iSel.appendChild(o);
   }
 
-  google.script.run
-    .withSuccessHandler(function(d) {
-      document.getElementById('docBadge').textContent = d.docNumber;
-      PARAMS     = d.params;
-      INSPECTORS = d.inspectors;
-      GRNS       = d.recentGRNs || [];
+  /* Populate AQL select */
+  var aqlSel = document.getElementById('aqlLevel');
+  var aqlLevels = d.aqlLevels || [];
+  if (aqlLevels.length) {
+    aqlSel.innerHTML = '';
+    for (var j = 0; j < aqlLevels.length; j++) {
+      var ao = document.createElement('option');
+      ao.value = aqlLevels[j];
+      ao.textContent = aqlLevels[j];
+      if (aqlLevels[j] === d.defaultAql) ao.selected = true;
+      aqlSel.appendChild(ao);
+    }
+  }
 
-      var iSel = document.getElementById('inspector');
-      INSPECTORS.forEach(function(p) {
-        var o = document.createElement('option');
-        o.value = p.name;
-        o.textContent = p.name + ' — ' + p.role;
-        iSel.appendChild(o);
-      });
+  /* Build GRN map */
+  var grns = d.recentGRNs || [];
+  var gSel = document.getElementById('grnNo');
+  for (var k = 0; k < grns.length; k++) {
+    var g = grns[k];
+    GRN_MAP[g.grnNo] = g;
+    var go = document.createElement('option');
+    go.value = g.grnNo;
+    go.textContent = g.grnNo + ' | ' + (g.supplierName || '').substring(0, 24) +
+      (g.date ? ' (' + g.date + ')' : '');
+    gSel.appendChild(go);
+  }
 
-      var gSel = document.getElementById('grnNo');
-      GRNS.forEach(function(g) {
-        GRN_MAP[g.grnNo] = g;
-        var o = document.createElement('option');
-        o.value = g.grnNo;
-        o.textContent = g.grnNo + ' | ' + (g.material || '').substring(0, 28) +
-          (g.iqcStatus && g.iqcStatus !== 'PENDING' ? ' [' + g.iqcStatus + ']' : '');
-        gSel.appendChild(o);
-      });
+  /* Set today date from server if provided */
+  if (d.today) {
+    document.getElementById('dateField').value = d.today;
+  }
 
-      if (window._prefillGrnNo) {
-        gSel.value = window._prefillGrnNo;
-        if (gSel.value) onGRNChange();
-      }
-    })
-    .withFailureHandler(function(e) { showToast(e.message, 'error'); })
-    .getIQCFormInit();
+  /* Handle prefill vs manual */
+  if (prefill && prefill.grnId) {
+    renderPrefill();
+  } else {
+    /* manual mode - show form fields, nothing more until GRN selected */
+  }
 
-  document.getElementById('grnNo').addEventListener('change', onGRNChange);
-
-  ['sampleSize','acceptedQty','rejectedQty'].forEach(function(id) {
-    document.getElementById(id).addEventListener('input', calcShortage);
-  });
-
-  document.getElementById('d_acc').addEventListener('click', function() { setDisp('ACCEPTED'); });
-  document.getElementById('d_hld').addEventListener('click', function() { setDisp('HOLD'); });
-  document.getElementById('d_rej').addEventListener('click', function() { setDisp('REJECTED'); });
-  document.getElementById('d_awd').addEventListener('click', function() { setDisp('ACCEPTED WITH DEVIATION'); });
-
-  document.getElementById('btnSubmit').addEventListener('click', submitIQC);
-  document.getElementById('btnWA').addEventListener('click', sendWA);
-  document.getElementById('backBtn').addEventListener('click', goHome);
-  document.getElementById('btnNextItem').addEventListener('click', nextItem);
+  /* DWM task */
+  if (sessionId) {
+    var title = 'IQC Inspection' + (prefill && prefill.itemName ? ' — ' + prefill.itemName : '');
+    var grnId = prefill ? (prefill.grnId || '') : '';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.taskId) taskId = res.taskId;
+      })
+      .withFailureHandler(function() {})
+      .autoQmsTask_(sessionId, 'IQC', title, grnId);
+  }
 }
 
+/* ────────────────────────────────────────────────
+   PREFILL MODE
+──────────────────────────────────────────────── */
+function renderPrefill() {
+  document.getElementById('prefillStrip').style.display = '';
+  document.getElementById('manualSection').style.display = 'none';
+
+  var pf = prefill;
+  document.getElementById('pfItemName').textContent = pf.itemName || pf.itemCode || 'Item';
+  document.getElementById('pfMeta').textContent =
+    (pf.supplierName || '') +
+    (pf.batchNo ? '  ·  Batch: ' + pf.batchNo : '') +
+    (pf.grnId   ? '  ·  GRN #' + pf.grnId : '');
+
+  /* Build single synthetic item */
+  var item = {
+    materialDesc: pf.itemName || pf.itemCode || 'Item',
+    batchNo:      pf.batchNo  || '',
+    qtyReceived:  '',
+    unit:         ''
+  };
+  currentItems = [item];
+  itemData = [makeBlankItemData()];
+  currentIdx = 0;
+  renderCurrentItem();
+}
+
+/* ────────────────────────────────────────────────
+   GRN CHANGE
+──────────────────────────────────────────────── */
 function onGRNChange() {
   var grnNo = document.getElementById('grnNo').value;
-  var g = GRN_MAP[grnNo];
-  document.getElementById('supplierName').value = g ? (g.supplierName || '') : '';
-  document.getElementById('grnRef').value       = grnNo || '';
+  var g     = GRN_MAP[grnNo];
+  document.getElementById('supplierField').value = g ? (g.supplierName || '') : '';
 
-  currentItems     = [];
-  currentItemIndex = 0;
-  itemData         = [];
-  clearParamCards();
+  currentItems = [];
+  currentIdx   = 0;
+  itemData     = [];
+  document.getElementById('paramSectionWrap').innerHTML = '';
+  document.getElementById('dispCard').style.display = 'none';
+  document.getElementById('itemProgressWrap').style.display = 'none';
+  document.getElementById('stickyBtn').disabled = true;
+  document.getElementById('stickyLabel').textContent = '—';
 
   if (!grnNo) return;
 
@@ -524,374 +739,548 @@ function onGRNChange() {
         return;
       }
       currentItems = items;
-      items.forEach(function() {
-        itemData.push({ paramVals: {}, paramRemarks: {},
-                        sampleSize: 0, acceptedQty: 0, rejectedQty: 0 });
-      });
-      currentItemIndex = 0;
+      for (var i = 0; i < items.length; i++) {
+        itemData.push(makeBlankItemData());
+      }
+      currentIdx = 0;
       renderCurrentItem();
     })
-    .withFailureHandler(function(e) { showToast(e.message, 'error'); })
+    .withFailureHandler(function(e) { showToast(e.message || 'Error loading GRN items', 'error'); })
     .getGRNItems(grnNo);
 }
 
+/* ────────────────────────────────────────────────
+   ITEM RENDERING
+──────────────────────────────────────────────── */
+function makeBlankItemData() {
+  return {params: {}, sampleSize: 0, acceptedQty: 0, rejectedQty: 0, disp: ''};
+}
+
 function renderCurrentItem() {
-  var item = currentItems[currentItemIndex];
+  var item  = currentItems[currentIdx];
   var total = currentItems.length;
 
-  if (total > 1) {
-    document.getElementById('itemNavWrap').style.display = '';
-    document.getElementById('singleProgressWrap').style.display = 'none';
-    document.getElementById('itemNavLabel').textContent =
-      'Item ' + (currentItemIndex + 1) + ' of ' + total;
-    document.getElementById('itemNavSub').textContent =
-      (item.materialDesc || 'Material') + (item.batchNo ? ' · Batch: ' + item.batchNo : '');
-    document.getElementById('btnNextItem').disabled = (currentItemIndex >= total - 1);
-  } else {
-    document.getElementById('itemNavWrap').style.display = 'none';
-    document.getElementById('singleProgressWrap').style.display = '';
-    document.getElementById('singleItemLabel').textContent =
-      (item.materialDesc || 'Material') + (item.batchNo ? ' · Batch: ' + item.batchNo : '');
-  }
+  /* Item progress bar */
+  var wrap = document.getElementById('itemProgressWrap');
+  wrap.style.display = '';
+  var pct = Math.round((currentIdx + 1) / total * 100);
+  document.getElementById('itemProgressLabel').textContent =
+    'Item ' + (currentIdx + 1) + ' of ' + total +
+    (item.materialDesc ? '  ·  ' + item.materialDesc : '') +
+    (item.batchNo ? '  (Batch: ' + item.batchNo + ')' : '');
+  document.getElementById('itemProgFill').style.width = pct + '%';
 
-  document.getElementById('qtySection').style.display = '';
-  document.getElementById('dispositionSection').style.display = '';
-  document.getElementById('qtySectionTitle').textContent =
-    'Quantities — ' + (item.materialDesc || 'Item ' + (currentItemIndex + 1));
-
-  var d = itemData[currentItemIndex];
+  /* Restore qty fields */
+  var d = itemData[currentIdx];
   document.getElementById('sampleSize').value  = d.sampleSize  || '';
   document.getElementById('acceptedQty').value = d.acceptedQty || '';
   document.getElementById('rejectedQty').value = d.rejectedQty || '';
-  calcShortage();
 
-  buildParamCards();
-  updateProgress();
+  /* Build param cards */
+  buildParamSection();
+
+  /* Update disposition card */
+  updateDispCard();
+
+  /* Sticky bar */
+  updateStickyBar();
 }
 
-function buildParamCards() {
-  var body = document.getElementById('paramCardsBody');
-  body.innerHTML = '';
+function buildParamSection() {
+  var wrap = document.getElementById('paramSectionWrap');
+  wrap.innerHTML = '';
 
-  var d = itemData[currentItemIndex];
+  var sec = document.createElement('div');
+  sec.className = 'params-section';
 
-  PARAMS.forEach(function(p, pi) {
-    var card = document.createElement('div');
-    card.id        = 'pcard_' + p.id;
-    card.className = 'param-card';
-    var currentVal = d.paramVals[p.id] || '';
-    if (currentVal === 'PASS')      card.className += ' card-pass';
-    else if (currentVal === 'FAIL') card.className += ' card-fail';
-    else if (currentVal === 'NA')   card.className += ' card-na';
+  var titleBar = document.createElement('div');
+  titleBar.className = 'params-section-title';
+  titleBar.id = 'paramSectionTitle';
+  titleBar.textContent = 'INSPECTION PARAMETERS';
+  sec.appendChild(titleBar);
 
-    var headerDiv = document.createElement('div');
-    headerDiv.className = 'param-card-header';
+  var d = itemData[currentIdx];
 
-    var numDiv = document.createElement('div');
-    numDiv.className = 'param-card-num';
-    numDiv.textContent = pi + 1;
+  for (var i = 0; i < IQC_PARAMS.length; i++) {
+    var p    = IQC_PARAMS[i];
+    var val  = d.params[p.id] || '';
 
-    var infoDiv = document.createElement('div');
-    infoDiv.className = 'param-card-info';
+    var row = document.createElement('div');
+    row.className = 'param-row-iqc' + getRowClass(val);
+    row.id = 'paramRow_' + p.id;
 
     var nameDiv = document.createElement('div');
-    nameDiv.className = 'param-card-name';
+    nameDiv.className = 'param-name';
     nameDiv.textContent = p.label;
-    if (p.ccp) {
-      var dot = document.createElement('span');
-      dot.className = 'ccp-dot';
-      nameDiv.appendChild(dot);
-    }
 
     var specDiv = document.createElement('div');
-    specDiv.className = 'param-card-spec';
-    specDiv.textContent = p.spec || '';
+    specDiv.className = 'param-spec';
+    specDiv.textContent = p.spec;
 
-    infoDiv.appendChild(nameDiv);
-    infoDiv.appendChild(specDiv);
-
-    headerDiv.appendChild(numDiv);
-    headerDiv.appendChild(infoDiv);
-
-    if (p.ccp) {
-      var ccpSpan = document.createElement('span');
-      ccpSpan.className = 'param-card-ccp';
-      ccpSpan.textContent = '★ CCP';
-      headerDiv.appendChild(ccpSpan);
-    }
-
-    var chipDiv = document.createElement('div');
-    chipDiv.className = 'param-card-status';
-    chipDiv.id = 'chip_' + p.id;
-    if (currentVal === 'PASS') {
-      chipDiv.innerHTML = '<span class="chip-pass">PASS</span>';
-    } else if (currentVal === 'FAIL') {
-      chipDiv.innerHTML = '<span class="chip-fail">FAIL</span>';
-    } else if (currentVal === 'NA') {
-      chipDiv.innerHTML = '<span class="chip-na">N/A</span>';
-    }
-    headerDiv.appendChild(chipDiv);
-
-    card.appendChild(headerDiv);
-
-    var actionsDiv = document.createElement('div');
-    actionsDiv.className = 'param-card-actions';
+    var toggleDiv = document.createElement('div');
+    toggleDiv.className = 'param-toggle';
 
     var passBtn = document.createElement('button');
-    passBtn.className = 'pf-btn' + (currentVal === 'PASS' ? ' pass' : '');
-    passBtn.textContent = 'Pass';
-    passBtn.addEventListener('click', (function(paramId) {
-      return function() { setPF(paramId, 'PASS'); };
-    })(p.id));
+    passBtn.textContent = 'PASS';
+    passBtn.className = val === 'PASS' ? 'sel-pass' : '';
+    passBtn.setAttribute('data-param', p.id);
+    passBtn.setAttribute('data-val', 'PASS');
+    passBtn.onclick = makeParamHandler(p.id, 'PASS');
 
     var failBtn = document.createElement('button');
-    failBtn.className = 'pf-btn' + (currentVal === 'FAIL' ? ' fail' : '');
-    failBtn.textContent = 'Fail';
-    failBtn.addEventListener('click', (function(paramId) {
-      return function() { setPF(paramId, 'FAIL'); };
-    })(p.id));
+    failBtn.textContent = 'FAIL';
+    failBtn.className = val === 'FAIL' ? 'sel-fail' : '';
+    failBtn.setAttribute('data-param', p.id);
+    failBtn.setAttribute('data-val', 'FAIL');
+    failBtn.onclick = makeParamHandler(p.id, 'FAIL');
 
-    actionsDiv.appendChild(passBtn);
-    actionsDiv.appendChild(failBtn);
+    var naBtn = document.createElement('button');
+    naBtn.textContent = 'NA';
+    naBtn.className = val === 'NA' ? 'sel-na' : '';
+    naBtn.setAttribute('data-param', p.id);
+    naBtn.setAttribute('data-val', 'NA');
+    naBtn.onclick = makeParamHandler(p.id, 'NA');
 
-    if (p.id === 'msds') {
-      var naBtn = document.createElement('button');
-      naBtn.className = 'pf-btn' + (currentVal === 'NA' ? ' na' : '');
-      naBtn.textContent = 'N/A';
-      naBtn.addEventListener('click', (function(paramId) {
-        return function() { setPF(paramId, 'NA'); };
-      })(p.id));
-      actionsDiv.appendChild(naBtn);
+    toggleDiv.appendChild(passBtn);
+    toggleDiv.appendChild(failBtn);
+    toggleDiv.appendChild(naBtn);
+
+    row.appendChild(nameDiv);
+    row.appendChild(specDiv);
+    row.appendChild(toggleDiv);
+
+    sec.appendChild(row);
+  }
+
+  wrap.appendChild(sec);
+
+  document.getElementById('dispCard').style.display = '';
+  updateParamSectionTitle();
+}
+
+function makeParamHandler(paramId, val) {
+  return function() { setParam(paramId, val); };
+}
+
+function setParam(paramId, val) {
+  var d = itemData[currentIdx];
+  d.params[paramId] = val;
+
+  /* Update row class */
+  var row = document.getElementById('paramRow_' + paramId);
+  if (row) {
+    row.className = 'param-row-iqc' + getRowClass(val);
+    if (val === 'FAIL') {
+      /* Trigger shake by toggling a class */
+      row.style.animation = 'none';
+      /* Force reflow */
+      void row.offsetHeight;
+      row.style.animation = 'shake 0.3s ease';
     }
-
-    card.appendChild(actionsDiv);
-
-    var rmkDiv = document.createElement('div');
-    rmkDiv.className = 'param-card-remarks';
-    var rmkInput = document.createElement('input');
-    rmkInput.type        = 'text';
-    rmkInput.id          = 'rmk_' + p.id;
-    rmkInput.placeholder = 'Remarks (optional)';
-    rmkInput.value       = d.paramRemarks[p.id] || '';
-    rmkInput.addEventListener('input', (function(paramId) {
-      return function() {
-        itemData[currentItemIndex].paramRemarks[paramId] = this.value;
-      };
-    })(p.id));
-    rmkDiv.appendChild(rmkInput);
-    card.appendChild(rmkDiv);
-
-    body.appendChild(card);
-  });
-}
-
-function setPF(paramId, val) {
-  var d = itemData[currentItemIndex];
-  d.paramVals[paramId] = val;
-
-  var card = document.getElementById('pcard_' + paramId);
-  if (card) {
-    card.className = 'param-card ' +
-      (val === 'PASS' ? 'card-pass' : val === 'FAIL' ? 'card-fail' : 'card-na');
   }
 
-  var chip = document.getElementById('chip_' + paramId);
-  if (chip) {
-    chip.innerHTML = val === 'PASS'
-      ? '<span class="chip-pass">PASS</span>'
-      : val === 'FAIL'
-        ? '<span class="chip-fail">FAIL</span>'
-        : '<span class="chip-na">N/A</span>';
+  /* Update button states */
+  var btns = row ? row.querySelectorAll('.param-toggle button') : [];
+  for (var i = 0; i < btns.length; i++) {
+    var bv = btns[i].getAttribute('data-val');
+    btns[i].className = bv === val ? getSelClass(val) : '';
   }
 
-  if (card) {
-    var btns = card.querySelectorAll('.pf-btn');
-    btns.forEach(function(btn) {
-      var t = btn.textContent.trim();
-      btn.className = 'pf-btn' +
-        (t === 'Pass' && val === 'PASS' ? ' pass' :
-         t === 'Fail' && val === 'FAIL' ? ' fail' :
-         t === 'N/A'  && val === 'NA'   ? ' na' : '');
-    });
+  updateParamSectionTitle();
+  updateDispCard();
+  updateStickyBar();
+}
+
+function getRowClass(val) {
+  if (val === 'PASS') return ' row-pass';
+  if (val === 'FAIL') return ' row-fail';
+  if (val === 'NA')   return ' row-na';
+  return '';
+}
+
+function getSelClass(val) {
+  if (val === 'PASS') return 'sel-pass';
+  if (val === 'FAIL') return 'sel-fail';
+  if (val === 'NA')   return 'sel-na';
+  return '';
+}
+
+function allParamsFilled() {
+  var d = itemData[currentIdx];
+  for (var i = 0; i < IQC_PARAMS.length; i++) {
+    if (!d.params[IQC_PARAMS[i].id]) return false;
+  }
+  return true;
+}
+
+function updateParamSectionTitle() {
+  var titleBar = document.getElementById('paramSectionTitle');
+  if (!titleBar) return;
+  if (allParamsFilled()) {
+    titleBar.className = 'params-section-title all-done';
+    titleBar.textContent = 'INSPECTION PARAMETERS';
+  } else {
+    titleBar.className = 'params-section-title';
+    titleBar.textContent = 'INSPECTION PARAMETERS';
+  }
+}
+
+function countFilled() {
+  var d = itemData[currentIdx];
+  var n = 0;
+  for (var i = 0; i < IQC_PARAMS.length; i++) {
+    if (d.params[IQC_PARAMS[i].id]) n++;
+  }
+  return n;
+}
+
+/* ────────────────────────────────────────────────
+   DISPOSITION CARD (per item)
+──────────────────────────────────────────────── */
+function updateDispCard() {
+  var locked   = document.getElementById('dispLocked');
+  var grid     = document.getElementById('dispGrid');
+  var allFilled = allParamsFilled();
+
+  if (!allFilled) {
+    locked.style.display = '';
+    grid.style.display   = 'none';
+    return;
   }
 
-  updateProgress();
-  autoSuggestDisp();
+  locked.style.display = 'none';
+  grid.style.display   = '';
+
+  /* Auto-select if not already chosen for this item */
+  var d = itemData[currentIdx];
+  if (!d.disp) {
+    var anyFail = false;
+    var anyPass = false;
+    for (var i = 0; i < IQC_PARAMS.length; i++) {
+      var v = d.params[IQC_PARAMS[i].id];
+      if (v === 'FAIL') { anyFail = true; break; }
+      if (v === 'PASS') anyPass = true;
+    }
+    var autoDisp = anyFail ? 'REJECTED' : (anyPass ? 'ACCEPTED' : 'HOLD');
+    d.disp = autoDisp;
+  }
+  renderItemDispButtons(d.disp);
 }
 
-function updateProgress() {
-  if (!PARAMS.length) return;
-  var d = itemData[currentItemIndex];
-  var done = 0;
-  PARAMS.forEach(function(p) { if (d.paramVals[p.id]) done++; });
-  var total = PARAMS.length;
-  var pct   = Math.round(done / total * 100) + '%';
-
-  document.getElementById('progressLabel').textContent  = done + ' / ' + total;
-  document.getElementById('progressFill').style.width   = pct;
-  document.getElementById('progressLabel2').textContent = done + ' / ' + total;
-  document.getElementById('progressFill2').style.width  = pct;
+function setItemDisp(val) {
+  itemData[currentIdx].disp = val;
+  renderItemDispButtons(val);
+  updateStickyBar();
 }
 
-function calcShortage() {
-  var ss  = parseFloat(document.getElementById('sampleSize').value)  || 0;
-  var acc = parseFloat(document.getElementById('acceptedQty').value) || 0;
-  var rej = parseFloat(document.getElementById('rejectedQty').value) || 0;
+function renderItemDispButtons(val) {
+  var map = {dAcc:'ACCEPTED', dRej:'REJECTED', dHld:'HOLD', dAwd:'AWD'};
+  var activeMap = {ACCEPTED:'active-acc', REJECTED:'active-rej', HOLD:'active-hld', AWD:'active-awd'};
+  for (var id in map) {
+    var el = document.getElementById(id);
+    if (el) el.className = 'disp-btn' + (map[id] === val ? ' ' + (activeMap[val] || '') : '');
+  }
+}
 
-  if (itemData[currentItemIndex]) {
-    itemData[currentItemIndex].sampleSize  = ss;
-    itemData[currentItemIndex].acceptedQty = acc;
-    itemData[currentItemIndex].rejectedQty = rej;
+function saveQtyState() {
+  var d = itemData[currentIdx];
+  if (!d) return;
+  d.sampleSize  = parseFloat(document.getElementById('sampleSize').value)  || 0;
+  d.acceptedQty = parseFloat(document.getElementById('acceptedQty').value) || 0;
+  d.rejectedQty = parseFloat(document.getElementById('rejectedQty').value) || 0;
+}
+
+/* ────────────────────────────────────────────────
+   STICKY BAR
+──────────────────────────────────────────────── */
+function updateStickyBar() {
+  var total   = currentItems.length;
+  var label   = document.getElementById('stickyLabel');
+  var btn     = document.getElementById('stickyBtn');
+
+  label.textContent = 'Item ' + (currentIdx + 1) + ' of ' + total;
+
+  var isLast  = currentIdx >= total - 1;
+  btn.textContent = isLast ? 'Review Summary →' : 'Next Item →';
+
+  var d = itemData[currentIdx];
+  var dispSet = allParamsFilled() && d.disp;
+  btn.disabled = !dispSet;
+}
+
+function onStickyTap() {
+  saveQtyState();
+
+  var d = itemData[currentIdx];
+  if (!d.disp) {
+    /* Pulse amber on disp card */
+    var card = document.getElementById('dispCard');
+    if (card) {
+      card.classList.remove('pulse-amber');
+      void card.offsetHeight;
+      card.classList.add('pulse-amber');
+      setTimeout(function() { card.classList.remove('pulse-amber'); }, 500);
+    }
+    return;
   }
 
-  var el = document.getElementById('shortageDisplay');
-  el.textContent = (ss === 0 && acc === 0 && rej === 0)
-    ? 'Shortage: —'
-    : 'Shortage: ' + (ss - acc - rej);
+  var total  = currentItems.length;
+  var isLast = currentIdx >= total - 1;
+
+  if (isLast) {
+    showSummary();
+  } else {
+    currentIdx++;
+    renderCurrentItem();
+    window.scrollTo(0, 0);
+  }
 }
 
-var CCP_IDS = ['qty', 'colour', 'dims', 'weight', 'clean', 'shelf', 'coa'];
-function autoSuggestDisp() {
-  var anyFail = itemData.some(function(d) {
-    return CCP_IDS.some(function(id) { return d.paramVals[id] === 'FAIL'; });
-  });
-  if (anyFail && !disposition) setDisp('REJECTED');
+/* ────────────────────────────────────────────────
+   BACK NAVIGATION
+──────────────────────────────────────────────── */
+function onScreen1Back() {
+  if (!formSaved && currentItems.length > 0) {
+    if (!confirm('Leave IQC? Unsaved data will be lost.')) return;
+  }
+  goHome();
 }
 
-function nextItem() {
-  if (currentItemIndex >= currentItems.length - 1) return;
-  currentItemIndex++;
+function onScreen2Back() {
+  /* Return to last item */
+  currentIdx = currentItems.length - 1;
+  document.getElementById('screen2').style.display = 'none';
+  document.getElementById('screen1').style.display = '';
   renderCurrentItem();
-  document.getElementById('paramCardsBody').scrollIntoView({ behavior: 'smooth' });
+  window.scrollTo(0, 0);
 }
 
-function clearParamCards() {
-  var body = document.getElementById('paramCardsBody');
-  body.innerHTML = '';
-  var ph = document.createElement('div');
-  ph.className = 'params-placeholder';
-  ph.id = 'paramPlaceholder';
-  ph.textContent = 'Select a GRN to load inspection parameters.';
-  body.appendChild(ph);
+/* ────────────────────────────────────────────────
+   SUMMARY SCREEN
+──────────────────────────────────────────────── */
+function showSummary() {
+  /* Batch info */
+  var firstItem = currentItems[0] || {};
+  var sup = prefill ? (prefill.supplierName || '') :
+    (document.getElementById('supplierField').value || '');
+  var batchNo = prefill ? (prefill.batchNo || '') : (firstItem.batchNo || '');
+  var itemName = prefill ? (prefill.itemName || firstItem.materialDesc || '') : (firstItem.materialDesc || '');
 
-  document.getElementById('itemNavWrap').style.display        = 'none';
-  document.getElementById('singleProgressWrap').style.display = 'none';
-  document.getElementById('qtySection').style.display         = 'none';
-  document.getElementById('dispositionSection').style.display = 'none';
+  document.getElementById('sumBatchName').textContent =
+    itemName + (sup ? ' — ' + sup : '');
+
+  var today = document.getElementById('dateField').value || '';
+  document.getElementById('sumBatchMeta').textContent =
+    'Batch ' + (batchNo || '—') +
+    ' · ' + currentItems.length + ' item' + (currentItems.length !== 1 ? 's' : '') +
+    ' · ' + today;
+
+  /* Items list */
+  var listEl = document.getElementById('sumItemsList');
+  listEl.innerHTML = '';
+  for (var i = 0; i < currentItems.length; i++) {
+    listEl.appendChild(makeSummaryItemRow(i));
+  }
+
+  /* Auto-select overall disposition (worst-case) */
+  var hasReject = false;
+  var hasHold   = false;
+  var hasAwd    = false;
+  for (var j = 0; j < itemData.length; j++) {
+    var dv = itemData[j].disp;
+    if (dv === 'REJECTED') { hasReject = true; break; }
+    if (dv === 'HOLD')     hasHold = true;
+    if (dv === 'AWD')      hasAwd  = true;
+  }
+  var autoOD = hasReject ? 'REJECTED' :
+               hasHold   ? 'HOLD' :
+               hasAwd    ? 'AWD' : 'ACCEPTED';
+  setOverallDisp(autoOD);
+
+  document.getElementById('screen1').style.display = 'none';
+  document.getElementById('screen2').style.display = '';
+  window.scrollTo(0, 0);
 }
 
-function setDisp(val) {
-  disposition = val;
-  ['d_acc','d_hld','d_rej','d_awd'].forEach(function(id) {
-    document.getElementById(id).className = 'disp-btn';
-  });
-  if      (val === 'ACCEPTED')                document.getElementById('d_acc').className = 'disp-btn active-acc';
-  else if (val === 'HOLD')                    document.getElementById('d_hld').className = 'disp-btn active-hld';
-  else if (val === 'REJECTED')                document.getElementById('d_rej').className = 'disp-btn active-rej';
-  else if (val === 'ACCEPTED WITH DEVIATION') document.getElementById('d_awd').className = 'disp-btn active-awd';
+function makeSummaryItemRow(idx) {
+  var item = currentItems[idx];
+  var d    = itemData[idx];
+
+  /* Count pass percentage */
+  var passCount = 0;
+  var total     = IQC_PARAMS.length;
+  for (var i = 0; i < total; i++) {
+    if (d.params[IQC_PARAMS[i].id] === 'PASS') passCount++;
+  }
+  var passPct = total > 0 ? Math.round(passCount / total * 100) : 0;
+
+  var row = document.createElement('div');
+  row.className = 'item-row-summary';
+  (function(capturedIdx) {
+    row.onclick = function() { goToItem(capturedIdx); };
+  })(idx);
+
+  var labelEl = document.createElement('div');
+  labelEl.className = 'sum-item-label';
+  labelEl.textContent = 'Item ' + (idx + 1);
+
+  var barWrap = document.createElement('div');
+  barWrap.className = 'sum-item-bar-wrap';
+  var barFill = document.createElement('div');
+  barFill.className = 'sum-item-bar-fill';
+  barFill.style.width = passPct + '%';
+  barWrap.appendChild(barFill);
+
+  var right = document.createElement('div');
+  right.className = 'sum-item-right';
+
+  var badge = document.createElement('span');
+  badge.className = 'disp-badge ' + getDispBadgeClass(d.disp);
+  badge.textContent = dispLabel(d.disp);
+
+  var editIcon = document.createElement('span');
+  editIcon.className = 'sum-edit-icon';
+  editIcon.textContent = '✎';
+
+  right.appendChild(badge);
+  right.appendChild(editIcon);
+
+  row.appendChild(labelEl);
+  row.appendChild(barWrap);
+  row.appendChild(right);
+
+  return row;
 }
 
-function submitIQC() {
-  if (!document.getElementById('grnNo').value)     { showToast('Please select a GRN.', 'error'); return; }
-  if (!document.getElementById('inspector').value) { showToast('Please select an Inspector.', 'error'); return; }
-  if (!disposition)                                { showToast('Please select a Disposition.', 'error'); return; }
-  if (currentItems.length === 0)                   { showToast('No items loaded. Select a GRN first.', 'error'); return; }
+function goToItem(idx) {
+  currentIdx = idx;
+  document.getElementById('screen2').style.display = 'none';
+  document.getElementById('screen1').style.display = '';
+  renderCurrentItem();
+  window.scrollTo(0, 0);
+}
 
-  var btn = document.getElementById('btnSubmit');
+function getDispBadgeClass(disp) {
+  if (disp === 'ACCEPTED') return 'disp-badge-acc';
+  if (disp === 'REJECTED') return 'disp-badge-rej';
+  if (disp === 'HOLD')     return 'disp-badge-hld';
+  if (disp === 'AWD')      return 'disp-badge-awd';
+  return 'disp-badge-none';
+}
+
+function dispLabel(disp) {
+  if (disp === 'ACCEPTED') return 'ACCEPT';
+  if (disp === 'REJECTED') return 'REJECT';
+  if (disp === 'HOLD')     return 'HOLD';
+  if (disp === 'AWD')      return 'AWD';
+  return '—';
+}
+
+/* ────────────────────────────────────────────────
+   OVERALL DISPOSITION
+──────────────────────────────────────────────── */
+function setOverallDisp(val) {
+  overallDisp = val;
+  var map = {odAcc:'ACCEPTED', odRej:'REJECTED', odHld:'HOLD', odAwd:'AWD'};
+  var activeMap = {ACCEPTED:'active-acc', REJECTED:'active-rej', HOLD:'active-hld', AWD:'active-awd'};
+  for (var id in map) {
+    var el = document.getElementById(id);
+    if (el) el.className = 'disp-btn' + (map[id] === val ? ' ' + (activeMap[val] || '') : '');
+  }
+  document.getElementById('saveBtn').disabled = false;
+}
+
+/* ────────────────────────────────────────────────
+   SAVE
+──────────────────────────────────────────────── */
+function saveIQC() {
+  if (!overallDisp) { showToast('Please select overall disposition.', 'error'); return; }
+
+  var btn = document.getElementById('saveBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
-  var items = currentItems.map(function(item, ci) {
-    var d = itemData[ci] || {};
-    return {
-      materialDesc: item.materialDesc || '',
-      batchNo:      item.batchNo      || '',
-      sampleSize:   d.sampleSize  || 0,
-      acceptedQty:  d.acceptedQty || 0,
-      rejectedQty:  d.rejectedQty || 0,
-      params:       d.paramVals   || {},
-      paramRemarks: d.paramRemarks || {}
-    };
-  });
+  /* Stop timer first (best-effort) */
+  if (taskId && sessionId) {
+    try { google.script.run.stopTimer(taskId, sessionId); } catch(e) {}
+  }
+
+  /* Build items array */
+  var items = [];
+  for (var i = 0; i < currentItems.length; i++) {
+    var ci   = currentItems[i];
+    var d    = itemData[i] || {};
+    var pmap = d.params || {};
+    items.push({
+      materialDesc: ci.materialDesc || '',
+      batchNo:      ci.batchNo      || '',
+      sampleSize:   d.sampleSize    || 0,
+      acceptedQty:  d.acceptedQty   || 0,
+      rejectedQty:  d.rejectedQty   || 0,
+      params: {
+        qty:    pmap.qty    || 'NA',
+        pkg:    pmap.pkg    || 'NA',
+        colour: pmap.colour || 'NA',
+        shape:  pmap.shape  || 'NA',
+        dims:   pmap.dims   || 'NA',
+        weight: pmap.weight || 'NA',
+        clean:  pmap.clean  || 'NA',
+        odour:  pmap.odour  || 'NA',
+        label:  pmap.label  || 'NA',
+        msds:   pmap.msds   || 'NA',
+        shelf:  pmap.shelf  || 'NA',
+        coa:    pmap.coa    || 'NA'
+      }
+    });
+  }
+
+  var firstItem = currentItems[0] || {};
+  var grnNoVal  = prefill ? (prefill.grnId || '') : document.getElementById('grnNo').value;
+  var supVal    = prefill ? (prefill.supplierName || '') : document.getElementById('supplierField').value;
 
   var data = {
-    date:         document.getElementById('date').value,
+    date:         document.getElementById('dateField').value,
+    grnNo:        grnNoVal,
+    supplierName: supVal,
     inspector:    document.getElementById('inspector').value,
     aqlLevel:     document.getElementById('aqlLevel').value,
     sampleId:     document.getElementById('sampleId').value,
-    disposition:  disposition,
+    disposition:  overallDisp,
+    remarks:      document.getElementById('remarks').value,
     ncrRef:       document.getElementById('ncrRef').value,
     deviationRef: document.getElementById('deviationRef').value,
-    remarks:      document.getElementById('remarks').value,
-    grnNo:        document.getElementById('grnNo').value,
-    supplierName: document.getElementById('supplierName').value,
-    sessionId:    sessionId,
     items:        items
   };
 
-  var materialName = currentItems[0] ? (currentItems[0].materialDesc || '') : '';
-  var batchNo      = currentItems[0] ? (currentItems[0].batchNo      || '') : '';
-
   google.script.run
     .withSuccessHandler(function(res) {
-      if (res.success) {
-        formSubmitted = true;
-        savedRecord = {
-          type:        'IQC',
-          docNo:       res.docNos[0],
-          date:        data.date,
-          grnNo:       data.grnNo,
-          supplier:    data.supplierName,
-          material:    materialName,
-          batch:       batchNo,
-          inspector:   data.inspector,
-          disposition: data.disposition,
-          ncrRef:      document.getElementById('ncrRef').value
-        };
-
-        autoQmsTask_(sessionId, 'IQC', 'IQC: ' + materialName + ' — ' + batchNo, res.docNos[0]);
-
-        showToast('Saved: ' + res.docNos.join(', '), 'success');
-        document.getElementById('btnWA').style.display = 'block';
-        btn.innerHTML = 'Saved';
-        setTimeout(function() { goHome(); }, 2500);
+      if (res && res.success) {
+        formSaved = true;
+        showToast('IQC record saved', 'success');
+        setTimeout(function() { goHome(); }, 1500);
       } else {
-        showToast('Error: ' + res.error, 'error');
+        showToast('Error: ' + ((res && res.error) || 'Unknown error'), 'error');
         btn.disabled = false;
-        btn.innerHTML = 'Save IQC Record';
+        btn.textContent = 'SAVE IQC RECORD';
       }
     })
     .withFailureHandler(function(e) {
-      showToast(e.message, 'error');
+      showToast(e.message || 'Save failed', 'error');
       btn.disabled = false;
-      btn.innerHTML = 'Save IQC Record';
+      btn.textContent = 'SAVE IQC RECORD';
     })
-    .saveIQC(data);
+    .saveIQC(data, sessionId);
 }
 
-function autoQmsTask_(sid, type, title, linkedRecord) {
-  if (!sid) return;
-  google.script.run
-    .withFailureHandler(function() {})
-    .autoQmsTask_(sid, type, title, linkedRecord);
-}
-
-function sendWA() {
-  if (!savedRecord) return;
-  google.script.run
-    .withSuccessHandler(function(url) { window.open(url, '_blank'); })
-    .withFailureHandler(function(e) { showToast(e.message, 'error'); })
-    .getWhatsAppURLForRecord(savedRecord);
-}
-
+/* ────────────────────────────────────────────────
+   UTILITIES
+──────────────────────────────────────────────── */
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
-
-document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
