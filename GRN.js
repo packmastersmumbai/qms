@@ -11,7 +11,7 @@ function getGRNFormInit() {
   };
 }
 
-function saveGRN(data) {
+function saveGRN(data, sessionId) {
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('GRN_LOG');
@@ -21,6 +21,11 @@ function saveGRN(data) {
     var now   = new Date();
     var user  = Session.getActiveUser().getEmail() || 'QA';
     var date  = new Date(data.date);
+    var operatorId = '';
+    if (sessionId) {
+      var sess = validateSessionFast_(sessionId);
+      if (sess) operatorId = sess.userId;
+    }
 
     // Support multi-item array or fallback to single-item (backward compat)
     var items = (data.items && data.items.length > 0) ? data.items : [{
@@ -53,7 +58,8 @@ function saveGRN(data) {
         'PENDING',
         user,
         now,
-        data.storageZone   || ''
+        data.storageZone   || '',
+        operatorId           // last col: operator_id — add this header manually in the sheet
       ]);
     });
 
@@ -64,6 +70,11 @@ function saveGRN(data) {
       ws.getRange(r, 2).setNumberFormat('dd-MMM-yyyy');
       ws.getRange(r, 14).setNumberFormat('dd-MMM-yyyy');
       ws.getRange(r, 18).setNumberFormat('dd-MMM-yyyy HH:mm');
+    }
+
+    if (sessionId) {
+      var firstItemCode = items[0] ? (items[0].materialCode || '') : '';
+      autoQmsTask_(sessionId, 'GRN', 'GRN — ' + (data.supplierName || '') + ' / ' + firstItemCode, docNo);
     }
 
     return { success: true, docNo: docNo };

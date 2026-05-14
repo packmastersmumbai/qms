@@ -38,29 +38,37 @@ function validateSession(sessionId) {
 
 function validateSessionFast_(sessionId) {
   if (!sessionId) return null;
-  const cache = CacheService.getScriptCache();
-  const cached = cache.get('sess_' + sessionId);
+  var cache = CacheService.getUserCache();
+  var cached = cache.get('dwm_session_' + sessionId);
   if (cached) return JSON.parse(cached);
 
-  const result = validateSession(sessionId);
-  if (result) cache.put('sess_' + sessionId, JSON.stringify(result), 300);
-
+  var result = validateSession(sessionId);  // existing full sheet scan
+  if (result) {
+    cache.put('dwm_session_' + sessionId, JSON.stringify(result), 300); // 5-min TTL
+  }
+  // stochastic prune: 1-in-20 chance
   if (Math.random() < 0.05) pruneExpiredSessions_();
   return result;
 }
 
 function pruneExpiredSessions_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(DWM_SHEETS.SESSIONS);
-  if (!sheet) return;
-  const data = sheet.getDataRange().getValues();
-  const now = new Date();
-  const toDelete = [];
-  for (let i = data.length - 1; i >= 1; i--) {
-    const expiresAt = data[i][3]; // column index 3 (0-based) — matches validateSession
-    if (expiresAt && new Date(expiresAt) < now) toDelete.push(i + 1);
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(3000)) return; // skip prune if lock busy — another call is active
+  try {
+    var ss = getSpreadsheet();
+    var sh = ss.getSheetByName(DWM_SHEETS.SESSIONS);
+    if (!sh || sh.getLastRow() < 2) return;
+    var now = new Date();
+    var data = sh.getDataRange().getValues();
+    // collect expired row numbers (bottom-up to preserve indices on delete)
+    var toDelete = [];
+    for (var r = data.length - 1; r >= 1; r--) {
+      if (new Date(data[r][3]) < now) toDelete.push(r + 1);
+    }
+    toDelete.forEach(function(row) { sh.deleteRow(row); });
+  } finally {
+    lock.releaseLock();
   }
-  toDelete.forEach(row => sheet.deleteRow(row));
 }
 
 function destroySession_(sessionId) {

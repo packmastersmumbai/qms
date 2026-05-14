@@ -6,12 +6,12 @@
 // ── Spreadsheet accessor (works in both bound and web app context) ──
 var _SS_CACHE = null;
 
-const QMS_DWM_MAP = {
-  GRN:      { project: 'Quality',    category: 'Inspection', priority: 'high' },
-  IQC:      { project: 'Quality',    category: 'Inspection', priority: 'high' },
-  OQC:      { project: 'Quality',    category: 'Inspection', priority: 'high' },
-  IPQC:     { project: 'Production', category: 'Operations', priority: 'medium' },
-  Gatepass: { project: 'Production', category: 'Operations', priority: 'medium' },
+var QMS_DWM_MAP = {
+  GRN:      { projectId: 'Quality',    categoryId: 'Inspection', priority: 'high'   },
+  IQC:      { projectId: 'Quality',    categoryId: 'Inspection', priority: 'high'   },
+  IPQC:     { projectId: 'Production', categoryId: 'Operations', priority: 'medium' },
+  OQC:      { projectId: 'Quality',    categoryId: 'Inspection', priority: 'high'   },
+  Gatepass: { projectId: 'Production', categoryId: 'Operations', priority: 'medium' }
 };
 function getSpreadsheet() {
   if (_SS_CACHE) return _SS_CACHE;
@@ -239,44 +239,75 @@ function sendWhatsAppSelected() {
 
 function autoQmsTask_(sessionId, type, title, linkedRecord) {
   try {
-    if (!sessionId) return null;
-    const map = QMS_DWM_MAP[type];
+    var session = validateSessionFast_(sessionId);
+    if (!session) return null;
+    var map = QMS_DWM_MAP[type];
     if (!map) return null;
-    return createTask(sessionId, {
+    // Use createTask_ (internal) to skip re-validation — session already resolved above
+    return createTask_(session, {
       title: title,
-      projectId: map.project,
-      categoryId: map.category,
+      projectId: map.projectId,
+      categoryId: map.categoryId,
       priority: map.priority,
-      linkedRecord: linkedRecord || ''
+      assignedTo: session.userId,
+      linkedRecord: linkedRecord || '',
+      description: 'Auto-created from ' + type
     });
   } catch (e) {
-    console.error('autoQmsTask_ failed: ' + e.message);
+    Logger.log('autoQmsTask_ failed: ' + e);
     return null;
   }
 }
 
 function getQmsLandingState(sessionId) {
-  const session = validateSessionFast_(sessionId);
+  var session = validateSessionFast_(sessionId);
   if (!session) return { authenticated: false };
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const today = new Date();
-  const todayStr = Utilities.formatDate(today, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var ss = getSpreadsheet();
+  var today = new Date().toDateString();
+  var counts = { GRN: 0, IQC: 0, IPQC: 0, OQC: 0, Gatepass: 0 };
 
-  const counts = {};
-  ['GRN_LOG', 'IQC_LOG', 'OQC_LOG'].forEach(sheetName => {
-    const sh = ss.getSheetByName(sheetName);
-    if (!sh) { counts[sheetName] = 0; return; }
-    const data = sh.getDataRange().getValues();
-    counts[sheetName] = data.slice(1).filter(row => {
-      const d = row[0];
-      return d && Utilities.formatDate(new Date(d), Session.getScriptTimeZone(), 'yyyy-MM-dd') === todayStr;
-    }).length;
+  var sheetMap = {
+    GRN:      'GRN_LOG',
+    IQC:      'IQC_LOG',
+    OQC:      'OQC_LOG',
+    Gatepass: 'GATEPASS_LOG'
+  };
+  Object.keys(sheetMap).forEach(function(type) {
+    var sh = ss.getSheetByName(sheetMap[type]);
+    if (!sh || sh.getLastRow() < 2) return;
+    var data = sh.getDataRange().getValues();
+    var headers = data[0];
+    var opCol = headers.indexOf('operator_id');
+    var tsCol = headers.indexOf('timestamp') >= 0 ? headers.indexOf('timestamp') : 0;
+    if (opCol < 0) return;
+    for (var r = 1; r < data.length; r++) {
+      if (data[r][opCol] === session.userId &&
+          new Date(data[r][tsCol]).toDateString() === today) counts[type]++;
+    }
   });
+
+  // IPQC uses IPQC_Sessions — no operator_id col; count by today's date (col 6)
+  (function() {
+    var sh = ss.getSheetByName('IPQC_Sessions');
+    if (!sh || sh.getLastRow() < 2) return;
+    var data = sh.getDataRange().getValues();
+    // IPQC_Sessions columns: session_id[0], product_code[1], product_name[2], batch[3],
+    //   inspector[4], line[5], date[6 — 'yyyy-MM-dd' string], start_time[7], end_time[8], status[9], rounds[10]
+    var todayYmd = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+    for (var r = 1; r < data.length; r++) {
+      var rowDate = data[r][6] instanceof Date
+        ? Utilities.formatDate(data[r][6], 'Asia/Kolkata', 'yyyy-MM-dd')
+        : String(data[r][6]).trim();
+      if (rowDate === todayYmd) counts.IPQC++;
+    }
+  })();
 
   return {
     authenticated: true,
-    operatorName: session.name || session.userId,
+    userId: session.userId,
+    name: session.name,
+    role: session.role,
     todayCounts: counts
   };
 }

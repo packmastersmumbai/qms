@@ -56,42 +56,48 @@ function getTask(sessionId, taskId) {
   }
 }
 
+// Internal: create a task with a pre-validated session object (avoids double sheet scan).
+// Called by autoQmsTask_ (which already validated via validateSessionFast_) and by createTask.
+function createTask_(s, data) {
+  if (!data || !data.title || !data.projectId || !data.categoryId) {
+    return { status:'error', message:'Title, project, and category are required.' };
+  }
+  var assignedTo = data.assignedTo || s.userId;
+  if (assignedTo !== s.userId) {
+    if (s.role === DWM_ROLES.USER) return { status:'error', message:'Cannot assign tasks to others.' };
+    if (s.role === DWM_ROLES.ADMIN) {
+      var u = getUserById_(assignedTo);
+      if (!u || u.role !== DWM_ROLES.USER) return { status:'error', message:'Admins can only assign tasks to user role.' };
+    }
+  }
+  var isShared = data.isShared === true;
+  if (isShared && s.role === DWM_ROLES.USER) return { status:'error', message:'Cannot create shared tasks.' };
+
+  var taskId = generateTaskId_();
+  var now = new Date().toISOString();
+  var sh = getSpreadsheet().getSheetByName(DWM_SHEETS.TASKS);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    sh.appendRow([
+      taskId, data.title, data.description || '',
+      data.projectId, data.categoryId, assignedTo, isShared,
+      DWM_TASK_STATUS.OPEN, data.priority || DWM_PRIORITY.MEDIUM,
+      data.dueDate || '', data.linkedRecord || '',
+      s.userId, now, now
+    ]);
+  } finally {
+    lock.releaseLock();
+  }
+  logAudit_(s.userId, 'TASK_CREATE', taskId);
+  return { status:'success', taskId: taskId };
+}
+
 function createTask(sessionId, data) {
   try {
     var s = validateSession(sessionId);
     if (!s) return { status:'error', message:'Session expired. Please log in again.' };
-    if (!data || !data.title || !data.projectId || !data.categoryId) {
-      return { status:'error', message:'Title, project, and category are required.' };
-    }
-    var assignedTo = data.assignedTo || s.userId;
-    if (assignedTo !== s.userId) {
-      if (s.role === DWM_ROLES.USER) return { status:'error', message:'Cannot assign tasks to others.' };
-      if (s.role === DWM_ROLES.ADMIN) {
-        var u = getUserById_(assignedTo);
-        if (!u || u.role !== DWM_ROLES.USER) return { status:'error', message:'Admins can only assign tasks to user role.' };
-      }
-    }
-    var isShared = data.isShared === true;
-    if (isShared && s.role === DWM_ROLES.USER) return { status:'error', message:'Cannot create shared tasks.' };
-
-    var taskId = generateTaskId_();
-    var now = new Date().toISOString();
-    var sh = getSpreadsheet().getSheetByName(DWM_SHEETS.TASKS);
-    const lock = LockService.getScriptLock();
-    lock.waitLock(10000);
-    try {
-      sh.appendRow([
-        taskId, data.title, data.description || '',
-        data.projectId, data.categoryId, assignedTo, isShared,
-        DWM_TASK_STATUS.OPEN, data.priority || DWM_PRIORITY.MEDIUM,
-        data.dueDate || '', data.linkedRecord || '',
-        s.userId, now, now
-      ]);
-    } finally {
-      lock.releaseLock();
-    }
-    logAudit_(s.userId, 'TASK_CREATE', taskId);
-    return { status:'success', taskId: taskId };
+    return createTask_(s, data);
   } catch (e) {
     logAudit_('SYSTEM','ERROR','createTask: ' + e);
     return { status:'error', message: e.message };

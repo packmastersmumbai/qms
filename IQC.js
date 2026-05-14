@@ -51,7 +51,7 @@ function getUnInspectedGRNs() {
   });
 }
 
-function saveIQC(data) {
+function saveIQC(data, sessionId) {
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('IQC_LOG');
@@ -59,6 +59,11 @@ function saveIQC(data) {
 
     var now  = new Date();
     var disp = data.disposition || '';
+    var operatorId = '';
+    if (sessionId) {
+      var sess = validateSessionFast_(sessionId);
+      if (sess) operatorId = sess.userId;
+    }
 
     // Pre-generate NCR once for the whole session (before the loop)
     var ncrNo = data.ncrRef || '';
@@ -101,7 +106,8 @@ function saveIQC(data) {
         data.remarks       || '',       // col 26
         item.acceptedQty != null ? item.acceptedQty : 0,  // col 27
         item.rejectedQty != null ? item.rejectedQty : 0,  // col 28
-        now                             // col 29
+        now,                            // col 29
+        operatorId                      // col 30: operator_id — add this header manually in the sheet
       ];
 
       ws.appendRow(row);
@@ -122,6 +128,11 @@ function saveIQC(data) {
 
     // Update GRN status once, after all rows are written
     if (data.grnNo) updateGRNIQCStatus(data.grnNo, disp || 'PENDING');
+
+    if (sessionId) {
+      var firstItem = data.items[0] || {};
+      autoQmsTask_(sessionId, 'IQC', 'IQC — ' + (data.supplierName || '') + ' / ' + (firstItem.materialDesc || ''), data.grnNo || '');
+    }
 
     return { success: true, docNos: docNos };
 

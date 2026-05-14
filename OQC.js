@@ -15,7 +15,7 @@ function getOQCFormInit() {
   };
 }
 
-function saveOQC(data) {
+function saveOQC(data, sessionId) {
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('OQC_LOG');
@@ -24,6 +24,11 @@ function saveOQC(data) {
     var now    = new Date();
     var dec    = data.releaseDecision || 'PENDING';
     var docNos = [];
+    var operatorId = '';
+    if (sessionId) {
+      var sess = validateSessionFast_(sessionId);
+      if (sess) operatorId = sess.userId;
+    }
 
     data.items.forEach(function(item) {
       var docNo  = getNextDocNumber('oqc');
@@ -49,7 +54,8 @@ function saveOQC(data) {
         item.acceptedQty != null ? item.acceptedQty : 0,
         item.rejectedQty != null ? item.rejectedQty : 0,
         now,
-        item.ipqcSessionRef || ''
+        item.ipqcSessionRef || '',
+        operatorId           // last col: operator_id — add this header manually in the sheet
       ];
 
       ws.appendRow(row);
@@ -65,6 +71,11 @@ function saveOQC(data) {
 
       docNos.push(docNo);
     });
+
+    if (sessionId) {
+      var firstOqcItem = data.items[0] || {};
+      autoQmsTask_(sessionId, 'OQC', 'OQC — ' + (data.customerName || '') + ' / ' + (firstOqcItem.materialDesc || ''), docNos[0] || '');
+    }
 
     return { success: true, docNos: docNos };
   } catch(e) {
