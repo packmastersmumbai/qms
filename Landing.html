@@ -7,249 +7,498 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <?!= include('Theme') ?>
   <style>
     body {
       min-height: 100vh;
       min-height: 100dvh;
+      background: var(--bg);
+      padding-bottom: 32px;
+    }
+
+    /* ── Header role chip ── */
+    .role-chip {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .role-chip.user   { background: var(--navy-light); color: var(--navy); }
+    .role-chip.admin  { background: var(--navy);       color: var(--white); }
+    .role-chip.owner  { background: var(--amber);      color: var(--navy); }
+    .role-chip.master { background: var(--navy);       color: var(--white); }
+    .role-chip.skeleton {
+      background: rgba(255,255,255,0.2);
+      color: transparent;
+      min-width: 52px;
+      border-radius: 4px;
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
+    }
+
+    /* ── Greeting card ── */
+    .greeting-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      margin: 10px;
+      padding: 12px 14px;
+    }
+    .greeting-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .greeting-sub {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .skel-bar {
+      background: var(--navy-light);
+      border-radius: 6px;
+      height: 18px;
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
+    }
+    .skel-bar-name { width: 60%; margin-bottom: 8px; }
+    .skel-bar-sub  { width: 40%; height: 14px; }
+
+    /* ── Section ── */
+    .lnd-section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      margin: 10px;
+      overflow: hidden;
+    }
+    .lnd-section-title {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      letter-spacing: 0.3px;
     }
-    main { flex: 1; }
-
-    .bento-grid {
-      grid-template-areas:
-        'grn iqc ipqc'
-        'oqc gate gate'
-        'rec dash dash'
-        'imp imp imp';
+    .lnd-section-title.success-bar {
+      background: var(--success);
     }
-    @media (max-width: 480px) {
-      .bento-grid {
-        grid-template-areas:
-          'grn iqc'
-          'ipqc oqc'
-          'gate gate'
-          'rec dash'
-          'imp imp';
-      }
+    .lnd-count-badge {
+      margin-left: auto;
+      background: var(--amber);
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+    .lnd-section-body {
+      padding: 10px 12px;
     }
 
-    .bento-tile[data-area='grn']  { grid-area: grn; }
-    .bento-tile[data-area='iqc']  { grid-area: iqc; }
-    .bento-tile[data-area='ipqc'] { grid-area: ipqc; }
-    .bento-tile[data-area='oqc']  { grid-area: oqc; }
-    .bento-tile[data-area='gate'] { grid-area: gate; }
-    .bento-tile[data-area='rec']  { grid-area: rec; }
-    .bento-tile[data-area='dash'] { grid-area: dash; }
-    .bento-tile[data-area='imp']  { grid-area: imp; }
-
-    .bento-tile.loading {
-      opacity: 0.55;
-      pointer-events: none;
+    /* ── Pending tiles ── */
+    .pending-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .pending-tile {
+      background: var(--white);
+      border-left: 3px solid var(--amber);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      min-height: 80px;
+      padding: 10px 12px;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s ease;
+    }
+    .pending-tile:active {
+      transform: scale(0.97);
+    }
+    .pending-tile.full-width {
+      grid-column: 1 / -1;
+    }
+    .pending-tile-module {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    .pending-tile-detail {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 4px;
     }
 
-    .load-overlay {
-      position: fixed;
-      inset: 0;
-      background: #F5F6FA;
+    /* Skeleton pending tiles */
+    .skel-pending {
+      background: var(--navy-light);
+      border-radius: var(--radius);
+      min-height: 80px;
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
+    }
+
+    /* ── All-clear body ── */
+    .all-clear-body {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+      padding: 12px;
+    }
+
+    /* ── Module grid ── */
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .module-tile {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      min-height: 72px;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s ease;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      z-index: 500;
+      gap: 6px;
     }
-    .load-overlay.hidden { display: none; }
-    .load-overlay .lo-title {
-      font-size: 16px;
+    .module-tile:active {
+      transform: scale(0.97);
+    }
+    .module-tile-name {
+      display: block;
+      font-size: 12px;
       font-weight: 700;
-      color: #0D1B6E;
+      color: var(--navy);
     }
-    .load-overlay .lo-sub {
-      font-size: 13px;
-      color: #6B7280;
+    .module-count-chip {
+      display: inline-block;
+      background: var(--navy-light);
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 10px;
+    }
+    .module-count-chip.zero {
+      background: #F3F4F6;
+      color: var(--muted);
     }
 
-    footer {
+    /* Skeleton module tiles */
+    .skel-module {
+      background: var(--navy-light);
+      border-radius: var(--radius);
+      min-height: 72px;
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
+    }
+
+    /* ── Fade-in animation ── */
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .fade-in {
+      animation: fade-in 0.2s ease forwards;
+    }
+
+    /* ── Skeleton pulse ── */
+    @keyframes skeleton-pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1;   }
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--danger);
+      color: var(--white);
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+      max-width: 90vw;
       text-align: center;
-      padding: 10px 16px 8px;
-      font-size: 11px;
-      color: #6B7280;
+      cursor: pointer;
+    }
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
 <body>
 
-<div class="load-overlay" id="loadOverlay">
-  <span class="spinner"></span>
-  <div class="lo-title">Pack Masters QMS</div>
-  <div class="lo-sub">Loading…</div>
-</div>
-
+<!-- ── Header ── -->
 <header class="pm-header">
-  <div class="logo-box">PM</div>
-  <div class="header-text">
-    <div class="logo-text">Pack Masters QMS</div>
-    <div class="logo-sub">Quality Management</div>
-  </div>
-  <div class="doc-badge" id="operatorBadge">—</div>
+  <span style="font-size:15px;font-weight:700;color:#fff;">Pack Masters</span>
+  <span class="role-chip skeleton" id="roleChip">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
 </header>
 
-<main>
-  <div class="bento-grid">
-
-    <div class="bento-tile primary" data-area="grn" data-form="GRN">
-      <span class="tile-icon">📦</span>
-      <div class="tile-title">GRN</div>
-      <div class="tile-sub">Goods Receipt Note</div>
-      <span class="tile-badge" id="badge-GRN">—</span>
-    </div>
-
-    <div class="bento-tile primary" data-area="iqc" data-form="IQC">
-      <span class="tile-icon">🔬</span>
-      <div class="tile-title">IQC</div>
-      <div class="tile-sub">Incoming Quality</div>
-      <span class="tile-badge" id="badge-IQC">—</span>
-    </div>
-
-    <div class="bento-tile primary" data-area="ipqc" data-form="IPQC">
-      <span class="tile-icon">⚙️</span>
-      <div class="tile-title">IPQC</div>
-      <div class="tile-sub">In-Process Check</div>
-      <span class="tile-badge" id="badge-IPQC">—</span>
-    </div>
-
-    <div class="bento-tile secondary" data-area="oqc" data-form="OQC">
-      <span class="tile-icon">✅</span>
-      <div class="tile-title">OQC</div>
-      <div class="tile-sub">Outgoing Quality</div>
-      <span class="tile-badge" id="badge-OQC">—</span>
-    </div>
-
-    <div class="bento-tile secondary" data-area="gate" data-form="Gatepass">
-      <span class="tile-icon">🚪</span>
-      <div class="tile-title">Gate Pass</div>
-      <div class="tile-sub">Dispatch approval</div>
-      <span class="tile-badge" id="badge-Gatepass">—</span>
-    </div>
-
-    <div class="bento-tile secondary" data-area="rec" data-form="Records">
-      <span class="tile-icon">📋</span>
-      <div class="tile-title">Records</div>
-      <div class="tile-sub">View all entries</div>
-      <span class="tile-badge" id="badge-Records">—</span>
-    </div>
-
-    <div class="bento-tile tertiary" data-area="dash" data-form="Dashboard">
-      <span class="tile-icon">📊</span>
-      <div class="tile-title">Dashboard</div>
-      <div class="tile-sub">Today's summary</div>
-    </div>
-
-    <div class="bento-tile tertiary" data-area="imp" data-form="Import">
-      <span class="tile-icon">⬆️</span>
-      <div class="tile-title">Import</div>
-      <div class="tile-sub">Bulk data upload</div>
-    </div>
-
-  </div>
-</main>
-
-<footer>Pack Masters · Rabale MIDC, Navi Mumbai · ISO 9001 / 14001 / 45001</footer>
-
-<div id="loginBanner" style="display:none;position:fixed;inset:0;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:400;">
-  <div class="logo-box" style="width:56px;height:56px;font-size:22px;">PM</div>
-  <div style="font-size:18px;font-weight:700;color:var(--navy);">Pack Masters QMS</div>
-  <div style="font-size:13px;color:var(--muted);">Please log in to continue</div>
-  <button id="btnLogin" class="btn-submit" style="width:200px;margin-top:8px;">Log In with DWM</button>
+<!-- ── Greeting card ── -->
+<div class="greeting-card" id="greetingCard">
+  <div class="skel-bar skel-bar-name" id="greetingName"></div>
+  <div class="skel-bar skel-bar-sub"  id="greetingSub"></div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- ── Pending Actions section ── -->
+<div class="lnd-section" id="pendingSection">
+  <div class="lnd-section-title">
+    PENDING ACTIONS
+    <span class="lnd-count-badge" id="pendingBadge">…</span>
+  </div>
+  <div class="lnd-section-body">
+    <div class="pending-grid" id="pendingGrid">
+      <!-- skeleton tiles -->
+      <div class="skel-pending"></div>
+      <div class="skel-pending"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modules section ── -->
+<div class="lnd-section" id="modulesSection">
+  <div class="lnd-section-title">MODULES</div>
+  <div class="lnd-section-body">
+    <div class="module-grid" id="moduleGrid">
+      <!-- skeleton tiles -->
+      <div class="skel-module"></div>
+      <div class="skel-module"></div>
+      <div class="skel-module"></div>
+      <div class="skel-module"></div>
+      <div class="skel-module"></div>
+      <div class="skel-module"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
 
 <script>
 (function () {
-  function showToast(msg, type) {
-    var t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show' + (type ? ' ' + type : '');
-    setTimeout(function () { t.className = 'toast'; }, 3000);
-  }
+  'use strict';
 
-  function navigateTo(formType) {
-    var tile = document.querySelector('[data-form="' + formType + '"]');
-    if (tile) tile.classList.add('loading');
+  /* ── helpers ── */
+
+  function navigateTo(formName) {
     google.script.run
       .withSuccessHandler(function (html) {
         document.open();
         document.write(html);
         document.close();
       })
-      .withFailureHandler(function (err) {
-        if (tile) tile.classList.remove('loading');
-        showToast('Could not open ' + formType, 'error');
-        console.error(err);
+      .withFailureHandler(function () {
+        showToast('Could not open ' + formName + '. Tap to retry.', true);
       })
-      .getFormHtml(formType);
+      .getFormHtml(formName);
   }
 
-  function applyState(result) {
-    document.getElementById('loadOverlay').classList.add('hidden');
+  function redirectToDwmLogin() {
+    sessionStorage.setItem('postLoginNav', 'qms');
+    google.script.run
+      .withSuccessHandler(function (html) {
+        document.open();
+        document.write(html);
+        document.close();
+      })
+      .withFailureHandler(function () {
+        showToast('Could not load login page. Tap to retry.', false);
+      })
+      .getFormHtml('DwmLogin');
+  }
 
-    if (!result || result.authenticated === false) {
-      document.getElementById('loadOverlay').classList.add('hidden');
-      document.getElementById('operatorBadge').textContent = 'Not logged in';
-      document.getElementById('loginBanner').style.display = 'flex';
+  function getGreeting(hour) {
+    if (hour >= 5 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  function getShift(hour) {
+    if (hour >= 6 && hour < 14) return 'A';
+    if (hour >= 14 && hour < 22) return 'B';
+    return 'C';
+  }
+
+  function formatDateLine() {
+    var now = new Date();
+    var days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var day    = days[now.getDay()];
+    var dd     = now.getDate();
+    var month  = months[now.getMonth()];
+    var shift  = getShift(now.getHours());
+    return day + ', ' + dd + ' ' + month + ' · Shift ' + shift;
+  }
+
+  /* ── toast ── */
+  var toastRetryFn = null;
+  var toastEl = document.getElementById('toast');
+  toastEl.addEventListener('click', function () {
+    toastEl.classList.remove('show');
+    if (typeof toastRetryFn === 'function') toastRetryFn();
+  });
+
+  function showToast(msg, retryFn) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    toastRetryFn = (typeof retryFn === 'function') ? retryFn : null;
+  }
+
+  /* ── render helpers ── */
+
+  function renderRoleChip(role) {
+    var chip = document.getElementById('roleChip');
+    var labels = { user: 'QC Insp', admin: 'Admin', owner: 'Owner', master: 'Master' };
+    chip.textContent  = labels[role] || role || 'User';
+    chip.className    = 'role-chip ' + (role || 'user');
+  }
+
+  function renderGreeting(name) {
+    var now  = new Date();
+    var greeting = getGreeting(now.getHours());
+    var card = document.getElementById('greetingCard');
+    card.innerHTML =
+      '<div class="greeting-name fade-in">' + greeting + ', ' + (name || 'User') + '</div>' +
+      '<div class="greeting-sub fade-in">' + formatDateLine() + '</div>';
+  }
+
+  function renderPending(pendingActions) {
+    var section  = document.getElementById('pendingSection');
+    var badge    = document.getElementById('pendingBadge');
+    var grid     = document.getElementById('pendingGrid');
+    var actions  = pendingActions && pendingActions.length ? pendingActions : [];
+
+    if (actions.length === 0) {
+      /* All-clear */
+      section.innerHTML =
+        '<div class="lnd-section-title success-bar fade-in">✓ ALL CLEAR</div>' +
+        '<div class="all-clear-body fade-in">No pending actions for your role right now.</div>';
       return;
     }
 
-    var badge = document.getElementById('operatorBadge');
-    badge.textContent = result.operatorName || 'Operator';
+    badge.textContent = String(actions.length);
 
-    var counts = result.todayCounts || {};
-    var map = {
-      'GRN':      'GRN_LOG',
-      'IQC':      'IQC_LOG',
-      'IPQC':     'IPQC_LOG',
-      'OQC':      'OQC_LOG',
-      'Gatepass': 'GATE_LOG',
-      'Records':  'REC_LOG'
-    };
-    Object.keys(map).forEach(function (key) {
-      var el = document.getElementById('badge-' + key);
-      if (!el) return;
-      var val = counts[map[key]];
-      el.textContent = val != null ? String(val) : '0';
+    var tilesHtml = '';
+    for (var i = 0; i < actions.length; i++) {
+      var a = actions[i];
+      var isLast = (i === actions.length - 1);
+      var isOdd  = (actions.length % 2 !== 0);
+      var full   = (isLast && isOdd) ? ' full-width' : '';
+      tilesHtml +=
+        '<div class="pending-tile' + full + ' fade-in" data-module="' + a.module + '">' +
+        '<div class="pending-tile-module">' + a.module + '</div>' +
+        '<div class="pending-tile-detail">' + a.detail + '</div>' +
+        '</div>';
+    }
+    grid.innerHTML = tilesHtml;
+
+    grid.addEventListener('click', function (e) {
+      var tile = e.target.closest('.pending-tile');
+      if (!tile) return;
+      navigateTo(tile.getAttribute('data-module'));
     });
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('btnLogin').addEventListener('click', function () {
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner"></span> Loading…';
-      sessionStorage.setItem('postLoginNav', 'qms');
-      google.script.run
-        .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
-        .withFailureHandler(function(){ showToast('Could not load login page', 'error'); })
-        .getFormHtml('DwmLogin');
-    });
+  function renderModules(todayCounts) {
+    var counts  = todayCounts || {};
+    var modules = [
+      { name: 'GRN',      form: 'GRN'      },
+      { name: 'IQC',      form: 'IQC'      },
+      { name: 'IPQC',     form: 'IPQC'     },
+      { name: 'OQC',      form: 'OQC'      },
+      { name: 'Gatepass', form: 'Gatepass' },
+      { name: 'Records',  form: 'Records'  }
+    ];
 
-    document.querySelector('main').addEventListener('click', function (e) {
-      var tile = e.target.closest('[data-form]');
-      if (!tile || tile.classList.contains('loading')) return;
+    var html = '';
+    for (var i = 0; i < modules.length; i++) {
+      var m   = modules[i];
+      var cnt = counts[m.name];
+      var chipHtml;
+      if (m.name === 'Records') {
+        chipHtml = '<span class="module-count-chip">→</span>';
+      } else if (cnt === 0 || cnt === '0') {
+        chipHtml = '<span class="module-count-chip zero">0</span>';
+      } else {
+        chipHtml = '<span class="module-count-chip">' + (cnt != null ? String(cnt) : '0') + '</span>';
+      }
+      html +=
+        '<div class="module-tile fade-in" data-form="' + m.form + '">' +
+        '<span class="module-tile-name">' + m.name + '</span>' +
+        chipHtml +
+        '</div>';
+    }
+
+    var grid = document.getElementById('moduleGrid');
+    grid.innerHTML = html;
+
+    grid.addEventListener('click', function (e) {
+      var tile = e.target.closest('.module-tile');
+      if (!tile) return;
       navigateTo(tile.getAttribute('data-form'));
     });
+  }
 
-    var sessionId = sessionStorage.getItem('dwmSessionId') || '';
+  /* ── main render ── */
+
+  function renderLanding(result) {
+    if (!result || result.authenticated === false) {
+      redirectToDwmLogin();
+      return;
+    }
+
+    renderRoleChip(result.role);
+    renderGreeting(result.name);
+    renderPending(result.pendingActions);
+    renderModules(result.todayCounts);
+  }
+
+  /* ── error handler ── */
+  var currentSessionId;
+
+  function loadState() {
     google.script.run
-      .withSuccessHandler(applyState)
-      .withFailureHandler(function (err) {
-        document.getElementById('loadOverlay').classList.add('hidden');
-        showToast('Could not load session state', 'error');
-        console.error(err);
+      .withSuccessHandler(renderLanding)
+      .withFailureHandler(function () {
+        showToast('Could not load shift data. Tap to retry.', loadState);
       })
-      .getQmsLandingState(sessionId);
-  });
+      .getQmsLandingState(currentSessionId);
+  }
+
+  /* ── boot ── */
+
+  var sessionId = sessionStorage.getItem('dwmSessionId') || '';
+  if (!sessionId) {
+    redirectToDwmLogin();
+  } else {
+    currentSessionId = sessionId;
+    loadState();
+  }
+
 }());
 </script>
 

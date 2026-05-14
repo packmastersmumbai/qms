@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Daily Work Manager — Login</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -72,6 +73,7 @@ window.addEventListener('load', function() {
         if (s && s.userId) {
           if (s.name) localStorage.setItem('dwmUserName', s.name);
           if (s.role) localStorage.setItem('dwmUserRole', s.role);
+          sessionStorage.setItem('dwmSessionId', sid);
           dwmGoto('dashboard');
         }
       })
@@ -132,6 +134,7 @@ function submit() {
     .withSuccessHandler(function(r){
       if (r.status === 'success') {
         dwmSetSession(r.sessionId);
+        sessionStorage.setItem('dwmSessionId', r.sessionId);
         localStorage.setItem('dwmLastUserId', r.userId);
         localStorage.setItem('dwmUserName', r.name);
         localStorage.setItem('dwmUserRole', r.role);
