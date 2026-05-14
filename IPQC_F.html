@@ -8,1078 +8,1127 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    body { max-width: 480px; margin: 0 auto; }
+    body { max-width: 480px; margin: 0 auto; padding-bottom: 0; }
 
+    /* ── Loading overlay ── */
     #loading {
-      position: fixed; inset: 0; background: rgba(13,27,110,0.85);
+      position: fixed; inset: 0;
+      background: rgba(13,27,110,0.88);
       display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 14px; z-index: 99999; transition: opacity 0.3s;
+      flex-direction: column; gap: 14px; z-index: 99999;
+      transition: opacity 0.3s;
     }
     #loading.hidden { opacity: 0; pointer-events: none; }
     .load-spinner {
       width: 36px; height: 36px;
-      border: 3px solid rgba(255,255,255,0.25); border-top-color: var(--amber);
-      border-radius: 50%; animation: spin 0.8s linear infinite;
+      border: 3px solid rgba(255,255,255,0.25);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
-    #loading p { color: rgba(255,255,255,0.8); font-size: 13px; }
+    #loading p { color: rgba(255,255,255,0.8); font-size: 13px; margin: 0; }
 
-    .setup-hero {
-      background: var(--navy); margin: 10px; border-radius: 12px;
-      padding: 20px 16px; color: var(--white); text-align: center;
+    /* ── State 1: Product grid ── */
+    #s1-body {
+      padding: 16px;
+      min-height: calc(100vh - 56px);
+      background: var(--bg);
     }
-    .setup-hero .hero-icon { font-size: 32px; display: block; margin-bottom: 6px; }
-    .setup-hero h2 { font-size: 18px; font-weight: 700; }
-    .setup-hero p  { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 3px; }
-
-    .machine-grid {
+    .s1-label {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      margin: 0 0 12px 0;
+    }
+    .product-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      padding: 4px 0;
     }
-    .machine-btn {
-      padding: 18px 10px;
-      border: 2px solid var(--border);
+    .product-btn {
+      min-height: 72px;
+      padding: 14px 10px;
+      border: 1.5px solid var(--navy);
       border-radius: 10px;
       background: var(--white);
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      text-align: center;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .product-btn:active { transform: scale(0.97); transition: transform 0.08s ease; }
+    .product-btn.active {
+      background: var(--navy);
+      color: var(--white);
+      border-color: var(--navy);
+    }
+    .product-btn-name {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .product-btn-code {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .product-btn.active .product-btn-code { color: rgba(255,255,255,0.7); }
+    .s1-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
       font-size: 13px;
+    }
+
+    /* ── State 2: Batch entry ── */
+    #s2-body {
+      padding: 12px 12px 100px;
+      background: var(--bg);
+      min-height: calc(100vh - 56px);
+    }
+    .product-strip {
+      background: var(--navy-light);
+      border-left: 3px solid var(--amber);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .product-strip-name {
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .product-strip-code {
+      font-size: 11px; font-weight: 400; color: var(--muted); margin-top: 2px;
+    }
+    .batch-card {
+      background: var(--white);
+      border-radius: 10px;
+      box-shadow: var(--shadow-1);
+      padding: 14px 14px 16px;
+      margin-bottom: 14px;
+    }
+    .batch-card .field { margin-bottom: 12px; }
+    .batch-card .field:last-child { margin-bottom: 0; }
+    .batch-card label {
+      display: block;
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .batch-card input {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 10px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+      box-sizing: border-box;
+    }
+    .batch-card input:focus { outline: none; border-color: var(--navy); }
+    .btn-start-insp {
+      width: 100%;
+      height: 52px;
+      background: var(--amber);
+      color: var(--navy);
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      color: var(--text);
-      text-align: center;
-      transition: all 0.15s ease;
-      min-height: 64px;
+      transition: background 0.15s, opacity 0.15s;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
-    .machine-btn:hover  { background: var(--navy-light); border-color: var(--navy); }
-    .machine-btn:active { transform: scale(0.96); transition: transform 0.08s ease; }
-    .machine-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
-    .machine-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+    .btn-start-insp:disabled { background: #D1D5DB; color: #9CA3AF; cursor: not-allowed; }
+    .btn-start-insp:not(:disabled):active { opacity: 0.85; }
 
-    .round-hdr {
-      background: var(--navy); color: var(--white);
-      padding: 10px 14px;
-      position: sticky; top: 56px; z-index: 90;
-      display: flex; align-items: center; gap: 8px;
+    /* ── State 3: Record round ── */
+    .round-sub-hdr {
+      background: var(--navy);
+      padding: 8px 12px;
+      position: sticky;
+      top: 56px;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .round-hdr .rh-title {
-      flex: 1; font-size: 13px; font-weight: 700;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    .round-sub-title {
+      flex: 1;
+      font-size: 13px; font-weight: 700; color: var(--white);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .round-badge {
-      background: var(--amber); color: var(--navy);
-      font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 4px;
+    .progress-pill {
+      background: var(--amber);
+      color: var(--navy);
+      font-size: 12px; font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 99px;
       white-space: nowrap;
-    }
-    .timer-chip {
-      background: rgba(255,255,255,0.18); color: var(--white);
-      font-size: 11px; font-weight: 600; padding: 3px 8px;
-      border-radius: 4px; font-variant-numeric: tabular-nums; min-width: 56px; text-align: center;
-    }
-
-    .round-progress {
-      background: rgba(13,27,110,0.12);
-      height: 4px; margin: 0; position: sticky; top: calc(56px + 44px); z-index: 89;
-    }
-    .round-progress-fill {
-      height: 100%; background: var(--amber);
-      transition: width 0.3s ease;
-    }
-
-    .param-card {
-      background: var(--white); margin: 10px;
-      border-radius: 12px; box-shadow: var(--shadow-1);
-      overflow: hidden;
-    }
-    .param-card.highlight {
-      box-shadow: 0 0 0 2px var(--navy), var(--shadow-2);
-    }
-    .param-card .pc-header {
-      background: var(--navy-light); padding: 10px 14px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .param-card .pc-num {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: var(--navy); color: var(--white);
-      font-size: 11px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-    .param-card .pc-name {
-      flex: 1; font-size: 13px; font-weight: 600; color: var(--text);
+    .round-progress-bar {
+      height: 6px;
+      background: rgba(13,27,110,0.12);
+      position: sticky;
+      top: calc(56px + 38px);
+      z-index: 89;
+      margin: 0;
     }
-    .param-card .pc-std {
-      font-size: 11px; color: var(--muted);
+    .round-progress-fill {
+      height: 100%;
+      background: var(--navy);
+      transition: width 0.3s ease;
+      width: 0%;
     }
-    .param-card .pc-status {
-      width: 28px; height: 28px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; flex-shrink: 0;
-      background: #F3F4F6;
+    #s3-body {
+      padding: 16px 16px 80px;
+      background: var(--bg);
+      min-height: calc(100vh - 56px - 44px - 6px);
     }
-    .param-card .pc-status.ok { background: #DCFCE7; }
-    .param-card .pc-status.ng { background: #FEE2E2; }
-    .param-card .pc-status.na { background: #F3F4F6; }
-    .param-card .pc-body { padding: 14px; }
-
-    .tap-row {
+    .param-focus-card {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 16px;
+      margin-bottom: 12px;
+      transition: border-left 0.15s, background 0.15s;
+    }
+    .param-focus-card.fail-state {
+      background: #FEF2F2;
+      border-left: 3px solid var(--danger);
+    }
+    .param-focus-name {
+      font-size: 17px; font-weight: 700; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .param-focus-spec {
+      font-size: 12px; font-weight: 400; color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .pf-toggle-row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
-    .tap-btn {
-      padding: 16px 4px;
-      border: 2px solid var(--border);
-      border-radius: 10px;
+    .pf-toggle-btn {
+      min-height: 56px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
       background: var(--white);
-      font-size: 14px;
-      font-weight: 800;
+      font-size: 14px; font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      color: var(--text);
+      color: var(--muted);
       text-align: center;
-      transition: all 0.12s ease;
-      min-height: 56px;
+      transition: all 0.15s ease;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
-      letter-spacing: 0.3px;
     }
-    .tap-btn:active { transform: scale(0.96); transition: transform 0.08s ease; }
-    .tap-btn.pass { background: #DCFCE7; border-color: var(--success); color: var(--success); }
-    .tap-btn.fail { background: #FEE2E2; border-color: var(--danger); color: var(--danger); animation: shake 0.3s ease; }
-    .tap-btn.na   { background: #F3F4F6; border-color: #9CA3AF; color: #9CA3AF; }
-
-    .pc-remark {
-      width: 100%; padding: 8px 10px; border: 1.5px solid var(--border);
-      border-radius: 6px; font-size: 14px; font-family: inherit;
-      color: var(--text); background: var(--white); resize: vertical;
-      min-height: 52px; display: none;
+    .pf-toggle-btn:active { transform: scale(0.97); transition: transform 0.08s ease; }
+    .pf-toggle-btn.sel-pass {
+      background: #F0FDF4;
+      border-color: var(--success);
+      color: var(--success);
     }
-    .pc-remark:focus { outline: none; border-color: var(--navy); }
-    .pc-remark.req   { border-color: var(--danger); }
-    .pc-remark-hint  { font-size: 10px; color: var(--danger); margin-top: 3px; display: none; }
-    .pc-remark-hint.show { display: block; }
+    .pf-toggle-btn.sel-fail {
+      background: #FEF2F2;
+      border-color: var(--danger);
+      color: var(--danger);
+      animation: shake 0.3s ease;
+    }
+    .pf-toggle-btn.sel-na {
+      background: var(--navy-light);
+      border-color: var(--navy);
+      color: var(--navy);
+    }
+    .pf-remark-label {
+      font-size: 11px; font-weight: 500; color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .pf-remark-textarea {
+      width: 100%;
+      min-height: 52px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      resize: vertical;
+      box-sizing: border-box;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    .pf-remark-textarea:focus { outline: none; border-color: var(--navy); }
 
-    .round-footer {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      max-width: 480px; margin: 0 auto;
-      background: var(--white); padding: 10px 14px;
+    /* Sticky bottom bar for State 3 */
+    .round-bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      background: var(--navy);
+      padding: 10px 16px;
       padding-bottom: max(10px, env(safe-area-inset-bottom));
-      border-top: 1px solid var(--border);
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
-      display: flex; gap: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
     }
-    .btn-save-round {
-      flex: 2; background: var(--navy); color: var(--white);
-      border: none; border-radius: 8px; padding: 13px; font-size: 14px;
-      font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s ease;
+    .round-bar-label {
+      font-size: 11px; font-weight: 500;
+      color: rgba(255,255,255,0.6);
+    }
+    .round-bar-cta {
+      background: var(--amber);
+      color: var(--navy);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px; font-weight: 700;
+      min-height: 44px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.15s;
       touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn-save-round:hover { background: #1A2D9E; }
-    .btn-save-round:active { transform: scale(0.97); }
-    .btn-save-round:disabled { background: var(--muted); cursor: not-allowed; }
-    .btn-end-session {
-      flex: 1; background: var(--white); color: var(--danger);
-      border: 2px solid var(--danger); border-radius: 8px; padding: 12px 8px;
-      font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
-      transition: all 0.15s ease; touch-action: manipulation;
+    .round-bar-cta:disabled {
+      background: #6B7280;
+      color: rgba(255,255,255,0.5);
+      cursor: not-allowed;
     }
-    .btn-end-session:hover { background: #FEE2E2; }
-    .btn-end-session:active { transform: scale(0.97); }
+    .round-bar-cta:not(:disabled):active { opacity: 0.82; }
 
-    .round-summary-wrap { padding: 10px 10px 100px; }
-    .rs-hero {
-      background: var(--navy); border-radius: 12px; padding: 20px 16px; color: var(--white);
-      text-align: center; margin-bottom: 10px;
+    /* ── State 4: Round summary ── */
+    #s4-body {
+      padding: 12px 12px 120px;
+      background: var(--bg);
+      min-height: calc(100vh - 56px);
     }
-    .rs-hero .rs-icon { font-size: 36px; display: block; margin-bottom: 6px; }
-    .rs-hero h3 { font-size: 18px; font-weight: 700; }
-    .rs-hero p  { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 3px; }
+    .session-strip {
+      background: var(--navy-light);
+      border-left: 3px solid var(--amber);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 11px;
+    }
+    .session-strip-line1 {
+      font-size: 13px; font-weight: 600; color: var(--text);
+    }
+    .session-strip-line2 {
+      font-size: 11px; color: var(--muted); margin-top: 2px;
+    }
+    .round-result-banner {
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 14px; font-weight: 700;
+    }
+    .round-result-banner.pass {
+      background: #F0FDF4;
+      border-left: 4px solid var(--success);
+      color: var(--success);
+    }
+    .round-result-banner.fail {
+      background: #FEF2F2;
+      border-left: 4px solid var(--danger);
+      color: var(--danger);
+    }
+    .params-summary-card {
+      background: var(--white);
+      border-radius: 10px;
+      box-shadow: var(--shadow-1);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .params-summary-header {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 12px; font-weight: 500;
+      padding: 6px 12px;
+      letter-spacing: 0;
+    }
+    .ps-param-row {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      min-height: 44px;
+    }
+    .ps-param-row:last-child { border-bottom: none; }
+    .ps-param-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ps-param-name {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      flex: 1; margin-right: 8px;
+    }
+    .ps-result-badge {
+      font-size: 11px; font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .ps-result-pass { background: #DCFCE7; color: #15803D; }
+    .ps-result-fail { background: #FEE2E2; color: #B91C1C; }
+    .ps-result-na   { background: var(--navy-light); color: var(--navy); }
+    .ps-param-remark {
+      font-size: 11px; color: var(--muted);
+      margin-top: 4px; padding-left: 0;
+      opacity: 0;
+      animation: fadeIn 0.2s ease forwards;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    .rs-cards {
-      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px;
+    .s4-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    .rs-card {
-      border-radius: 8px; padding: 12px 8px; text-align: center;
-    }
-    .rs-card .rc-num { font-size: 32px; font-weight: 700; line-height: 1; }
-    .rs-card .rc-lbl { font-size: 10px; font-weight: 600; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
-    .rs-card.ok-card { background: #DCFCE7; color: #15803D; }
-    .rs-card.ng-card { background: #FEE2E2; color: #B91C1C; }
-    .rs-card.na-card { background: #F3F4F6; color: #6B7280; }
-
-    .rs-param-list { background: var(--white); border-radius: 10px; box-shadow: var(--shadow-1); overflow: hidden; }
-    .rs-param-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; border-bottom: 1px solid var(--border);
-    }
-    .rs-param-item:last-child { border-bottom: none; }
-    .rs-param-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
-    .rs-param-result { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 4px; }
-    .rs-result-ok { background: #DCFCE7; color: #15803D; }
-    .rs-result-ng { background: #FEE2E2; color: #B91C1C; }
-    .rs-result-na { background: #F3F4F6; color: #9CA3AF; }
-
-    .rs-footer {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      max-width: 480px; margin: 0 auto;
-      background: var(--white); padding: 10px 14px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
-      border-top: 1px solid var(--border);
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
-      display: flex; gap: 8px;
-    }
-    .btn-next-round {
-      flex: 2; background: var(--navy); color: var(--white);
-      border: none; border-radius: 8px; padding: 13px; font-size: 14px;
-      font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s ease;
-    }
-    .btn-next-round:hover { background: #1A2D9E; }
-    .btn-next-round:active { transform: scale(0.97); }
-    .btn-end-now {
-      flex: 1; background: var(--white); color: var(--danger);
-      border: 2px solid var(--danger); border-radius: 8px; padding: 12px 8px;
-      font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
-      transition: all 0.15s ease;
-    }
-    .btn-end-now:hover { background: #FEE2E2; }
-    .btn-end-now:active { transform: scale(0.97); }
-
-    .final-wrap { padding: 10px 10px 80px; }
-    .final-hero {
-      background: var(--success);
-      border-radius: 12px; padding: 24px 16px; color: var(--white);
-      text-align: center; margin-bottom: 12px;
-    }
-    .final-hero .fh-icon { font-size: 40px; display: block; margin-bottom: 8px; }
-    .final-hero h2 { font-size: 20px; font-weight: 700; }
-    .final-hero p  { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 4px; }
-    .final-stat-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
-    }
-    .fsg-card {
-      background: var(--white); border-radius: 8px; box-shadow: var(--shadow-1);
-      padding: 14px 12px; text-align: center;
-    }
-    .fsg-num { font-size: 28px; font-weight: 700; color: var(--navy); line-height: 1; }
-    .fsg-lbl { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .btn-go-home {
-      width: 100%; background: var(--navy); color: var(--white);
-      border: none; border-radius: 10px; padding: 14px; font-size: 15px;
-      font-weight: 700; cursor: pointer; font-family: inherit;
+    .btn-another-round {
+      width: 100%;
+      height: 52px;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
       transition: background 0.15s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn-go-home:hover { background: #1A2D9E; }
-    .btn-go-home:active { transform: scale(0.97); }
+    .btn-another-round:active { background: #1A2D9E; }
+    .btn-close-session {
+      width: 100%;
+      height: 52px;
+      background: var(--white);
+      color: var(--navy);
+      border: 1.5px solid var(--navy);
+      border-radius: 8px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-close-session:active { background: var(--navy-light); }
+    .btn-close-session:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .confirm-overlay {
-      position: fixed; inset: 0; background: rgba(13,27,110,0.6);
-      display: flex; align-items: flex-end; justify-content: center;
-      z-index: 9998; padding: 0 0 env(safe-area-inset-bottom);
-    }
-    .confirm-overlay.hidden { display: none; }
-    .confirm-sheet {
-      background: var(--white); border-radius: 12px 12px 0 0;
-      padding: 20px 16px 24px; width: 100%; max-width: 480px;
-    }
-    .confirm-sheet h4 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-    .confirm-sheet p  { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
-    .confirm-btns { display: flex; gap: 8px; }
-    .confirm-btns button { flex: 1; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.15s ease; border: none; }
-    .confirm-cancel { background: var(--bg); color: var(--text); }
-    .confirm-cancel:hover { background: var(--border); }
-    .confirm-ok { background: var(--danger); color: var(--white); }
-    .confirm-ok:hover { background: #B91C1C; }
+    /* card shake utility */
+    .do-shake { animation: shake 0.3s ease; }
   </style>
 </head>
 <body>
 
+<!-- Loading overlay -->
 <div id="loading">
   <div class="load-spinner"></div>
   <p id="loadingMsg">Loading…</p>
 </div>
 
-<div class="confirm-overlay hidden" id="confirmOverlay">
-  <div class="confirm-sheet">
-    <h4 id="confirmTitle">Confirm</h4>
-    <p id="confirmMsg"></p>
-    <div class="confirm-btns">
-      <button class="confirm-cancel" id="confirmCancelBtn">Cancel</button>
-      <button class="confirm-ok" id="confirmOkBtn">Confirm</button>
-    </div>
-  </div>
-</div>
-
+<!-- Shared header -->
 <header class="pm-header">
-  <button class="back-btn" id="headerBackBtn" style="display:none;">
+  <button class="back-btn" id="headerBackBtn" style="display:none;" onclick="handleHeaderBack()">
     <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
   </button>
-  <span class="page-title" id="headerTitle">&#9881; IPQC</span>
-  <span class="doc-badge" id="roundBadge" style="display:none;">IPQC</span>
+  <span class="page-title" id="headerTitle">IPQC</span>
+  <span class="doc-badge" id="headerBadge">IPQC</span>
 </header>
 
-<!-- STATE 1: SETUP -->
+<!-- ═══════════════ STATE 1: SELECT PRODUCT ═══════════════ -->
 <div id="state1" style="display:block;">
-  <div class="setup-hero">
-    <span class="hero-icon">&#9881;</span>
-    <h2>IPQC</h2>
-    <p>In-Process Quality Check</p>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Inspector</div>
-    <div class="section-body">
-      <div class="field" style="margin-bottom:0;">
-        <select id="setupInspector">
-          <option value="">— Select Inspector —</option>
-        </select>
-      </div>
+  <div id="s1-body">
+    <p class="s1-label">Select Product / Line</p>
+    <div class="product-grid" id="productGrid">
+      <!-- filled by JS -->
     </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Product &amp; Batch</div>
-    <div class="section-body">
-      <div class="field">
-        <label>Product (FG)</label>
-        <select id="setupProduct">
-          <option value="">— Select Product —</option>
-        </select>
-      </div>
-      <div class="field" style="margin-bottom:0;">
-        <label>Batch No.</label>
-        <input type="text" id="setupBatch" placeholder="e.g. B2401">
-      </div>
+    <div class="s1-empty" id="s1Empty" style="display:none;">
+      No products configured. Contact supervisor.
     </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Production Line / Machine</div>
-    <div class="section-body">
-      <div class="machine-grid" id="machineGrid"></div>
-      <div class="field" id="machineOtherField" style="display:none; margin-top:10px; margin-bottom:0;">
-        <label>Specify Line</label>
-        <input type="text" id="machineOtherInput" placeholder="Enter line name">
-      </div>
-    </div>
-  </div>
-
-  <div style="padding: 0 10px 24px;">
-    <button class="btn-submit" id="btnStartCheck">Start Inspection &#187;</button>
   </div>
 </div>
 
-<!-- STATE 2: ACTIVE ROUND -->
+<!-- ═══════════════ STATE 2: ENTER BATCH ═══════════════ -->
 <div id="state2" style="display:none;">
-  <div class="round-hdr">
-    <div class="rh-title" id="roundHdrTitle">Product — Batch</div>
-    <span class="round-badge" id="roundHdrBadge">R1</span>
-    <span class="timer-chip" id="timerDisplay">00:00</span>
-  </div>
-  <div class="round-progress">
-    <div class="round-progress-fill" id="progressFill" style="width:0%;"></div>
-  </div>
+  <div id="s2-body">
+    <div class="product-strip" id="selectedProductStrip">
+      <div class="product-strip-name" id="stripProductName"></div>
+      <div class="product-strip-code" id="stripProductCode"></div>
+    </div>
 
-  <div id="paramCards" style="padding-bottom: 90px;"></div>
+    <div class="batch-card">
+      <div class="field">
+        <label for="inputBatch">Batch No.</label>
+        <input type="text" id="inputBatch" placeholder="e.g. B2605001" autocomplete="off"
+               oninput="checkS2Fields()">
+      </div>
+      <div class="field">
+        <label for="inputInspector">Inspector</label>
+        <input type="text" id="inputInspector" placeholder="Your name" autocomplete="off"
+               oninput="checkS2Fields()">
+      </div>
+    </div>
 
-  <div class="round-footer">
-    <button class="btn-save-round" id="btnSaveRound">&#10003; Save Round</button>
-    <button class="btn-end-session" id="btnEndSessionEarly">&#x25A0; End</button>
+    <button class="btn-start-insp" id="btnStartInsp" disabled onclick="startInspection()">
+      START INSPECTION &#8594;
+    </button>
   </div>
 </div>
 
-<!-- STATE 3: ROUND COMPLETE -->
+<!-- ═══════════════ STATE 3: RECORD ROUND ═══════════════ -->
 <div id="state3" style="display:none;">
-  <div class="round-summary-wrap">
-    <div class="rs-hero" id="rsSummaryHero">
-      <span class="rs-icon">&#10003;</span>
-      <h3>Round Complete</h3>
-      <p id="rsSummaryMeta"></p>
-    </div>
-
-    <div class="rs-cards">
-      <div class="rs-card ok-card">
-        <div class="rc-num" id="rsCountOk">0</div>
-        <div class="rc-lbl">OK</div>
-      </div>
-      <div class="rs-card ng-card">
-        <div class="rc-num" id="rsCountNg">0</div>
-        <div class="rc-lbl">NG</div>
-      </div>
-      <div class="rs-card na-card">
-        <div class="rc-num" id="rsCountNa">0</div>
-        <div class="rc-lbl">NA</div>
-      </div>
-    </div>
-
-    <div class="rs-param-list" id="rsParamList"></div>
+  <div class="round-sub-hdr" id="roundSubHdr">
+    <span class="round-sub-title" id="roundSubTitle">Round 1 — Product</span>
+    <span class="progress-pill" id="progressPill">1/1</span>
   </div>
-
-  <div class="rs-footer">
-    <button class="btn-next-round" id="btnNextRound">&#9654; Next Round</button>
-    <button class="btn-end-now" id="btnEndSessionFull">&#x25A0; End Session</button>
+  <div class="round-progress-bar">
+    <div class="round-progress-fill" id="progressFill"></div>
+  </div>
+  <div id="s3-body">
+    <!-- Single focused param card rendered here -->
+    <div class="param-focus-card" id="paramCard">
+      <div class="param-focus-name" id="paramName">—</div>
+      <div class="param-focus-spec" id="paramSpec"></div>
+      <div class="pf-toggle-row">
+        <button class="pf-toggle-btn" id="btnPass" onclick="selectResult('PASS')">PASS</button>
+        <button class="pf-toggle-btn" id="btnFail" onclick="selectResult('FAIL')">FAIL</button>
+        <button class="pf-toggle-btn" id="btnNA"   onclick="selectResult('NA')">NA</button>
+      </div>
+      <div class="pf-remark-label">Remarks (optional)</div>
+      <textarea class="pf-remark-textarea" id="remarkTextarea" rows="2"
+                placeholder="Add note…"></textarea>
+    </div>
+  </div>
+  <div class="round-bottom-bar">
+    <span class="round-bar-label" id="barParamLabel">Param 1 of 1</span>
+    <button class="round-bar-cta" id="btnNext" disabled onclick="handleNext()">Next &#8594;</button>
   </div>
 </div>
 
-<!-- STATE 4: SESSION ENDED -->
+<!-- ═══════════════ STATE 4: ROUND SUMMARY ═══════════════ -->
 <div id="state4" style="display:none;">
-  <div class="final-wrap">
-    <div class="final-hero">
-      <span class="fh-icon">&#10003;</span>
-      <h2>Session Complete</h2>
-      <p id="finalMeta"></p>
+  <div id="s4-body">
+    <div class="session-strip">
+      <div class="session-strip-line1" id="s4StripLine1"></div>
+      <div class="session-strip-line2" id="s4StripLine2"></div>
     </div>
 
-    <div class="final-stat-grid">
-      <div class="fsg-card">
-        <div class="fsg-num" id="finalRounds">0</div>
-        <div class="fsg-lbl">Rounds</div>
-      </div>
-      <div class="fsg-card">
-        <div class="fsg-num" id="finalOk">0</div>
-        <div class="fsg-lbl">Total OK</div>
-      </div>
-      <div class="fsg-card">
-        <div class="fsg-num" id="finalNg">0</div>
-        <div class="fsg-lbl">Total NG</div>
-      </div>
-      <div class="fsg-card">
-        <div class="fsg-num" id="finalNa">0</div>
-        <div class="fsg-lbl">Total NA</div>
-      </div>
+    <div class="round-result-banner" id="roundResultBanner"></div>
+
+    <div class="params-summary-card">
+      <div class="params-summary-header">Parameters</div>
+      <div id="paramsSummaryList"></div>
     </div>
 
-    <button class="btn-go-home" id="btnGoHome">&#8962; Back to Home</button>
+    <div class="s4-actions">
+      <button class="btn-another-round" id="btnAnotherRound" onclick="startAnotherRound()">
+        Record Another Round &#8594;
+      </button>
+      <button class="btn-close-session" id="btnCloseSession" onclick="closeSession()">
+        Close Session
+      </button>
+    </div>
   </div>
 </div>
 
+<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
+// ── App state ──────────────────────────────────────────────────────────────
 var DWM_SESSION_ID = null;
+var TASK_ID = null;
 var SESSION_ID = null;
-var SESSION_PRODUCT_CODE = '';
-var SESSION_PRODUCT_NAME = '';
-var SESSION_BATCH = '';
-var SESSION_INSPECTOR = '';
-var SESSION_LINE = '';
+var SESSION_SAVED = false;
+
+var SEL_PRODUCT_CODE = '';
+var SEL_PRODUCT_NAME = '';
+var BATCH_NO = '';
+var INSPECTOR = '';
+
+var PARAMS = [];         // [{paramCode, paramName, unit, stdValue, tolMin, tolMax, checkBrief}]
+var CURRENT_PARAM_IDX = 0;
 var ROUND_NO = 1;
 
-var PARAMS = [];
-var ROUND_DATA = [];
+// Each round: {roundNo, params: [{paramCode, paramName, result, remark, timestamp}]}
+var ALL_ROUNDS = [];     // accumulated across session, written at close
+var CURRENT_ROUND_RESULTS = [];  // [{result, remark}] index matches PARAMS
 
-var timerInterval = null;
-var ROUND_START_TS = null;
-var ROUND_ELAPSED_S = 0;
-
-var SESSION_TOTAL_OK = 0;
-var SESSION_TOTAL_NG = 0;
-var SESSION_TOTAL_NA = 0;
-
-var MACHINES = ['Line 1', 'Line 2', 'Line 3', 'Other'];
-var SELECTED_MACHINE = '';
-
-var _confirmCallback = null;
-
+// ── Boot ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   DWM_SESSION_ID = (typeof sessionStorage !== 'undefined')
     ? (sessionStorage.getItem('dwmSessionId') || null) : null;
 
-  buildMachineGrid();
-
-  document.getElementById('btnStartCheck').addEventListener('click', startCheck);
-  document.getElementById('btnSaveRound').addEventListener('click', saveRound);
-  document.getElementById('btnEndSessionEarly').addEventListener('click', function() {
-    showConfirm(
-      'End Session Early',
-      'End session without saving current round? Unsaved data will be lost.',
-      closeIPQCSession
-    );
-  });
-  document.getElementById('btnNextRound').addEventListener('click', nextRound);
-  document.getElementById('btnEndSessionFull').addEventListener('click', function() {
-    showConfirm(
-      'End Session',
-      'End this IPQC session? No further rounds can be added.',
-      closeIPQCSession
-    );
-  });
-  document.getElementById('btnGoHome').addEventListener('click', goHome);
-  document.getElementById('headerBackBtn').addEventListener('click', headerBack);
-  document.getElementById('confirmCancelBtn').addEventListener('click', hideConfirm);
-  document.getElementById('confirmOkBtn').addEventListener('click', function() {
-    hideConfirm();
-    if (_confirmCallback) _confirmCallback();
-  });
-
-  showLoading('Loading…');
+  showLoading('Loading products…');
   google.script.run
     .withSuccessHandler(function(d) {
       hideLoading();
-      var pSel = document.getElementById('setupProduct');
-      (d.fgList || []).forEach(function(fg) {
-        var o = document.createElement('option');
-        var label = fg.name || fg.description || fg.code;
-        o.value = fg.code;
-        o.textContent = label.length > 40 ? label.substring(0, 40) + '…' : label;
-        o.setAttribute('data-desc', label);
-        pSel.appendChild(o);
-      });
-      var iSel = document.getElementById('setupInspector');
-      (d.inspectors || []).forEach(function(p) {
-        var o = document.createElement('option');
-        o.value = p.name;
-        o.textContent = p.name + (p.role ? ' — ' + p.role : '');
-        iSel.appendChild(o);
-      });
+      buildProductGrid(d.fgList || []);
     })
     .withFailureHandler(function(e) {
       hideLoading();
-      showToast('Failed to load form: ' + e.message, 'error');
+      showToast('Failed to load: ' + e.message, 'error');
     })
     .getIPQCFormInit();
 });
 
-function showConfirm(title, msg, cb) {
-  _confirmCallback = cb;
-  document.getElementById('confirmTitle').textContent = title;
-  document.getElementById('confirmMsg').textContent = msg;
-  document.getElementById('confirmOverlay').classList.remove('hidden');
-}
-
-function hideConfirm() {
-  document.getElementById('confirmOverlay').classList.add('hidden');
-  _confirmCallback = null;
-}
-
-function buildMachineGrid() {
-  var grid = document.getElementById('machineGrid');
+// ── State 1: Product grid ──────────────────────────────────────────────────
+function buildProductGrid(fgList) {
+  var grid = document.getElementById('productGrid');
+  var empty = document.getElementById('s1Empty');
   grid.innerHTML = '';
-  MACHINES.forEach(function(m) {
+
+  if (!fgList || fgList.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  fgList.forEach(function(fg) {
+    var code = fg.code || '';
+    var name = fg.name || fg.description || code;
     var btn = document.createElement('button');
-    btn.className = 'machine-btn';
-    btn.id = 'mbtn_' + m.replace(/\s+/g, '_');
-    btn.innerHTML = '<span class="machine-icon">&#9881;</span>' + m;
-    btn.addEventListener('click', (function(name) {
-      return function() { selectMachine(name); };
-    })(m));
+    btn.className = 'product-btn';
+    btn.setAttribute('data-code', code);
+    btn.setAttribute('data-name', name);
+    btn.innerHTML =
+      '<span class="product-btn-name">' + escHtml(name) + '</span>' +
+      '<span class="product-btn-code">' + escHtml(code) + '</span>';
+    btn.addEventListener('click', (function(c, n) {
+      return function() { selectProduct(c, n); };
+    })(code, name));
     grid.appendChild(btn);
   });
 }
 
-function selectMachine(name) {
-  SELECTED_MACHINE = name;
-  MACHINES.forEach(function(m) {
-    var btn = document.getElementById('mbtn_' + m.replace(/\s+/g, '_'));
-    if (btn) btn.className = 'machine-btn' + (m === name ? ' active' : '');
-  });
-  var otherField = document.getElementById('machineOtherField');
-  if (otherField) otherField.style.display = (name === 'Other') ? 'block' : 'none';
+function selectProduct(code, name) {
+  SEL_PRODUCT_CODE = code;
+  SEL_PRODUCT_NAME = name;
+
+  // Visual feedback — briefly highlight then navigate
+  var btns = document.querySelectorAll('.product-btn');
+  for (var i = 0; i < btns.length; i++) {
+    if (btns[i].getAttribute('data-code') === code) {
+      btns[i].classList.add('active');
+    } else {
+      btns[i].classList.remove('active');
+    }
+  }
+
+  setTimeout(function() { goToState2(); }, 150);
 }
 
-function startCheck() {
-  var pSel = document.getElementById('setupProduct');
-  var productCode = pSel.value;
-  var productOpt = pSel.options[pSel.selectedIndex];
-  var productName = productOpt ? (productOpt.getAttribute('data-desc') || productCode) : productCode;
-  var batch = document.getElementById('setupBatch').value.trim();
-  var inspector = document.getElementById('setupInspector').value;
-  var line = SELECTED_MACHINE;
-  if (line === 'Other') {
-    line = document.getElementById('machineOtherInput').value.trim();
-  }
+// ── State 2: Enter batch ───────────────────────────────────────────────────
+function goToState2() {
+  document.getElementById('stripProductName').textContent = SEL_PRODUCT_NAME;
+  document.getElementById('stripProductCode').textContent = SEL_PRODUCT_CODE;
+  document.getElementById('headerTitle').textContent = 'IPQC — ' + truncate(SEL_PRODUCT_NAME, 24);
+  document.getElementById('inputBatch').value = '';
+  document.getElementById('inputInspector').value = '';
+  document.getElementById('btnStartInsp').disabled = true;
+  showState(2);
+}
 
-  if (!inspector)   { showToast('Please select an inspector.', 'error'); return; }
-  if (!productCode) { showToast('Please select a product.', 'error'); return; }
-  if (!batch)       { showToast('Please enter a batch number.', 'error'); return; }
-  if (!SELECTED_MACHINE) { showToast('Please select a line / machine.', 'error'); return; }
-  if (SELECTED_MACHINE === 'Other' && !line) {
-    showToast('Please specify the line name.', 'error'); return;
-  }
+function checkS2Fields() {
+  var batch = document.getElementById('inputBatch').value.trim();
+  var insp  = document.getElementById('inputInspector').value.trim();
+  document.getElementById('btnStartInsp').disabled = !(batch && insp);
+}
 
-  SESSION_PRODUCT_CODE = productCode;
-  SESSION_PRODUCT_NAME = productName;
-  SESSION_BATCH = batch;
-  SESSION_INSPECTOR = inspector;
-  SESSION_LINE = line;
+function startInspection() {
+  BATCH_NO  = document.getElementById('inputBatch').value.trim();
+  INSPECTOR = document.getElementById('inputInspector').value.trim();
 
-  var btn = document.getElementById('btnStartCheck');
+  if (!BATCH_NO)  { showToast('Enter a batch number.', 'error'); return; }
+  if (!INSPECTOR) { showToast('Enter inspector name.', 'error'); return; }
+
+  var btn = document.getElementById('btnStartInsp');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Starting…';
+  btn.textContent = 'Starting…';
 
   showLoading('Starting session…');
   google.script.run
     .withSuccessHandler(function(res) {
-      hideLoading();
-      btn.disabled = false;
-      btn.textContent = 'Start Inspection »';
-      if (!res.ok) { showToast('Error: ' + (res.error || 'Could not start session.'), 'error'); return; }
-      SESSION_ID = res.sessionId;
-      ROUND_NO = res.resumed ? (res.rounds || 0) + 1 : 1;
-      showToast(res.resumed ? 'Resuming — Round ' + ROUND_NO : 'Session started', 'success');
-      loadParamsAndBeginRound();
-    })
-    .withFailureHandler(function(e) {
-      hideLoading();
-      btn.disabled = false;
-      btn.textContent = 'Start Inspection »';
-      showToast('Error: ' + e.message, 'error');
-    })
-    .startSession({ productCode: productCode, productName: productName, batch: batch, inspector: inspector, line: line });
-}
-
-function loadParamsAndBeginRound() {
-  showLoading('Loading parameters…');
-  google.script.run
-    .withSuccessHandler(function(result) {
-      hideLoading();
-      PARAMS = result.params || [];
-      if (result.warning && PARAMS.length === 0) {
-        showToast('No control plan for this product.', 'error');
-      }
-      enterRound();
-    })
-    .withFailureHandler(function(e) {
-      hideLoading();
-      showToast('Could not load parameters: ' + e.message, 'error');
-      PARAMS = [];
-      enterRound();
-    })
-    .getIPQCParams(SESSION_PRODUCT_CODE);
-}
-
-function enterRound() {
-  ROUND_DATA = PARAMS.map(function(p) {
-    return { paramCode: p.paramCode, paramName: p.paramName,
-             stdValue: p.stdValue || '', unit: p.unit || '',
-             result: '', remark: '' };
-  });
-
-  var shortName = SESSION_PRODUCT_NAME.length > 22
-    ? SESSION_PRODUCT_NAME.substring(0, 22) + '…' : SESSION_PRODUCT_NAME;
-  document.getElementById('roundHdrTitle').textContent = shortName + ' · ' + SESSION_BATCH;
-  document.getElementById('roundHdrBadge').textContent = 'R' + ROUND_NO;
-  document.getElementById('roundBadge').style.display = 'inline-block';
-  document.getElementById('roundBadge').textContent = 'R' + ROUND_NO;
-
-  buildParamCards();
-  startTimer();
-  showState(2);
-}
-
-function buildParamCards() {
-  var container = document.getElementById('paramCards');
-  container.innerHTML = '';
-
-  if (PARAMS.length === 0) {
-    container.innerHTML = '<div class="empty-state"><span class="icon">&#128203;</span>No parameters configured for this product.</div>';
-    return;
-  }
-
-  PARAMS.forEach(function(p, idx) {
-    var card = document.createElement('div');
-    card.className = 'param-card' + (idx === 0 ? ' highlight' : '');
-    card.id = 'pcard_' + idx;
-
-    var hdr = document.createElement('div');
-    hdr.className = 'pc-header';
-
-    var num = document.createElement('div');
-    num.className = 'pc-num';
-    num.textContent = idx + 1;
-
-    var nameWrap = document.createElement('div');
-    nameWrap.style.flex = '1';
-    nameWrap.style.minWidth = '0';
-
-    var nameEl = document.createElement('div');
-    nameEl.className = 'pc-name';
-    nameEl.textContent = p.paramName;
-
-    var stdEl = document.createElement('div');
-    stdEl.className = 'pc-std';
-    if (p.stdValue !== '' && p.stdValue !== null && p.stdValue !== undefined) {
-      var t = 'Std: ' + p.stdValue;
-      if (p.unit) t += ' ' + p.unit;
-      if (p.tolMin !== '' && p.tolMax !== '') t += ' (' + p.tolMin + '–' + p.tolMax + ')';
-      stdEl.textContent = t;
-    } else {
-      stdEl.textContent = p.checkBrief || p.methodType || '';
-    }
-    nameWrap.appendChild(nameEl);
-    nameWrap.appendChild(stdEl);
-
-    var statusEl = document.createElement('div');
-    statusEl.className = 'pc-status';
-    statusEl.id = 'pcstatus_' + idx;
-    statusEl.textContent = '○';
-
-    hdr.appendChild(num);
-    hdr.appendChild(nameWrap);
-    hdr.appendChild(statusEl);
-    card.appendChild(hdr);
-
-    var body = document.createElement('div');
-    body.className = 'pc-body';
-    body.id = 'pcbody_' + idx;
-
-    var tapRow = document.createElement('div');
-    tapRow.className = 'tap-row';
-
-    [
-      { val: 'OK', cls: 'pass', label: '✓ OK' },
-      { val: 'NG', cls: 'fail', label: '✗ NG' },
-      { val: 'NA', cls: 'na',   label: '— NA' }
-    ].forEach(function(opt) {
-      var btn = document.createElement('button');
-      btn.className = 'tap-btn';
-      btn.id = 'tap_' + idx + '_' + opt.val;
-      btn.textContent = opt.label;
-      btn.addEventListener('click', (function(i, v, c) {
-        return function() { tapResult(i, v, c); };
-      })(idx, opt.val, opt.cls));
-      tapRow.appendChild(btn);
-    });
-    body.appendChild(tapRow);
-
-    var remark = document.createElement('textarea');
-    remark.className = 'pc-remark';
-    remark.id = 'pcremark_' + idx;
-    remark.placeholder = 'Describe the issue… (required for NG)';
-    remark.rows = 2;
-    body.appendChild(remark);
-
-    var remarkHint = document.createElement('div');
-    remarkHint.className = 'pc-remark-hint';
-    remarkHint.id = 'pcremarkhint_' + idx;
-    remarkHint.textContent = 'Remark required for NG.';
-    body.appendChild(remarkHint);
-
-    card.appendChild(body);
-    container.appendChild(card);
-  });
-
-  updateProgress();
-}
-
-function tapResult(idx, val, cls) {
-  ROUND_DATA[idx].result = val;
-
-  ['OK', 'NG', 'NA'].forEach(function(v) {
-    var btn = document.getElementById('tap_' + idx + '_' + v);
-    if (!btn) return;
-    if (v === val) {
-      btn.className = 'tap-btn ' + cls;
-    } else {
-      btn.className = 'tap-btn';
-    }
-  });
-
-  var statusEl = document.getElementById('pcstatus_' + idx);
-  if (statusEl) {
-    statusEl.textContent = val === 'OK' ? '✓' : (val === 'NG' ? '✗' : '—');
-    statusEl.className = 'pc-status ' + val.toLowerCase();
-  }
-
-  var remarkEl = document.getElementById('pcremark_' + idx);
-  var hintEl   = document.getElementById('pcremarkhint_' + idx);
-  if (remarkEl) remarkEl.style.display = (val === 'NG') ? 'block' : 'none';
-  if (val !== 'NG') { ROUND_DATA[idx].remark = ''; }
-
-  var card = document.getElementById('pcard_' + idx);
-  if (card) card.classList.remove('highlight');
-
-  var nextIdx = -1;
-  for (var i = idx + 1; i < PARAMS.length; i++) {
-    if (!ROUND_DATA[i].result) { nextIdx = i; break; }
-  }
-  if (nextIdx === -1) {
-    for (var j = 0; j < idx; j++) {
-      if (!ROUND_DATA[j].result) { nextIdx = j; break; }
-    }
-  }
-  if (nextIdx !== -1) {
-    var nextCard = document.getElementById('pcard_' + nextIdx);
-    if (nextCard) {
-      nextCard.classList.add('highlight');
-      setTimeout(function() {
-        nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 80);
-    }
-  }
-
-  updateProgress();
-}
-
-function updateProgress() {
-  var answered = ROUND_DATA.filter(function(d) { return !!d.result; }).length;
-  var total = PARAMS.length;
-  var pct = total > 0 ? Math.round((answered / total) * 100) : 0;
-  var fill = document.getElementById('progressFill');
-  if (fill) fill.style.width = pct + '%';
-}
-
-function startTimer() {
-  stopTimer();
-  ROUND_START_TS = new Date();
-  ROUND_ELAPSED_S = 0;
-  timerInterval = setInterval(function() {
-    ROUND_ELAPSED_S = Math.floor((new Date() - ROUND_START_TS) / 1000);
-    var m = Math.floor(ROUND_ELAPSED_S / 60);
-    var s = ROUND_ELAPSED_S % 60;
-    var el = document.getElementById('timerDisplay');
-    if (el) el.textContent = pad2(m) + ':' + pad2(s);
-  }, 1000);
-}
-
-function stopTimer() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-}
-
-function pad2(n) { return n < 10 ? '0' + n : '' + n; }
-
-function formatHms(s) {
-  var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  return pad2(h) + ':' + pad2(m) + ':' + pad2(sec);
-}
-
-function fmtTime(dt) {
-  if (!dt) return '—';
-  return pad2(dt.getHours()) + ':' + pad2(dt.getMinutes()) + ':' + pad2(dt.getSeconds());
-}
-
-function saveRound() {
-  if (PARAMS.length === 0) {
-    doSaveRound([]);
-    return;
-  }
-
-  var unanswered = [];
-  ROUND_DATA.forEach(function(d, idx) {
-    if (!d.result) unanswered.push(idx);
-  });
-  if (unanswered.length > 0) {
-    showToast(unanswered.length + ' parameter(s) still need a result.', 'error');
-    var card = document.getElementById('pcard_' + unanswered[0]);
-    if (card) {
-      card.classList.add('highlight');
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    return;
-  }
-
-  var missingRemark = false;
-  ROUND_DATA.forEach(function(d, idx) {
-    if (d.result === 'NG') {
-      var remarkEl = document.getElementById('pcremark_' + idx);
-      var val = remarkEl ? remarkEl.value.trim() : '';
-      d.remark = val;
-      if (!val) {
-        missingRemark = true;
-        if (remarkEl) remarkEl.className = 'pc-remark req';
-        var hintEl = document.getElementById('pcremarkhint_' + idx);
-        if (hintEl) hintEl.className = 'pc-remark-hint show';
-        if (remarkEl) remarkEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    } else {
-      var remarkEl2 = document.getElementById('pcremark_' + idx);
-      d.remark = remarkEl2 ? remarkEl2.value.trim() : '';
-    }
-  });
-  if (missingRemark) {
-    showToast('Please add remarks for all NG parameters.', 'error');
-    return;
-  }
-
-  doSaveRound(ROUND_DATA);
-}
-
-function doSaveRound(params) {
-  stopTimer();
-  var endTs = new Date();
-  var startDisplay = ROUND_START_TS ? fmtTime(ROUND_START_TS) : '—';
-  var endDisplay   = fmtTime(endTs);
-  var elapsed      = ROUND_ELAPSED_S;
-
-  var btn = document.getElementById('btnSaveRound');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Saving…';
-  }
-
-  var roundPayload = {
-    productCode:     SESSION_PRODUCT_CODE,
-    batch:           SESSION_BATCH,
-    params:          params,
-    periodStartTime: startDisplay,
-    periodEndTime:   endDisplay,
-    elapsedHms:      formatHms(elapsed),
-    avgWeight:       ''
-  };
-
-  showLoading('Saving round…');
-  google.script.run
-    .withSuccessHandler(function(res) {
-      hideLoading();
-      if (btn) { btn.disabled = false; btn.textContent = '✓ Save Round'; }
       if (!res.ok) {
-        showToast('Save error: ' + (res.error || 'Unknown error'), 'error');
-        startTimer();
+        hideLoading();
+        btn.disabled = false;
+        btn.textContent = 'START INSPECTION →';
+        showToast(res.error || 'Could not start session.', 'error');
         return;
       }
-      var savedRound = ROUND_NO;
-      ROUND_NO = res.roundNo + 1;
+      SESSION_ID = res.sessionId;
+      ROUND_NO   = res.resumed ? ((res.rounds || 0) + 1) : 1;
+      ALL_ROUNDS = [];
+      SESSION_SAVED = false;
 
-      if (DWM_SESSION_ID && SESSION_ID) {
-        google.script.run
-          .withFailureHandler(function() {})
-          .autoQmsTask_(
-            DWM_SESSION_ID, 'IPQC',
-            'IPQC: ' + SESSION_LINE + ' — Round ' + savedRound,
-            SESSION_ID
-          );
-      }
+      // Load params then trigger DWM task
+      google.script.run
+        .withSuccessHandler(function(pr) {
+          hideLoading();
+          btn.disabled = false;
+          btn.textContent = 'START INSPECTION →';
 
-      var ok = 0, ng = 0, na = 0;
-      params.forEach(function(d) {
-        if (d.result === 'OK') ok++;
-        else if (d.result === 'NG') ng++;
-        else na++;
-      });
-      SESSION_TOTAL_OK += ok;
-      SESSION_TOTAL_NG += ng;
-      SESSION_TOTAL_NA += na;
+          PARAMS = pr.params || [];
+          if (pr.warning && PARAMS.length === 0) {
+            showToast('No control plan params for this product.', 'error');
+          }
 
-      showRoundSummary(savedRound, ok, ng, na, params);
+          // Fire DWM task (non-blocking)
+          if (DWM_SESSION_ID) {
+            google.script.run
+              .withSuccessHandler(function(tr) {
+                if (tr && tr.taskId) { TASK_ID = tr.taskId; }
+              })
+              .withFailureHandler(function() {})
+              .autoQmsTask_(
+                DWM_SESSION_ID,
+                'IPQC',
+                'IPQC: ' + SEL_PRODUCT_CODE + ' — Batch ' + BATCH_NO,
+                SESSION_ID
+              );
+          }
+
+          beginRound();
+        })
+        .withFailureHandler(function(e) {
+          hideLoading();
+          btn.disabled = false;
+          btn.textContent = 'START INSPECTION →';
+          showToast('Could not load params: ' + e.message, 'error');
+          PARAMS = [];
+          beginRound();
+        })
+        .getIPQCParams(SEL_PRODUCT_CODE);
     })
     .withFailureHandler(function(e) {
       hideLoading();
-      if (btn) { btn.disabled = false; btn.textContent = '✓ Save Round'; }
+      btn.disabled = false;
+      btn.textContent = 'START INSPECTION →';
       showToast('Error: ' + e.message, 'error');
-      startTimer();
+    })
+    .startSession({
+      productCode: SEL_PRODUCT_CODE,
+      productName: SEL_PRODUCT_NAME,
+      batch:       BATCH_NO,
+      inspector:   INSPECTOR,
+      line:        SEL_PRODUCT_CODE
+    });
+}
+
+// ── State 3: Record round ──────────────────────────────────────────────────
+function beginRound() {
+  CURRENT_PARAM_IDX = 0;
+  CURRENT_ROUND_RESULTS = [];
+  for (var i = 0; i < PARAMS.length; i++) {
+    CURRENT_ROUND_RESULTS.push({ result: '', remark: '' });
+  }
+  renderParam(0);
+  showState(3);
+}
+
+function renderParam(idx) {
+  CURRENT_PARAM_IDX = idx;
+  var total = PARAMS.length;
+
+  // Sub-header
+  document.getElementById('roundSubTitle').textContent =
+    'Round ' + ROUND_NO + ' — ' + truncate(SEL_PRODUCT_NAME, 20);
+  document.getElementById('progressPill').textContent = (idx + 1) + '/' + total;
+
+  // Progress bar
+  var pct = total > 0 ? Math.round((idx / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  // Param card content
+  if (total === 0) {
+    document.getElementById('paramName').textContent = 'No parameters configured';
+    document.getElementById('paramSpec').textContent = '';
+  } else {
+    var p = PARAMS[idx];
+    document.getElementById('paramName').textContent = p.paramName || p.paramCode;
+    var spec = '';
+    if (p.stdValue !== null && p.stdValue !== undefined && p.stdValue !== '') {
+      spec = 'Std: ' + p.stdValue;
+      if (p.unit) spec += ' ' + p.unit;
+      if (p.tolMin !== '' && p.tolMin !== null && p.tolMax !== '' && p.tolMax !== null) {
+        spec += ' (' + p.tolMin + '–' + p.tolMax + ')';
+      }
+    } else if (p.checkBrief) {
+      spec = p.checkBrief;
+    }
+    document.getElementById('paramSpec').textContent = spec;
+  }
+
+  // Restore any previously recorded result for this param
+  var saved = CURRENT_ROUND_RESULTS[idx];
+  setToggleState(saved ? saved.result : '');
+  document.getElementById('remarkTextarea').value = (saved && saved.remark) ? saved.remark : '';
+
+  // Card fail state
+  var card = document.getElementById('paramCard');
+  if (saved && saved.result === 'FAIL') {
+    card.classList.add('fail-state');
+  } else {
+    card.classList.remove('fail-state');
+  }
+
+  // Bottom bar
+  document.getElementById('barParamLabel').textContent = 'Param ' + (idx + 1) + ' of ' + total;
+  var isLast = (idx === total - 1);
+  var nextBtn = document.getElementById('btnNext');
+  nextBtn.textContent = isLast ? 'Review Round →' : 'Next →';
+  nextBtn.disabled = !(saved && saved.result);
+}
+
+function setToggleState(result) {
+  var btnPass = document.getElementById('btnPass');
+  var btnFail = document.getElementById('btnFail');
+  var btnNA   = document.getElementById('btnNA');
+  btnPass.className = 'pf-toggle-btn' + (result === 'PASS' ? ' sel-pass' : '');
+  btnFail.className = 'pf-toggle-btn' + (result === 'FAIL' ? ' sel-fail' : '');
+  btnNA.className   = 'pf-toggle-btn' + (result === 'NA'   ? ' sel-na'   : '');
+}
+
+function selectResult(result) {
+  var idx = CURRENT_PARAM_IDX;
+  if (!CURRENT_ROUND_RESULTS[idx]) return;
+
+  CURRENT_ROUND_RESULTS[idx].result    = result;
+  CURRENT_ROUND_RESULTS[idx].timestamp = new Date().toISOString();
+
+  setToggleState(result);
+
+  var card = document.getElementById('paramCard');
+  if (result === 'FAIL') {
+    card.classList.add('fail-state');
+  } else {
+    card.classList.remove('fail-state');
+  }
+
+  document.getElementById('btnNext').disabled = false;
+}
+
+function handleNext() {
+  var idx = CURRENT_PARAM_IDX;
+  // Save remark
+  if (CURRENT_ROUND_RESULTS[idx]) {
+    CURRENT_ROUND_RESULTS[idx].remark = document.getElementById('remarkTextarea').value.trim();
+  }
+
+  var result = CURRENT_ROUND_RESULTS[idx] ? CURRENT_ROUND_RESULTS[idx].result : '';
+  if (!result) {
+    // Shake card
+    shakeCard();
+    return;
+  }
+
+  var total = PARAMS.length;
+  if (idx < total - 1) {
+    renderParam(idx + 1);
+  } else {
+    // Last param — go to summary
+    showRoundSummary();
+  }
+}
+
+function shakeCard() {
+  var card = document.getElementById('paramCard');
+  card.classList.remove('do-shake');
+  // Force reflow
+  void card.offsetWidth;
+  card.classList.add('do-shake');
+  setTimeout(function() { card.classList.remove('do-shake'); }, 350);
+}
+
+// ── State 4: Round summary ─────────────────────────────────────────────────
+function showRoundSummary() {
+  // Save last remark
+  var idx = CURRENT_PARAM_IDX;
+  if (CURRENT_ROUND_RESULTS[idx]) {
+    CURRENT_ROUND_RESULTS[idx].remark = document.getElementById('remarkTextarea').value.trim();
+  }
+
+  var now = new Date();
+  var timeStr = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+
+  // Session strip
+  document.getElementById('s4StripLine1').textContent =
+    SEL_PRODUCT_NAME + ' — Batch ' + BATCH_NO;
+  document.getElementById('s4StripLine2').textContent =
+    'Round ' + ROUND_NO + '  ·  ' + INSPECTOR + '  ·  ' + timeStr;
+
+  // Count results
+  var passCount = 0, failCount = 0, naCount = 0;
+  for (var i = 0; i < CURRENT_ROUND_RESULTS.length; i++) {
+    var r = CURRENT_ROUND_RESULTS[i].result;
+    if (r === 'PASS') passCount++;
+    else if (r === 'FAIL') failCount++;
+    else naCount++;
+  }
+
+  // Result banner
+  var banner = document.getElementById('roundResultBanner');
+  if (failCount > 0) {
+    banner.className = 'round-result-banner fail';
+    banner.textContent = 'Round ' + ROUND_NO + ': FAIL — ' +
+      failCount + ' failed out of ' + PARAMS.length;
+  } else {
+    banner.className = 'round-result-banner pass';
+    banner.textContent = 'Round ' + ROUND_NO + ': PASS — ' +
+      passCount + ' passed' + (naCount > 0 ? ', ' + naCount + ' N/A' : '');
+  }
+
+  // Param rows
+  var list = document.getElementById('paramsSummaryList');
+  list.innerHTML = '';
+  for (var j = 0; j < PARAMS.length; j++) {
+    var p = PARAMS[j];
+    var rr = CURRENT_ROUND_RESULTS[j] || { result: 'NA', remark: '' };
+    var row = document.createElement('div');
+    row.className = 'ps-param-row';
+    row.style.animationDelay = (j * 30) + 'ms';
+
+    var top = document.createElement('div');
+    top.className = 'ps-param-top';
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'ps-param-name';
+    nameEl.textContent = p.paramName || p.paramCode;
+
+    var badge = document.createElement('span');
+    var res = rr.result || 'NA';
+    badge.className = 'ps-result-badge ' +
+      (res === 'PASS' ? 'ps-result-pass' : (res === 'FAIL' ? 'ps-result-fail' : 'ps-result-na'));
+    badge.textContent = res;
+
+    top.appendChild(nameEl);
+    top.appendChild(badge);
+    row.appendChild(top);
+
+    if (rr.remark) {
+      var rem = document.createElement('div');
+      rem.className = 'ps-param-remark';
+      rem.textContent = rr.remark;
+      row.appendChild(rem);
+    }
+
+    list.appendChild(row);
+  }
+
+  // Header
+  document.getElementById('headerTitle').textContent = 'Round ' + ROUND_NO + ' Summary';
+
+  showState(4);
+}
+
+function startAnotherRound() {
+  // Stash completed round
+  stashCurrentRound();
+  ROUND_NO++;
+  document.getElementById('headerTitle').textContent = 'IPQC';
+  beginRound();
+}
+
+function stashCurrentRound() {
+  var params = [];
+  for (var i = 0; i < PARAMS.length; i++) {
+    var p = PARAMS[i];
+    var rr = CURRENT_ROUND_RESULTS[i] || { result: 'NA', remark: '' };
+    params.push({
+      paramCode: p.paramCode,
+      paramName: p.paramName,
+      result:    rr.result || 'NA',
+      remark:    rr.remark || '',
+      timestamp: rr.timestamp || new Date().toISOString()
+    });
+  }
+  ALL_ROUNDS.push({ roundNo: ROUND_NO, params: params });
+}
+
+// ── Close Session flow ────────────────────────────────────────────────────
+function closeSession() {
+  // Stash the last round that was summarised
+  stashCurrentRound();
+
+  var btn = document.getElementById('btnCloseSession');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  // Step 1: stopTimer if DWM task exists
+  if (TASK_ID && DWM_SESSION_ID) {
+    try {
+      google.script.run
+        .withFailureHandler(function() {})
+        .stopTimer(TASK_ID, DWM_SESSION_ID);
+    } catch(e) {}
+  }
+
+  // Step 2: saveRound for each round sequentially, then closeSession
+  showLoading('Saving session…');
+  saveRoundSequential(0);
+}
+
+function saveRoundSequential(idx) {
+  if (idx >= ALL_ROUNDS.length) {
+    // All rounds saved — now close session
+    doCloseSession();
+    return;
+  }
+
+  var round = ALL_ROUNDS[idx];
+  var roundPayload = {
+    productCode: SEL_PRODUCT_CODE,
+    batch:       BATCH_NO,
+    params:      round.params,
+    elapsedHms:  '',
+    periodStartTime: '',
+    periodEndTime:   '',
+    avgWeight:   ''
+  };
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) {
+        // Non-fatal: log and continue
+        showToast('Round ' + round.roundNo + ' warning: ' + (res.error || 'unknown'), 'error');
+      }
+      saveRoundSequential(idx + 1);
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      showToast('Error saving round ' + round.roundNo + ': ' + e.message, 'error');
+      // Restore button so user can retry
+      var btn = document.getElementById('btnCloseSession');
+      if (btn) { btn.disabled = false; btn.textContent = 'Close Session'; }
     })
     .saveRound(SESSION_ID, roundPayload);
 }
 
-function showRoundSummary(roundNo, ok, ng, na, params) {
-  document.getElementById('rsSummaryMeta').textContent =
-    SESSION_PRODUCT_NAME + ' · ' + SESSION_BATCH + ' · ' + SESSION_LINE;
-  document.getElementById('rsCountOk').textContent = ok;
-  document.getElementById('rsCountNg').textContent = ng;
-  document.getElementById('rsCountNa').textContent = na;
-
-  var hero = document.getElementById('rsSummaryHero');
-  hero.style.background = ng > 0 ? 'var(--danger)' : 'var(--navy)';
-
-  var list = document.getElementById('rsParamList');
-  list.innerHTML = '';
-  if (params.length === 0) {
-    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;">No parameters checked.</div>';
-  } else {
-    params.forEach(function(d) {
-      var item = document.createElement('div');
-      item.className = 'rs-param-item';
-
-      var name = document.createElement('div');
-      name.className = 'rs-param-name';
-      name.textContent = d.paramName || d.paramCode;
-
-      var res = document.createElement('span');
-      res.className = 'rs-param-result ' +
-        (d.result === 'OK' ? 'rs-result-ok' : (d.result === 'NG' ? 'rs-result-ng' : 'rs-result-na'));
-      res.textContent = d.result || 'NA';
-
-      item.appendChild(name);
-      item.appendChild(res);
-      list.appendChild(item);
-    });
-  }
-
-  var rsBadge = document.getElementById('roundBadge');
-  if (rsBadge) rsBadge.textContent = 'R' + roundNo + ' Done';
-  document.getElementById('headerTitle').textContent = 'Round ' + roundNo + ' Summary';
-
-  showState(3);
-}
-
-function nextRound() {
-  document.getElementById('headerTitle').textContent = '⚙ IPQC';
-  enterRound();
-}
-
-function closeIPQCSession() {
-  var saveBtn = document.getElementById('btnSaveRound');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<span class="spinner"></span> Closing…'; }
-
-  showLoading('Closing session…');
+function doCloseSession() {
   google.script.run
     .withSuccessHandler(function(res) {
       hideLoading();
-      if (!res.ok) {
-        showToast('Warning: ' + (res.error || 'Could not close session.'), 'error');
-      }
-      showFinalSummary();
+      SESSION_SAVED = true;
+      showToast('IPQC session saved', 'success');
+      setTimeout(function() { navigateToLanding(); }, 1500);
     })
     .withFailureHandler(function(e) {
       hideLoading();
-      showToast('Error closing session: ' + e.message, 'error');
-      showFinalSummary();
+      SESSION_SAVED = true; // don't re-save on unload
+      showToast('Session saved (close warning: ' + e.message + ')', 'error');
+      var btn = document.getElementById('btnCloseSession');
+      if (btn) { btn.disabled = false; btn.textContent = 'Close Session'; }
     })
     .closeSession(SESSION_ID);
 }
 
-function showFinalSummary() {
-  stopTimer();
-  var completedRounds = ROUND_NO - 1;
-  document.getElementById('finalMeta').textContent =
-    SESSION_PRODUCT_NAME + ' · Batch ' + SESSION_BATCH;
-  document.getElementById('finalRounds').textContent = completedRounds;
-  document.getElementById('finalOk').textContent = SESSION_TOTAL_OK;
-  document.getElementById('finalNg').textContent = SESSION_TOTAL_NG;
-  document.getElementById('finalNa').textContent = SESSION_TOTAL_NA;
+// ── Navigation ────────────────────────────────────────────────────────────
+function handleHeaderBack() {
+  var visible = getVisibleState();
+  if (visible === 2) {
+    showState(1);
+    document.getElementById('headerTitle').textContent = 'IPQC';
+  } else if (visible === 3) {
+    if (CURRENT_PARAM_IDX > 0) {
+      // Save current remark before going back
+      var idx = CURRENT_PARAM_IDX;
+      if (CURRENT_ROUND_RESULTS[idx]) {
+        CURRENT_ROUND_RESULTS[idx].remark = document.getElementById('remarkTextarea').value.trim();
+      }
+      renderParam(CURRENT_PARAM_IDX - 1);
+    } else {
+      showState(2);
+    }
+  } else if (visible === 4) {
+    // Back to last param of current round
+    renderParam(PARAMS.length > 0 ? PARAMS.length - 1 : 0);
+    showState(3);
+  }
+}
 
-  document.getElementById('roundBadge').style.display = 'none';
-  document.getElementById('headerBackBtn').style.display = 'none';
-  document.getElementById('headerTitle').textContent = 'Session Complete';
-  showState(4);
+function getVisibleState() {
+  for (var i = 1; i <= 4; i++) {
+    var el = document.getElementById('state' + i);
+    if (el && el.style.display !== 'none') return i;
+  }
+  return 1;
 }
 
 function showState(n) {
-  [1, 2, 3, 4].forEach(function(i) {
+  for (var i = 1; i <= 4; i++) {
     var el = document.getElementById('state' + i);
     if (el) el.style.display = (i === n) ? 'block' : 'none';
-  });
+  }
   var backBtn = document.getElementById('headerBackBtn');
+  var badge   = document.getElementById('headerBadge');
+
   if (n === 1) {
     backBtn.style.display = 'none';
-    document.getElementById('headerTitle').textContent = '⚙ IPQC';
-    document.getElementById('roundBadge').style.display = 'none';
+    badge.style.display   = 'inline-block';
+    document.getElementById('headerTitle').textContent = 'IPQC';
   } else if (n === 2) {
-    backBtn.style.display = 'none';
-    document.getElementById('roundBadge').style.display = 'inline-block';
+    backBtn.style.display = 'flex';
+    badge.style.display   = 'inline-block';
+    // title set in goToState2
   } else if (n === 3) {
-    backBtn.style.display = 'none';
-    document.getElementById('roundBadge').style.display = 'inline-block';
+    backBtn.style.display = 'flex';
+    badge.style.display   = 'none';
+    // title set in renderParam / roundSubHdr
+    document.getElementById('headerTitle').textContent = 'IPQC';
+  } else if (n === 4) {
+    backBtn.style.display = 'flex';
+    badge.style.display   = 'inline-block';
   }
+
   window.scrollTo(0, 0);
 }
 
-function headerBack() {
-  showState(1);
+function navigateToLanding() {
+  google.script.run
+    .withSuccessHandler(function(html) {
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .withFailureHandler(function() {
+      showToast('Could not navigate home.', 'error');
+    })
+    .getFormHtml('Landing');
 }
 
+// ── Beforeunload guard ────────────────────────────────────────────────────
 window.addEventListener('beforeunload', function(e) {
-  if (timerInterval) stopTimer();
-  var s2 = document.getElementById('state2');
-  if (s2 && s2.style.display !== 'none' && PARAMS.length > 0) {
+  if (SESSION_SAVED) return;
+  var state = getVisibleState();
+  if (TASK_ID && DWM_SESSION_ID && !SESSION_SAVED) {
+    try {
+      google.script.run
+        .withFailureHandler(function() {})
+        .stopTimer(TASK_ID, DWM_SESSION_ID);
+    } catch(ee) {}
+  }
+  if ((state === 3 || state === 4) && SESSION_ID) {
     e.preventDefault();
     e.returnValue = '';
   }
 });
 
+// ── Utilities ─────────────────────────────────────────────────────────────
 function showLoading(msg) {
   document.getElementById('loadingMsg').textContent = msg || 'Loading…';
   document.getElementById('loading').classList.remove('hidden');
@@ -1092,6 +1141,18 @@ function showToast(msg, type) {
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function truncate(str, max) {
+  if (!str) return '';
+  return str.length > max ? str.substring(0, max) + '…' : str;
+}
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 </script>
 </body>
