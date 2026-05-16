@@ -7,6 +7,87 @@
 // and verdict. No prompts. No re-runs needed.
 // ============================================================
 
+// Probe the EXACT server path for one material code. Run from the script
+// editor: traceFormPathForMaterial('1712485') — outputs to Logger AND
+// writes a fresh '_PROD_TRACE' sheet.
+function traceFormPathForMaterial(materialCode) {
+  var ss = getSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  if (!materialCode) {
+    var resp = ui.prompt('Trace lot fetch', 'Material code to trace:', ui.ButtonSet.OK_CANCEL);
+    if (resp.getSelectedButton() !== ui.Button.OK) return;
+    materialCode = String(resp.getResponseText() || '').trim();
+  }
+  if (!materialCode) return;
+
+  var rows = [['Step','Detail']];
+  rows.push(['Input materialCode (string)', JSON.stringify(materialCode)]);
+
+  // Step A: getProductionFormInit materials
+  var init = getProductionFormInit();
+  var found = (init.materials || []).filter(function(m){ return m.code === materialCode; });
+  rows.push(['Found in getProductionFormInit().materials?', found.length > 0 ? JSON.stringify(found[0]) : '— NOT FOUND —']);
+
+  // Step B: getFIFOLots
+  var fifo = getFIFOLots(materialCode);
+  rows.push(['getFIFOLots count', fifo.length]);
+  fifo.forEach(function(l, i){
+    rows.push(['  fifo['+i+']', JSON.stringify({mat:l.materialCode, batch:l.batchOrLotNo, loc:l.locationId, bal:l.balance})]);
+  });
+
+  // Step C: getProductionLotsForMaterial (what form actually calls)
+  var lots = getProductionLotsForMaterial(materialCode);
+  rows.push(['getProductionLotsForMaterial count', lots.length]);
+  lots.forEach(function(l, i){
+    rows.push(['  api['+i+']', JSON.stringify(l)]);
+  });
+
+  // Step D: dump matching ledger rows
+  var ledWs = ss.getSheetByName('STOCK_LEDGER');
+  if (ledWs && ledWs.getLastRow() > 1) {
+    var l = ledWs.getDataRange().getValues();
+    var matches = 0;
+    for (var i = 1; i < l.length; i++) {
+      if (String(l[i][3]).trim() === materialCode) {
+        matches++;
+        if (matches <= 10) {
+          rows.push(['  ledger row '+(i+1), JSON.stringify({type:l[i][2], mat:l[i][3], batch:l[i][4], loc:l[i][5], qin:l[i][6], qout:l[i][7]})]);
+        }
+      }
+    }
+    rows.push(['Matching ledger rows total', matches]);
+  }
+
+  // Step E: dump matching GRN rows
+  var grnWs = ss.getSheetByName('GRN_LOG');
+  if (grnWs && grnWs.getLastRow() > 1) {
+    var g = grnWs.getDataRange().getValues();
+    var gMatches = 0;
+    for (var j = 1; j < g.length; j++) {
+      if (String(g[j][6]).trim() === materialCode) {
+        gMatches++;
+        if (gMatches <= 5) {
+          rows.push(['  GRN row '+(j+1), JSON.stringify({docNo:g[j][0], mat:g[j][6], batch:g[j][8], qty:g[j][10], loc:g[j][20]})]);
+        }
+      }
+    }
+    rows.push(['Matching GRN rows total', gMatches]);
+  }
+
+  var sh = ss.getSheetByName('_PROD_TRACE');
+  if (sh) ss.deleteSheet(sh);
+  sh = ss.insertSheet('_PROD_TRACE');
+  sh.getRange(1,1,rows.length,2).setValues(rows);
+  sh.getRange(1,1,1,2).setFontWeight('bold').setBackground('#0B2A4A').setFontColor('#FFFFFF');
+  sh.setColumnWidth(1, 280); sh.setColumnWidth(2, 800);
+  sh.setFrozenRows(1);
+
+  ui.alert('Trace written to _PROD_TRACE sheet for: ' + materialCode +
+    '\n\nFIFO returned: ' + fifo.length + ' lot(s)' +
+    '\nAPI returned: ' + lots.length + ' lot(s)',
+    ui.ButtonSet.OK);
+}
+
 function runProductionDiagnostics() {
   var ss = getSpreadsheet();
   var ui = SpreadsheetApp.getUi();
@@ -236,6 +317,33 @@ function runProductionDiagnostics() {
     if (bg) diagSheet.getRange(rr+2, 4).setBackground(bg);
   }
   diagSheet.autoResizeColumn(4);
+
+  // ---------- 9.5 End-to-end form-path simulation ----------
+  // Mirror exactly what the Production form does:
+  //  (a) call getProductionFormInit, pull the materials list
+  //  (b) for each material, call getProductionLotsForMaterial with the
+  //      code string the form would post, and report the result.
+  try {
+    var initData = getProductionFormInit();
+    var mats2 = (initData && initData.materials) || [];
+    add('9.5 Form path', 'Materials returned by getProductionFormInit', mats2.length,
+      mats2.length > 0 ? 'OK' : 'FAIL');
+    var hits = 0, misses = [];
+    mats2.forEach(function(m){
+      var code = m.code || '';
+      if (!code) return;
+      var lotsFromAPI = getProductionLotsForMaterial(code);
+      if (lotsFromAPI && lotsFromAPI.length > 0) hits++;
+      else if (posBalByMat[code]) misses.push(code); // had positive balance but API returned 0
+    });
+    add('9.5 Form path', 'Materials whose API returns ≥1 lot', hits,
+      hits > 0 ? 'OK' : 'FAIL');
+    add('9.5 Form path', 'Materials w/ positive balance but API returns 0',
+      misses.length === 0 ? '(none)' : misses.slice(0,10).join(', '),
+      misses.length === 0 ? 'OK' : 'FAIL — getProductionLotsForMaterial drops them');
+  } catch(formErr) {
+    add('9.5 Form path', 'Simulation error', formErr.message, 'FAIL');
+  }
 
   // ---------- Final alert ----------
   var verdict = gateReady > 0

@@ -156,12 +156,13 @@
             <div id="lotList" class="prd-lots">
               <div class="prd-empty"><div class="prd-empty-icon">📦</div>Select a material to see lots.</div>
             </div>
+            <div id="totalAvail" style="text-align:right;font-size:11px;color:#666;margin-top:4px;"></div>
           </div>
 
           <div class="prd-grid2">
             <div class="prd-field">
-              <label>Qty to Issue</label>
-              <input type="number" id="fQty" min="0" step="any" />
+              <label>Qty to Issue (total)</label>
+              <input type="number" id="fQty" min="0" step="any" placeholder="auto-split FIFO" />
             </div>
             <div class="prd-field">
               <label>Issued By</label>
@@ -174,7 +175,12 @@
             <input id="fRemarks" placeholder="e.g. batch start, override note" />
           </div>
 
-          <button class="prd-save" id="btnIssue" onclick="issueRM()">Issue RM to Production</button>
+          <div id="planBox" style="display:none;margin-top:6px;padding:10px;background:#f7faff;border:1px solid #cfdcef;border-radius:6px;font-size:12px;">
+            <div style="font-weight:700;color:var(--navy);margin-bottom:6px;">FIFO Allocation Plan</div>
+            <div id="planRows"></div>
+          </div>
+
+          <button class="prd-save" id="btnIssue" onclick="issueRM()">Plan FIFO Allocation</button>
         </div>
       </div>
 
@@ -227,7 +233,7 @@
             (data.materials || []).map(function(m){
               var code = m.code || m.itemCode || '';
               var desc = m.desc || m.name || m.itemDescription || '';
-              var label = desc ? (desc + (code && code !== desc ? ' (' + code + ')' : '')) : code;
+              var label = code + (desc ? ' — ' + desc : '');
               return '<option value="' + escapeHtml(code) + '" data-unit="' + escapeHtml(m.unit || '') + '">' +
                      escapeHtml(label) + '</option>';
             }).join('');
@@ -246,6 +252,7 @@
     function onMaterialChange() {
       var code = document.getElementById('fMaterial').value;
       SELECTED = null;
+      if (typeof clearPlan === 'function') clearPlan();
       var box = document.getElementById('lotList');
       if (!code) {
         box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">📦</div>Select a material to see lots.</div>';
@@ -253,11 +260,18 @@
         LOTS = [];
         return;
       }
-      box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">⏳</div>Loading lots…</div>';
+      box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">⏳</div>Loading lots for code [' + escapeHtml(code) + ']…</div>';
       google.script.run
         .withSuccessHandler(function(lots){
-          LOTS = lots || [];
+          LOTS = Array.isArray(lots) ? lots : [];
           document.getElementById('lotCount').textContent = LOTS.length + ' lot' + (LOTS.length === 1 ? '' : 's');
+          if (!LOTS.length) {
+            // Show diagnostic so we know what went wrong instead of generic empty message
+            box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">🚫</div>' +
+              'Server returned 0 lots for code <b>[' + escapeHtml(code) + ']</b>.' +
+              '<br><br>Raw response: <code>' + escapeHtml(JSON.stringify(lots)) + '</code></div>';
+            return;
+          }
           renderLots();
         })
         .withFailureHandler(function(e){
@@ -266,21 +280,28 @@
         .getProductionLotsForMaterial(code);
     }
 
+    var CURRENT_PLAN = null;
+
     function renderLots() {
       var box = document.getElementById('lotList');
+      var totalEl = document.getElementById('totalAvail');
       if (!LOTS.length) {
         box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">🚫</div>No IQC-passed lots available for this material.</div>';
+        if (totalEl) totalEl.textContent = '';
         return;
       }
+      var totalIssuable = 0;
       box.innerHTML = LOTS.map(function(l, idx){
         var disp = l.iqcDisposition || 'PENDING';
         var dispCls = '';
-        if (disp === 'ACCEPTED' || disp === 'PASS') dispCls = '';
-        else if (disp === 'ACCEPTED WITH DEVIATION') dispCls = 'warn';
+        var issuable = false;
+        if (disp === 'ACCEPTED' || disp === 'PASS') { dispCls = ''; issuable = true; }
+        else if (disp === 'ACCEPTED WITH DEVIATION') { dispCls = 'warn'; issuable = true; }
         else dispCls = 'bad';
-        var dateStr = l.grnDate ? new Date(l.grnDate).toISOString().substring(0, 10) : '';
+        if (issuable) totalIssuable += Number(l.balance) || 0;
+        var dateStr = l.grnDate ? String(l.grnDate).substring(0, 10) : '';
         return [
-          '<div class="prd-lot" data-idx="' + idx + '" onclick="selectLot(' + idx + ')">',
+          '<div class="prd-lot" data-idx="' + idx + '">',
             '<div>',
               '<div class="prd-lot-batch">' + escapeHtml(l.batchOrLotNo) + ' ',
                 '<span class="prd-lot-disp ' + dispCls + '">' + escapeHtml(disp) + '</span>',
@@ -293,32 +314,82 @@
           '</div>'
         ].join('');
       }).join('');
+      if (totalEl) {
+        var matSel = document.getElementById('fMaterial');
+        var unit = matSel.selectedOptions[0] ? matSel.selectedOptions[0].dataset.unit : '';
+        totalEl.textContent = 'Total issuable (IQC-passed): ' + totalIssuable + ' ' + unit;
+      }
     }
 
-    function selectLot(idx) {
-      SELECTED = LOTS[idx] || null;
-      document.querySelectorAll('.prd-lot').forEach(function(el){
-        el.classList.toggle('selected', el.dataset.idx === String(idx));
-      });
+    function planFIFO(callback) {
+      var matSel = document.getElementById('fMaterial');
+      var code = matSel.value;
+      var qty = Number(document.getElementById('fQty').value);
+      if (!code) { showToast('Pick a material first', 'error'); return; }
+      if (!qty || qty <= 0) { showToast('Qty must be > 0', 'error'); return; }
+      google.script.run
+        .withSuccessHandler(function(res){ callback(res); })
+        .withFailureHandler(function(e){ showToast('Plan error: ' + (e.message || e), 'error'); })
+        .planFIFOAllocation(code, qty);
+    }
+
+    function renderPlan(plan, unit) {
+      var box = document.getElementById('planBox');
+      var rows = document.getElementById('planRows');
+      rows.innerHTML = plan.map(function(p, i){
+        return '<div style="display:grid;grid-template-columns:24px 1fr auto;gap:6px;padding:3px 0;border-bottom:1px dashed #d8e2f0;">' +
+          '<div style="color:#888;">' + (i+1) + '.</div>' +
+          '<div><b>' + escapeHtml(p.batchOrLotNo) + '</b> &nbsp;📍 ' + escapeHtml(p.locationId) +
+            ' &nbsp;·&nbsp; <span style="font-size:10px;color:#1a7a3a;">' + escapeHtml(p.iqcDisposition) + '</span></div>' +
+          '<div style="font-weight:700;color:var(--navy);">' + p.qtyFromThisLot + ' ' + escapeHtml(unit || '') + '</div>' +
+          '</div>';
+      }).join('');
+      box.style.display = '';
+    }
+
+    function clearPlan() {
+      CURRENT_PLAN = null;
+      document.getElementById('planBox').style.display = 'none';
+      document.getElementById('planRows').innerHTML = '';
+      var btn = document.getElementById('btnIssue');
+      btn.textContent = 'Plan FIFO Allocation';
     }
 
     function issueRM() {
-      if (!SELECTED) { showToast('Pick a lot first', 'error'); return; }
+      var btn = document.getElementById('btnIssue');
+      var matSel = document.getElementById('fMaterial');
+      var code = matSel.value;
+      var unit = matSel.selectedOptions[0] ? matSel.selectedOptions[0].dataset.unit : '';
       var qty = Number(document.getElementById('fQty').value);
-      if (!qty || qty <= 0) { showToast('Qty must be > 0', 'error'); return; }
-      if (qty > SELECTED.balance) { showToast('Qty exceeds balance (' + SELECTED.balance + ')', 'error'); return; }
       var issuedBy = document.getElementById('fIssuedBy').value;
-      if (!issuedBy) { showToast('Pick "Issued By"', 'error'); return; }
       var prodOrder = document.getElementById('fProdOrder').value.trim();
+
+      // Pre-flight checks
+      if (!code) { showToast('Pick a material', 'error'); return; }
+      if (!qty || qty <= 0) { showToast('Qty must be > 0', 'error'); return; }
+      if (!issuedBy) { showToast('Pick "Issued By"', 'error'); return; }
       if (!prodOrder) { showToast('Production Order No. required', 'error'); return; }
 
-      var matSel = document.getElementById('fMaterial');
-      var unit = matSel.selectedOptions[0] ? matSel.selectedOptions[0].dataset.unit : '';
+      // Stage 1: no plan yet → fetch plan and show preview
+      if (!CURRENT_PLAN) {
+        btn.disabled = true; btn.textContent = 'Planning…';
+        planFIFO(function(res){
+          btn.disabled = false;
+          if (!res || !res.success) {
+            showToast(res && res.error || 'Plan failed', 'error');
+            btn.textContent = 'Plan FIFO Allocation';
+            return;
+          }
+          CURRENT_PLAN = res.plan;
+          renderPlan(res.plan, unit);
+          btn.textContent = 'Confirm & Issue (' + res.lotCount + ' lot' + (res.lotCount === 1 ? '' : 's') + ')';
+        });
+        return;
+      }
 
+      // Stage 2: plan shown → confirm + execute
       var payload = {
-        materialCode:      SELECTED.materialCode,
-        batchOrLotNo:      SELECTED.batchOrLotNo,
-        locationId:        SELECTED.locationId,
+        materialCode:      code,
         qtyToIssue:        qty,
         unit:              unit,
         productionOrderNo: prodOrder,
@@ -326,27 +397,28 @@
         remarks:           document.getElementById('fRemarks').value.trim()
       };
 
-      var btn = document.getElementById('btnIssue');
       btn.disabled = true; btn.textContent = 'Issuing…';
       google.script.run
         .withSuccessHandler(function(res){
-          btn.disabled = false; btn.textContent = 'Issue RM to Production';
+          btn.disabled = false;
+          btn.textContent = 'Plan FIFO Allocation';
           if (!res || !res.success) {
             showToast('Failed: ' + (res && res.error || 'unknown'), 'error');
             return;
           }
-          showToast('Issued ' + qty + ' ' + unit + ' — ' + (res.issueId || ''));
+          showToast('Issued ' + qty + ' ' + unit + ' across ' + res.lotCount + ' lot(s) — ' + (res.issueId || ''));
           document.getElementById('fQty').value = '';
           document.getElementById('fRemarks').value = '';
-          SELECTED = null;
+          clearPlan();
           onMaterialChange();
           loadInit();
         })
         .withFailureHandler(function(e){
-          btn.disabled = false; btn.textContent = 'Issue RM to Production';
+          btn.disabled = false;
+          btn.textContent = 'Confirm & Issue';
           showToast('Error: ' + (e.message || e), 'error');
         })
-        .issueRMToProduction(payload);
+        .issueRMMultiLot(payload);
     }
 
     function reloadRecent() {
@@ -387,6 +459,9 @@
 
     document.addEventListener('DOMContentLoaded', function(){
       document.getElementById('fMaterial').addEventListener('change', onMaterialChange);
+      document.getElementById('fQty').addEventListener('input', function(){
+        if (CURRENT_PLAN) clearPlan();
+      });
     });
     window.addEventListener('load', loadInit);
   </script>

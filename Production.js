@@ -45,6 +45,7 @@ function getProductionFormInit() {
 // Returns FIFO-ordered, IQC-accepted, non-quarantine lots for one material
 // suitable to issue to production. Each lot includes its IQC disposition.
 function getProductionLotsForMaterial(materialCode) {
+  try {
   if (!materialCode) return [];
   var matKey = String(materialCode).trim();
   var lots = (typeof getFIFOLots === 'function') ? getFIFOLots(matKey) : [];
@@ -78,16 +79,22 @@ function getProductionLotsForMaterial(materialCode) {
   return lots.map(function(l){
     var grnNo = grnByBatch[l.batchOrLotNo] || '';
     var disp  = dispByGRN[grnNo] || 'PENDING';
+    var dateOut = '';
+    try { if (l.grnDate) dateOut = new Date(l.grnDate).toISOString(); } catch(e){}
     return {
-      materialCode:  l.materialCode,
-      batchOrLotNo:  l.batchOrLotNo,
-      locationId:    l.locationId,
-      balance:       l.balance,
-      grnNo:         grnNo,
-      iqcDisposition: disp,
-      grnDate:       l.grnDate
+      materialCode:  String(l.materialCode || ''),
+      batchOrLotNo:  String(l.batchOrLotNo || ''),
+      locationId:    String(l.locationId || ''),
+      balance:       Number(l.balance) || 0,
+      grnNo:         String(grnNo || ''),
+      iqcDisposition: String(disp || ''),
+      grnDate:       dateOut
     };
   });
+  } catch(err) {
+    Logger.log('getProductionLotsForMaterial failed: ' + err.message + ' stack: ' + err.stack);
+    throw new Error('Server error in getProductionLotsForMaterial: ' + err.message);
+  }
 }
 
 // ---------- Diagnostic: explain why a material returns 0 lots ----------
@@ -296,6 +303,129 @@ function getRecentProductionIssues(limit) {
       remarks:     r[11]
     };
   });
+}
+
+// ---------- Multi-lot FIFO allocation ----------
+// Given a material and a total qty, returns an allocation plan:
+// list of { batch, location, grnNo, iqcDisposition, qtyFromThisLot }
+// honoring FIFO order. Skips lots whose IQC is not ACCEPTED (or ACCEPTED W/ DEV).
+// If total available < requested, returns shortfall info.
+function planFIFOAllocation(materialCode, qtyRequested) {
+  var qty = Number(qtyRequested) || 0;
+  if (!materialCode || qty <= 0) {
+    return { success: false, error: 'Material and qty required.' };
+  }
+  var lots = getProductionLotsForMaterial(materialCode);
+  // Only IQC-pass lots are issuable
+  var issuable = lots.filter(function(l){
+    var d = String(l.iqcDisposition || '').toUpperCase();
+    return d === 'ACCEPTED' || d === 'PASS' || d === 'ACCEPTED WITH DEVIATION';
+  });
+  if (!issuable.length) {
+    return { success: false, error: 'No IQC-passed lots available for this material.' };
+  }
+
+  var totalAvailable = 0;
+  issuable.forEach(function(l){ totalAvailable += Number(l.balance) || 0; });
+  if (totalAvailable < qty) {
+    return {
+      success: false,
+      error: 'Insufficient stock — need ' + qty + ', have ' + totalAvailable + ' across ' + issuable.length + ' lot(s).',
+      totalAvailable: totalAvailable
+    };
+  }
+
+  var remaining = qty;
+  var plan = [];
+  for (var i = 0; i < issuable.length && remaining > 0; i++) {
+    var avail = Number(issuable[i].balance) || 0;
+    if (avail <= 0) continue;
+    var take = Math.min(avail, remaining);
+    plan.push({
+      batchOrLotNo: issuable[i].batchOrLotNo,
+      locationId:   issuable[i].locationId,
+      grnNo:        issuable[i].grnNo,
+      iqcDisposition: issuable[i].iqcDisposition,
+      qtyFromThisLot: take,
+      lotBalance: avail
+    });
+    remaining -= take;
+  }
+  return { success: true, plan: plan, totalAllocated: qty, lotCount: plan.length };
+}
+
+// ---------- Issue RM multi-lot (executes a plan) ----------
+function issueRMMultiLot(data) {
+  try {
+    var mat   = String(data.materialCode || '').trim();
+    var totalQty = Number(data.qtyToIssue) || 0;
+    if (!mat || totalQty <= 0) return { success: false, error: 'Material and qty required.' };
+    if (!data.productionOrderNo) return { success: false, error: 'Production Order No. required.' };
+    if (!data.issuedBy) return { success: false, error: 'Issued By required.' };
+
+    var planResult = planFIFOAllocation(mat, totalQty);
+    if (!planResult.success) return planResult;
+
+    var issueId  = getNextDocNumber('prod');
+    var mats     = (typeof getMaterials === 'function') ? getMaterials() : [];
+    var matName = '', unit = data.unit || '';
+    for (var i = 0; i < mats.length; i++) {
+      var c = mats[i].code || mats[i].itemCode;
+      if (c === mat) {
+        matName = mats[i].desc || mats[i].name || '';
+        if (!unit) unit = mats[i].unit || '';
+        break;
+      }
+    }
+
+    var ws = getProdIssueSheet_();
+    var issuedLots = [];
+    for (var j = 0; j < planResult.plan.length; j++) {
+      var p = planResult.plan[j];
+      // Run the warehouse gate per lot (re-verifies IQC + location + balance)
+      var gateResult = issueRMForProduction({
+        materialCode:      mat,
+        batchOrLotNo:      p.batchOrLotNo,
+        locationId:        p.locationId,
+        qtyToIssue:        p.qtyFromThisLot,
+        productionOrderNo: data.productionOrderNo,
+        issuedBy:          data.issuedBy
+      });
+      if (!gateResult || !gateResult.success) {
+        return {
+          success: false,
+          error: 'Gate failed on lot ' + p.batchOrLotNo + ': ' + (gateResult && gateResult.error || 'unknown'),
+          issuedBefore: issuedLots
+        };
+      }
+      // One PROD_ISSUE_LOG row per lot, all sharing the same issueId
+      ws.appendRow([
+        issueId, new Date(),
+        data.productionOrderNo || '',
+        mat, matName,
+        p.batchOrLotNo, p.locationId,
+        p.qtyFromThisLot, unit,
+        data.issuedBy || '',
+        gateResult.grnNo || p.grnNo || '',
+        data.remarks || ('FIFO multi-lot ' + (j+1) + '/' + planResult.plan.length + ' — IQC ' + (gateResult.iqcDisposition || p.iqcDisposition))
+      ]);
+      ws.getRange(ws.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy HH:mm');
+      issuedLots.push({
+        batch: p.batchOrLotNo, qty: p.qtyFromThisLot,
+        location: p.locationId, balanceAfter: gateResult.balance
+      });
+    }
+    return {
+      success: true,
+      issueId: issueId,
+      totalQty: totalQty,
+      lotCount: issuedLots.length,
+      lots: issuedLots
+    };
+  } catch(e) {
+    Logger.log(e);
+    return { success: false, error: e.message };
+  }
 }
 
 // ---------- Issue RM (wraps Warehouse gate + writes PROD_ISSUE_LOG) ----------
