@@ -72,8 +72,11 @@ function getStockSummary() {
   var map = {};
   for (var i = 1; i < data.length; i++) {
     var r = data[i];
-    var key = r[3] + '|' + r[4] + '|' + r[5];
-    if (!map[key]) map[key] = { materialCode: r[3], batchOrLotNo: r[4], locationId: r[5], qtyIn: 0, qtyOut: 0 };
+    var mat = String(r[3] == null ? '' : r[3]).trim();
+    var btc = String(r[4] == null ? '' : r[4]).trim();
+    var loc = String(r[5] == null ? '' : r[5]).trim();
+    var key = mat + '|' + btc + '|' + loc;
+    if (!map[key]) map[key] = { materialCode: mat, batchOrLotNo: btc, locationId: loc, qtyIn: 0, qtyOut: 0 };
     map[key].qtyIn  += Number(r[6]) || 0;
     map[key].qtyOut += Number(r[7]) || 0;
   }
@@ -115,8 +118,9 @@ function getFIFOLots(materialCode) {
     });
   }
 
+  var matKey = String(materialCode == null ? '' : materialCode).trim();
   var summary = getStockSummary().filter(function(s){
-    if (s.materialCode !== materialCode) return false;
+    if (String(s.materialCode).trim() !== matKey) return false;
     if (s.balance <= 0) return false;
     var t = locTypeById[String(s.locationId).trim()] || '';
     return !quarantineTypes[t];

@@ -46,7 +46,8 @@ function getProductionFormInit() {
 // suitable to issue to production. Each lot includes its IQC disposition.
 function getProductionLotsForMaterial(materialCode) {
   if (!materialCode) return [];
-  var lots = (typeof getFIFOLots === 'function') ? getFIFOLots(materialCode) : [];
+  var matKey = String(materialCode).trim();
+  var lots = (typeof getFIFOLots === 'function') ? getFIFOLots(matKey) : [];
   if (!lots.length) return [];
 
   // Resolve IQC disposition per batch (latest IQC row per GRN)
@@ -57,7 +58,7 @@ function getProductionLotsForMaterial(materialCode) {
     for (var i = 1; i < g.length; i++) {
       var mat = String(g[i][6] || '').trim();
       var batch = String(g[i][8] || '').trim();
-      if (mat === materialCode && batch && !grnByBatch[batch]) {
+      if (mat === matKey && batch && !grnByBatch[batch]) {
         grnByBatch[batch] = String(g[i][0] || '').trim();
       }
     }
