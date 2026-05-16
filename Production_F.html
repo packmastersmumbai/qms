@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    body { background: var(--bg); }
+    .prd-wrap { max-width: 760px; margin: 0 auto; padding-bottom: 40px; }
+
+    .prd-header {
+      background: var(--navy); color: var(--white);
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .prd-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
+    .prd-count {
+      background: var(--amber); color: var(--navy);
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700;
+    }
+
+    .prd-tabs { display: flex; background: #f7f7f9; border-bottom: 1px solid #e0e0e0; position: sticky; top: 39px; z-index: 99; }
+    .prd-tab {
+      flex: 1; padding: 10px; cursor: pointer; text-align: center;
+      font-size: 12px; font-weight: 600; color: #777;
+      border-bottom: 2px solid transparent;
+    }
+    .prd-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: var(--white); }
+
+    .prd-body { padding: 14px; }
+
+    .prd-form {
+      background: var(--white);
+      border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .prd-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .prd-field { margin-bottom: 10px; }
+    .prd-field label { display: block; font-size: 11px; color: #555; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .prd-field input, .prd-field select, .prd-field textarea {
+      width: 100%; box-sizing: border-box;
+      padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 5px;
+      font-size: 13px; font-family: inherit; background: var(--white);
+    }
+    .prd-field input:disabled { background: #f5f5f5; color: #777; }
+    .prd-field textarea { resize: vertical; min-height: 50px; }
+
+    .prd-lots {
+      margin-top: 8px;
+      border: 1px solid #e0e0e0; border-radius: 6px;
+      max-height: 280px; overflow-y: auto;
+      background: var(--white);
+    }
+    .prd-lot {
+      padding: 10px 12px; border-bottom: 1px solid #f0f0f0;
+      cursor: pointer; display: grid;
+      grid-template-columns: 1fr auto; gap: 6px;
+      transition: background 0.15s;
+    }
+    .prd-lot:last-child { border-bottom: 0; }
+    .prd-lot:hover { background: #f9faff; }
+    .prd-lot.selected { background: #e8f0ff; border-left: 3px solid var(--navy); }
+    .prd-lot-batch { font-weight: 700; font-size: 12px; color: var(--navy); }
+    .prd-lot-meta { font-size: 11px; color: #666; }
+    .prd-lot-bal { font-size: 12px; font-weight: 700; color: #1a7a3a; text-align: right; }
+    .prd-lot-disp {
+      display: inline-block; padding: 1px 6px; border-radius: 8px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+      background: #1a7a3a; color: #fff;
+    }
+    .prd-lot-disp.warn { background: var(--amber); color: var(--navy); }
+    .prd-lot-disp.bad  { background: #b32a2a; color: #fff; }
+
+    .prd-empty { text-align: center; padding: 40px 20px; color: #888; font-size: 13px; }
+    .prd-empty-icon { font-size: 30px; margin-bottom: 8px; opacity: 0.4; }
+
+    .prd-save {
+      width: 100%; padding: 12px;
+      background: var(--navy); color: var(--white);
+      border: 0; border-radius: 6px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer; margin-top: 8px;
+      letter-spacing: 0.4px;
+    }
+    .prd-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .prd-rec {
+      background: var(--white);
+      border: 1px solid #e0e0e0; border-radius: 8px;
+      margin-bottom: 10px; padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .prd-rec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .prd-rec-id { font-weight: 700; color: var(--navy); font-size: 13px; flex: 1; }
+    .prd-rec-ts { font-size: 11px; color: #888; }
+    .prd-rec-row { display: grid; grid-template-columns: 90px 1fr; gap: 4px; font-size: 12px; padding: 2px 0; }
+    .prd-rec-label { color: #777; }
+
+    .prd-toast {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--navy); color: var(--white);
+      padding: 10px 18px; border-radius: 22px;
+      font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.25s;
+      max-width: 90%;
+      z-index: 200;
+    }
+    .prd-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .prd-toast.error { background: #b32a2a; }
+  </style>
+</head>
+<body>
+  <div class="prd-wrap">
+    <div class="prd-header">
+      <div class="prd-title">🏭 Production — RM Issuance</div>
+      <span class="prd-count" id="lotCount">0 lots</span>
+    </div>
+
+    <div class="prd-tabs">
+      <div class="prd-tab active" data-tab="issue" onclick="switchTab('issue')">Issue RM</div>
+      <div class="prd-tab" data-tab="recent" onclick="switchTab('recent')">Recent Issues</div>
+    </div>
+
+    <div class="prd-body">
+      <div id="paneIssue">
+        <div class="prd-form">
+          <div class="prd-grid2">
+            <div class="prd-field">
+              <label>Issue ID (preview)</label>
+              <input id="fDocNo" disabled />
+            </div>
+            <div class="prd-field">
+              <label>Date</label>
+              <input type="date" id="fDate" disabled />
+            </div>
+          </div>
+
+          <div class="prd-field">
+            <label>Production Order No.</label>
+            <input id="fProdOrder" placeholder="e.g. PO-2026-014" />
+          </div>
+
+          <div class="prd-field">
+            <label>Material</label>
+            <select id="fMaterial">
+              <option value="">— select material —</option>
+            </select>
+          </div>
+
+          <div class="prd-field">
+            <label>Available Lots (FIFO — IQC-passed only)</label>
+            <div id="lotList" class="prd-lots">
+              <div class="prd-empty"><div class="prd-empty-icon">📦</div>Select a material to see lots.</div>
+            </div>
+          </div>
+
+          <div class="prd-grid2">
+            <div class="prd-field">
+              <label>Qty to Issue</label>
+              <input type="number" id="fQty" min="0" step="any" />
+            </div>
+            <div class="prd-field">
+              <label>Issued By</label>
+              <select id="fIssuedBy"></select>
+            </div>
+          </div>
+
+          <div class="prd-field">
+            <label>Remarks (optional)</label>
+            <input id="fRemarks" placeholder="e.g. batch start, override note" />
+          </div>
+
+          <button class="prd-save" id="btnIssue" onclick="issueRM()">Issue RM to Production</button>
+        </div>
+      </div>
+
+      <div id="paneRecent" style="display:none;">
+        <div id="recentList" class="prd-empty">
+          <div class="prd-empty-icon">⏳</div>Loading…
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prd-toast" id="toast"></div>
+
+  <script>
+    var INIT = null;
+    var LOTS = [];
+    var SELECTED = null;
+
+    function showToast(msg, kind) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'prd-toast show' + (kind === 'error' ? ' error' : '');
+      setTimeout(function(){ t.className = 'prd-toast'; }, 2800);
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.prd-tab').forEach(function(t){
+        t.classList.toggle('active', t.dataset.tab === name);
+      });
+      document.getElementById('paneIssue').style.display  = name === 'issue'  ? '' : 'none';
+      document.getElementById('paneRecent').style.display = name === 'recent' ? '' : 'none';
+      if (name === 'recent') reloadRecent();
+    }
+
+    function loadInit() {
+      google.script.run
+        .withSuccessHandler(function(data){
+          INIT = data;
+          document.getElementById('fDocNo').value = data.docNumber || '';
+          document.getElementById('fDate').value  = data.today || '';
+
+          var mat = document.getElementById('fMaterial');
+          mat.innerHTML = '<option value="">— select material —</option>' +
+            (data.materials || []).map(function(m){
+              var code = m.code || m.itemCode || '';
+              var name = m.name || m.itemDescription || code;
+              return '<option value="' + escapeHtml(code) + '" data-unit="' + escapeHtml(m.unit || '') + '">' +
+                     escapeHtml(name) + (code && code !== name ? ' (' + escapeHtml(code) + ')' : '') + '</option>';
+            }).join('');
+
+          var ib = document.getElementById('fIssuedBy');
+          ib.innerHTML = '<option value="">— select —</option>' +
+            (data.inspectors || []).map(function(i){
+              var n = i.name || i;
+              return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>';
+            }).join('');
+        })
+        .withFailureHandler(function(e){ showToast('Init failed: ' + (e.message || e), 'error'); })
+        .getProductionFormInit();
+    }
+
+    function onMaterialChange() {
+      var code = document.getElementById('fMaterial').value;
+      SELECTED = null;
+      var box = document.getElementById('lotList');
+      if (!code) {
+        box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">📦</div>Select a material to see lots.</div>';
+        document.getElementById('lotCount').textContent = '0 lots';
+        LOTS = [];
+        return;
+      }
+      box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">⏳</div>Loading lots…</div>';
+      google.script.run
+        .withSuccessHandler(function(lots){
+          LOTS = lots || [];
+          document.getElementById('lotCount').textContent = LOTS.length + ' lot' + (LOTS.length === 1 ? '' : 's');
+          renderLots();
+        })
+        .withFailureHandler(function(e){
+          box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">⚠️</div>Load failed: ' + escapeHtml(e.message || e) + '</div>';
+        })
+        .getProductionLotsForMaterial(code);
+    }
+
+    function renderLots() {
+      var box = document.getElementById('lotList');
+      if (!LOTS.length) {
+        box.innerHTML = '<div class="prd-empty"><div class="prd-empty-icon">🚫</div>No IQC-passed lots available for this material.</div>';
+        return;
+      }
+      box.innerHTML = LOTS.map(function(l, idx){
+        var disp = l.iqcDisposition || 'PENDING';
+        var dispCls = '';
+        if (disp === 'ACCEPTED' || disp === 'PASS') dispCls = '';
+        else if (disp === 'ACCEPTED WITH DEVIATION') dispCls = 'warn';
+        else dispCls = 'bad';
+        var dateStr = l.grnDate ? new Date(l.grnDate).toISOString().substring(0, 10) : '';
+        return [
+          '<div class="prd-lot" data-idx="' + idx + '" onclick="selectLot(' + idx + ')">',
+            '<div>',
+              '<div class="prd-lot-batch">' + escapeHtml(l.batchOrLotNo) + ' ',
+                '<span class="prd-lot-disp ' + dispCls + '">' + escapeHtml(disp) + '</span>',
+              '</div>',
+              '<div class="prd-lot-meta">📍 ' + escapeHtml(l.locationId) +
+                ' &nbsp;·&nbsp; GRN ' + escapeHtml(l.grnNo || '—') +
+                (dateStr ? ' &nbsp;·&nbsp; ' + dateStr : '') + '</div>',
+            '</div>',
+            '<div class="prd-lot-bal">' + l.balance + '</div>',
+          '</div>'
+        ].join('');
+      }).join('');
+    }
+
+    function selectLot(idx) {
+      SELECTED = LOTS[idx] || null;
+      document.querySelectorAll('.prd-lot').forEach(function(el){
+        el.classList.toggle('selected', el.dataset.idx === String(idx));
+      });
+    }
+
+    function issueRM() {
+      if (!SELECTED) { showToast('Pick a lot first', 'error'); return; }
+      var qty = Number(document.getElementById('fQty').value);
+      if (!qty || qty <= 0) { showToast('Qty must be > 0', 'error'); return; }
+      if (qty > SELECTED.balance) { showToast('Qty exceeds balance (' + SELECTED.balance + ')', 'error'); return; }
+      var issuedBy = document.getElementById('fIssuedBy').value;
+      if (!issuedBy) { showToast('Pick "Issued By"', 'error'); return; }
+      var prodOrder = document.getElementById('fProdOrder').value.trim();
+      if (!prodOrder) { showToast('Production Order No. required', 'error'); return; }
+
+      var matSel = document.getElementById('fMaterial');
+      var unit = matSel.selectedOptions[0] ? matSel.selectedOptions[0].dataset.unit : '';
+
+      var payload = {
+        materialCode:      SELECTED.materialCode,
+        batchOrLotNo:      SELECTED.batchOrLotNo,
+        locationId:        SELECTED.locationId,
+        qtyToIssue:        qty,
+        unit:              unit,
+        productionOrderNo: prodOrder,
+        issuedBy:          issuedBy,
+        remarks:           document.getElementById('fRemarks').value.trim()
+      };
+
+      var btn = document.getElementById('btnIssue');
+      btn.disabled = true; btn.textContent = 'Issuing…';
+      google.script.run
+        .withSuccessHandler(function(res){
+          btn.disabled = false; btn.textContent = 'Issue RM to Production';
+          if (!res || !res.success) {
+            showToast('Failed: ' + (res && res.error || 'unknown'), 'error');
+            return;
+          }
+          showToast('Issued ' + qty + ' ' + unit + ' — ' + (res.issueId || ''));
+          document.getElementById('fQty').value = '';
+          document.getElementById('fRemarks').value = '';
+          SELECTED = null;
+          onMaterialChange();
+          loadInit();
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false; btn.textContent = 'Issue RM to Production';
+          showToast('Error: ' + (e.message || e), 'error');
+        })
+        .issueRMToProduction(payload);
+    }
+
+    function reloadRecent() {
+      var box = document.getElementById('recentList');
+      box.className = 'prd-empty';
+      box.innerHTML = '<div class="prd-empty-icon">⏳</div>Loading…';
+      google.script.run
+        .withSuccessHandler(function(list){
+          if (!list || !list.length) {
+            box.innerHTML = '<div class="prd-empty-icon">📋</div>No production issues yet.';
+            return;
+          }
+          box.className = '';
+          box.innerHTML = list.map(function(r){
+            var ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : '';
+            return [
+              '<div class="prd-rec">',
+                '<div class="prd-rec-head">',
+                  '<div class="prd-rec-id">' + escapeHtml(r.issueId) + '</div>',
+                  '<div class="prd-rec-ts">' + escapeHtml(ts) + '</div>',
+                '</div>',
+                '<div class="prd-rec-row"><div class="prd-rec-label">Prod Order</div><div>' + escapeHtml(r.prodOrderNo || '—') + '</div></div>',
+                '<div class="prd-rec-row"><div class="prd-rec-label">Material</div><div>' + escapeHtml(r.materialName || r.materialCode) + '</div></div>',
+                '<div class="prd-rec-row"><div class="prd-rec-label">Batch</div><div>' + escapeHtml(r.batchOrLotNo) + ' &nbsp;·&nbsp; 📍 ' + escapeHtml(r.locationId) + '</div></div>',
+                '<div class="prd-rec-row"><div class="prd-rec-label">Qty</div><div>' + r.qtyIssued + ' ' + escapeHtml(r.unit || '') + '</div></div>',
+                '<div class="prd-rec-row"><div class="prd-rec-label">GRN Ref</div><div>' + escapeHtml(r.grnRef || '—') + '</div></div>',
+                '<div class="prd-rec-row"><div class="prd-rec-label">Issued By</div><div>' + escapeHtml(r.issuedBy) + '</div></div>',
+                r.remarks ? '<div class="prd-rec-row"><div class="prd-rec-label">Remarks</div><div>' + escapeHtml(r.remarks) + '</div></div>' : '',
+              '</div>'
+            ].join('');
+          }).join('');
+        })
+        .withFailureHandler(function(e){
+          box.innerHTML = '<div class="prd-empty-icon">⚠️</div>Load failed: ' + escapeHtml(e.message || e);
+        })
+        .getRecentProductionIssues(20);
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('fMaterial').addEventListener('change', onMaterialChange);
+    });
+    window.addEventListener('load', loadInit);
+  </script>
+</body>
+</html>

@@ -189,7 +189,7 @@ function include(filename) {
 // ── Called by client to inject sub-pages ─────────────────────
 
 function getFormHtml(type) {
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Landing:'Landing' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Landing:'Landing' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();
