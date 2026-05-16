@@ -451,18 +451,23 @@ function getQmsLandingState() {
 // ============================================================
 function forceReleaseStuckLock() {
   var ui = SpreadsheetApp.getUi();
-  try {
-    var lock = LockService.getScriptLock();
-    // tryLock(0): if it succeeds, no lock was held — nothing to clear.
-    // if it fails, lock is held by another execution; we cannot force-release a foreign lock.
-    var got = lock.tryLock(0);
-    if (got) {
-      lock.releaseLock();
-      ui.alert('Lock state: FREE (no stuck lock found). You can retry the save now.');
-    } else {
-      ui.alert('Lock state: HELD by another execution. Apps Script will release it automatically when that execution ends (max 6 minutes). Check Apps Script editor → Executions tab for the holder.');
+  var report = [];
+
+  // Test all three lock scopes — find which one is actually stuck.
+  ['ScriptLock', 'DocumentLock', 'UserLock'].forEach(function(kind) {
+    try {
+      var lock = LockService['get' + kind]();
+      var got = lock.tryLock(500);   // 500ms — long enough to actually try, short enough to not hang the menu
+      if (got) {
+        lock.releaseLock();
+        report.push(kind + ': FREE');
+      } else {
+        report.push(kind + ': HELD (another execution holds it)');
+      }
+    } catch (e) {
+      report.push(kind + ': ERROR — ' + e.message);
     }
-  } catch (e) {
-    ui.alert('Lock check failed: ' + e.message);
-  }
+  });
+
+  ui.alert('Lock state report:\n\n' + report.join('\n') + '\n\nApps Script auto-releases held locks at the end of the holding execution (max 6 min). If the report shows HELD for ScriptLock and you see no Running executions, the holder is likely a stuck/abandoned tab — wait 6 minutes and retry.');
 }
