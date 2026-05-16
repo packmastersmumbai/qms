@@ -108,10 +108,16 @@ function getIPQCParams(productCode) {
 }
 
 function getIPQCFormInit() {
+  var sessions = [];
+  try {
+    var r = getOpenSessions();
+    sessions = r.sessions || [];
+  } catch(e) {}
   return {
-    fgList:     getFG(),
-    inspectors: getInspectors(),
-    today:      Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
+    fgList:       getFG(),
+    inspectors:   getInspectors(),
+    openSessions: sessions,
+    today:        Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
   };
 }
 
@@ -338,6 +344,54 @@ function getSessionWeightData(sessionId) {
   }
 }
 
+// Returns CLOSED IPQC sessions not yet consumed by an OQC entry.
+// Used by OQC form to prefill product + batch from a completed IPQC run.
+function getClosedIPQCSessionsForOQC() {
+  try {
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('IPQC_Sessions');
+    if (!ws || ws.getLastRow() < 2) return [];
+
+    var usedRefs = {};
+    var oqcWs = ss.getSheetByName('OQC_LOG');
+    if (oqcWs && oqcWs.getLastRow() > 1) {
+      var oqcData = oqcWs.getRange(2, 20, oqcWs.getLastRow() - 1, 1).getValues();
+      oqcData.forEach(function(r) { if (r[0]) usedRefs[String(r[0]).trim()] = true; });
+    }
+
+    var values = ws.getDataRange().getValues();
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    var results = [];
+
+    for (var i = 1; i < values.length; i++) {
+      var sid = String(values[i][0] || '').trim();
+      if (!sid) continue;
+      if (String(values[i][9]).trim() !== 'CLOSED') continue;
+      if (usedRefs[sid]) continue;
+      var d = values[i][6];
+      if (d && new Date(d) < cutoff) continue;
+
+      var dateStr = d
+        ? Utilities.formatDate(new Date(d), 'Asia/Kolkata', 'dd-MMM')
+        : '';
+      results.push({
+        sessionId:   sid,
+        productCode: String(values[i][1] || ''),
+        productName: String(values[i][2] || ''),
+        batch:       String(values[i][3] || ''),
+        date:        dateStr,
+        label:       sid + ' · ' + String(values[i][2] || values[i][1]) + ' · ' + String(values[i][3] || '') + (dateStr ? ' · ' + dateStr : '')
+      });
+    }
+    results.reverse();
+    return results;
+  } catch(e) {
+    Logger.log(e);
+    return [];
+  }
+}
+
 function getIPQCStatusForBatch(productCode, batch) {
   try {
     var sessionId = productCode + '_' + batch;
@@ -362,32 +416,82 @@ function getIPQCStatusForBatch(productCode, batch) {
 
 function raiseIPQCNCR(sessionId, paramCode, roundNo, remark) {
   try {
-    var ncrNo = getNextDocNumber('ncr');
     var ws = _ensureIPQCLog();
     var values = ws.getDataRange().getValues();
-    // IPQC_LOG: session_id[0], ..., round_no[3], ..., param_code[5], ..., remark[11]
-    var found = false;
+
+    // Find the IPQC_LOG row this NCR is being raised against
+    // IPQC_LOG: session_id[0], product_code[1], batch[2], round_no[3], ts[4], param_code[5], param_name[6], ..., remark[11]
+    var matchRow = null;
+    var matchIdx = -1;
     for (var i = 1; i < values.length; i++) {
       if (
         String(values[i][0]).trim() === String(sessionId).trim() &&
         String(values[i][5]).trim() === String(paramCode).trim() &&
         String(values[i][3]).trim() === String(roundNo).trim()
       ) {
-        var existingRemark = values[i][11] || '';
-        var newRemark = 'NCR:' + ncrNo + ' — ' + remark;
-        if (existingRemark) newRemark = newRemark + ' | ' + existingRemark;
-        ws.getRange(i + 1, 12).setValue(newRemark);
-        found = true;
+        matchRow = values[i];
+        matchIdx = i;
         break;
       }
     }
 
-    if (!found) {
+    // Look up product/batch from IPQC_Sessions if we couldn't find the param row
+    var productCode = matchRow ? matchRow[1] : '';
+    var batch       = matchRow ? matchRow[2] : '';
+    var paramName   = matchRow ? matchRow[6] : paramCode;
+    if (!productCode || !batch) {
+      var sessWs = _ensureIPQCSessions();
+      var sessData = sessWs.getDataRange().getValues();
+      for (var k = 1; k < sessData.length; k++) {
+        if (String(sessData[k][0]).trim() === String(sessionId).trim()) {
+          productCode = productCode || sessData[k][1];
+          batch       = batch || sessData[k][3];
+          break;
+        }
+      }
+    }
+
+    // Resolve product description from MASTERS_Materials if available
+    var productDesc = '';
+    try {
+      var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+      for (var m = 0; m < mats.length; m++) {
+        if (String(mats[m].code || mats[m].itemCode || '').trim() === String(productCode).trim()) {
+          productDesc = mats[m].name || mats[m].itemDescription || '';
+          break;
+        }
+      }
+    } catch(e) {}
+
+    // Write to NCR_LOG via the shared writer so this NCR appears in the triage queue.
+    var ncrNo = (typeof raiseNCR_ === 'function') ? raiseNCR_({
+      date:         new Date(),
+      source:       'IPQC',
+      sourceRef:    sessionId + ' / round ' + roundNo + ' / ' + paramCode,
+      materialCode: productCode || '',
+      materialDesc: productDesc,
+      batchNo:      batch || '',
+      qtyAffected:  0,
+      unit:         '',
+      defectDesc:   'IPQC reject — ' + (paramName || paramCode) + ' — ' + (remark || '')
+    }) : '';
+
+    if (!ncrNo) {
+      return { ok: false, error: 'NCR_LOG write failed.' };
+    }
+
+    // Back-stamp the IPQC_LOG remark column so the matrix shows NCR ref inline
+    if (matchIdx >= 0) {
+      var existingRemark = values[matchIdx][11] || '';
+      var newRemark = 'NCR:' + ncrNo + ' — ' + (remark || '');
+      if (existingRemark) newRemark = newRemark + ' | ' + existingRemark;
+      ws.getRange(matchIdx + 1, 12).setValue(newRemark);
+    } else {
       // Row not found — append a note row so the NCR reference is not lost
       var tsStr = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
       ws.appendRow([
-        sessionId, '', '', roundNo, tsStr, paramCode, '', '', '', '', 'NOTE',
-        'NCR:' + ncrNo + ' — ' + remark + ' [row not found at time of NCR raise]'
+        sessionId, productCode || '', batch || '', roundNo, tsStr, paramCode, paramName || '', '', '', '', 'NOTE',
+        'NCR:' + ncrNo + ' — ' + (remark || '') + ' [row not found at time of NCR raise]'
       ]);
     }
 
