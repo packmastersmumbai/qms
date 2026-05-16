@@ -425,6 +425,15 @@
     </div>
   </div>
 
+  <!-- FG Location (P6 — required when decision is ACCEPTED / RELEASED / AWD) -->
+  <div class="remarks-wrap" id="fieldFGLocation" style="display:none;">
+    <label for="selFGLocation">FG Storage Location <span style="color:#B91C1C;">*</span></label>
+    <select id="selFGLocation" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:16px;font-family:inherit;background:var(--white);">
+      <option value="">— Select FG location —</option>
+    </select>
+    <div class="hint">Where this FG batch is being stored. Used for FIFO dispatch traceability.</div>
+  </div>
+
   <!-- Remarks -->
   <div class="remarks-wrap">
     <label for="inpRemarks">Remarks</label>
@@ -485,6 +494,7 @@ var DISP_BTNS = [
 var gMaterials    = [];
 var gCustomers    = [];
 var gIPQCSessions = [];
+var gFGLocations  = [];
 var gIpqcRef      = '';
 var gToday       = '';
 var gChecks      = {};   // { fillWeight: 'PASS'|'FAIL'|'NA', ... }
@@ -507,6 +517,22 @@ function loadInit() {
       gMaterials    = d.materials  || [];
       gCustomers    = d.customers  || [];
       gIPQCSessions = d.ipqcSessions || [];
+      gFGLocations  = d.fgLocations || [];
+
+      // Populate FG location dropdown
+      var fgSel = document.getElementById('selFGLocation');
+      if (fgSel) {
+        // keep first placeholder option
+        while (fgSel.options.length > 1) fgSel.remove(1);
+        gFGLocations.forEach(function(loc) {
+          var o = document.createElement('option');
+          o.value = loc.id;
+          o.textContent = loc.id + (loc.type ? ' (' + loc.type + ')' : '') + (loc.label && loc.label !== loc.id ? ' — ' + loc.label : '');
+          o.dataset.type = loc.type || '';
+          fgSel.appendChild(o);
+        });
+        fgSel.addEventListener('change', checkSaveReady);
+      }
 
       document.getElementById('docBadge').textContent = d.docNumber || 'OQC';
 
@@ -740,6 +766,12 @@ function setDisposition(val) {
     var btn = document.getElementById(db.id);
     btn.className = 'disp-btn-oqc' + (db.val === val ? ' ' + db.cls : '');
   });
+  // P6 — show FG Location when decision is released-equivalent
+  var fgField = document.getElementById('fieldFGLocation');
+  if (fgField) {
+    var releasedLike = (val === 'ACCEPTED' || val === 'RELEASED' || val === 'ACCEPTED WITH DEVIATION');
+    fgField.style.display = releasedLike ? '' : 'none';
+  }
   checkSaveReady();
 }
 
@@ -751,7 +783,10 @@ function checkSaveReady() {
   var batch  = document.getElementById('inpBatch').value.trim();
   var cust   = document.getElementById('selCustomer').value;
   var qty    = parseFloat(document.getElementById('inpQty').value);
-  var ready  = mat && batch && cust && qty >= 1 && allParamsFilled() && gDisposition;
+  var releasedLike = (gDisposition === 'ACCEPTED' || gDisposition === 'RELEASED' || gDisposition === 'ACCEPTED WITH DEVIATION');
+  var fgLoc = document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : '';
+  var fgLocOK = !releasedLike || !!fgLoc;
+  var ready  = mat && batch && cust && qty >= 1 && allParamsFilled() && gDisposition && fgLocOK;
   document.getElementById('btnSave').disabled = !ready;
 }
 
@@ -804,6 +839,15 @@ function onSaveTap() {
     return;
   }
 
+  // P6 — block save if released decision without FG location
+  var releasedLikeSave = (gDisposition === 'ACCEPTED' || gDisposition === 'RELEASED' || gDisposition === 'ACCEPTED WITH DEVIATION');
+  var fgLocSel = document.getElementById('selFGLocation');
+  if (releasedLikeSave && (!fgLocSel || !fgLocSel.value)) {
+    showToast('Select FG storage location before releasing', 'error');
+    if (fgLocSel) fgLocSel.focus();
+    return;
+  }
+
   doSave();
 }
 
@@ -835,11 +879,13 @@ function doSave() {
     releaseDecision: gDisposition,
     operatorName:    window.QMS ? window.QMS.getOperatorName() : '',
     remarks:         document.getElementById('inpRemarks').value,
+    fgLocation:    (document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : ''),
     items: [{
       batchPO:       batchNo,
       materialDesc:  matDesc,
       sampleSize:    qty,
-      acceptedQty:   gDisposition === 'ACCEPTED' ? qty : 0,
+      fgLocation:    (document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : ''),
+      acceptedQty:   (gDisposition === 'ACCEPTED' || gDisposition === 'RELEASED' || gDisposition === 'ACCEPTED WITH DEVIATION') ? qty : 0,
       rejectedQty:   gDisposition === 'REJECTED' ? qty : 0,
       checks: {
         fillWeight:  gChecks.fillWeight  || '',

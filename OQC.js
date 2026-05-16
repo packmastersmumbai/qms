@@ -12,8 +12,31 @@ function getOQCFormInit() {
     materials:    fgMats,
     inspectors:   getInspectors(),
     ipqcSessions: (typeof getClosedIPQCSessionsForOQC === 'function') ? getClosedIPQCSessionsForOQC() : [],
+    fgLocations:  (typeof getFGLocations === 'function') ? getFGLocations() : [],
     today:        Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
   };
+}
+
+// P6 — released decisions for which an FG_DISPATCH_LOTS row should be created.
+function _isOQCReleasedDecision_(dec) {
+  var d = String(dec || '').toUpperCase();
+  return d === 'RELEASED' || d === 'ACCEPTED' || d === 'ACCEPTED WITH DEVIATION';
+}
+
+// P6 — resolve product code from FG material description (master desc → code).
+function _resolveProductCodeFromDesc_(desc) {
+  try {
+    var key = String(desc || '').trim();
+    if (!key) return '';
+    var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+    for (var i = 0; i < mats.length; i++) {
+      var d = String(mats[i].desc || mats[i].name || '').trim();
+      if (d === key && String(mats[i].category || '').toUpperCase() === 'FG') {
+        return String(mats[i].code || '').trim();
+      }
+    }
+  } catch(e) {}
+  return '';
 }
 
 function saveOQC(data) {
@@ -27,9 +50,23 @@ function saveOQC(data) {
     var docNos = [];
     var operatorId = data.operatorName || '';
 
+    var releasedThis = _isOQCReleasedDecision_(dec);
+
+    // P6 — when released, require FG Location per item (defense in depth; UI also blocks)
+    if (releasedThis) {
+      for (var vi = 0; vi < data.items.length; vi++) {
+        var fgLocCheck = String((data.items[vi] && data.items[vi].fgLocation) || data.fgLocation || '').trim();
+        if (!fgLocCheck) {
+          return { success: false, error: 'FG Location is required when decision is ' + dec + '.' };
+        }
+      }
+    }
+
     data.items.forEach(function(item) {
       var docNo  = getNextDocNumber('oqc');
       var checks = item.checks || {};
+      var fgLocation = String((item && item.fgLocation) || data.fgLocation || '').trim();
+      var acceptedQty = item.acceptedQty != null ? Number(item.acceptedQty) : 0;
 
       var row = [
         docNo,
@@ -48,11 +85,13 @@ function saveOQC(data) {
         data.inspector     || '',
         dec,
         data.remarks       || '',
-        item.acceptedQty != null ? item.acceptedQty : 0,
+        acceptedQty,
         item.rejectedQty != null ? item.rejectedQty : 0,
         now,
         item.ipqcSessionRef || '',
-        operatorId           // last col: operator_id — add this header manually in the sheet
+        operatorId,
+        releasedThis ? fgLocation : '',  // col 22: FG Location ID
+        ''                                // col 23: FG Lot ID — back-filled below if mirrored
       ];
 
       ws.appendRow(row);
@@ -62,9 +101,49 @@ function saveOQC(data) {
       ws.getRange(lastRow, 19).setNumberFormat('dd-MMM-yyyy HH:mm');
 
       var decCell = ws.getRange(lastRow, 15);
-      if      (dec === 'RELEASED') decCell.setBackground('#E8F5E9');
+      if      (dec === 'RELEASED' || dec === 'ACCEPTED') decCell.setBackground('#E8F5E9');
+      else if (dec === 'ACCEPTED WITH DEVIATION') decCell.setBackground('#FFEDD5');
       else if (dec === 'REJECTED') decCell.setBackground('#FFEBEE');
       else if (dec === 'HOLD')     decCell.setBackground('#FFF3CD');
+
+      // P6 — mirror released OQCs into FG_DISPATCH_LOTS + write OQC_RELEASE ledger IN
+      if (releasedThis && acceptedQty > 0 && fgLocation) {
+        try {
+          var productCode = _resolveProductCodeFromDesc_(item.materialDesc || '');
+          var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+          var unit = '';
+          for (var mi = 0; mi < mats.length; mi++) {
+            if (String(mats[mi].code).trim() === productCode) { unit = mats[mi].unit || ''; break; }
+          }
+          var lotId = _createFGDispatchLotRow_({
+            oqcRef:       docNo,
+            oqcDate:      new Date(data.date),
+            customerCode: data.customerCode || '',
+            customerName: data.customerName || '',
+            productCode:  productCode,
+            productDesc:  item.materialDesc || '',
+            batch:        item.batchPO || '',
+            fgLocation:   fgLocation,
+            qtyReleased:  acceptedQty,
+            unit:         unit,
+            status:       'AVAILABLE',
+            remarks:      'Auto-created at OQC release'
+          });
+          if (lotId) {
+            ws.getRange(lastRow, 23).setValue(lotId);
+          }
+          // Ledger IN: this is the FG side's first stock entry (no paired OUT exists since
+          // IPQC does not currently write to STOCK_LEDGER).
+          if (productCode && item.batchPO && typeof writeStockLedger_ === 'function') {
+            writeStockLedger_('OQC_RELEASE', productCode, String(item.batchPO).trim(),
+              fgLocation, acceptedQty, 0,
+              'OQC', docNo, data.inspector || '',
+              'FG released to ' + fgLocation);
+          }
+        } catch (eMirror) {
+          Logger.log('FG_DISPATCH_LOTS mirror failed for ' + docNo + ': ' + eMirror.message);
+        }
+      }
 
       docNos.push(docNo);
     });
