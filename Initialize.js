@@ -69,6 +69,22 @@ var PERSONNEL = [
 
 // ── Sheet definitions ─────────────────────────────────────────
 
+// P2 — Purchase Order sheets
+var PO_HEADER_HEADERS = [
+  'po_no', 'po_date', 'supplier_code', 'supplier_name', 'due_date',
+  'currency', 'gst_pct', 'payment_terms',
+  'sub_total', 'gst_amount', 'grand_total',
+  'status', 'remarks', 'created_by', 'created_at',
+  'approved_by', 'cancelled_reason'
+];
+
+var PO_LINE_HEADERS = [
+  'po_no', 'line_no', 'material_code', 'material_desc', 'unit',
+  'qty_ordered', 'unit_price', 'line_amount',
+  'qty_received', 'qty_pending', 'line_status',
+  'last_grn_no', 'promised_date'
+];
+
 var GRN_HEADERS = [
   'GRN No.', 'Date', 'Supplier Code', 'Supplier Name', 'PO Reference',
   'Invoice No.', 'Material Code', 'Material Description', 'Batch / Lot No.',
@@ -191,7 +207,7 @@ function initializeProject() {
 
   try {
     createConfigSheet_(ss);
-    createMasterSheet_(ss, 'MASTERS_Suppliers',  ['Supplier Code','Supplier Name','Contact Person','Phone / WhatsApp','Material Supplied','City / Location','Approved (Y/N)'], SUPPLIERS);
+    createMasterSheet_(ss, 'MASTERS_Suppliers',  ['Supplier Code','Supplier Name','Contact Person','Phone / WhatsApp','Material Supplied','City / Location','Approved (Y/N)','State Code'], SUPPLIERS);
     createMasterSheet_(ss, 'MASTERS_Materials',  ['Item Code','Item Description','Unit','Category'], MATERIALS);
     createMasterSheet_(ss, 'MASTERS_Customers',  ['Customer Code','Customer Name','Contact Person','Phone / WhatsApp','Email','Products Supplied','City'], CUSTOMERS);
     createMasterSheet_(ss, 'MASTERS_Personnel',  ['Name','Role / Designation','Department','WhatsApp No.','Send Notifications (Y/N)'], PERSONNEL);
@@ -206,6 +222,8 @@ function initializeProject() {
     createLogSheet_(ss, 'SCRAP_LOG',            SCRAP_LOG_HEADERS);
     createLogSheet_(ss, 'SAMPLE_LOG',           SAMPLE_LOG_HEADERS);
     createLogSheet_(ss, 'REVISIONS_LOG', ['TYPE', 'DOC_NO', 'TIMESTAMP', 'REVISED_BY', 'FIELD', 'OLD_VALUE', 'NEW_VALUE']);
+    createLogSheet_(ss, 'PO_HEADER', PO_HEADER_HEADERS);
+    createLogSheet_(ss, 'PO_LINES',  PO_LINE_HEADERS);
     createDashboardSheet_(ss);
     createReadmeSheet_(ss);
 
@@ -399,7 +417,9 @@ function ensureConfigKeys_() {
       ['scr_prefix', 'PM/SCR/2026-'],
       ['scr_counter', 1],
       ['smp_prefix', 'PM/SMP/2026-'],
-      ['smp_counter', 1]
+      ['smp_counter', 1],
+      ['po_prefix',  'PM/PO/2026-'],
+      ['po_counter',  1]
     ];
     required.forEach(function(pair) {
       if (!existing[pair[0]]) ws.appendRow(pair);
@@ -430,8 +450,20 @@ function verifyAndRepairSheets() {
     'SCRAP_LOG':            SCRAP_LOG_HEADERS,
     'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
     'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
-    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS
+    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS,
+    'PO_HEADER':            PO_HEADER_HEADERS,
+    'PO_LINES':             PO_LINE_HEADERS
   };
+
+  // Ensure MASTERS_Suppliers has state_code column
+  var suppWs = ss.getSheetByName('MASTERS_Suppliers');
+  if (suppWs) {
+    var suppHdrs = ['Supplier Code','Supplier Name','Contact Person','Phone / WhatsApp','Material Supplied','City / Location','Approved (Y/N)','State Code'];
+    var suppLast = suppWs.getLastColumn();
+    if (suppLast < suppHdrs.length) {
+      suppWs.getRange(1, suppLast + 1, 1, suppHdrs.length - suppLast).setValues([suppHdrs.slice(suppLast)]).setFontWeight('bold');
+    }
+  }
 
   var report = [];
 
@@ -655,7 +687,8 @@ function verifyDocCounters() {
     { counter: 'ncr_counter', sheet: 'NCR_LOG',             prefix: 'PM/NCR/2026-' },
     { counter: 'rtn_counter', sheet: 'CUSTOMER_RETURN_LOG', prefix: 'PM/RTN/2026-' },
     { counter: 'scr_counter', sheet: 'SCRAP_LOG',           prefix: 'PM/SCR/2026-' },
-    { counter: 'smp_counter', sheet: 'SAMPLE_LOG',          prefix: 'PM/SMP/2026-' }
+    { counter: 'smp_counter', sheet: 'SAMPLE_LOG',          prefix: 'PM/SMP/2026-' },
+    { counter: 'po_counter',  sheet: 'PO_HEADER',           prefix: 'PM/PO/2026-'  }
   ];
 
   var cfg = ss.getSheetByName('CONFIG');
@@ -742,7 +775,9 @@ function forceFixSheetHeaders() {
     'SCRAP_LOG':            SCRAP_LOG_HEADERS,
     'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
     'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
-    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS
+    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS,
+    'PO_HEADER':            PO_HEADER_HEADERS,
+    'PO_LINES':             PO_LINE_HEADERS
   };
 
   var report = [];
@@ -819,7 +854,7 @@ function inspectSheetData() {
   var ss = getSpreadsheet();
   if (!ss) { ui.alert('No spreadsheet bound.'); return; }
 
-  var SHEETS = ['GRN_LOG', 'IQC_LOG', 'OQC_LOG', 'GATEPASS_LOG'];
+  var SHEETS = ['GRN_LOG', 'IQC_LOG', 'OQC_LOG', 'GATEPASS_LOG', 'PO_HEADER', 'PO_LINES'];
   var EXPECTED = {
     'GRN_LOG':              GRN_HEADERS,
     'IQC_LOG':              IQC_HEADERS,
@@ -831,7 +866,9 @@ function inspectSheetData() {
     'SCRAP_LOG':            SCRAP_LOG_HEADERS,
     'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
     'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
-    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS
+    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS,
+    'PO_HEADER':            PO_HEADER_HEADERS,
+    'PO_LINES':             PO_LINE_HEADERS
   };
 
   function inferType(v) {

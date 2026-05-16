@@ -70,6 +70,10 @@ function onOpen() {
     .addItem('🩺  Diagnose Dispatch Pipeline','runDispatchDiagnostics')
     .addItem('🛰️  Trace FG Lots for Customer+Product','traceFGDispatchForCustomerProduct')
     .addItem('♻️  Backfill FG Dispatch Lots','backfillFGDispatchLotsFromOQCUI')
+    .addItem('📋  New Purchase Order', 'openPOPForm')
+    .addItem('📊  Run POP Diagnostics', 'runPOPDiag')
+    .addItem('🛰️  Trace PO by docNo', 'tracePOByDocNoUI')
+    .addItem('♻️  Reconcile PO Receipts (Self-Heal)', 'reconcilePOReceipts')
     .addItem('🚚  New Dispatch (FIFO)','openDispatchForm')
     .addItem('🔍  Diagnose Production Lots','diagnoseProductionLotsUI')
     .addItem('♻️  Backfill Stock Ledger from GRN','backfillStockLedgerFromGRNUI')
@@ -160,6 +164,22 @@ function openIPQCForm() {
   SpreadsheetApp.getUi().showModelessDialog(html, 'IPQC — In-Process Quality Check');
 }
 
+function openPOPForm() {
+  var html = HtmlService.createTemplateFromFile('POP_F').evaluate()
+    .setWidth(900)
+    .setHeight(620);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'New Purchase Order — Pack Masters QMS');
+}
+
+function tracePOByDocNoUI() {
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.prompt('Trace PO by docNo', 'Enter PO number (e.g. PM/PO/2026-001):', ui.ButtonSet.OK_CANCEL);
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+  var poNo = resp.getResponseText().trim();
+  if (!poNo) { ui.alert('No PO number entered.'); return; }
+  tracePOById(poNo);
+}
+
 function openDispatchForm() {
   var html = HtmlService.createTemplateFromFile('Dispatch_F').evaluate()
     .setWidth(900)
@@ -207,7 +227,7 @@ function include(filename) {
 // ── Called by client to inject sub-pages ─────────────────────
 
 function getFormHtml(type) {
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', Landing:'Landing' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', Landing:'Landing' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();

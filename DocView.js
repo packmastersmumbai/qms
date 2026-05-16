@@ -117,7 +117,19 @@ var REVISIONS_LOG_HEADERS = [
 
 // ── HTML template launcher ────────────────────────────────────
 
+/**
+ * Route PM/PO/* docNos to Records_F with PO pre-filter.
+ * All other types fall through to DocView_F as before.
+ */
 function getDocViewHtml(type, docNo) {
+  // P2: Purchase Orders — route to Records_F with PO filter + highlight
+  if (type === 'PO' || /^PM\/PO\//.test(String(docNo || ''))) {
+    var tpl = HtmlService.createTemplateFromFile('Records_F');
+    tpl.scriptUrl = ScriptApp.getService().getUrl();
+    tpl.prefillType  = 'PO';
+    tpl.prefillDocNo = docNo || '';
+    return tpl.evaluate().getContent();
+  }
   var tpl = HtmlService.createTemplateFromFile('DocView_F');
   tpl.type  = type;
   tpl.docNo = docNo;
