@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    body { background: var(--bg); }
+    .pop-wrap { max-width: 820px; margin: 0 auto; padding-bottom: 40px; }
+
+    /* ── Header ── */
+    .pop-header {
+      background: var(--navy); color: var(--white);
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .pop-back-btn {
+      background: none; border: none; color: var(--white); cursor: pointer;
+      font-size: 18px; padding: 2px 6px; border-radius: 4px;
+      line-height: 1;
+    }
+    .pop-back-btn:hover { background: rgba(255,255,255,0.15); }
+    .pop-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
+    .pop-badge {
+      background: var(--amber); color: var(--navy);
+      padding: 2px 9px; border-radius: 10px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    }
+
+    /* ── Body ── */
+    .pop-body { padding: 14px; }
+    .pop-card {
+      background: var(--white);
+      border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 14px; margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .pop-card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--navy); margin-bottom: 12px; }
+    .pop-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pop-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .pop-field { margin-bottom: 10px; }
+    .pop-field label { display: block; font-size: 11px; color: #555; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .pop-field input, .pop-field select, .pop-field textarea {
+      width: 100%; box-sizing: border-box;
+      padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 5px;
+      font-size: 13px; font-family: inherit; background: var(--white);
+    }
+    .pop-field input:disabled, .pop-field select:disabled { background: #f5f5f5; color: #777; }
+    .pop-field textarea { resize: vertical; min-height: 46px; }
+
+    /* ── Lines table ── */
+    .pop-lines-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .pop-lines-table th {
+      background: var(--navy); color: var(--white); padding: 6px 8px;
+      font-weight: 600; text-align: left; font-size: 10px; text-transform: uppercase;
+    }
+    .pop-lines-table td { padding: 4px 6px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .pop-lines-table input, .pop-lines-table select {
+      width: 100%; padding: 5px 6px; border: 1px solid #ddd; border-radius: 4px;
+      font-size: 12px; font-family: inherit; box-sizing: border-box;
+    }
+    .pop-lines-table .del-btn {
+      background: none; border: none; color: #e53935; cursor: pointer; font-size: 16px;
+      padding: 2px 6px;
+    }
+
+    /* ── Totals ── */
+    .pop-totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .pop-total-box { background: #f7f8fc; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; text-align: center; }
+    .pop-total-label { font-size: 10px; text-transform: uppercase; font-weight: 600; color: #777; margin-bottom: 4px; }
+    .pop-total-value { font-size: 16px; font-weight: 700; color: var(--navy); }
+
+    /* ── Buttons ── */
+    .pop-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+    .btn-draft { background: #f5f5f5; color: var(--navy); border: 1px solid #ccc; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-submit { background: var(--navy); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-draft:disabled, .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-add-row { background: none; border: 1px dashed #aaa; color: #555; padding: 6px 14px; border-radius: 5px; font-size: 12px; cursor: pointer; margin-top: 8px; }
+    .btn-add-row:hover { background: #f5f5f5; }
+
+    /* ── Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal-box { background: var(--white); border-radius: 10px; padding: 22px; max-width: 480px; width: 92%; }
+    .modal-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+    .modal-section { font-size: 12px; font-weight: 600; text-transform: uppercase; color: #777; margin: 10px 0 4px; }
+    .modal-line { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
+    .modal-total { font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 8px; }
+    .modal-warn { background: #FFF3E0; border-left: 3px solid var(--amber); padding: 8px 12px; font-size: 12px; border-radius: 4px; margin-top: 8px; }
+    .modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+    .btn-cancel-modal { background: #f5f5f5; color: var(--navy); border: 1px solid #ccc; padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-confirm { background: #16A34A; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+    /* ── Toast ── */
+    #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; max-width: 90vw; text-align: center; }
+    #toast.show { opacity: 1; }
+    #toast.err { background: #c62828; }
+  </style>
+</head>
+<body>
+<div class="pop-wrap">
+
+  <!-- Header -->
+  <div class="pop-header">
+    <button class="pop-back-btn" onclick="goHome()" title="Back to Landing">&#8592;</button>
+    <div class="pop-title">New Purchase Order</div>
+    <div class="pop-badge" id="docBadge">PO …</div>
+  </div>
+
+  <div class="pop-body">
+    <!-- PO Header Fields -->
+    <div class="pop-card">
+      <div class="pop-card-title">Purchase Order Details</div>
+      <div class="pop-grid2">
+        <div class="pop-field">
+          <label>Supplier *</label>
+          <select id="supplierCode" onchange="onSupplierChange()">
+            <option value="">— select supplier —</option>
+          </select>
+        </div>
+        <div class="pop-field">
+          <label>Due Date</label>
+          <input type="date" id="dueDate">
+        </div>
+        <div class="pop-field">
+          <label>Currency</label>
+          <input type="text" id="currency" value="INR" disabled>
+        </div>
+        <div class="pop-field">
+          <label>GST %</label>
+          <input type="number" id="gstPct" value="18" min="0" max="100" step="0.01" onchange="recomputeTotals()">
+        </div>
+        <div class="pop-field">
+          <label>Payment Terms</label>
+          <input type="text" id="paymentTerms" placeholder="e.g. Net 30">
+        </div>
+        <div class="pop-field">
+          <label>PO Date</label>
+          <input type="date" id="poDate">
+        </div>
+      </div>
+      <div class="pop-field">
+        <label>Remarks</label>
+        <textarea id="remarks" rows="2" placeholder="Optional remarks..."></textarea>
+      </div>
+    </div>
+
+    <!-- Lines -->
+    <div class="pop-card">
+      <div class="pop-card-title">Line Items</div>
+      <div style="overflow-x:auto;">
+        <table class="pop-lines-table" id="linesTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th style="min-width:160px;">Material *</th>
+              <th style="min-width:80px;">Desc</th>
+              <th style="min-width:50px;">Unit</th>
+              <th style="min-width:80px;">Qty *</th>
+              <th style="min-width:90px;">Unit Price</th>
+              <th style="min-width:90px;">Line Amount</th>
+              <th style="min-width:110px;">Promised Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="linesBody"></tbody>
+        </table>
+      </div>
+      <button class="btn-add-row" onclick="addLine()">+ Add Line</button>
+    </div>
+
+    <!-- Totals -->
+    <div class="pop-card">
+      <div class="pop-card-title">Order Totals</div>
+      <div class="pop-totals">
+        <div class="pop-total-box">
+          <div class="pop-total-label">Sub Total</div>
+          <div class="pop-total-value" id="dispSubTotal">INR 0.00</div>
+        </div>
+        <div class="pop-total-box">
+          <div class="pop-total-label">GST Amount</div>
+          <div class="pop-total-value" id="dispGst">INR 0.00</div>
+        </div>
+        <div class="pop-total-box">
+          <div class="pop-total-label">Grand Total</div>
+          <div class="pop-total-value" id="dispGrandTotal">INR 0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="pop-btns">
+      <button class="btn-draft" id="btnDraft" onclick="saveDraft()">Save as Draft</button>
+      <button class="btn-submit" id="btnPreview" onclick="doPreview()">Preview &amp; Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal-box">
+    <div class="modal-title">Confirm Purchase Order</div>
+    <div id="previewContent"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel-modal" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" id="btnConfirm" onclick="confirmSubmit()">Confirm &amp; Submit</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+var _materials = [];
+var _docNo = '';
+var _dirty = false;
+
+/* ── Init ── */
+function init() {
+  var today = new Date().toISOString().slice(0,10);
+  document.getElementById('poDate').value = today;
+  google.script.run
+    .withSuccessHandler(function(d) {
+      _docNo = d.docNumber || 'PM/PO/…';
+      document.getElementById('docBadge').textContent = 'PO ' + _docNo;
+      _materials = d.materials || [];
+      var suppSel = document.getElementById('supplierCode');
+      (d.suppliers || []).forEach(function(s) {
+        var o = document.createElement('option');
+        o.value = s.code; o.textContent = s.code + ' — ' + s.name;
+        suppSel.appendChild(o);
+      });
+      document.getElementById('gstPct').value = d.defaultGstPct || 18;
+      addLine();
+      addLine();
+    })
+    .withFailureHandler(function(e) { showToast('Init failed: ' + e.message, true); })
+    .getPOFormInit();
+}
+
+/* ── Supplier change ── */
+window.onSupplierChange = function() { _dirty = true; };
+
+/* ── Line management ── */
+var lineCount = 0;
+
+window.addLine = function() {
+  lineCount++;
+  var idx = lineCount;
+  var tbody = document.getElementById('linesBody');
+  var tr = document.createElement('tr');
+  tr.id = 'line-' + idx;
+  tr.innerHTML =
+    '<td style="text-align:center;color:#999;">' + idx + '</td>' +
+    '<td><select onchange="onMatChange(' + idx + ')">' +
+      '<option value="">— select —</option>' +
+      _materials.map(function(m){ return '<option value="' + m.code + '">' + m.code + ' — ' + m.name + '</option>'; }).join('') +
+    '</select></td>' +
+    '<td><input type="text" id="desc-' + idx + '" readonly style="background:#f9f9f9;font-size:11px;" placeholder="auto"></td>' +
+    '<td><input type="text" id="unit-' + idx + '" readonly style="background:#f9f9f9;width:50px;"></td>' +
+    '<td><input type="number" id="qty-' + idx + '" min="0.001" step="any" placeholder="0" onchange="recomputeTotals()"></td>' +
+    '<td><input type="number" id="price-' + idx + '" min="0" step="any" placeholder="0.00" onchange="recomputeTotals()"></td>' +
+    '<td><input type="text" id="amt-' + idx + '" readonly style="background:#f9f9f9;"></td>' +
+    '<td><input type="date" id="pdate-' + idx + '"></td>' +
+    '<td><button class="del-btn" onclick="removeLine(' + idx + ')">×</button></td>';
+  tbody.appendChild(tr);
+  _dirty = true;
+};
+
+window.removeLine = function(idx) {
+  var tr = document.getElementById('line-' + idx);
+  if (tr) tr.remove();
+  recomputeTotals();
+  _dirty = true;
+};
+
+window.onMatChange = function(idx) {
+  var sel = document.querySelector('#line-' + idx + ' select');
+  if (!sel) return;
+  var code = sel.value;
+  var mat = _materials.filter(function(m){ return m.code === code; })[0];
+  if (mat) {
+    document.getElementById('desc-' + idx).value  = mat.name || '';
+    document.getElementById('unit-' + idx).value  = mat.unit || '';
+  } else {
+    document.getElementById('desc-' + idx).value  = '';
+    document.getElementById('unit-' + idx).value  = '';
+  }
+  recomputeTotals();
+  _dirty = true;
+};
+
+/* ── Totals ── */
+function fmt(n) { return 'INR ' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function recomputeTotals() {
+  var subTotal = 0;
+  var tbody = document.getElementById('linesBody');
+  var rows = tbody.querySelectorAll('tr');
+  rows.forEach(function(tr) {
+    var id = tr.id.replace('line-','');
+    var qty   = parseFloat(document.getElementById('qty-'  + id).value)   || 0;
+    var price = parseFloat(document.getElementById('price-'+ id).value) || 0;
+    var amt   = qty * price;
+    document.getElementById('amt-' + id).value = amt ? amt.toFixed(2) : '';
+    subTotal += amt;
+  });
+  var gstPct    = parseFloat(document.getElementById('gstPct').value) || 0;
+  var gstAmount = subTotal * gstPct / 100;
+  var grand     = subTotal + gstAmount;
+  document.getElementById('dispSubTotal').textContent  = fmt(subTotal);
+  document.getElementById('dispGst').textContent       = fmt(gstAmount);
+  document.getElementById('dispGrandTotal').textContent= fmt(grand);
+}
+window.recomputeTotals = recomputeTotals;
+
+/* ── Build payload ── */
+function buildPayload() {
+  var tbody = document.getElementById('linesBody');
+  var rows  = tbody.querySelectorAll('tr');
+  var lines = [];
+  rows.forEach(function(tr) {
+    var id  = tr.id.replace('line-','');
+    var sel = tr.querySelector('select');
+    var matCode = sel ? sel.value : '';
+    var qty   = parseFloat(document.getElementById('qty-'  + id).value)  || 0;
+    var price = parseFloat(document.getElementById('price-'+ id).value) || 0;
+    var pdate = document.getElementById('pdate-' + id).value || '';
+    lines.push({ materialCode: matCode, materialDesc: document.getElementById('desc-' + id).value,
+      unit: document.getElementById('unit-' + id).value,
+      qtyOrdered: qty, unitPrice: price, promisedDate: pdate });
+  });
+  var suppSel = document.getElementById('supplierCode');
+  var suppCode = suppSel.value;
+  var suppOpt  = suppSel.options[suppSel.selectedIndex];
+  var suppName = suppOpt ? suppOpt.textContent.replace(/^[^—]+— /, '') : '';
+  return {
+    supplierCode:  suppCode,
+    supplierName:  suppName,
+    poDate:        document.getElementById('poDate').value,
+    dueDate:       document.getElementById('dueDate').value,
+    gstPct:        parseFloat(document.getElementById('gstPct').value) || 0,
+    paymentTerms:  document.getElementById('paymentTerms').value,
+    remarks:       document.getElementById('remarks').value,
+    lines:         lines
+  };
+}
+
+/* ── Save draft ── */
+window.saveDraft = function() {
+  setBusy(true);
+  var payload = buildPayload();
+  payload.submit = false;
+  google.script.run
+    .withSuccessHandler(function(r) {
+      setBusy(false);
+      if (r.success) { _dirty = false; showToast('Draft saved: ' + r.poNo); setTimeout(goHome, 1200); }
+      else showToast('Error: ' + r.error, true);
+    })
+    .withFailureHandler(function(e) { setBusy(false); showToast(e.message, true); })
+    .savePO(payload);
+};
+
+/* ── Preview ── */
+window.doPreview = function() {
+  setBusy(true);
+  google.script.run
+    .withSuccessHandler(function(r) {
+      setBusy(false);
+      if (!r.ok) { showToast('Validation: ' + r.errors.join('; '), true); return; }
+      showPreviewModal(r.preview);
+    })
+    .withFailureHandler(function(e) { setBusy(false); showToast(e.message, true); })
+    .previewPO(buildPayload());
+};
+
+function showPreviewModal(prev) {
+  var html = '<div class="modal-section">Supplier</div>';
+  html += '<div class="modal-line">' + prev.supplier + '</div>';
+  html += '<div class="modal-section">Lines (' + prev.lines.length + ')</div>';
+  prev.lines.forEach(function(l) {
+    html += '<div class="modal-line">' + l.line_no + '. ' + l.material_code +
+      ' — Qty ' + l.qty_ordered + ' × INR ' + l.unit_price.toFixed(2) +
+      ' = INR ' + l.line_amount.toFixed(2) + '</div>';
+  });
+  html += '<div class="modal-total">Grand Total: INR ' + prev.totals.grandTotal.toFixed(2) + '</div>';
+  if (prev.warnings && prev.warnings.length) {
+    html += '<div class="modal-warn"><b>Warnings:</b><br>' + prev.warnings.join('<br>') + '</div>';
+  }
+  document.getElementById('previewContent').innerHTML = html;
+  document.getElementById('previewModal').classList.add('show');
+}
+
+window.closeModal = function() { document.getElementById('previewModal').classList.remove('show'); };
+
+window.confirmSubmit = function() {
+  document.getElementById('btnConfirm').disabled = true;
+  var payload = buildPayload();
+  payload.submit = true;
+  google.script.run
+    .withSuccessHandler(function(r) {
+      closeModal();
+      if (r.success) { _dirty = false; showToast('PO submitted: ' + r.poNo); setTimeout(goHome, 1400); }
+      else { showToast('Error: ' + r.error, true); document.getElementById('btnConfirm').disabled = false; }
+    })
+    .withFailureHandler(function(e) {
+      closeModal(); showToast(e.message, true);
+      document.getElementById('btnConfirm').disabled = false;
+    })
+    .savePO(payload);
+};
+
+/* ── Helpers ── */
+function setBusy(b) {
+  document.getElementById('btnDraft').disabled = b;
+  document.getElementById('btnPreview').disabled = b;
+}
+
+function showToast(msg, isErr) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isErr ? ' err' : '');
+  setTimeout(function(){ t.className = ''; }, 3000);
+}
+
+window.goHome = function() {
+  if (_dirty) {
+    if (!confirm('You have unsaved changes. Leave anyway?')) return;
+  }
+  google.script.run
+    .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+    .getFormHtml('Landing');
+};
+
+window.addEventListener('beforeunload', function(e) {
+  if (_dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+init();
+}());
+</script>
+</body>
+</html>

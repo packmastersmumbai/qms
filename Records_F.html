@@ -379,6 +379,18 @@
   <button class="tab-btn" data-module="IPQC">IPQC <span class="tab-count" id="cnt-IPQC">—</span></button>
   <button class="tab-btn" data-module="OQC">OQC <span class="tab-count" id="cnt-OQC">—</span></button>
   <button class="tab-btn" data-module="Gatepass">Gatepass <span class="tab-count" id="cnt-Gatepass">—</span></button>
+  <button class="tab-btn" data-module="PO">PO <span class="tab-count" id="cnt-PO">—</span></button>
+</div>
+
+<!-- PO Detail Modal -->
+<div id="poDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;overflow-y:auto;padding:20px;box-sizing:border-box;">
+  <div style="background:#fff;border-radius:10px;max-width:680px;margin:0 auto;padding:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:700;color:#0D1B6E;" id="poModalTitle">PO Details</div>
+      <button onclick="document.getElementById('poDetailModal').style.display='none';" style="background:none;border:none;font-size:20px;cursor:pointer;color:#666;">×</button>
+    </div>
+    <div id="poDetailContent"></div>
+  </div>
 </div>
 
 <!-- Content -->
@@ -489,7 +501,8 @@
     IQC:      ['Date', 'IQC ID', 'GRN · Material', 'Result', 'OP'],
     IPQC:     ['Date', 'IPQC ID', 'Product · Batch', 'Status', 'OP'],
     OQC:      ['Date', 'OQC ID', 'Customer', 'Result', 'OP'],
-    Gatepass: ['Date', 'GP ID', 'Type · Party', 'Status', 'OP']
+    Gatepass: ['Date', 'GP ID', 'Type · Party', 'Status', 'OP'],
+    PO:       ['Date', 'PO No.', 'Supplier', 'Status', 'Total']
   };
 
   // ── Render table header ──
@@ -689,6 +702,23 @@
       document.getElementById('tableSection').classList.add('table-loading');
     }
 
+    // PO tab: use getRecentPOs and render differently
+    if (state.module === 'PO') {
+      google.script.run
+        .withSuccessHandler(function(poList) {
+          if (reqId !== state.requestId) return;
+          renderHead('PO');
+          renderPOList(poList || []);
+        })
+        .withFailureHandler(function(err) {
+          if (reqId !== state.requestId) return;
+          document.getElementById('tableSection').classList.remove('table-loading');
+          showToast('Could not load PO records. Tap to retry.');
+        })
+        .getRecentPOs(200);
+      return;
+    }
+
     google.script.run
       .withSuccessHandler(function(records) {
         if (reqId !== state.requestId) return; // stale
@@ -703,6 +733,185 @@
       .getRecordsList(state.module, filters);
   }
 
+  // ── PO list renderer ──
+  function fmtInr(n) { return 'INR ' + Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  function poStatusChip(st) {
+    var cls = 'chip-default';
+    if (st === 'OPEN' || st === 'PARTIAL_RECEIVED') cls = 'chip-pending';
+    else if (st === 'CLOSED') cls = 'chip-pass';
+    else if (st === 'CANCELLED') cls = 'chip-fail';
+    return '<span class="chip ' + cls + '">' + esc(st || '—') + '</span>';
+  }
+
+  function renderPOList(poList) {
+    var tbody = document.getElementById('tableBody');
+    var cntEl = document.getElementById('cnt-PO');
+    if (cntEl) cntEl.textContent = poList.length;
+
+    // Filter by search / date
+    var from = state.fromDate ? new Date(state.fromDate) : null;
+    var to   = state.toDate   ? new Date(state.toDate + 'T23:59:59') : null;
+    var srch = (state.search || '').toLowerCase();
+
+    var filtered = poList.filter(function(po) {
+      if (from || to) {
+        var d = po.date ? new Date(po.date) : null;
+        if (d) {
+          if (from && d < from) return false;
+          if (to   && d > to)   return false;
+        }
+      }
+      if (srch) {
+        var hay = (po.poNo + ' ' + po.supplierName + ' ' + po.supplierCode + ' ' + po.status).toLowerCase();
+        if (hay.indexOf(srch) === -1) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><div class="empty-main">No PO records match.</div><div class="empty-sub">Adjust filters or create a new PO.</div></td></tr>';
+      document.getElementById('tableSection').classList.remove('table-loading');
+      return;
+    }
+
+    var html = '';
+    filtered.forEach(function(po) {
+      var rc = po.status === 'PARTIAL_RECEIVED' || po.status === 'OPEN' ? ' pending-row' : po.status === 'CANCELLED' ? ' fail-row' : '';
+      html += '<tr class="data-row' + rc + ' fade-in po-row" data-pono="' + esc(po.poNo) + '">' +
+        dtCell(po.date) +
+        '<td>' + esc(po.poNo) + '</td>' +
+        '<td>' + esc(po.supplierName || po.supplierCode) + '</td>' +
+        '<td>' + poStatusChip(po.status) + '</td>' +
+        '<td style="font-size:11px;font-weight:600;">' + fmtInr(po.grandTotal) + '</td>' +
+        '</tr>';
+    });
+    tbody.innerHTML = html;
+    document.getElementById('tableSection').classList.remove('table-loading');
+
+    // Row click → open PO detail modal
+    tbody.removeEventListener('click', handlePORowClick);
+    tbody.addEventListener('click', handlePORowClick);
+  }
+
+  function handlePORowClick(e) {
+    var row = e.target.closest('tr.po-row');
+    if (!row) return;
+    var poNo = row.getAttribute('data-pono');
+    if (!poNo) return;
+    openPODetail(poNo);
+  }
+
+  function openPODetail(poNo) {
+    var modal = document.getElementById('poDetailModal');
+    var content = document.getElementById('poDetailContent');
+    var title   = document.getElementById('poModalTitle');
+    title.textContent = 'Loading ' + poNo + '…';
+    content.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">Loading…</p>';
+    modal.style.display = 'block';
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (!result) { content.innerHTML = '<p style="color:#c62828;">PO not found.</p>'; return; }
+        renderPODetail(result);
+      })
+      .withFailureHandler(function(e) {
+        content.innerHTML = '<p style="color:#c62828;">Error: ' + esc(e.message) + '</p>';
+      })
+      .getPOById(poNo);
+  }
+
+  function renderPODetail(result) {
+    var h = result.header;
+    var title = document.getElementById('poModalTitle');
+    title.textContent = h.poNo + ' — ' + h.supplierName;
+
+    var html = '';
+    // Status row + action buttons
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
+    html += poStatusChip(h.status);
+    html += '<span style="font-size:11px;color:#777;margin-left:4px;">Due: ' + esc(h.dueDate || '—') + '</span>';
+    html += '<span style="flex:1;"></span>';
+    // Cancel button: visible if DRAFT or OPEN and zero GRN receipts
+    var hasReceipts = (result.linkedGrns && result.linkedGrns.length > 0);
+    if ((h.status === 'DRAFT' || h.status === 'OPEN') && !hasReceipts) {
+      html += '<button onclick="doCancelPO(\'' + esc(h.poNo) + '\')" style="background:#c62828;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">Cancel PO</button>';
+    }
+    // Edit-as-draft: only for DRAFT
+    if (h.status === 'DRAFT') {
+      html += '<button onclick="openPOForm()" style="background:#0D1B6E;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;margin-left:4px;">Edit</button>';
+    }
+    html += '</div>';
+
+    // Header fields
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">';
+    var hdrFields = [
+      ['PO Date', h.poDate], ['Supplier', h.supplierName],
+      ['Currency', h.currency], ['GST %', h.gstPct + '%'],
+      ['Payment Terms', h.paymentTerms || '—'], ['Sub Total', fmtInr(h.subTotal)],
+      ['GST Amount', fmtInr(h.gstAmount)], ['Grand Total', fmtInr(h.grandTotal)],
+      ['Created By', h.createdBy], ['Created At', h.createdAt]
+    ];
+    if (h.cancelledReason) hdrFields.push(['Cancelled Reason', h.cancelledReason]);
+    hdrFields.forEach(function(f) {
+      html += '<div><div style="font-size:10px;font-weight:600;color:#0D1B6E;text-transform:uppercase;margin-bottom:2px;">' + esc(f[0]) + '</div>';
+      html += '<div style="font-size:12px;">' + esc(f[1] || '—') + '</div></div>';
+    });
+    html += '</div>';
+
+    // Lines
+    html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#0D1B6E;margin-bottom:6px;">Lines</div>';
+    html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    html += '<thead><tr style="background:#f0f0f5;">';
+    ['#','Material','Qty Ord','Qty Rcvd','Qty Pend','Unit Price','Status','Promised'].forEach(function(c) {
+      html += '<th style="padding:5px 7px;text-align:left;font-size:10px;text-transform:uppercase;">' + esc(c) + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+    (result.lines || []).forEach(function(l) {
+      html += '<tr style="border-bottom:1px solid #f0f0f0;">' +
+        '<td style="padding:4px 7px;">' + l.lineNo + '</td>' +
+        '<td style="padding:4px 7px;">' + esc(l.materialCode) + '<br><span style="color:#999;font-size:10px;">' + esc(l.materialDesc) + '</span></td>' +
+        '<td style="padding:4px 7px;">' + l.qtyOrdered + ' ' + esc(l.unit) + '</td>' +
+        '<td style="padding:4px 7px;">' + l.qtyReceived + '</td>' +
+        '<td style="padding:4px 7px;font-weight:' + (l.qtyPending > 0 ? '700' : '400') + ';color:' + (l.qtyPending > 0 ? '#c65c00' : '#555') + ';">' + l.qtyPending + '</td>' +
+        '<td style="padding:4px 7px;">INR ' + Number(l.unitPrice).toFixed(2) + '</td>' +
+        '<td style="padding:4px 7px;">' + poStatusChip(l.lineStatus) + '</td>' +
+        '<td style="padding:4px 7px;color:#777;">' + esc(l.promisedDate || '—') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table></div>';
+
+    // Linked GRNs
+    if (result.linkedGrns && result.linkedGrns.length > 0) {
+      html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#0D1B6E;margin:12px 0 6px;">Linked GRNs</div>';
+      html += '<div style="font-size:12px;">';
+      result.linkedGrns.forEach(function(g) {
+        html += '<span style="display:inline-block;background:#e8f0fe;color:#0D1B6E;padding:3px 8px;border-radius:10px;margin:2px;font-weight:600;">' + esc(g.grnNo) + ' (' + esc(g.date) + ')</span>';
+      });
+      html += '</div>';
+    }
+
+    document.getElementById('poDetailContent').innerHTML = html;
+  }
+
+  window.doCancelPO = function(poNo) {
+    var reason = prompt('Reason for cancellation:');
+    if (reason === null) return;
+    google.script.run
+      .withSuccessHandler(function(r) {
+        if (r.success) { document.getElementById('poDetailModal').style.display='none'; load(); }
+        else alert('Cancel failed: ' + r.error);
+      })
+      .withFailureHandler(function(e) { alert('Error: ' + e.message); })
+      .cancelPO(poNo, reason);
+  };
+
+  window.openPOForm = function() {
+    google.script.run
+      .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+      .getFormHtml('PO');
+  };
+
   // ── Load counts ──
   function loadCounts() {
     google.script.run
@@ -716,6 +925,14 @@
       })
       .withFailureHandler(function() {})
       .getRecordsCounts();
+    // PO count from getRecentPOs
+    google.script.run
+      .withSuccessHandler(function(poList) {
+        var el = document.getElementById('cnt-PO');
+        if (el && poList) el.textContent = poList.length;
+      })
+      .withFailureHandler(function() {})
+      .getRecentPOs(500);
   }
 
   // ── Init ──

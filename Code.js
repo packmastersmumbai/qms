@@ -429,5 +429,17 @@ function getQmsLandingState() {
     }
   } catch(e) { Logger.log('pendingActions Rule3: ' + e); }
 
+  // PO: count PARTIAL_RECEIVED (actionable — chase remaining qty)
+  try {
+    var poHdrWs = ss.getSheetByName('PO_HEADER');
+    var poPartial = 0;
+    if (poHdrWs && poHdrWs.getLastRow() > 1) {
+      poHdrWs.getRange(2, 12, poHdrWs.getLastRow() - 1, 1).getValues().forEach(function(r) {
+        if (String(r[0] || '').trim() === 'PARTIAL_RECEIVED') poPartial++;
+      });
+    }
+    counts.PO = poPartial;
+  } catch(e) { Logger.log('getQmsLandingState PO count: ' + e); }
+
   return { name: 'Team', role: 'user', todayCounts: counts, pendingActions: pendingActions };
 }
