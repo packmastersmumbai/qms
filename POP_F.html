@@ -258,7 +258,7 @@ window.addLine = function() {
     '<td style="text-align:center;color:#999;">' + idx + '</td>' +
     '<td><select onchange="onMatChange(' + idx + ')">' +
       '<option value="">— select —</option>' +
-      _materials.map(function(m){ return '<option value="' + m.code + '">' + m.code + ' — ' + m.name + '</option>'; }).join('') +
+      _materials.map(function(m){ return '<option value="' + m.code + '">' + m.code + ' — ' + (m.desc || '') + '</option>'; }).join('') +
     '</select></td>' +
     '<td><input type="text" id="desc-' + idx + '" readonly style="background:#f9f9f9;font-size:11px;" placeholder="auto"></td>' +
     '<td><input type="text" id="unit-' + idx + '" readonly style="background:#f9f9f9;width:50px;"></td>' +
@@ -284,7 +284,7 @@ window.onMatChange = function(idx) {
   var code = sel.value;
   var mat = _materials.filter(function(m){ return m.code === code; })[0];
   if (mat) {
-    document.getElementById('desc-' + idx).value  = mat.name || '';
+    document.getElementById('desc-' + idx).value  = mat.desc || '';
     document.getElementById('unit-' + idx).value  = mat.unit || '';
   } else {
     document.getElementById('desc-' + idx).value  = '';
