@@ -138,14 +138,20 @@ function backfillStockLedgerFromGRN() {
   if (!grnWs || grnWs.getLastRow() < 2) return { success: false, error: 'No GRN_LOG data.' };
   if (!ledWs) return { success: false, error: 'STOCK_LEDGER not found.' };
 
-  // Build set of GRN docNos already mirrored
+  // Build set of (GRN docNo | material | batch) tuples already mirrored.
+  // Per-item dedup so multi-item GRNs aren't lost after the first row.
   var mirrored = {};
   if (ledWs.getLastRow() > 1) {
     var led = ledWs.getDataRange().getValues();
     for (var i = 1; i < led.length; i++) {
       var refType = String(led[i][9] || '').trim().toUpperCase();
       var refNo   = String(led[i][10] || '').trim();
-      if (refType === 'GRN' && refNo) mirrored[refNo] = true;
+      var txnType = String(led[i][2] || '').trim().toUpperCase();
+      if (refType === 'GRN' && refNo && txnType === 'GRN_RECEIPT') {
+        var mat   = String(led[i][3] || '').trim();
+        var btch  = String(led[i][4] || '').trim();
+        mirrored[refNo + '|' + mat + '|' + btch] = true;
+      }
     }
   }
 
@@ -165,12 +171,13 @@ function backfillStockLedgerFromGRN() {
     if (!batch)   { skipped++; skipReasons.noBatch++; continue; }
     if (!loc)     { skipped++; skipReasons.noLoc++;   continue; }
     if (qtyRcvd <= 0) { skipped++; skipReasons.noQty++; continue; }
-    if (mirrored[docNo]) { skipped++; skipReasons.alreadyMirrored++; continue; }
+    var dedupKey = docNo + '|' + matCode + '|' + batch;
+    if (mirrored[dedupKey]) { skipped++; skipReasons.alreadyMirrored++; continue; }
     try {
       writeStockLedger_('GRN_RECEIPT', matCode, batch, loc, qtyRcvd, 0,
         'GRN', docNo, String(g[r][16] || ''), 'Backfilled from GRN_LOG');
       receiptsWritten++;
-      mirrored[docNo] = true;
+      mirrored[dedupKey] = true;
     } catch(e) {
       errors.push(docNo + ': ' + e.message);
     }
