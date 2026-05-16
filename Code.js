@@ -62,6 +62,7 @@ function onOpen() {
     .addItem('🔢  Verify Doc Counters',    'verifyDocCounters')
     .addItem('🌱  Verify Masters Seed',    'verifyMastersSeed')
     .addItem('🧪  Smoke Test Batch Flow',  'smokeTestBatchFlow')
+    .addItem('🧫  Run Integration Smoke',  'runIntegrationSmoke')
     .addItem('🧨  Raise Test NCR',         'testRaiseNCR')
     .addItem('🔎  Diagnose OQC→Gatepass',  'diagnoseOQCDropdown')
     .addSeparator()
