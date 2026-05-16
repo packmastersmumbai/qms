@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    body { background: var(--bg); }
+    .dsp-wrap { max-width: 820px; margin: 0 auto; padding-bottom: 40px; }
+
+    .dsp-header {
+      background: var(--navy); color: var(--white);
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .dsp-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
+    .dsp-count {
+      background: var(--amber); color: var(--navy);
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700;
+    }
+
+    .dsp-tabs { display: flex; background: #f7f7f9; border-bottom: 1px solid #e0e0e0; position: sticky; top: 39px; z-index: 99; }
+    .dsp-tab {
+      flex: 1; padding: 10px; cursor: pointer; text-align: center;
+      font-size: 12px; font-weight: 600; color: #777;
+      border-bottom: 2px solid transparent;
+    }
+    .dsp-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: var(--white); }
+
+    .dsp-body { padding: 14px; }
+
+    .dsp-form {
+      background: var(--white);
+      border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .dsp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .dsp-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .dsp-field { margin-bottom: 10px; }
+    .dsp-field label { display: block; font-size: 11px; color: #555; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .dsp-field input, .dsp-field select, .dsp-field textarea {
+      width: 100%; box-sizing: border-box;
+      padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 5px;
+      font-size: 13px; font-family: inherit; background: var(--white);
+    }
+    .dsp-field input:disabled { background: #f5f5f5; color: #777; }
+    .dsp-field textarea { resize: vertical; min-height: 50px; }
+
+    table.dsp-plan { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+    table.dsp-plan th, table.dsp-plan td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+    table.dsp-plan th { background: #f0f3f8; color: var(--navy); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+    table.dsp-plan tr.row-fifo { background: #f0fdf4; }
+    table.dsp-plan tr.row-over { background: #fffbeb; }
+    table.dsp-plan tr.row-skip { background: #fef2f2; opacity: 0.6; }
+    table.dsp-plan input[type=number] { width: 80px; padding: 4px 6px; font-size: 12px; }
+    table.dsp-plan button.skip-btn { padding: 4px 8px; font-size: 11px; border: 1px solid #d0d0d0; background: #fff; border-radius: 4px; cursor: pointer; }
+    table.dsp-plan button.skip-btn.is-skipped { background: #b32a2a; color: #fff; border-color: #b32a2a; }
+
+    .dsp-empty { text-align: center; padding: 40px 20px; color: #888; font-size: 13px; }
+    .dsp-empty-icon { font-size: 30px; margin-bottom: 8px; opacity: 0.4; }
+
+    .dsp-button {
+      width: 100%; padding: 12px;
+      background: var(--navy); color: var(--white);
+      border: 0; border-radius: 6px;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer; margin-top: 8px;
+      letter-spacing: 0.4px;
+    }
+    .dsp-button.amber { background: var(--amber); color: var(--navy); }
+    .dsp-button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .dsp-banner {
+      margin-top: 8px; padding: 8px 10px; border-radius: 6px;
+      font-size: 12px; font-weight: 600;
+    }
+    .dsp-banner.info { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .dsp-banner.warn { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .dsp-banner.err  { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+    .dsp-rec {
+      background: var(--white);
+      border: 1px solid #e0e0e0; border-radius: 8px;
+      margin-bottom: 10px; padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .dsp-rec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .dsp-rec-id { font-weight: 700; color: var(--navy); font-size: 13px; flex: 1; }
+    .dsp-rec-ts { font-size: 11px; color: #888; }
+    .dsp-rec-row { display: grid; grid-template-columns: 110px 1fr; gap: 4px; font-size: 12px; padding: 2px 0; }
+    .dsp-rec-label { color: #777; }
+    .dsp-pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+    .dsp-pill.over { background: var(--amber); color: var(--navy); }
+
+    .dsp-toast {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--navy); color: var(--white);
+      padding: 10px 18px; border-radius: 22px;
+      font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.25s;
+      max-width: 90%; z-index: 200;
+    }
+    .dsp-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .dsp-toast.error { background: #b32a2a; }
+  </style>
+</head>
+<body>
+  <div class="dsp-wrap">
+    <div class="dsp-header">
+      <div class="dsp-title">🚚 Dispatch — FG Outbound (FIFO)</div>
+      <span class="dsp-count" id="docNoPreview">—</span>
+    </div>
+
+    <div class="dsp-tabs">
+      <div class="dsp-tab active" data-tab="new"    onclick="switchTab('new')">New Dispatch</div>
+      <div class="dsp-tab"        data-tab="recent" onclick="switchTab('recent')">Recent</div>
+    </div>
+
+    <div class="dsp-body">
+
+      <div id="paneNew">
+        <div class="dsp-form">
+          <div class="dsp-grid3">
+            <div class="dsp-field">
+              <label>Gatepass No (preview)</label>
+              <input id="fDocNo" disabled />
+            </div>
+            <div class="dsp-field">
+              <label>Date</label>
+              <input type="date" id="fDate" disabled />
+            </div>
+            <div class="dsp-field">
+              <label>Operator</label>
+              <input id="fOperator" placeholder="Your name" />
+            </div>
+          </div>
+
+          <div class="dsp-grid2">
+            <div class="dsp-field">
+              <label>Customer</label>
+              <select id="fCustomer"><option value="">— select customer —</option></select>
+            </div>
+            <div class="dsp-field">
+              <label>Product (FG)</label>
+              <select id="fProduct"><option value="">— select product —</option></select>
+            </div>
+          </div>
+
+          <div class="dsp-grid3">
+            <div class="dsp-field">
+              <label>Qty Requested</label>
+              <input type="number" id="fQty" min="0" step="any" placeholder="0" />
+            </div>
+            <div class="dsp-field">
+              <label>Unit</label>
+              <input id="fUnit" disabled />
+            </div>
+            <div class="dsp-field">
+              <label>&nbsp;</label>
+              <button class="dsp-button amber" id="btnPreview" onclick="onPreview()" style="margin-top:0;">Preview FIFO</button>
+            </div>
+          </div>
+
+          <div id="planArea" style="display:none;">
+            <table class="dsp-plan" id="planTable">
+              <thead>
+                <tr>
+                  <th>#</th><th>Lot ID</th><th>OQC Ref</th><th>OQC Date</th>
+                  <th>Batch</th><th>Location</th><th>Available</th>
+                  <th>Allocated</th><th>Skip</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="7" style="text-align:right;font-weight:700;">Total chosen:</td>
+                  <td id="planTotal" style="font-weight:700;color:var(--navy);">0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+            <div id="planBanner" class="dsp-banner info" style="display:none;"></div>
+          </div>
+
+          <div class="dsp-field" id="overrideReasonField" style="display:none;margin-top:10px;">
+            <label>Override Reason (required, ≥ 5 chars)</label>
+            <textarea id="fOverrideReason" placeholder="Why deviate from FIFO order?"></textarea>
+          </div>
+
+          <hr style="margin:14px 0;border:0;border-top:1px solid #e0e0e0;">
+
+          <div class="dsp-grid3">
+            <div class="dsp-field">
+              <label>Vehicle No.</label>
+              <input id="fVehicle" />
+            </div>
+            <div class="dsp-field">
+              <label>Driver</label>
+              <input id="fDriver" />
+            </div>
+            <div class="dsp-field">
+              <label>Transporter</label>
+              <input id="fTransporter" />
+            </div>
+          </div>
+
+          <div class="dsp-grid2">
+            <div class="dsp-field">
+              <label>Authorized By</label>
+              <select id="fAuthorizedBy"><option value="">— select —</option></select>
+            </div>
+            <div class="dsp-field">
+              <label>Security Guard</label>
+              <input id="fGuard" />
+            </div>
+          </div>
+
+          <div class="dsp-field">
+            <label>Remarks (optional)</label>
+            <input id="fRemarks" placeholder="e.g. urgent order, special instruction" />
+          </div>
+
+          <button class="dsp-button" id="btnConfirm" onclick="onConfirm()" disabled>Confirm Dispatch</button>
+        </div>
+      </div>
+
+      <div id="paneRecent" style="display:none;">
+        <div id="recentList" class="dsp-empty">
+          <div class="dsp-empty-icon">⏳</div>Loading…
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="dsp-toast" id="toast"></div>
+
+  <script>
+    var INIT = null;
+    var CURRENT_FIFO_PLAN = null;   // server-returned FIFO plan
+    var CHOSEN_PLAN = [];           // user-edited copy
+    var SKIPPED = {};               // lotId -> true
+
+    function showToast(msg, kind) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'dsp-toast show' + (kind === 'error' ? ' error' : '');
+      setTimeout(function(){ t.className = 'dsp-toast'; }, 3000);
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.dsp-tab').forEach(function(t){
+        t.classList.toggle('active', t.dataset.tab === name);
+      });
+      document.getElementById('paneNew').style.display    = name === 'new'    ? '' : 'none';
+      document.getElementById('paneRecent').style.display = name === 'recent' ? '' : 'none';
+      if (name === 'recent') reloadRecent();
+    }
+
+    function loadInit() {
+      google.script.run
+        .withSuccessHandler(function(d){
+          INIT = d || {};
+          document.getElementById('fDocNo').value = INIT.docNumber || '';
+          document.getElementById('docNoPreview').textContent = INIT.docNumber || '—';
+          document.getElementById('fDate').value  = INIT.today || '';
+
+          var cust = document.getElementById('fCustomer');
+          cust.innerHTML = '<option value="">— select customer —</option>' +
+            (INIT.customers || []).map(function(c){
+              return '<option value="' + escapeHtml(c.code) + '" data-name="' + escapeHtml(c.name || '') + '">' +
+                     escapeHtml((c.code || '') + ' — ' + (c.name || '')) + '</option>';
+            }).join('');
+
+          var prod = document.getElementById('fProduct');
+          prod.innerHTML = '<option value="">— select product —</option>' +
+            (INIT.products || []).map(function(p){
+              return '<option value="' + escapeHtml(p.code) + '" data-unit="' + escapeHtml(p.unit || '') +
+                     '" data-desc="' + escapeHtml(p.desc || '') + '">' +
+                     escapeHtml((p.code || '') + ' — ' + (p.desc || '')) + '</option>';
+            }).join('');
+
+          var auth = document.getElementById('fAuthorizedBy');
+          auth.innerHTML = '<option value="">— select —</option>' +
+            (INIT.inspectors || []).map(function(i){
+              var n = i.name || i;
+              return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>';
+            }).join('');
+        })
+        .withFailureHandler(function(e){ showToast('Init failed: ' + (e.message || e), 'error'); })
+        .getDispatchFormInit();
+    }
+
+    function onProductChange() {
+      var sel = document.getElementById('fProduct');
+      var opt = sel.options[sel.selectedIndex];
+      document.getElementById('fUnit').value = (opt && opt.dataset.unit) || '';
+      clearPlan();
+    }
+
+    function clearPlan() {
+      CURRENT_FIFO_PLAN = null;
+      CHOSEN_PLAN = [];
+      SKIPPED = {};
+      document.getElementById('planArea').style.display = 'none';
+      document.getElementById('planTable').querySelector('tbody').innerHTML = '';
+      document.getElementById('planTotal').textContent = '0';
+      document.getElementById('overrideReasonField').style.display = 'none';
+      document.getElementById('btnConfirm').disabled = true;
+      var banner = document.getElementById('planBanner');
+      banner.style.display = 'none';
+      banner.className = 'dsp-banner info';
+      banner.textContent = '';
+    }
+
+    function onPreview() {
+      var custSel = document.getElementById('fCustomer');
+      var prodSel = document.getElementById('fProduct');
+      var cust = custSel.value;
+      var prod = prodSel.value;
+      var qty  = Number(document.getElementById('fQty').value);
+      if (!cust) { showToast('Pick a customer', 'error'); return; }
+      if (!prod) { showToast('Pick a product', 'error'); return; }
+      if (!qty || qty <= 0) { showToast('Qty must be > 0', 'error'); return; }
+
+      var btn = document.getElementById('btnPreview');
+      btn.disabled = true; btn.textContent = 'Planning…';
+      google.script.run
+        .withSuccessHandler(function(res){
+          btn.disabled = false; btn.textContent = 'Preview FIFO';
+          if (!res || !res.success) {
+            showToast(res && res.error || 'Plan failed', 'error');
+            clearPlan();
+            return;
+          }
+          CURRENT_FIFO_PLAN = res.plan || [];
+          // Deep copy for chosen plan
+          CHOSEN_PLAN = CURRENT_FIFO_PLAN.map(function(p){
+            return {
+              lotId: p.lotId, oqcRef: p.oqcRef, oqcDate: p.oqcDate,
+              batch: p.batch, fgLocation: p.fgLocation,
+              qtyAvailable: p.qtyAvailable, qty: p.qty
+            };
+          });
+          SKIPPED = {};
+          renderPlan();
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false; btn.textContent = 'Preview FIFO';
+          showToast('Plan error: ' + (e.message || e), 'error');
+        })
+        .planFGDispatchAllocation(cust, prod, qty);
+    }
+
+    function renderPlan() {
+      var tbody = document.getElementById('planTable').querySelector('tbody');
+      tbody.innerHTML = '';
+      CHOSEN_PLAN.forEach(function(p, idx){
+        var skipped = !!SKIPPED[p.lotId];
+        var fifoIdx = CURRENT_FIFO_PLAN.findIndex(function(f){ return f.lotId === p.lotId; });
+        // Diff vs FIFO baseline: if the qty differs or order differs, mark amber
+        var isFifo = !skipped && fifoIdx === idx && Math.abs(Number(p.qty) - Number(CURRENT_FIFO_PLAN[fifoIdx].qty)) < 0.001;
+        var rowCls = skipped ? 'row-skip' : (isFifo ? 'row-fifo' : 'row-over');
+        var dateStr = p.oqcDate ? String(p.oqcDate).substring(0, 10) : '';
+        var qtyVal = skipped ? 0 : Number(p.qty || 0);
+        tbody.innerHTML +=
+          '<tr class="' + rowCls + '" data-lot="' + escapeHtml(p.lotId) + '">' +
+            '<td>' + (idx + 1) + '</td>' +
+            '<td>' + escapeHtml(p.lotId) + '</td>' +
+            '<td>' + escapeHtml(p.oqcRef) + '</td>' +
+            '<td>' + escapeHtml(dateStr) + '</td>' +
+            '<td>' + escapeHtml(p.batch) + '</td>' +
+            '<td>' + escapeHtml(p.fgLocation) + '</td>' +
+            '<td>' + Number(p.qtyAvailable).toFixed(2) + '</td>' +
+            '<td><input type="number" class="alloc-input" min="0" step="any" value="' + qtyVal + '"' + (skipped ? ' disabled' : '') + '></td>' +
+            '<td><button class="skip-btn ' + (skipped ? 'is-skipped' : '') + '">' + (skipped ? 'Skipped' : 'Skip') + '</button></td>' +
+          '</tr>';
+      });
+
+      // Wire row events
+      Array.prototype.slice.call(tbody.querySelectorAll('tr')).forEach(function(tr){
+        var lotId = tr.getAttribute('data-lot');
+        tr.querySelector('.alloc-input').addEventListener('input', function(e){
+          var v = Number(e.target.value) || 0;
+          for (var i = 0; i < CHOSEN_PLAN.length; i++) {
+            if (CHOSEN_PLAN[i].lotId === lotId) { CHOSEN_PLAN[i].qty = v; break; }
+          }
+          recomputePlanState();
+        });
+        tr.querySelector('.skip-btn').addEventListener('click', function(){
+          SKIPPED[lotId] = !SKIPPED[lotId];
+          renderPlan();
+          recomputePlanState();
+        });
+      });
+
+      recomputePlanState();
+      document.getElementById('planArea').style.display = '';
+    }
+
+    function recomputePlanState() {
+      var qtyReq = Number(document.getElementById('fQty').value) || 0;
+      var total = 0;
+      CHOSEN_PLAN.forEach(function(p){
+        if (!SKIPPED[p.lotId]) total += Number(p.qty) || 0;
+      });
+      document.getElementById('planTotal').textContent = total.toFixed(2);
+
+      // Detect override (skips, order changes, or qty changes vs FIFO baseline)
+      var override = false;
+      var chosenActive = CHOSEN_PLAN.filter(function(p){ return !SKIPPED[p.lotId]; });
+      if (chosenActive.length !== CURRENT_FIFO_PLAN.length) override = true;
+      else {
+        for (var i = 0; i < CURRENT_FIFO_PLAN.length; i++) {
+          var fp = CURRENT_FIFO_PLAN[i];
+          var cp = chosenActive[i];
+          if (!cp || cp.lotId !== fp.lotId || Math.abs(Number(cp.qty) - Number(fp.qty)) > 0.001) {
+            override = true; break;
+          }
+        }
+      }
+
+      document.getElementById('overrideReasonField').style.display = override ? '' : 'none';
+
+      var banner = document.getElementById('planBanner');
+      var diff = Math.abs(total - qtyReq);
+      if (diff > 0.001) {
+        banner.style.display = '';
+        banner.className = 'dsp-banner err';
+        banner.textContent = 'Total chosen (' + total.toFixed(2) + ') ≠ Qty requested (' + qtyReq + '). Adjust before confirming.';
+        document.getElementById('btnConfirm').disabled = true;
+      } else if (override) {
+        banner.style.display = '';
+        banner.className = 'dsp-banner warn';
+        banner.textContent = '⚠ Override detected — provide a reason (≥5 chars) before confirming.';
+        document.getElementById('btnConfirm').disabled = false;
+      } else {
+        banner.style.display = '';
+        banner.className = 'dsp-banner info';
+        banner.textContent = '✓ FIFO plan ready — ' + chosenActive.length + ' lot(s), total ' + total.toFixed(2) + '.';
+        document.getElementById('btnConfirm').disabled = false;
+      }
+    }
+
+    function onConfirm() {
+      var custSel = document.getElementById('fCustomer');
+      var prodSel = document.getElementById('fProduct');
+      var custOpt = custSel.options[custSel.selectedIndex];
+      var prodOpt = prodSel.options[prodSel.selectedIndex];
+      var custName = (custOpt && custOpt.dataset.name) || '';
+      var prodDesc = (prodOpt && prodOpt.dataset.desc) || '';
+      var qtyReq = Number(document.getElementById('fQty').value) || 0;
+
+      var chosenActive = CHOSEN_PLAN.filter(function(p){ return !SKIPPED[p.lotId]; }).map(function(p){
+        return { lotId: p.lotId, qty: Number(p.qty) || 0 };
+      });
+      if (!chosenActive.length) { showToast('No lots selected', 'error'); return; }
+
+      var override = false;
+      if (chosenActive.length !== CURRENT_FIFO_PLAN.length) override = true;
+      else {
+        for (var i = 0; i < CURRENT_FIFO_PLAN.length; i++) {
+          if (chosenActive[i].lotId !== CURRENT_FIFO_PLAN[i].lotId ||
+              Math.abs(chosenActive[i].qty - CURRENT_FIFO_PLAN[i].qty) > 0.001) {
+            override = true; break;
+          }
+        }
+      }
+      var overrideReason = document.getElementById('fOverrideReason').value.trim();
+      if (override && overrideReason.length < 5) {
+        showToast('Override reason ≥ 5 chars required', 'error');
+        document.getElementById('fOverrideReason').focus();
+        return;
+      }
+
+      var payload = {
+        date:           document.getElementById('fDate').value,
+        customerCode:   custSel.value,
+        customerName:   custName,
+        productCode:    prodSel.value,
+        productDesc:    prodDesc,
+        qtyRequested:   qtyReq,
+        chosenPlan:     chosenActive,
+        overrideReason: overrideReason,
+        vehicleNo:      document.getElementById('fVehicle').value.trim(),
+        driverName:     document.getElementById('fDriver').value.trim(),
+        transporter:    document.getElementById('fTransporter').value.trim(),
+        authorizedBy:   document.getElementById('fAuthorizedBy').value,
+        securityGuard:  document.getElementById('fGuard').value.trim(),
+        remarks:        document.getElementById('fRemarks').value.trim(),
+        operatorName:   document.getElementById('fOperator').value.trim()
+      };
+
+      var btn = document.getElementById('btnConfirm');
+      btn.disabled = true; btn.textContent = 'Saving…';
+      google.script.run
+        .withSuccessHandler(function(res){
+          btn.disabled = false; btn.textContent = 'Confirm Dispatch';
+          if (!res || !res.success) {
+            showToast('Failed: ' + (res && res.error || 'unknown'), 'error');
+            return;
+          }
+          showToast('Dispatch ' + res.gpNo + ' saved · ' + res.lots.length + ' lot(s)' + (res.override ? ' (OVERRIDE)' : ''));
+          // Reset form
+          document.getElementById('fQty').value = '';
+          document.getElementById('fOverrideReason').value = '';
+          document.getElementById('fRemarks').value = '';
+          clearPlan();
+          loadInit();
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false; btn.textContent = 'Confirm Dispatch';
+          showToast('Error: ' + (e.message || e), 'error');
+        })
+        .saveDispatchWithFIFO(payload);
+    }
+
+    function reloadRecent() {
+      var box = document.getElementById('recentList');
+      box.className = 'dsp-empty';
+      box.innerHTML = '<div class="dsp-empty-icon">⏳</div>Loading…';
+      google.script.run
+        .withSuccessHandler(function(list){
+          if (!list || !list.length) {
+            box.innerHTML = '<div class="dsp-empty-icon">📋</div>No dispatches yet.';
+            return;
+          }
+          box.className = '';
+          box.innerHTML = list.map(function(r){
+            var ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : '';
+            var dateStr = r.date ? String(r.date).substring(0,10) : '';
+            return [
+              '<div class="dsp-rec">',
+                '<div class="dsp-rec-head">',
+                  '<div class="dsp-rec-id">' + escapeHtml(r.gpNo) +
+                    (r.override ? ' <span class="dsp-pill over">OVERRIDE</span>' : '') + '</div>',
+                  '<div class="dsp-rec-ts">' + escapeHtml(ts) + '</div>',
+                '</div>',
+                '<div class="dsp-rec-row"><div class="dsp-rec-label">Date</div><div>' + escapeHtml(dateStr) + '</div></div>',
+                '<div class="dsp-rec-row"><div class="dsp-rec-label">Customer</div><div>' + escapeHtml(r.customer || '—') + '</div></div>',
+                '<div class="dsp-rec-row"><div class="dsp-rec-label">Items</div><div>' + r.itemCount + '</div></div>',
+                '<div class="dsp-rec-row"><div class="dsp-rec-label">Total Qty</div><div>' + Number(r.totalQty).toFixed(2) + '</div></div>',
+                '<div class="dsp-rec-row"><div class="dsp-rec-label">Lots</div><div>' + (r.lotIds && r.lotIds.length ? escapeHtml(r.lotIds.join(', ')) : '—') + '</div></div>',
+              '</div>'
+            ].join('');
+          }).join('');
+        })
+        .withFailureHandler(function(e){
+          box.innerHTML = '<div class="dsp-empty-icon">⚠️</div>Load failed: ' + escapeHtml(e.message || e);
+        })
+        .getRecentDispatches(20);
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('fProduct').addEventListener('change', onProductChange);
+      document.getElementById('fCustomer').addEventListener('change', clearPlan);
+      document.getElementById('fQty').addEventListener('input', function(){
+        if (CURRENT_FIFO_PLAN) recomputePlanState();
+      });
+    });
+    window.addEventListener('load', loadInit);
+  </script>
+</body>
+</html>
