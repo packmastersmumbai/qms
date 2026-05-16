@@ -134,7 +134,28 @@ var OQC_HEADERS = [
   'Fill Weight', 'Label Accuracy', 'Seal Integrity', 'Appearance', 'Customer Spec',
   'Inspector', 'Release Decision', 'Remarks',
   'Accepted Qty', 'Rejected Qty', 'Timestamp',
-  'IPQC Session Ref', 'Operator ID'
+  'IPQC Session Ref', 'Operator ID',
+  'FG Location ID', 'FG Lot ID'
+];
+
+// P6 — Finished Goods dispatch lots (one row per OQC release of an FG batch)
+// Status enum: AVAILABLE | PARTIAL | DISPATCHED | RECALLED | NEEDS_REVIEW
+var FG_DISPATCH_HEADERS = [
+  'Lot ID', 'Timestamp', 'OQC Ref', 'OQC Date',
+  'Customer Code', 'Customer Name',
+  'Product Code', 'Product Desc', 'FG Batch / PO',
+  'FG Location ID',
+  'Qty Released', 'Qty Dispatched', 'Qty Available', 'Unit',
+  'Status',
+  'First Dispatched At', 'Last Dispatched At',
+  'Gatepass Refs', 'Remarks'
+];
+
+// P6 — Audit log for any dispatch that deviated from FIFO order
+var FG_OVERRIDE_HEADERS = [
+  'Override ID', 'Timestamp', 'Customer Code', 'Product Code', 'Qty Requested',
+  'FIFO Plan (JSON)', 'Chosen Plan (JSON)', 'Skipped Lot IDs',
+  'Reason', 'Operator', 'Resulting Gatepass No', 'Status'
 ];
 
 var NCR_HEADERS = [
@@ -399,15 +420,17 @@ function verifyAndRepairSheets() {
   if (!ss) { ui.alert('No spreadsheet bound.'); return; }
 
   var EXPECTED = {
-    'GRN_LOG':             GRN_HEADERS,
-    'IQC_LOG':             IQC_HEADERS,
-    'OQC_LOG':             OQC_HEADERS,
-    'GATEPASS_LOG':        GATEPASS_HEADERS,
-    'NCR_LOG':             NCR_HEADERS,
-    'STOCK_LEDGER':        STOCK_LEDGER_HEADERS,
-    'CUSTOMER_RETURN_LOG': CUSTOMER_RETURN_HEADERS,
-    'SCRAP_LOG':           SCRAP_LOG_HEADERS,
-    'SAMPLE_LOG':          SAMPLE_LOG_HEADERS
+    'GRN_LOG':              GRN_HEADERS,
+    'IQC_LOG':              IQC_HEADERS,
+    'OQC_LOG':              OQC_HEADERS,
+    'GATEPASS_LOG':         GATEPASS_HEADERS,
+    'NCR_LOG':              NCR_HEADERS,
+    'STOCK_LEDGER':         STOCK_LEDGER_HEADERS,
+    'CUSTOMER_RETURN_LOG':  CUSTOMER_RETURN_HEADERS,
+    'SCRAP_LOG':            SCRAP_LOG_HEADERS,
+    'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
+    'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
+    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS
   };
 
   var report = [];
@@ -709,15 +732,17 @@ function forceFixSheetHeaders() {
   if (resp !== ui.Button.YES) return;
 
   var EXPECTED = {
-    'GRN_LOG':             GRN_HEADERS,
-    'IQC_LOG':             IQC_HEADERS,
-    'OQC_LOG':             OQC_HEADERS,
-    'GATEPASS_LOG':        GATEPASS_HEADERS,
-    'NCR_LOG':             NCR_HEADERS,
-    'STOCK_LEDGER':        STOCK_LEDGER_HEADERS,
-    'CUSTOMER_RETURN_LOG': CUSTOMER_RETURN_HEADERS,
-    'SCRAP_LOG':           SCRAP_LOG_HEADERS,
-    'SAMPLE_LOG':          SAMPLE_LOG_HEADERS
+    'GRN_LOG':              GRN_HEADERS,
+    'IQC_LOG':              IQC_HEADERS,
+    'OQC_LOG':              OQC_HEADERS,
+    'GATEPASS_LOG':         GATEPASS_HEADERS,
+    'NCR_LOG':              NCR_HEADERS,
+    'STOCK_LEDGER':         STOCK_LEDGER_HEADERS,
+    'CUSTOMER_RETURN_LOG':  CUSTOMER_RETURN_HEADERS,
+    'SCRAP_LOG':            SCRAP_LOG_HEADERS,
+    'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
+    'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
+    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS
   };
 
   var report = [];
@@ -796,15 +821,17 @@ function inspectSheetData() {
 
   var SHEETS = ['GRN_LOG', 'IQC_LOG', 'OQC_LOG', 'GATEPASS_LOG'];
   var EXPECTED = {
-    'GRN_LOG':             GRN_HEADERS,
-    'IQC_LOG':             IQC_HEADERS,
-    'OQC_LOG':             OQC_HEADERS,
-    'GATEPASS_LOG':        GATEPASS_HEADERS,
-    'NCR_LOG':             NCR_HEADERS,
-    'STOCK_LEDGER':        STOCK_LEDGER_HEADERS,
-    'CUSTOMER_RETURN_LOG': CUSTOMER_RETURN_HEADERS,
-    'SCRAP_LOG':           SCRAP_LOG_HEADERS,
-    'SAMPLE_LOG':          SAMPLE_LOG_HEADERS
+    'GRN_LOG':              GRN_HEADERS,
+    'IQC_LOG':              IQC_HEADERS,
+    'OQC_LOG':              OQC_HEADERS,
+    'GATEPASS_LOG':         GATEPASS_HEADERS,
+    'NCR_LOG':              NCR_HEADERS,
+    'STOCK_LEDGER':         STOCK_LEDGER_HEADERS,
+    'CUSTOMER_RETURN_LOG':  CUSTOMER_RETURN_HEADERS,
+    'SCRAP_LOG':            SCRAP_LOG_HEADERS,
+    'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
+    'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
+    'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS
   };
 
   function inferType(v) {
