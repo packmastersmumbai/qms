@@ -142,7 +142,7 @@ function issueRMToProduction(data) {
       var c = mats[i].code || mats[i].itemCode;
       if (c === data.materialCode) { mat = mats[i]; break; }
     }
-    var matName = mat ? (mat.name || mat.itemDescription || '') : '';
+    var matName = mat ? (mat.desc || mat.name || mat.itemDescription || '') : '';
     var unit    = data.unit || (mat ? (mat.unit || '') : '');
 
     var ws = getProdIssueSheet_();

@@ -226,9 +226,10 @@
           mat.innerHTML = '<option value="">— select material —</option>' +
             (data.materials || []).map(function(m){
               var code = m.code || m.itemCode || '';
-              var name = m.name || m.itemDescription || code;
+              var desc = m.desc || m.name || m.itemDescription || '';
+              var label = desc ? (desc + (code && code !== desc ? ' (' + code + ')' : '')) : code;
               return '<option value="' + escapeHtml(code) + '" data-unit="' + escapeHtml(m.unit || '') + '">' +
-                     escapeHtml(name) + (code && code !== name ? ' (' + escapeHtml(code) + ')' : '') + '</option>';
+                     escapeHtml(label) + '</option>';
             }).join('');
 
           var ib = document.getElementById('fIssuedBy');
