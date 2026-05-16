@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    body { background: var(--bg); }
+
+    .ncr-wrap { max-width: 720px; margin: 0 auto; padding-bottom: 40px; }
+
+    .ncr-header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .ncr-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
+    .ncr-count {
+      background: var(--amber); color: var(--navy);
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700;
+    }
+
+    .ncr-body { padding: 14px; }
+
+    .ncr-empty {
+      text-align: center; padding: 60px 20px; color: #888;
+      font-size: 13px;
+    }
+    .ncr-empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+
+    .ncr-card {
+      background: var(--white);
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .ncr-card-head {
+      padding: 10px 12px;
+      background: #FFF3CD;
+      border-bottom: 1px solid #f0e0a0;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .ncr-docno { font-weight: 700; color: var(--navy); font-size: 13px; flex: 1; }
+    .ncr-source-chip {
+      background: var(--navy); color: var(--white);
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    }
+
+    .ncr-card-body { padding: 10px 12px; font-size: 12px; line-height: 1.5; }
+    .ncr-row { display: flex; gap: 8px; margin-bottom: 4px; }
+    .ncr-label { color: #888; min-width: 80px; font-size: 11px; }
+    .ncr-value { color: #222; flex: 1; }
+    .ncr-defect {
+      background: #fafafa; border-left: 3px solid var(--amber);
+      padding: 6px 10px; margin-top: 6px; font-style: italic;
+      color: #555; font-size: 12px;
+    }
+
+    .ncr-actions {
+      padding: 10px 12px; background: #fafafa;
+      border-top: 1px solid #eee;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .ncr-btn {
+      background: var(--white); border: 1px solid #ccc;
+      border-radius: 5px; padding: 8px 4px;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+      color: #444;
+    }
+    .ncr-btn:hover {
+      background: var(--navy); color: var(--white); border-color: var(--navy);
+    }
+    .ncr-btn.full { grid-column: span 3; }
+
+    .ncr-busy { opacity: 0.5; pointer-events: none; }
+
+    .ncr-toast {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--navy); color: var(--white);
+      padding: 10px 16px; border-radius: 20px;
+      font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      opacity: 0; transition: opacity 0.2s;
+      pointer-events: none; z-index: 200;
+    }
+    .ncr-toast.show { opacity: 1; }
+    .ncr-toast.err { background: #c1334b; }
+  </style>
+</head>
+<body>
+  <div class="ncr-wrap">
+    <div class="ncr-header">
+      <div class="ncr-title">📋 OPEN NCRs</div>
+      <div class="ncr-count" id="ncrCount">…</div>
+    </div>
+    <div class="ncr-body" id="ncrBody">
+      <div class="ncr-empty"><div class="ncr-empty-icon">⏳</div>Loading…</div>
+    </div>
+  </div>
+  <div class="ncr-toast" id="toast"></div>
+
+<script>
+  var DISPOSITIONS = [];
+  var WHO = '';
+
+  function init() {
+    google.script.run
+      .withSuccessHandler(function(d) { DISPOSITIONS = d; })
+      .getNCRDispositions();
+
+    try { WHO = (Session && Session.getActiveUser && Session.getActiveUser().getEmail()) || ''; } catch(e) {}
+
+    loadList();
+  }
+
+  function loadList() {
+    google.script.run
+      .withSuccessHandler(renderList)
+      .withFailureHandler(function(e) { toast('Load failed: ' + e.message, true); })
+      .getOpenNCRs();
+  }
+
+  function renderList(rows) {
+    var body = document.getElementById('ncrBody');
+    document.getElementById('ncrCount').textContent = rows.length;
+
+    if (!rows || rows.length === 0) {
+      body.innerHTML = '<div class="ncr-empty"><div class="ncr-empty-icon">✅</div>No open NCRs.</div>';
+      return;
+    }
+
+    var html = rows.map(function(r) {
+      return ''
+        + '<div class="ncr-card" id="card-' + esc(r.docNo) + '">'
+        +   '<div class="ncr-card-head">'
+        +     '<div class="ncr-docno">' + esc(r.docNo) + '</div>'
+        +     '<div class="ncr-source-chip">' + esc(r.source) + '</div>'
+        +   '</div>'
+        +   '<div class="ncr-card-body">'
+        +     row('Date',     r.date)
+        +     row('Source',   r.sourceRef)
+        +     row('Material', r.materialDesc)
+        +     row('Batch',    r.batchNo)
+        +     row('Qty',      r.qtyAffected)
+        +     (r.defectDesc ? '<div class="ncr-defect">' + esc(r.defectDesc) + '</div>' : '')
+        +   '</div>'
+        +   '<div class="ncr-actions">'
+        +     DISPOSITIONS.map(function(d, i) {
+                var cls = (DISPOSITIONS.length === 5 && i === 4) ? 'ncr-btn full' : 'ncr-btn';
+                return '<button class="' + cls + '" onclick="pick(\'' + esc(r.docNo) + '\',\'' + esc(d) + '\')">' + esc(d) + '</button>';
+              }).join('')
+        +   '</div>'
+        + '</div>';
+    }).join('');
+    body.innerHTML = html;
+  }
+
+  function row(label, value) {
+    if (value === '' || value === null || value === undefined) value = '—';
+    return '<div class="ncr-row"><div class="ncr-label">' + esc(label) + '</div><div class="ncr-value">' + esc(value) + '</div></div>';
+  }
+
+  function pick(docNo, dispo) {
+    var card = document.getElementById('card-' + docNo);
+    if (card) card.classList.add('ncr-busy');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          toast('✅ ' + docNo + ' → ' + dispo);
+          if (card) card.remove();
+          var remaining = document.querySelectorAll('.ncr-card').length;
+          document.getElementById('ncrCount').textContent = remaining;
+          if (remaining === 0) renderList([]);
+        } else {
+          if (card) card.classList.remove('ncr-busy');
+          toast('Error: ' + (res && res.error || 'unknown'), true);
+        }
+      })
+      .withFailureHandler(function(e) {
+        if (card) card.classList.remove('ncr-busy');
+        toast('Failed: ' + e.message, true);
+      })
+      .setNCRDisposition(docNo, dispo, WHO);
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function toast(msg, isErr) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'ncr-toast show' + (isErr ? ' err' : '');
+    setTimeout(function() { t.className = 'ncr-toast' + (isErr ? ' err' : ''); }, 2400);
+  }
+
+  init();
+</script>
+</body>
+</html>

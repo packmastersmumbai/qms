@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    body { max-width: 480px; margin: 0 auto; padding-bottom: 0; }
+    body { max-width: 480px; margin: 0 auto; }
 
     /* ── Loading overlay ── */
     #loading {
@@ -28,129 +28,88 @@
     }
     #loading p { color: rgba(255,255,255,0.8); font-size: 13px; margin: 0; }
 
-    /* ── State 1: Product grid ── */
-    #s1-body {
-      padding: 16px;
-      min-height: calc(100vh - 56px);
-      background: var(--bg);
-    }
-    .s1-label {
-      font-size: 13px; font-weight: 600; color: var(--text);
-      margin: 0 0 12px 0;
-    }
-    .product-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .product-btn {
-      min-height: 72px;
-      padding: 14px 10px;
-      border: 1.5px solid var(--navy);
-      border-radius: 10px;
-      background: var(--white);
-      cursor: pointer;
-      font-family: inherit;
-      color: var(--text);
-      text-align: center;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .product-btn:active { transform: scale(0.97); transition: transform 0.08s ease; }
-    .product-btn.active {
-      background: var(--navy);
-      color: var(--white);
-      border-color: var(--navy);
-    }
-    .product-btn-name {
-      display: block;
-      font-size: 15px;
-      font-weight: 700;
-      line-height: 1.3;
-      margin-bottom: 4px;
-    }
-    .product-btn-code {
-      display: block;
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--muted);
-    }
-    .product-btn.active .product-btn-code { color: rgba(255,255,255,0.7); }
-    .s1-empty {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--muted);
-      font-size: 13px;
-    }
+    /* ── Screen A: Home ── */
+    .home-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 
-    /* ── State 2: Batch entry ── */
-    #s2-body {
-      padding: 12px 12px 100px;
-      background: var(--bg);
-      min-height: calc(100vh - 56px);
+    .home-hero {
+      background: var(--navy);
+      border-radius: 12px;
+      padding: 22px 18px 20px;
+      color: var(--white);
+      text-align: center;
     }
-    .product-strip {
-      background: var(--navy-light);
-      border-left: 3px solid var(--amber);
-      padding: 10px 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-    .product-strip-name {
-      font-size: 13px; font-weight: 600; color: var(--text);
-    }
-    .product-strip-code {
-      font-size: 11px; font-weight: 400; color: var(--muted); margin-top: 2px;
-    }
-    .batch-card {
-      background: var(--white);
-      border-radius: 10px;
-      box-shadow: var(--shadow-1);
-      padding: 14px 14px 16px;
-      margin-bottom: 14px;
-    }
-    .batch-card .field { margin-bottom: 12px; }
-    .batch-card .field:last-child { margin-bottom: 0; }
-    .batch-card label {
-      display: block;
-      font-size: 12px; font-weight: 500; color: var(--muted);
-      margin-bottom: 4px;
-    }
-    .batch-card input {
+    .home-hero .hero-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+    .home-hero h2 { font-size: 20px; font-weight: 700; margin: 0; }
+    .home-hero p  { font-size: 12px; color: rgba(255,255,255,0.6); margin: 4px 0 0; }
+
+    .btn-play {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
       width: 100%;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 10px 10px;
-      font-size: 16px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--white);
-      transition: border-color 0.15s;
-      -webkit-appearance: none;
-      box-sizing: border-box;
-    }
-    .batch-card input:focus { outline: none; border-color: var(--navy); }
-    .btn-start-insp {
-      width: 100%;
-      height: 52px;
+      height: 56px;
       background: var(--amber);
       color: var(--navy);
       border: none;
-      border-radius: 8px;
-      font-size: 14px;
+      border-radius: 10px;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.15s, opacity 0.15s;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
     }
-    .btn-start-insp:disabled { background: #D1D5DB; color: #9CA3AF; cursor: not-allowed; }
-    .btn-start-insp:not(:disabled):active { opacity: 0.85; }
+    .btn-play:active { opacity: 0.82; }
+    .play-icon {
+      width: 28px; height: 28px;
+      background: var(--navy);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .play-icon svg { width: 14px; height: 14px; fill: var(--amber); margin-left: 2px; }
 
-    /* ── State 3: Record round ── */
-    .round-sub-hdr {
+    .sessions-card {
+      background: var(--white);
+      border-radius: 10px;
+      box-shadow: var(--shadow-1);
+      overflow: hidden;
+    }
+    .sessions-card-hdr {
+      background: var(--navy-light);
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .session-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s;
+      touch-action: manipulation;
+    }
+    .session-item:last-child { border-bottom: none; }
+    .session-item:active { background: var(--navy-light); }
+    .si-top { display: flex; align-items: center; justify-content: space-between; }
+    .si-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .si-badge {
+      font-size: 10px; font-weight: 700;
+      background: var(--amber); color: var(--navy);
+      padding: 2px 7px; border-radius: 4px;
+    }
+    .si-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .sessions-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
+
+    /* ── Screen B: Setup ── */
+    .setup-body { padding-bottom: 24px; }
+
+    /* ── Screen C: Check matrix ── */
+    .check-sub-hdr {
       background: var(--navy);
       padding: 8px 12px;
       position: sticky;
@@ -160,246 +119,159 @@
       align-items: center;
       gap: 8px;
     }
-    .round-sub-title {
+    .check-sub-title {
       flex: 1;
-      font-size: 13px; font-weight: 700; color: var(--white);
+      font-size: 12px; font-weight: 600; color: var(--white);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .progress-pill {
-      background: var(--amber);
-      color: var(--navy);
-      font-size: 12px; font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 99px;
-      white-space: nowrap;
+    .round-pill {
+      background: var(--amber); color: var(--navy);
+      font-size: 11px; font-weight: 700;
+      padding: 3px 9px; border-radius: 99px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .timer-pill {
+      background: rgba(255,255,255,0.12); color: var(--white);
+      font-size: 11px; font-weight: 600;
+      padding: 3px 8px; border-radius: 99px;
+      font-variant-numeric: tabular-nums;
       flex-shrink: 0;
     }
-    .round-progress-bar {
-      height: 6px;
-      background: rgba(13,27,110,0.12);
-      position: sticky;
-      top: calc(56px + 38px);
-      z-index: 89;
-      margin: 0;
+    .btn-close-sess {
+      background: none;
+      border: 1.5px solid rgba(220,38,38,0.6);
+      color: #FCA5A5;
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 11px; font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      flex-shrink: 0;
+      touch-action: manipulation;
     }
-    .round-progress-fill {
-      height: 100%;
-      background: var(--navy);
-      transition: width 0.3s ease;
-      width: 0%;
-    }
-    #s3-body {
-      padding: 16px 16px 80px;
-      background: var(--bg);
-      min-height: calc(100vh - 56px - 44px - 6px);
-    }
-    .param-focus-card {
+    .btn-close-sess:active { background: rgba(220,38,38,0.15); }
+
+    .check-body { padding-bottom: 80px; }
+
+    /* ── Matrix param row ── */
+    .ipqc-row {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
       background: var(--white);
-      border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      padding: 16px;
-      margin-bottom: 12px;
-      transition: border-left 0.15s, background 0.15s;
     }
-    .param-focus-card.fail-state {
-      background: #FEF2F2;
-      border-left: 3px solid var(--danger);
-    }
-    .param-focus-name {
-      font-size: 17px; font-weight: 700; color: var(--text);
-      margin-bottom: 4px;
-    }
-    .param-focus-spec {
-      font-size: 12px; font-weight: 400; color: var(--muted);
-      margin-bottom: 16px;
-    }
-    .pf-toggle-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+    .ipqc-row:last-child { border-bottom: none; }
+    .ipqc-row-top {
+      display: flex;
+      align-items: center;
       gap: 8px;
-      margin-bottom: 14px;
     }
-    .pf-toggle-btn {
-      min-height: 56px;
+    .ipqc-row-label-wrap { flex: 1; min-width: 0; }
+    .ipqc-row-label {
+      font-size: 12px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ipqc-row-std {
+      font-size: 10px; color: var(--muted); margin-top: 1px;
+    }
+
+    /* Numeric input */
+    .ipqc-input {
+      width: 72px;
+      padding: 5px 6px;
       border: 1.5px solid var(--border);
-      border-radius: 8px;
+      border-radius: 5px;
+      font-size: 13px;
+      text-align: center;
+      font-family: inherit;
+      color: var(--text);
       background: var(--white);
-      font-size: 14px; font-weight: 700;
+      flex-shrink: 0;
+      -webkit-appearance: none;
+    }
+    .ipqc-input:focus { outline: none; border-color: var(--navy); }
+
+    /* Visual toggle buttons */
+    .vis-btns { display: flex; gap: 4px; flex-shrink: 0; }
+    .vis-btn {
+      padding: 5px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      background: var(--white);
+      font-size: 11px; font-weight: 700;
       cursor: pointer;
       font-family: inherit;
       color: var(--muted);
-      text-align: center;
-      transition: all 0.15s ease;
+      transition: all 0.12s;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
-    .pf-toggle-btn:active { transform: scale(0.97); transition: transform 0.08s ease; }
-    .pf-toggle-btn.sel-pass {
-      background: #F0FDF4;
-      border-color: var(--success);
-      color: var(--success);
+    .vis-btn:active { transform: scale(0.95); }
+    .vis-btn.sel-pass { background: #F0FDF4; border-color: var(--success); color: var(--success); }
+    .vis-btn.sel-fail { background: #FEF2F2; border-color: var(--danger); color: var(--danger); }
+    .vis-btn.sel-na   { background: var(--navy-light); border-color: var(--navy); color: var(--navy); }
+
+    /* Result badge */
+    .res-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10px; font-weight: 700;
+      min-width: 38px;
+      text-align: center;
+      flex-shrink: 0;
     }
-    .pf-toggle-btn.sel-fail {
-      background: #FEF2F2;
-      border-color: var(--danger);
-      color: var(--danger);
-      animation: shake 0.3s ease;
-    }
-    .pf-toggle-btn.sel-na {
-      background: var(--navy-light);
-      border-color: var(--navy);
-      color: var(--navy);
-    }
-    .pf-remark-label {
-      font-size: 11px; font-weight: 500; color: var(--muted);
-      margin-bottom: 4px;
-    }
-    .pf-remark-textarea {
+    .res-na   { background: #F3F4F6; color: #6B7280; }
+    .res-pass { background: #DCFCE7; color: #15803D; }
+    .res-fail { background: #FEE2E2; color: #B91C1C; }
+
+    /* Remark row (shown on fail) */
+    .ipqc-remark-wrap { margin-top: 6px; display: none; }
+    .ipqc-remark {
       width: 100%;
-      min-height: 52px;
+      min-height: 44px;
       border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 10px;
-      font-size: 16px;
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-size: 13px;
       font-family: inherit;
       color: var(--text);
       background: var(--white);
       resize: vertical;
       box-sizing: border-box;
-      transition: border-color 0.15s;
       -webkit-appearance: none;
     }
-    .pf-remark-textarea:focus { outline: none; border-color: var(--navy); }
+    .ipqc-remark:focus { outline: none; border-color: var(--navy); }
+    .remark-req {
+      font-size: 10px; color: var(--danger); margin-top: 2px; display: none;
+    }
+    .remark-req.show { display: block; }
 
-    /* Sticky bottom bar for State 3 */
-    .round-bottom-bar {
+    /* No CP banner */
+    .no-cp-banner {
+      background: #FEF3C7;
+      border-left: 4px solid var(--hold);
+      padding: 10px 14px;
+      margin: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #92400E;
+    }
+
+    /* Sticky footer */
+    .check-footer {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      max-width: 480px;
-      margin: 0 auto;
-      background: var(--navy);
-      padding: 10px 16px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      z-index: 50;
-    }
-    .round-bar-label {
-      font-size: 11px; font-weight: 500;
-      color: rgba(255,255,255,0.6);
-    }
-    .round-bar-cta {
-      background: var(--amber);
-      color: var(--navy);
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 14px; font-weight: 700;
-      min-height: 44px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: opacity 0.15s;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .round-bar-cta:disabled {
-      background: #6B7280;
-      color: rgba(255,255,255,0.5);
-      cursor: not-allowed;
-    }
-    .round-bar-cta:not(:disabled):active { opacity: 0.82; }
-
-    /* ── State 4: Round summary ── */
-    #s4-body {
-      padding: 12px 12px 120px;
-      background: var(--bg);
-      min-height: calc(100vh - 56px);
-    }
-    .session-strip {
-      background: var(--navy-light);
-      border-left: 3px solid var(--amber);
-      padding: 10px 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      font-size: 11px;
-    }
-    .session-strip-line1 {
-      font-size: 13px; font-weight: 600; color: var(--text);
-    }
-    .session-strip-line2 {
-      font-size: 11px; color: var(--muted); margin-top: 2px;
-    }
-    .round-result-banner {
-      padding: 14px 16px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      font-size: 14px; font-weight: 700;
-    }
-    .round-result-banner.pass {
-      background: #F0FDF4;
-      border-left: 4px solid var(--success);
-      color: var(--success);
-    }
-    .round-result-banner.fail {
-      background: #FEF2F2;
-      border-left: 4px solid var(--danger);
-      color: var(--danger);
-    }
-    .params-summary-card {
+      max-width: 480px; margin: 0 auto;
       background: var(--white);
-      border-radius: 10px;
-      box-shadow: var(--shadow-1);
-      overflow: hidden;
-      margin-bottom: 16px;
+      padding: 10px 12px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.07);
+      display: flex; gap: 8px;
     }
-    .params-summary-header {
-      background: var(--navy);
-      color: var(--white);
-      font-size: 12px; font-weight: 500;
-      padding: 6px 12px;
-      letter-spacing: 0;
-    }
-    .ps-param-row {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      min-height: 44px;
-    }
-    .ps-param-row:last-child { border-bottom: none; }
-    .ps-param-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .ps-param-name {
-      font-size: 13px; font-weight: 600; color: var(--text);
-      flex: 1; margin-right: 8px;
-    }
-    .ps-result-badge {
-      font-size: 11px; font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-    .ps-result-pass { background: #DCFCE7; color: #15803D; }
-    .ps-result-fail { background: #FEE2E2; color: #B91C1C; }
-    .ps-result-na   { background: var(--navy-light); color: var(--navy); }
-    .ps-param-remark {
-      font-size: 11px; color: var(--muted);
-      margin-top: 4px; padding-left: 0;
-      opacity: 0;
-      animation: fadeIn 0.2s ease forwards;
-    }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    .s4-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .btn-another-round {
-      width: 100%;
-      height: 52px;
+    .btn-save-round {
+      flex: 2;
+      height: 48px;
       background: var(--navy);
       color: var(--white);
       border: none;
@@ -407,30 +279,74 @@
       font-size: 14px; font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.15s;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
     }
-    .btn-another-round:active { background: #1A2D9E; }
-    .btn-close-session {
-      width: 100%;
-      height: 52px;
+    .btn-save-round:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-save-round:not(:disabled):active { opacity: 0.82; }
+    .btn-view-report {
+      flex: 1;
+      height: 48px;
       background: var(--white);
       color: var(--navy);
       border: 1.5px solid var(--navy);
       border-radius: 8px;
-      font-size: 14px; font-weight: 700;
+      font-size: 13px; font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.15s;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
     }
-    .btn-close-session:active { background: var(--navy-light); }
-    .btn-close-session:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-view-report:active { background: var(--navy-light); }
 
-    /* card shake utility */
-    .do-shake { animation: shake 0.3s ease; }
+    /* ── Screen D: Report overlay ── */
+    .report-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .report-hdr {
+      background: var(--navy); color: var(--white);
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0; min-height: 56px;
+    }
+    .report-hdr-title { flex: 1; font-size: 13px; font-weight: 700; }
+    .btn-close-report {
+      background: none; border: none; color: var(--white);
+      font-size: 22px; cursor: pointer; line-height: 1; padding: 4px 6px;
+    }
+    .report-body { flex: 1; overflow: auto; padding: 10px; }
+    .report-table-wrap { overflow-x: auto; }
+    .report-table {
+      border-collapse: collapse; width: 100%; font-size: 12px;
+    }
+    .report-table th {
+      background: var(--navy); color: var(--white);
+      padding: 7px 10px; font-size: 11px; font-weight: 600;
+      text-align: center; white-space: nowrap;
+      border: 1px solid #1A2D9E;
+    }
+    .rt-param-hdr {
+      position: sticky; left: 0; z-index: 2;
+      text-align: left !important; min-width: 140px;
+      background: var(--navy) !important;
+    }
+    .report-table td {
+      border: 1px solid var(--border);
+      padding: 6px 8px; vertical-align: middle; text-align: center;
+    }
+    .rt-param-cell {
+      position: sticky; left: 0;
+      background: var(--white); z-index: 1;
+      text-align: left !important;
+      font-weight: 500; color: var(--text);
+      white-space: nowrap;
+    }
+    .rt-cell-val { font-size: 10px; color: var(--muted); display: block; }
+    .summary-row td { background: var(--navy-light); font-weight: 700; font-size: 11px; }
+    .summary-row .rt-param-cell { background: var(--navy-light); color: var(--navy); }
   </style>
 </head>
 <body>
@@ -441,718 +357,738 @@
   <p id="loadingMsg">Loading…</p>
 </div>
 
-<!-- Shared header -->
+<!-- ══ Shared header ══ -->
 <header class="pm-header">
-  <button class="back-btn" id="headerBackBtn" style="display:none;" onclick="handleHeaderBack()">
-    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  <button class="back-btn" id="headerBackBtn" style="display:none;" onclick="handleBack()">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4l-6 6 6 6"/>
+    </svg>
   </button>
-  <span class="page-title" id="headerTitle">IPQC</span>
+  <span class="page-title" id="headerTitle" style="flex:1;">IPQC</span>
   <span class="doc-badge" id="headerBadge">IPQC</span>
 </header>
 
-<!-- ═══════════════ STATE 1: SELECT PRODUCT ═══════════════ -->
-<div id="state1" style="display:block;">
-  <div id="s1-body">
-    <p class="s1-label">Select Product / Line</p>
-    <div class="product-grid" id="productGrid">
-      <!-- filled by JS -->
-    </div>
-    <div class="s1-empty" id="s1Empty" style="display:none;">
-      No products configured. Contact supervisor.
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════ STATE 2: ENTER BATCH ═══════════════ -->
-<div id="state2" style="display:none;">
-  <div id="s2-body">
-    <div class="product-strip" id="selectedProductStrip">
-      <div class="product-strip-name" id="stripProductName"></div>
-      <div class="product-strip-code" id="stripProductCode"></div>
+<!-- ════════════ SCREEN A — HOME ════════════ -->
+<div id="screenA">
+  <div class="home-body">
+    <div class="home-hero">
+      <span class="hero-icon">⚙</span>
+      <h2>IPQC</h2>
+      <p>In-Process Quality Check</p>
     </div>
 
-    <div class="batch-card">
-      <div class="field">
-        <label for="inputBatch">Batch No.</label>
-        <input type="text" id="inputBatch" placeholder="e.g. B2605001" autocomplete="off"
-               oninput="checkS2Fields()">
-      </div>
-      <div class="field">
-        <label for="inputInspector">Inspector</label>
-        <input type="text" id="inputInspector" placeholder="Your name" autocomplete="off"
-               oninput="checkS2Fields()">
-      </div>
-    </div>
-
-    <button class="btn-start-insp" id="btnStartInsp" disabled onclick="startInspection()">
-      START INSPECTION &#8594;
+    <button class="btn-play" onclick="goToSetup()">
+      <span class="play-icon">
+        <svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
+      </span>
+      New Check
     </button>
-  </div>
-</div>
 
-<!-- ═══════════════ STATE 3: RECORD ROUND ═══════════════ -->
-<div id="state3" style="display:none;">
-  <div class="round-sub-hdr" id="roundSubHdr">
-    <span class="round-sub-title" id="roundSubTitle">Round 1 — Product</span>
-    <span class="progress-pill" id="progressPill">1/1</span>
-  </div>
-  <div class="round-progress-bar">
-    <div class="round-progress-fill" id="progressFill"></div>
-  </div>
-  <div id="s3-body">
-    <!-- Single focused param card rendered here -->
-    <div class="param-focus-card" id="paramCard">
-      <div class="param-focus-name" id="paramName">—</div>
-      <div class="param-focus-spec" id="paramSpec"></div>
-      <div class="pf-toggle-row">
-        <button class="pf-toggle-btn" id="btnPass" onclick="selectResult('PASS')">PASS</button>
-        <button class="pf-toggle-btn" id="btnFail" onclick="selectResult('FAIL')">FAIL</button>
-        <button class="pf-toggle-btn" id="btnNA"   onclick="selectResult('NA')">NA</button>
+    <div class="sessions-card" id="openSessionsCard" style="display:none;">
+      <div class="sessions-card-hdr">Resume Open Session</div>
+      <div id="openSessionsList">
+        <div class="sessions-empty" id="sessionsEmpty">No open sessions.</div>
       </div>
-      <div class="pf-remark-label">Remarks (optional)</div>
-      <textarea class="pf-remark-textarea" id="remarkTextarea" rows="2"
-                placeholder="Add note…"></textarea>
-    </div>
-  </div>
-  <div class="round-bottom-bar">
-    <span class="round-bar-label" id="barParamLabel">Param 1 of 1</span>
-    <button class="round-bar-cta" id="btnNext" disabled onclick="handleNext()">Next &#8594;</button>
-  </div>
-</div>
-
-<!-- ═══════════════ STATE 4: ROUND SUMMARY ═══════════════ -->
-<div id="state4" style="display:none;">
-  <div id="s4-body">
-    <div class="session-strip">
-      <div class="session-strip-line1" id="s4StripLine1"></div>
-      <div class="session-strip-line2" id="s4StripLine2"></div>
-    </div>
-
-    <div class="round-result-banner" id="roundResultBanner"></div>
-
-    <div class="params-summary-card">
-      <div class="params-summary-header">Parameters</div>
-      <div id="paramsSummaryList"></div>
-    </div>
-
-    <div class="s4-actions">
-      <button class="btn-another-round" id="btnAnotherRound" onclick="startAnotherRound()">
-        Record Another Round &#8594;
-      </button>
-      <button class="btn-close-session" id="btnCloseSession" onclick="closeSession()">
-        Close Session
-      </button>
     </div>
   </div>
 </div>
 
-<!-- Toast -->
+<!-- ════════════ SCREEN B — SETUP ════════════ -->
+<div id="screenB" style="display:none;">
+  <div class="setup-body">
+    <div class="section">
+      <div class="section-title">Check Setup</div>
+      <div class="section-body">
+        <div class="field">
+          <label>Product</label>
+          <select id="setupProduct">
+            <option value="">— Select Product —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Batch No.</label>
+          <input type="text" id="setupBatch" placeholder="e.g. B2605001" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Inspector</label>
+          <input type="text" id="setupInspector" placeholder="Your name" autocomplete="off">
+        </div>
+        <button class="btn-submit" id="btnStartCheck" onclick="startCheck()">START INSPECTION →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SCREEN C — CHECK MATRIX ════════════ -->
+<div id="screenC" style="display:none;">
+
+  <div class="check-sub-hdr">
+    <span class="check-sub-title" id="checkSubTitle">Product · Batch</span>
+    <span class="round-pill" id="roundPill">Round 1</span>
+    <span class="timer-pill" id="timerDisplay">00:00</span>
+    <button class="btn-close-sess" onclick="confirmCloseSession()">✕ Close</button>
+  </div>
+
+  <div class="check-body" id="checkBody">
+    <div class="no-cp-banner" id="noCpBanner" style="display:none;">
+      ⚠ No control plan configured for this product. Contact your QA manager.
+    </div>
+    <div class="section" id="paramsSection" style="margin:10px;">
+      <div class="section-title" id="paramsSectionTitle">Quality Parameters</div>
+      <div style="padding:0;" id="paramsBody"></div>
+    </div>
+  </div>
+
+  <div class="check-footer">
+    <button class="btn-save-round" id="btnSaveRound" onclick="saveRound()">💾 Save Round</button>
+    <button class="btn-view-report" onclick="viewReport()">📋 Report</button>
+  </div>
+</div>
+
+<!-- ════════════ SCREEN D — REPORT OVERLAY ════════════ -->
+<div id="screenD" class="report-overlay" style="display:none;">
+  <div class="report-hdr">
+    <div class="report-hdr-title" id="reportTitle">IPQC Report</div>
+    <button class="btn-close-report" onclick="closeReport()">✕</button>
+  </div>
+  <div class="report-body">
+    <div class="report-table-wrap">
+      <table class="report-table" id="reportTable"></table>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-// ── App state ──────────────────────────────────────────────────────────────
-var DWM_SESSION_ID = null;
-var TASK_ID = null;
-var SESSION_ID = null;
-var SESSION_SAVED = false;
-
-var SEL_PRODUCT_CODE = '';
-var SEL_PRODUCT_NAME = '';
-var BATCH_NO = '';
-var INSPECTOR = '';
-
-var PARAMS = [];         // [{paramCode, paramName, unit, stdValue, tolMin, tolMax, checkBrief}]
-var CURRENT_PARAM_IDX = 0;
+// ── State ──────────────────────────────────────────────────────────
+var SESSION_ID   = null;
+var SESSION_CODE = '';
+var SESSION_NAME = '';
+var SESSION_BATCH = '';
+var SESSION_INSPECTOR = '';
 var ROUND_NO = 1;
+var SESSION_START_TS = null;
+var PARAMS = [];   // [{paramCode, paramName, methodType, stdValue, unit, tolMin, tolMax, checkBrief}]
+var timerInterval = null;
 
-// Each round: {roundNo, params: [{paramCode, paramName, result, remark, timestamp}]}
-var ALL_ROUNDS = [];     // accumulated across session, written at close
-var CURRENT_ROUND_RESULTS = [];  // [{result, remark}] index matches PARAMS
-
-// ── Boot ──────────────────────────────────────────────────────────────────
+// ── Boot ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-  DWM_SESSION_ID = (typeof sessionStorage !== 'undefined')
-    ? (sessionStorage.getItem('dwmSessionId') || null) : null;
-
-  showLoading('Loading products…');
+  showLoading('Loading…');
   google.script.run
     .withSuccessHandler(function(d) {
       hideLoading();
-      buildProductGrid(d.fgList || []);
+      populateProductSelect(d.fgList || []);
+      prefillInspector(d.inspectors || []);
+      renderOpenSessions(d.openSessions || []);
     })
     .withFailureHandler(function(e) {
       hideLoading();
-      showToast('Failed to load: ' + e.message, 'error');
+      showToast('Load error: ' + e.message, 'error');
     })
     .getIPQCFormInit();
 });
 
-// ── State 1: Product grid ──────────────────────────────────────────────────
-function buildProductGrid(fgList) {
-  var grid = document.getElementById('productGrid');
-  var empty = document.getElementById('s1Empty');
-  grid.innerHTML = '';
-
-  if (!fgList || fgList.length === 0) {
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
+function populateProductSelect(fgList) {
+  var sel = document.getElementById('setupProduct');
   fgList.forEach(function(fg) {
-    var code = fg.code || '';
-    var name = fg.name || fg.description || code;
-    var btn = document.createElement('button');
-    btn.className = 'product-btn';
-    btn.setAttribute('data-code', code);
-    btn.setAttribute('data-name', name);
-    btn.innerHTML =
-      '<span class="product-btn-name">' + escHtml(name) + '</span>' +
-      '<span class="product-btn-code">' + escHtml(code) + '</span>';
-    btn.addEventListener('click', (function(c, n) {
-      return function() { selectProduct(c, n); };
-    })(code, name));
-    grid.appendChild(btn);
+    var o = document.createElement('option');
+    o.value = fg.code;
+    o.textContent = (fg.name || fg.description || fg.code);
+    o.setAttribute('data-name', fg.name || fg.description || fg.code);
+    sel.appendChild(o);
   });
 }
 
-function selectProduct(code, name) {
-  SEL_PRODUCT_CODE = code;
-  SEL_PRODUCT_NAME = name;
-
-  // Visual feedback — briefly highlight then navigate
-  var btns = document.querySelectorAll('.product-btn');
-  for (var i = 0; i < btns.length; i++) {
-    if (btns[i].getAttribute('data-code') === code) {
-      btns[i].classList.add('active');
-    } else {
-      btns[i].classList.remove('active');
-    }
+function prefillInspector(inspectors) {
+  var el = document.getElementById('setupInspector');
+  var opName = window.QMS ? window.QMS.getOperatorName() : '';
+  if (opName) {
+    el.value = opName;
   }
-
-  setTimeout(function() { goToState2(); }, 150);
 }
 
-// ── State 2: Enter batch ───────────────────────────────────────────────────
-function goToState2() {
-  document.getElementById('stripProductName').textContent = SEL_PRODUCT_NAME;
-  document.getElementById('stripProductCode').textContent = SEL_PRODUCT_CODE;
-  document.getElementById('headerTitle').textContent = 'IPQC — ' + truncate(SEL_PRODUCT_NAME, 24);
-  document.getElementById('inputBatch').value = '';
-  document.getElementById('inputInspector').value = '';
-  document.getElementById('btnStartInsp').disabled = true;
-  showState(2);
+function renderOpenSessions(sessions) {
+  if (!sessions || sessions.length === 0) return;
+  var card  = document.getElementById('openSessionsCard');
+  var list  = document.getElementById('openSessionsList');
+  var empty = document.getElementById('sessionsEmpty');
+  empty.style.display = 'none';
+  card.style.display = '';
+
+  sessions.forEach(function(s) {
+    var item = document.createElement('div');
+    item.className = 'session-item';
+    item.innerHTML =
+      '<div class="si-top">' +
+        '<div class="si-name">' + escHtml(s.productName || s.productCode) + '</div>' +
+        '<span class="si-badge">' + (s.rounds || 0) + ' round' + ((s.rounds || 0) !== 1 ? 's' : '') + '</span>' +
+      '</div>' +
+      '<div class="si-meta">Batch: ' + escHtml(s.batch || '—') + ' · ' + escHtml(s.inspector || '—') + ' · ' + escHtml(s.dateStarted || '—') + '</div>';
+    item.onclick = (function(sess) { return function() { resumeSession(sess); }; })(s);
+    list.appendChild(item);
+  });
 }
 
-function checkS2Fields() {
-  var batch = document.getElementById('inputBatch').value.trim();
-  var insp  = document.getElementById('inputInspector').value.trim();
-  document.getElementById('btnStartInsp').disabled = !(batch && insp);
+// ── Screen A → B ───────────────────────────────────────────────────
+function goToSetup() {
+  showScreen('B');
 }
 
-function startInspection() {
-  BATCH_NO  = document.getElementById('inputBatch').value.trim();
-  INSPECTOR = document.getElementById('inputInspector').value.trim();
+// ── Screen B: Start check ──────────────────────────────────────────
+function startCheck() {
+  var sel = document.getElementById('setupProduct');
+  var productCode = sel.value;
+  var productName = sel.options[sel.selectedIndex]
+    ? (sel.options[sel.selectedIndex].getAttribute('data-name') || productCode) : productCode;
+  var batch    = document.getElementById('setupBatch').value.trim();
+  var inspector = document.getElementById('setupInspector').value.trim();
 
-  if (!BATCH_NO)  { showToast('Enter a batch number.', 'error'); return; }
-  if (!INSPECTOR) { showToast('Enter inspector name.', 'error'); return; }
+  if (!productCode) { showToast('Select a product.', 'error'); return; }
+  if (!batch)       { showToast('Enter batch number.', 'error'); return; }
+  if (!inspector)   { showToast('Enter inspector name.', 'error'); return; }
 
-  var btn = document.getElementById('btnStartInsp');
-  btn.disabled = true;
-  btn.textContent = 'Starting…';
+  var btn = document.getElementById('btnStartCheck');
+  btn.disabled = true; btn.textContent = 'Starting…';
 
   showLoading('Starting session…');
   google.script.run
     .withSuccessHandler(function(res) {
+      btn.disabled = false; btn.textContent = 'START INSPECTION →';
       if (!res.ok) {
         hideLoading();
-        btn.disabled = false;
-        btn.textContent = 'START INSPECTION →';
         showToast(res.error || 'Could not start session.', 'error');
         return;
       }
-      SESSION_ID = res.sessionId;
-      ROUND_NO   = res.resumed ? ((res.rounds || 0) + 1) : 1;
-      ALL_ROUNDS = [];
-      SESSION_SAVED = false;
-
-      // Load params then trigger DWM task
-      google.script.run
-        .withSuccessHandler(function(pr) {
-          hideLoading();
-          btn.disabled = false;
-          btn.textContent = 'START INSPECTION →';
-
-          PARAMS = pr.params || [];
-          if (pr.warning && PARAMS.length === 0) {
-            showToast('No control plan params for this product.', 'error');
-          }
-
-          // Fire DWM task (non-blocking)
-          if (DWM_SESSION_ID) {
-            google.script.run
-              .withSuccessHandler(function(tr) {
-                if (tr && tr.taskId) { TASK_ID = tr.taskId; }
-              })
-              .withFailureHandler(function() {})
-              .autoQmsTask_(
-                DWM_SESSION_ID,
-                'IPQC',
-                'IPQC: ' + SEL_PRODUCT_CODE + ' — Batch ' + BATCH_NO,
-                SESSION_ID
-              );
-          }
-
-          beginRound();
-        })
-        .withFailureHandler(function(e) {
-          hideLoading();
-          btn.disabled = false;
-          btn.textContent = 'START INSPECTION →';
-          showToast('Could not load params: ' + e.message, 'error');
-          PARAMS = [];
-          beginRound();
-        })
-        .getIPQCParams(SEL_PRODUCT_CODE);
+      SESSION_ID        = res.sessionId;
+      SESSION_CODE      = productCode;
+      SESSION_NAME      = productName;
+      SESSION_BATCH     = batch;
+      SESSION_INSPECTOR = inspector;
+      ROUND_NO          = res.resumed ? ((res.rounds || 0) + 1) : 1;
+      SESSION_START_TS  = new Date();
+      loadParamsAndEnterCheck();
     })
     .withFailureHandler(function(e) {
+      btn.disabled = false; btn.textContent = 'START INSPECTION →';
       hideLoading();
-      btn.disabled = false;
-      btn.textContent = 'START INSPECTION →';
       showToast('Error: ' + e.message, 'error');
     })
     .startSession({
-      productCode: SEL_PRODUCT_CODE,
-      productName: SEL_PRODUCT_NAME,
-      batch:       BATCH_NO,
-      inspector:   INSPECTOR,
-      line:        SEL_PRODUCT_CODE
+      productCode: productCode,
+      productName: productName,
+      batch:       batch,
+      inspector:   inspector,
+      line:        productCode
     });
 }
 
-// ── State 3: Record round ──────────────────────────────────────────────────
-function beginRound() {
-  CURRENT_PARAM_IDX = 0;
-  CURRENT_ROUND_RESULTS = [];
-  for (var i = 0; i < PARAMS.length; i++) {
-    CURRENT_ROUND_RESULTS.push({ result: '', remark: '' });
-  }
-  renderParam(0);
-  showState(3);
+function resumeSession(sess) {
+  SESSION_ID        = sess.sessionId;
+  SESSION_CODE      = sess.productCode;
+  SESSION_NAME      = sess.productName || sess.productCode;
+  SESSION_BATCH     = sess.batch || '';
+  SESSION_INSPECTOR = sess.inspector || '';
+  ROUND_NO          = (sess.rounds || 0) + 1;
+  SESSION_START_TS  = sess.startTs ? new Date(sess.startTs) : new Date();
+  showToast('Resuming — Round ' + ROUND_NO, 'success');
+  loadParamsAndEnterCheck();
 }
 
-function renderParam(idx) {
-  CURRENT_PARAM_IDX = idx;
-  var total = PARAMS.length;
-
-  // Sub-header
-  document.getElementById('roundSubTitle').textContent =
-    'Round ' + ROUND_NO + ' — ' + truncate(SEL_PRODUCT_NAME, 20);
-  document.getElementById('progressPill').textContent = (idx + 1) + '/' + total;
-
-  // Progress bar
-  var pct = total > 0 ? Math.round((idx / total) * 100) : 0;
-  document.getElementById('progressFill').style.width = pct + '%';
-
-  // Param card content
-  if (total === 0) {
-    document.getElementById('paramName').textContent = 'No parameters configured';
-    document.getElementById('paramSpec').textContent = '';
-  } else {
-    var p = PARAMS[idx];
-    document.getElementById('paramName').textContent = p.paramName || p.paramCode;
-    var spec = '';
-    if (p.stdValue !== null && p.stdValue !== undefined && p.stdValue !== '') {
-      spec = 'Std: ' + p.stdValue;
-      if (p.unit) spec += ' ' + p.unit;
-      if (p.tolMin !== '' && p.tolMin !== null && p.tolMax !== '' && p.tolMax !== null) {
-        spec += ' (' + p.tolMin + '–' + p.tolMax + ')';
+function loadParamsAndEnterCheck() {
+  google.script.run
+    .withSuccessHandler(function(pr) {
+      hideLoading();
+      PARAMS = pr.params || [];
+      if (pr.warning || PARAMS.length === 0) {
+        document.getElementById('noCpBanner').style.display = '';
+      } else {
+        document.getElementById('noCpBanner').style.display = 'none';
       }
-    } else if (p.checkBrief) {
-      spec = p.checkBrief;
-    }
-    document.getElementById('paramSpec').textContent = spec;
-  }
-
-  // Restore any previously recorded result for this param
-  var saved = CURRENT_ROUND_RESULTS[idx];
-  setToggleState(saved ? saved.result : '');
-  document.getElementById('remarkTextarea').value = (saved && saved.remark) ? saved.remark : '';
-
-  // Card fail state
-  var card = document.getElementById('paramCard');
-  if (saved && saved.result === 'FAIL') {
-    card.classList.add('fail-state');
-  } else {
-    card.classList.remove('fail-state');
-  }
-
-  // Bottom bar
-  document.getElementById('barParamLabel').textContent = 'Param ' + (idx + 1) + ' of ' + total;
-  var isLast = (idx === total - 1);
-  var nextBtn = document.getElementById('btnNext');
-  nextBtn.textContent = isLast ? 'Review Round →' : 'Next →';
-  nextBtn.disabled = !(saved && saved.result);
+      buildMatrix();
+      enterCheckScreen();
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      showToast('Params error: ' + e.message, 'error');
+      PARAMS = [];
+      buildMatrix();
+      enterCheckScreen();
+    })
+    .getIPQCParams(SESSION_CODE);
 }
 
-function setToggleState(result) {
-  var btnPass = document.getElementById('btnPass');
-  var btnFail = document.getElementById('btnFail');
-  var btnNA   = document.getElementById('btnNA');
-  btnPass.className = 'pf-toggle-btn' + (result === 'PASS' ? ' sel-pass' : '');
-  btnFail.className = 'pf-toggle-btn' + (result === 'FAIL' ? ' sel-fail' : '');
-  btnNA.className   = 'pf-toggle-btn' + (result === 'NA'   ? ' sel-na'   : '');
+function enterCheckScreen() {
+  var title = truncate(SESSION_NAME, 22) + ' · ' + SESSION_BATCH;
+  document.getElementById('checkSubTitle').textContent = title;
+  document.getElementById('roundPill').textContent = 'Round ' + ROUND_NO;
+  document.getElementById('headerTitle').textContent = 'IPQC — Round ' + ROUND_NO;
+  showScreen('C');
+  startTimer();
 }
 
-function selectResult(result) {
-  var idx = CURRENT_PARAM_IDX;
-  if (!CURRENT_ROUND_RESULTS[idx]) return;
+// ── Matrix builder ─────────────────────────────────────────────────
+function buildMatrix() {
+  var body = document.getElementById('paramsBody');
+  body.innerHTML = '';
 
-  CURRENT_ROUND_RESULTS[idx].result    = result;
-  CURRENT_ROUND_RESULTS[idx].timestamp = new Date().toISOString();
-
-  setToggleState(result);
-
-  var card = document.getElementById('paramCard');
-  if (result === 'FAIL') {
-    card.classList.add('fail-state');
-  } else {
-    card.classList.remove('fail-state');
-  }
-
-  document.getElementById('btnNext').disabled = false;
-}
-
-function handleNext() {
-  var idx = CURRENT_PARAM_IDX;
-  // Save remark
-  if (CURRENT_ROUND_RESULTS[idx]) {
-    CURRENT_ROUND_RESULTS[idx].remark = document.getElementById('remarkTextarea').value.trim();
-  }
-
-  var result = CURRENT_ROUND_RESULTS[idx] ? CURRENT_ROUND_RESULTS[idx].result : '';
-  if (!result) {
-    // Shake card
-    shakeCard();
+  if (PARAMS.length === 0) {
+    document.getElementById('paramsSectionTitle').textContent = 'Quality Parameters';
     return;
   }
 
-  var total = PARAMS.length;
-  if (idx < total - 1) {
-    renderParam(idx + 1);
-  } else {
-    // Last param — go to summary
-    showRoundSummary();
-  }
+  PARAMS.forEach(function(p) {
+    var isVisual = !p.methodType || p.methodType === 'Visual' || p.methodType === 'visual';
+    body.appendChild(buildParamRow(p, isVisual));
+  });
 }
 
-function shakeCard() {
-  var card = document.getElementById('paramCard');
-  card.classList.remove('do-shake');
-  // Force reflow
-  void card.offsetWidth;
-  card.classList.add('do-shake');
-  setTimeout(function() { card.classList.remove('do-shake'); }, 350);
-}
+function buildParamRow(p, isVisual) {
+  var div = document.createElement('div');
+  div.className = 'ipqc-row';
+  div.id = 'row_' + p.paramCode;
 
-// ── State 4: Round summary ─────────────────────────────────────────────────
-function showRoundSummary() {
-  // Save last remark
-  var idx = CURRENT_PARAM_IDX;
-  if (CURRENT_ROUND_RESULTS[idx]) {
-    CURRENT_ROUND_RESULTS[idx].remark = document.getElementById('remarkTextarea').value.trim();
-  }
+  /* Top row: label + controls + badge */
+  var top = document.createElement('div');
+  top.className = 'ipqc-row-top';
 
-  var now = new Date();
-  var timeStr = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  var labelWrap = document.createElement('div');
+  labelWrap.className = 'ipqc-row-label-wrap';
 
-  // Session strip
-  document.getElementById('s4StripLine1').textContent =
-    SEL_PRODUCT_NAME + ' — Batch ' + BATCH_NO;
-  document.getElementById('s4StripLine2').textContent =
-    'Round ' + ROUND_NO + '  ·  ' + INSPECTOR + '  ·  ' + timeStr;
+  var labelEl = document.createElement('div');
+  labelEl.className = 'ipqc-row-label';
+  labelEl.textContent = p.paramName || p.paramCode;
 
-  // Count results
-  var passCount = 0, failCount = 0, naCount = 0;
-  for (var i = 0; i < CURRENT_ROUND_RESULTS.length; i++) {
-    var r = CURRENT_ROUND_RESULTS[i].result;
-    if (r === 'PASS') passCount++;
-    else if (r === 'FAIL') failCount++;
-    else naCount++;
-  }
-
-  // Result banner
-  var banner = document.getElementById('roundResultBanner');
-  if (failCount > 0) {
-    banner.className = 'round-result-banner fail';
-    banner.textContent = 'Round ' + ROUND_NO + ': FAIL — ' +
-      failCount + ' failed out of ' + PARAMS.length;
-  } else {
-    banner.className = 'round-result-banner pass';
-    banner.textContent = 'Round ' + ROUND_NO + ': PASS — ' +
-      passCount + ' passed' + (naCount > 0 ? ', ' + naCount + ' N/A' : '');
-  }
-
-  // Param rows
-  var list = document.getElementById('paramsSummaryList');
-  list.innerHTML = '';
-  for (var j = 0; j < PARAMS.length; j++) {
-    var p = PARAMS[j];
-    var rr = CURRENT_ROUND_RESULTS[j] || { result: 'NA', remark: '' };
-    var row = document.createElement('div');
-    row.className = 'ps-param-row';
-    row.style.animationDelay = (j * 30) + 'ms';
-
-    var top = document.createElement('div');
-    top.className = 'ps-param-top';
-
-    var nameEl = document.createElement('div');
-    nameEl.className = 'ps-param-name';
-    nameEl.textContent = p.paramName || p.paramCode;
-
-    var badge = document.createElement('span');
-    var res = rr.result || 'NA';
-    badge.className = 'ps-result-badge ' +
-      (res === 'PASS' ? 'ps-result-pass' : (res === 'FAIL' ? 'ps-result-fail' : 'ps-result-na'));
-    badge.textContent = res;
-
-    top.appendChild(nameEl);
-    top.appendChild(badge);
-    row.appendChild(top);
-
-    if (rr.remark) {
-      var rem = document.createElement('div');
-      rem.className = 'ps-param-remark';
-      rem.textContent = rr.remark;
-      row.appendChild(rem);
+  var stdEl = document.createElement('div');
+  stdEl.className = 'ipqc-row-std';
+  if (p.stdValue !== null && p.stdValue !== undefined && p.stdValue !== '') {
+    var txt = 'Std: ' + p.stdValue;
+    if (p.unit) txt += ' ' + p.unit;
+    if (p.tolMin !== null && p.tolMin !== '' && p.tolMax !== null && p.tolMax !== '') {
+      txt += ' (' + p.tolMin + '–' + p.tolMax + ')';
     }
-
-    list.appendChild(row);
+    stdEl.textContent = txt;
+  } else if (p.checkBrief) {
+    stdEl.textContent = p.checkBrief;
+  } else {
+    stdEl.textContent = 'Visual check';
   }
 
-  // Header
-  document.getElementById('headerTitle').textContent = 'Round ' + ROUND_NO + ' Summary';
+  labelWrap.appendChild(labelEl);
+  labelWrap.appendChild(stdEl);
+  top.appendChild(labelWrap);
 
-  showState(4);
+  var badge = document.createElement('span');
+  badge.id = 'badge_' + p.paramCode;
+  badge.className = 'res-badge res-na';
+  badge.textContent = 'NA';
+
+  if (isVisual) {
+    var btns = document.createElement('div');
+    btns.className = 'vis-btns';
+    [['PASS','sel-pass','P'], ['FAIL','sel-fail','F'], ['NA','sel-na','NA']].forEach(function(opt) {
+      var btn = document.createElement('button');
+      btn.className = 'vis-btn';
+      btn.id = 'vb_' + p.paramCode + '_' + opt[0];
+      btn.textContent = opt[2];
+      btn.onclick = (function(code, val, selCls) {
+        return function() { setVisual(code, val, selCls); };
+      })(p.paramCode, opt[0], opt[1]);
+      btns.appendChild(btn);
+    });
+    top.appendChild(btns);
+  } else {
+    var inp = document.createElement('input');
+    inp.type = 'number';
+    inp.id = 'val_' + p.paramCode;
+    inp.className = 'ipqc-input';
+    inp.placeholder = '—';
+    inp.step = '0.01';
+    inp.oninput = (function(code, tolMin, tolMax) {
+      return function() { updateMeasurement(code, tolMin, tolMax); };
+    })(p.paramCode, p.tolMin, p.tolMax);
+    top.appendChild(inp);
+  }
+
+  top.appendChild(badge);
+  div.appendChild(top);
+
+  /* Remark row (shown on FAIL) */
+  var remWrap = document.createElement('div');
+  remWrap.className = 'ipqc-remark-wrap';
+  remWrap.id = 'remwrap_' + p.paramCode;
+
+  var remTa = document.createElement('textarea');
+  remTa.id = 'remark_' + p.paramCode;
+  remTa.className = 'ipqc-remark';
+  remTa.placeholder = 'Describe the issue…';
+  remTa.rows = 2;
+
+  var remReq = document.createElement('div');
+  remReq.id = 'remreq_' + p.paramCode;
+  remReq.className = 'remark-req';
+  remReq.textContent = 'Remark required for FAIL.';
+
+  remWrap.appendChild(remTa);
+  remWrap.appendChild(remReq);
+  div.appendChild(remWrap);
+
+  return div;
 }
 
-function startAnotherRound() {
-  // Stash completed round
-  stashCurrentRound();
-  ROUND_NO++;
-  document.getElementById('headerTitle').textContent = 'IPQC';
-  beginRound();
+function setVisual(code, val, selCls) {
+  ['PASS','FAIL','NA'].forEach(function(v) {
+    var b = document.getElementById('vb_' + code + '_' + v);
+    if (b) b.className = 'vis-btn';
+  });
+  var btn = document.getElementById('vb_' + code + '_' + val);
+  if (btn) btn.className = 'vis-btn ' + selCls;
+
+  var badge = document.getElementById('badge_' + code);
+  badge.className = 'res-badge res-' + val.toLowerCase();
+  badge.textContent = val;
+
+  var remWrap = document.getElementById('remwrap_' + code);
+  if (remWrap) remWrap.style.display = val === 'FAIL' ? 'block' : 'none';
+
+  clearRemReq(code);
 }
 
-function stashCurrentRound() {
+function updateMeasurement(code, tolMin, tolMax) {
+  var inp   = document.getElementById('val_' + code);
+  var badge = document.getElementById('badge_' + code);
+  var remWrap = document.getElementById('remwrap_' + code);
+  var raw   = inp.value.trim();
+
+  if (raw === '') {
+    badge.className = 'res-badge res-na'; badge.textContent = 'NA';
+    if (remWrap) remWrap.style.display = 'none';
+    return;
+  }
+
+  var v = parseFloat(raw);
+  var result = 'PASS';
+  if (tolMin !== null && tolMin !== '' && tolMin !== undefined && v < parseFloat(tolMin)) result = 'FAIL';
+  if (tolMax !== null && tolMax !== '' && tolMax !== undefined && v > parseFloat(tolMax)) result = 'FAIL';
+
+  badge.className = 'res-badge res-' + result.toLowerCase();
+  badge.textContent = result;
+  if (remWrap) remWrap.style.display = result === 'FAIL' ? 'block' : 'none';
+  clearRemReq(code);
+}
+
+function clearRemReq(code) {
+  var r = document.getElementById('remreq_' + code);
+  var t = document.getElementById('remark_' + code);
+  if (r) r.className = 'remark-req';
+  if (t) t.style.borderColor = '';
+}
+
+function getBadgeResult(code) {
+  var badge = document.getElementById('badge_' + code);
+  if (!badge) return 'NA';
+  var cls = badge.className;
+  if (cls.indexOf('res-pass') !== -1) return 'PASS';
+  if (cls.indexOf('res-fail') !== -1) return 'FAIL';
+  return 'NA';
+}
+
+// ── Save Round ─────────────────────────────────────────────────────
+function saveRound() {
+  var valid = true;
   var params = [];
-  for (var i = 0; i < PARAMS.length; i++) {
-    var p = PARAMS[i];
-    var rr = CURRENT_ROUND_RESULTS[i] || { result: 'NA', remark: '' };
+
+  PARAMS.forEach(function(p) {
+    var isVisual = !p.methodType || p.methodType === 'Visual' || p.methodType === 'visual';
+    var result = getBadgeResult(p.paramCode);
+    var actual = '';
+    if (!isVisual) {
+      var inp = document.getElementById('val_' + p.paramCode);
+      actual = inp ? inp.value.trim() : '';
+    }
+    var remTa = document.getElementById('remark_' + p.paramCode);
+    var remark = remTa ? remTa.value.trim() : '';
+
+    if (result === 'FAIL' && !remark) {
+      valid = false;
+      if (remTa) remTa.style.borderColor = 'var(--danger)';
+      var remReq = document.getElementById('remreq_' + p.paramCode);
+      if (remReq) remReq.className = 'remark-req show';
+      var remWrap = document.getElementById('remwrap_' + p.paramCode);
+      if (remWrap) remWrap.style.display = 'block';
+    }
+
     params.push({
-      paramCode: p.paramCode,
-      paramName: p.paramName,
-      result:    rr.result || 'NA',
-      remark:    rr.remark || '',
-      timestamp: rr.timestamp || new Date().toISOString()
+      paramCode:   p.paramCode,
+      paramName:   p.paramName,
+      stdValue:    p.stdValue !== null && p.stdValue !== undefined ? String(p.stdValue) : '',
+      unit:        p.unit || '',
+      actualValue: actual,
+      result:      result,
+      remark:      remark
     });
-  }
-  ALL_ROUNDS.push({ roundNo: ROUND_NO, params: params });
-}
+  });
 
-// ── Close Session flow ────────────────────────────────────────────────────
-function closeSession() {
-  // Stash the last round that was summarised
-  stashCurrentRound();
+  if (!valid) { showToast('Add remarks for all failed checks.', 'error'); return; }
 
-  var btn = document.getElementById('btnCloseSession');
+  var btn = document.getElementById('btnSaveRound');
   btn.disabled = true;
-  btn.textContent = 'Saving…';
-
-  // Step 1: stopTimer if DWM task exists
-  if (TASK_ID && DWM_SESSION_ID) {
-    try {
-      google.script.run
-        .withFailureHandler(function() {})
-        .stopTimer(TASK_ID, DWM_SESSION_ID);
-    } catch(e) {}
-  }
-
-  // Step 2: saveRound for each round sequentially, then closeSession
-  showLoading('Saving session…');
-  saveRoundSequential(0);
-}
-
-function saveRoundSequential(idx) {
-  if (idx >= ALL_ROUNDS.length) {
-    // All rounds saved — now close session
-    doCloseSession();
-    return;
-  }
-
-  var round = ALL_ROUNDS[idx];
-  var roundPayload = {
-    productCode: SEL_PRODUCT_CODE,
-    batch:       BATCH_NO,
-    params:      round.params,
-    elapsedHms:  '',
-    periodStartTime: '',
-    periodEndTime:   '',
-    avgWeight:   ''
-  };
+  btn.innerHTML = '<span class="spinner"></span>Saving…';
 
   google.script.run
     .withSuccessHandler(function(res) {
-      if (!res.ok) {
-        // Non-fatal: log and continue
-        showToast('Round ' + round.roundNo + ' warning: ' + (res.error || 'unknown'), 'error');
-      }
-      saveRoundSequential(idx + 1);
+      btn.disabled = false; btn.innerHTML = '💾 Save Round';
+      if (!res.ok) { showToast(res.error || 'Save failed.', 'error'); return; }
+      var saved = ROUND_NO;
+      ROUND_NO++;
+      document.getElementById('roundPill').textContent = 'Round ' + ROUND_NO;
+      document.getElementById('headerTitle').textContent = 'IPQC — Round ' + ROUND_NO;
+      resetMatrix();
+      showToast('Round ' + saved + ' saved.', 'success');
     })
     .withFailureHandler(function(e) {
-      hideLoading();
-      showToast('Error saving round ' + round.roundNo + ': ' + e.message, 'error');
-      // Restore button so user can retry
-      var btn = document.getElementById('btnCloseSession');
-      if (btn) { btn.disabled = false; btn.textContent = 'Close Session'; }
+      btn.disabled = false; btn.innerHTML = '💾 Save Round';
+      showToast('Error: ' + e.message, 'error');
     })
-    .saveRound(SESSION_ID, roundPayload);
+    .saveRound(SESSION_ID, {
+      productCode: SESSION_CODE,
+      batch:       SESSION_BATCH,
+      inspector:   SESSION_INSPECTOR,
+      roundNo:     ROUND_NO,
+      params:      params,
+      elapsedHms:  getElapsed(),
+      periodStartTime: '',
+      periodEndTime:   '',
+      avgWeight: ''
+    });
 }
 
-function doCloseSession() {
+function resetMatrix() {
+  PARAMS.forEach(function(p) {
+    var isVisual = !p.methodType || p.methodType === 'Visual' || p.methodType === 'visual';
+    var badge = document.getElementById('badge_' + p.paramCode);
+    if (badge) { badge.className = 'res-badge res-na'; badge.textContent = 'NA'; }
+
+    if (isVisual) {
+      ['PASS','FAIL','NA'].forEach(function(v) {
+        var b = document.getElementById('vb_' + p.paramCode + '_' + v);
+        if (b) b.className = 'vis-btn';
+      });
+    } else {
+      var inp = document.getElementById('val_' + p.paramCode);
+      if (inp) inp.value = '';
+    }
+
+    var remWrap = document.getElementById('remwrap_' + p.paramCode);
+    if (remWrap) remWrap.style.display = 'none';
+    var remTa = document.getElementById('remark_' + p.paramCode);
+    if (remTa) { remTa.value = ''; remTa.style.borderColor = ''; }
+    var remReq = document.getElementById('remreq_' + p.paramCode);
+    if (remReq) remReq.className = 'remark-req';
+  });
+}
+
+// ── Close Session ──────────────────────────────────────────────────
+function confirmCloseSession() {
+  if (!confirm('Close this IPQC session?')) return;
+  showLoading('Closing session…');
   google.script.run
     .withSuccessHandler(function(res) {
       hideLoading();
-      SESSION_SAVED = true;
-      showToast('IPQC session saved', 'success');
-      setTimeout(function() { navigateToLanding(); }, 1500);
+      stopTimer();
+      showToast('Session closed.', 'success');
+      SESSION_ID = null;
+      setTimeout(navigateHome, 1200);
     })
     .withFailureHandler(function(e) {
       hideLoading();
-      SESSION_SAVED = true; // don't re-save on unload
-      showToast('Session saved (close warning: ' + e.message + ')', 'error');
-      var btn = document.getElementById('btnCloseSession');
-      if (btn) { btn.disabled = false; btn.textContent = 'Close Session'; }
+      showToast('Error: ' + e.message, 'error');
     })
     .closeSession(SESSION_ID);
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────
-function handleHeaderBack() {
-  var visible = getVisibleState();
-  if (visible === 2) {
-    showState(1);
-    document.getElementById('headerTitle').textContent = 'IPQC';
-  } else if (visible === 3) {
-    if (CURRENT_PARAM_IDX > 0) {
-      // Save current remark before going back
-      var idx = CURRENT_PARAM_IDX;
-      if (CURRENT_ROUND_RESULTS[idx]) {
-        CURRENT_ROUND_RESULTS[idx].remark = document.getElementById('remarkTextarea').value.trim();
-      }
-      renderParam(CURRENT_PARAM_IDX - 1);
-    } else {
-      showState(2);
-    }
-  } else if (visible === 4) {
-    // Back to last param of current round
-    renderParam(PARAMS.length > 0 ? PARAMS.length - 1 : 0);
-    showState(3);
-  }
-}
-
-function getVisibleState() {
-  for (var i = 1; i <= 4; i++) {
-    var el = document.getElementById('state' + i);
-    if (el && el.style.display !== 'none') return i;
-  }
-  return 1;
-}
-
-function showState(n) {
-  for (var i = 1; i <= 4; i++) {
-    var el = document.getElementById('state' + i);
-    if (el) el.style.display = (i === n) ? 'block' : 'none';
-  }
-  var backBtn = document.getElementById('headerBackBtn');
-  var badge   = document.getElementById('headerBadge');
-
-  if (n === 1) {
-    backBtn.style.display = 'none';
-    badge.style.display   = 'inline-block';
-    document.getElementById('headerTitle').textContent = 'IPQC';
-  } else if (n === 2) {
-    backBtn.style.display = 'flex';
-    badge.style.display   = 'inline-block';
-    // title set in goToState2
-  } else if (n === 3) {
-    backBtn.style.display = 'flex';
-    badge.style.display   = 'none';
-    // title set in renderParam / roundSubHdr
-    document.getElementById('headerTitle').textContent = 'IPQC';
-  } else if (n === 4) {
-    backBtn.style.display = 'flex';
-    badge.style.display   = 'inline-block';
-  }
-
-  window.scrollTo(0, 0);
-}
-
-function navigateToLanding() {
+function navigateHome() {
   google.script.run
-    .withSuccessHandler(function(html) {
-      document.open();
-      document.write(html);
-      document.close();
-    })
-    .withFailureHandler(function() {
-      showToast('Could not navigate home.', 'error');
-    })
+    .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+    .withFailureHandler(function() { showScreen('A'); })
     .getFormHtml('Landing');
 }
 
-// ── Beforeunload guard ────────────────────────────────────────────────────
-window.addEventListener('beforeunload', function(e) {
-  if (SESSION_SAVED) return;
-  var state = getVisibleState();
-  if (TASK_ID && DWM_SESSION_ID && !SESSION_SAVED) {
-    try {
-      google.script.run
-        .withFailureHandler(function() {})
-        .stopTimer(TASK_ID, DWM_SESSION_ID);
-    } catch(ee) {}
-  }
-  if ((state === 3 || state === 4) && SESSION_ID) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
-});
+// ── Report overlay ─────────────────────────────────────────────────
+function viewReport() {
+  showLoading('Loading report…');
+  google.script.run
+    .withSuccessHandler(function(d) {
+      hideLoading();
+      buildReport(d.rounds || []);
+      document.getElementById('screenD').style.display = 'flex';
+    })
+    .withFailureHandler(function(e) {
+      hideLoading();
+      showToast('Report error: ' + e.message, 'error');
+    })
+    .getSessionRounds(SESSION_ID);
+}
 
-// ── Utilities ─────────────────────────────────────────────────────────────
+function closeReport() {
+  document.getElementById('screenD').style.display = 'none';
+}
+
+function buildReport(rounds) {
+  document.getElementById('reportTitle').textContent =
+    'IPQC — ' + truncate(SESSION_NAME, 20) + ' · ' + SESSION_BATCH;
+
+  var table = document.getElementById('reportTable');
+  table.innerHTML = '';
+  if (!rounds.length) {
+    table.innerHTML = '<tr><td style="padding:20px;color:var(--muted);text-align:center;">No rounds saved yet.</td></tr>';
+    return;
+  }
+
+  var paramOrder = [], nameMap = {};
+  if (rounds[0] && rounds[0].params) {
+    rounds[0].params.forEach(function(p) { paramOrder.push(p.paramCode); nameMap[p.paramCode] = p.paramName; });
+  }
+  var roundData = rounds.map(function(rnd) {
+    var map = {};
+    (rnd.params || []).forEach(function(p) {
+      map[p.paramCode] = { actualValue: p.actualValue, result: p.result };
+      if (!nameMap[p.paramCode]) nameMap[p.paramCode] = p.paramName;
+      if (paramOrder.indexOf(p.paramCode) === -1) paramOrder.push(p.paramCode);
+    });
+    return map;
+  });
+
+  /* Header */
+  var thead = document.createElement('thead');
+  var hRow = document.createElement('tr');
+  var thP = document.createElement('th');
+  thP.className = 'rt-param-hdr'; thP.textContent = 'Parameter';
+  hRow.appendChild(thP);
+  rounds.forEach(function(rnd, i) {
+    var th = document.createElement('th');
+    th.textContent = 'Rnd ' + (rnd.roundNo || (i + 1));
+    hRow.appendChild(th);
+  });
+  thead.appendChild(hRow);
+  table.appendChild(thead);
+
+  /* Body */
+  var tbody = document.createElement('tbody');
+  paramOrder.forEach(function(code) {
+    var tr = document.createElement('tr');
+    var tdL = document.createElement('td');
+    tdL.className = 'rt-param-cell'; tdL.textContent = nameMap[code] || code;
+    tr.appendChild(tdL);
+    roundData.forEach(function(rMap) {
+      var td = document.createElement('td');
+      var entry = rMap[code];
+      var res = entry ? (entry.result || 'NA') : 'NA';
+      var badge = document.createElement('span');
+      badge.className = 'res-badge res-' + res.toLowerCase();
+      badge.textContent = res;
+      td.appendChild(badge);
+      if (entry && entry.actualValue !== '' && entry.actualValue !== null && entry.actualValue !== undefined) {
+        var vs = document.createElement('span');
+        vs.className = 'rt-cell-val'; vs.textContent = entry.actualValue;
+        td.appendChild(vs);
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  /* Summary row */
+  var sumTr = document.createElement('tr');
+  sumTr.className = 'summary-row';
+  var sumL = document.createElement('td');
+  sumL.className = 'rt-param-cell'; sumL.textContent = 'Summary';
+  sumTr.appendChild(sumL);
+  roundData.forEach(function(rMap) {
+    var p = 0, f = 0, na = 0;
+    paramOrder.forEach(function(code) { var r = (rMap[code] || {}).result || 'NA'; if (r === 'PASS') p++; else if (r === 'FAIL') f++; else na++; });
+    var td = document.createElement('td');
+    td.innerHTML = '<span style="color:var(--success);font-weight:700;">P:' + p + '</span> ' +
+      (f ? '<span style="color:var(--danger);font-weight:700;">F:' + f + '</span>' : '');
+    sumTr.appendChild(td);
+  });
+  tbody.appendChild(sumTr);
+  table.appendChild(tbody);
+}
+
+// ── Navigation ─────────────────────────────────────────────────────
+function showScreen(name) {
+  ['A','B','C'].forEach(function(n) {
+    var el = document.getElementById('screen' + n);
+    if (el) el.style.display = (n === name) ? 'block' : 'none';
+  });
+  var back  = document.getElementById('headerBackBtn');
+  var badge = document.getElementById('headerBadge');
+  if (name === 'A') {
+    back.style.display = 'none';
+    badge.style.display = '';
+    document.getElementById('headerTitle').textContent = 'IPQC';
+    stopTimer();
+  } else if (name === 'B') {
+    back.style.display = 'flex';
+    badge.style.display = '';
+    document.getElementById('headerTitle').textContent = 'New Check';
+  } else if (name === 'C') {
+    back.style.display = 'none';
+    badge.style.display = 'none';
+  }
+  window.scrollTo(0, 0);
+}
+
+function handleBack() {
+  var vis = ['C','B','A'].find(function(n) {
+    var el = document.getElementById('screen' + n);
+    return el && el.style.display !== 'none';
+  });
+  if (vis === 'B') showScreen('A');
+}
+
+// ── Timer ──────────────────────────────────────────────────────────
+function startTimer() {
+  stopTimer();
+  timerInterval = setInterval(function() {
+    document.getElementById('timerDisplay').textContent = getElapsed();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function getElapsed() {
+  if (!SESSION_START_TS) return '00:00';
+  var s = Math.floor((new Date() - SESSION_START_TS) / 1000);
+  var h = Math.floor(s / 3600);
+  var m = Math.floor((s % 3600) / 60);
+  var sec = s % 60;
+  return (h > 0 ? pad2(h) + ':' : '') + pad2(m) + ':' + pad2(sec);
+}
+
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+// ── Utilities ──────────────────────────────────────────────────────
 function showLoading(msg) {
   document.getElementById('loadingMsg').textContent = msg || 'Loading…';
   document.getElementById('loading').classList.remove('hidden');
 }
-function hideLoading() {
-  document.getElementById('loading').classList.add('hidden');
-}
+function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
-function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 function truncate(str, max) {
   if (!str) return '';
   return str.length > max ? str.substring(0, max) + '…' : str;
 }
 function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 </body>

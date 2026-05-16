@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
     @keyframes pulse-amber {
@@ -367,6 +367,14 @@
     <div class="section-title" id="batchSectionTitle">BATCH INFO</div>
     <div class="section-body">
 
+      <div class="field" id="fieldIPQC">
+        <label>From IPQC Session</label>
+        <select id="selIPQC" style="font-size:16px!important;">
+          <option value="">— Select closed IPQC session —</option>
+        </select>
+        <div class="item-name-hint" id="ipqcHint">Picking a session auto-fills item & batch.</div>
+      </div>
+
       <div class="field" id="fieldMaterial">
         <label>Item / Material</label>
         <select id="selMaterial">
@@ -474,14 +482,14 @@ var DISP_BTNS = [
 // ══════════════════════════════════════════════════════════
 // State
 // ══════════════════════════════════════════════════════════
-var gMaterials   = [];
-var gCustomers   = [];
+var gMaterials    = [];
+var gCustomers    = [];
+var gIPQCSessions = [];
+var gIpqcRef      = '';
 var gToday       = '';
 var gChecks      = {};   // { fillWeight: 'PASS'|'FAIL'|'NA', ... }
 var gDisposition = '';
 var gSaved       = false;
-var dwmSessionId = sessionStorage.getItem('dwmSessionId') || null;
-var dwmTaskId    = null;
 
 // ══════════════════════════════════════════════════════════
 // Init
@@ -495,9 +503,10 @@ window.addEventListener('DOMContentLoaded', function() {
 function loadInit() {
   google.script.run
     .withSuccessHandler(function(d) {
-      gToday     = d.today || '';
-      gMaterials = d.materials  || [];
-      gCustomers = d.customers  || [];
+      gToday        = d.today || '';
+      gMaterials    = d.materials  || [];
+      gCustomers    = d.customers  || [];
+      gIPQCSessions = d.ipqcSessions || [];
 
       document.getElementById('docBadge').textContent = d.docNumber || 'OQC';
 
@@ -519,15 +528,20 @@ function loadInit() {
         custSel.appendChild(o);
       });
 
-      // DWM task start (best-effort)
-      if (dwmSessionId) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            if (res && res.taskId) dwmTaskId = res.taskId;
-          })
-          .withFailureHandler(function() {})
-          .autoQmsTask_(dwmSessionId, 'OQC', 'OQC — incoming check', null);
+      var ipqcSel = document.getElementById('selIPQC');
+      gIPQCSessions.forEach(function(s) {
+        var o = document.createElement('option');
+        o.value = s.sessionId;
+        o.textContent = s.label;
+        o.dataset.productCode = s.productCode;
+        o.dataset.productName = s.productName;
+        o.dataset.batch       = s.batch;
+        ipqcSel.appendChild(o);
+      });
+      if (!gIPQCSessions.length) {
+        document.getElementById('ipqcHint').textContent = 'No closed IPQC sessions in last 30 days — fill manually below.';
       }
+
     })
     .withFailureHandler(function(e) {
       showToast(e.message || 'Load failed', 'error');
@@ -588,6 +602,22 @@ function bindEvents() {
     checkSaveReady();
   });
 
+  document.getElementById('selIPQC').addEventListener('change', function() {
+    var opt = this.options[this.selectedIndex];
+    gIpqcRef = this.value || '';
+    if (!opt || !this.value) return;
+    var pc = opt.dataset.productCode || '';
+    var bt = opt.dataset.batch || '';
+    var matSel = document.getElementById('selMaterial');
+    for (var i = 0; i < matSel.options.length; i++) {
+      if (matSel.options[i].value === pc) { matSel.selectedIndex = i; break; }
+    }
+    matSel.dispatchEvent(new Event('change'));
+    document.getElementById('inpBatch').value = bt;
+    updateBarBatch();
+    checkSaveReady();
+  });
+
   document.getElementById('inpBatch').addEventListener('input', function() {
     updateBarBatch();
     checkSaveReady();
@@ -616,13 +646,6 @@ function bindEvents() {
     goHome();
   });
 
-  window.addEventListener('beforeunload', function() {
-    if (dwmTaskId && !gSaved) {
-      try {
-        google.script.run.stopTimer(dwmTaskId, dwmSessionId);
-      } catch(e) {}
-    }
-  });
 }
 
 // ══════════════════════════════════════════════════════════
@@ -808,8 +831,9 @@ function doSave() {
     customerCode:    custSel.value,
     customerName:    custName,
     ipqcReviewed:    'Y',
-    inspector:       dwmSessionId || 'QA',
+    inspector:       (window.QMS ? window.QMS.getOperatorName() : '') || 'QA',
     releaseDecision: gDisposition,
+    operatorName:    window.QMS ? window.QMS.getOperatorName() : '',
     remarks:         document.getElementById('inpRemarks').value,
     items: [{
       batchPO:       batchNo,
@@ -824,17 +848,9 @@ function doSave() {
         appearance:  gChecks.appearance  || '',
         custSpec:    gChecks.custSpec    || ''
       },
-      ipqcSessionRef: ''
+      ipqcSessionRef: gIpqcRef || ''
     }]
   };
-
-  // Stop DWM timer before saving
-  if (dwmTaskId && dwmSessionId) {
-    google.script.run
-      .withSuccessHandler(function() {})
-      .withFailureHandler(function() {})
-      .stopTimer(dwmTaskId, dwmSessionId);
-  }
 
   google.script.run
     .withSuccessHandler(function(res) {
@@ -854,7 +870,7 @@ function doSave() {
       btn.disabled = false;
       btn.textContent = 'Save OQC →';
     })
-    .saveOQC(data, dwmSessionId);
+    .saveOQC(data);
 }
 
 // ══════════════════════════════════════════════════════════

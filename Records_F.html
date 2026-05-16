@@ -5,381 +5,726 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
+    * { box-sizing: border-box; }
     body {
+      margin: 0;
+      background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .rec-filter {
+    /* ── Header ── */
+    .pm-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 56px;
+      background: var(--navy);
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
       align-items: center;
-      padding: 8px 12px;
+      padding: 0 14px;
+    }
+    .pm-header .logo {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .pm-header .screen-label {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.8);
+    }
+    .pm-header .role-chip {
+      flex: 0 0 auto;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--navy);
+      background: #fff;
+      border-radius: 12px;
+      padding: 3px 9px;
+      white-space: nowrap;
+    }
+
+    /* ── Filter Bar ── */
+    .filter-bar {
+      position: sticky;
+      top: 56px;
+      z-index: 99;
       background: var(--white);
       border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 103px;
-      z-index: 85;
+      padding: 10px 12px 8px;
     }
-    .rec-filter input[type="date"],
-    .rec-filter input[type="search"] {
-      border: 1.5px solid var(--border);
+    .filter-bar .date-row {
+      display: flex;
+      gap: 4%;
+      margin-bottom: 8px;
+    }
+    .filter-bar .date-field {
+      flex: 0 0 48%;
+    }
+    .filter-bar label {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 3px;
+      letter-spacing: 0.5px;
+    }
+    .filter-bar input[type="date"],
+    .filter-bar input[type="search"] {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 6px 8px;
-      font-size: 12px;
-      font-family: inherit;
+      padding: 0 10px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
       color: var(--text);
       background: var(--white);
       -webkit-appearance: none;
     }
-    .rec-filter input[type="date"]   { width: 130px; }
-    .rec-filter input[type="search"] { flex: 1; min-width: 120px; }
-    .rec-filter input:focus { outline: none; border-color: var(--navy); }
-    .rec-filter .btn-filter {
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
+    .filter-bar input[type="date"]:focus,
+    .filter-bar input[type="search"]:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    .filter-bar input[type="search"]::placeholder { color: var(--muted); }
+    .search-wrap { position: relative; }
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: var(--muted);
+      cursor: pointer;
+      display: none;
+      line-height: 1;
+      padding: 2px;
+    }
+
+    /* ── Tab Bar ── */
+    .tab-bar {
+      position: sticky;
+      top: calc(56px + 108px);
+      z-index: 98;
+      height: 44px;
+      background: var(--navy-light);
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 44px;
+      padding: 0 14px;
       font-size: 12px;
       font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      white-space: nowrap;
-    }
-    .rec-filter .btn-clear {
-      background: transparent;
       color: var(--muted);
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 500;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
       cursor: pointer;
-      font-family: inherit;
-    }
-
-    .rec-list {
-      padding: 8px 10px 80px;
-    }
-
-    .rec-card {
-      background: var(--white);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      padding: 11px 12px;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      transition: box-shadow 0.12s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .rec-card:hover  { box-shadow: var(--shadow-2); }
-    .rec-card:active { background: var(--navy-light); }
-
-    .rec-card-accent {
-      width: 4px;
-      border-radius: 4px;
-      align-self: stretch;
+      white-space: nowrap;
       flex-shrink: 0;
     }
-    .rec-card[data-type="GRN"]      .rec-card-accent { background: #1D4ED8; }
-    .rec-card[data-type="IQC"]      .rec-card-accent { background: var(--navy); }
-    .rec-card[data-type="OQC"]      .rec-card-accent { background: #BE185D; }
-    .rec-card[data-type="IPQC"]     .rec-card-accent { background: var(--hold); }
-    .rec-card[data-type="Gatepass"] .rec-card-accent { background: var(--success); }
-
-    .rec-main { flex: 1; min-width: 0; }
-    .rec-docno {
-      font-size: 13px;
+    .tab-btn.active {
+      background: var(--white);
+      color: var(--navy);
+      font-weight: 700;
+      border-bottom-color: var(--navy);
+      border-radius: 4px 4px 0 0;
+    }
+    .tab-count {
+      font-size: 10px;
       font-weight: 700;
       color: var(--navy);
-      white-space: nowrap;
+      background: var(--navy-light);
+      border-radius: 10px;
+      padding: 1px 6px;
+      min-width: 18px;
+      text-align: center;
+    }
+    .tab-btn.active .tab-count {
+      background: var(--border);
+    }
+
+    /* ── Content area ── */
+    .content-area {
+      padding: 10px;
+    }
+
+    /* ── Table section ── */
+    .table-section {
+      background: var(--white);
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
       overflow: hidden;
-      text-overflow: ellipsis;
     }
-    .rec-meta {
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead tr {
+      background: var(--navy-light);
+    }
+    thead th {
+      text-align: left;
       font-size: 11px;
-      color: var(--muted);
-      margin-top: 2px;
+      font-weight: 600;
+      color: var(--navy);
+      text-transform: uppercase;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
-    .rec-name {
+    tbody tr.data-row {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    tbody tr.data-row:nth-child(even) { background: #FAFBFF; }
+    tbody tr.data-row:nth-child(odd)  { background: var(--white); }
+    tbody tr.data-row.fail-row  { background: #FEF2F2 !important; }
+    tbody tr.data-row.pending-row { background: #FFFBEB !important; }
+    tbody tr.data-row:active { background: var(--navy-light) !important; }
+    td {
+      padding: 8px 10px;
+      vertical-align: middle;
       font-size: 12px;
       color: var(--text);
-      margin-top: 1px;
+    }
+    td.dt-cell .dt-date { font-size: 12px; font-weight: 600; display: block; }
+    td.dt-cell .dt-time { font-size: 10px; color: var(--muted); display: block; margin-top: 1px; }
+
+    /* Operator col hidden on mobile */
+    .col-op { display: none; }
+    @media (min-width: 600px) { .col-op { display: table-cell; } }
+
+    /* ── Status chip ── */
+    .chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
       white-space: nowrap;
+    }
+    .chip-pass, .chip-accepted { background: #DCFCE7; color: #15803D; }
+    .chip-fail, .chip-rejected { background: #FEE2E2; color: #B91C1C; }
+    .chip-pending, .chip-open  { background: #FEF9C3; color: #92400E; }
+    .chip-issued               { background: #DBEAFE; color: #1E40AF; }
+    .chip-default              { background: var(--navy-light); color: var(--navy); }
+
+    /* ── Inline detail panel ── */
+    tr.detail-row td {
+      padding: 0;
+      background: var(--navy-light);
+    }
+    .detail-inner {
       overflow: hidden;
-      text-overflow: ellipsis;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.2s ease, opacity 0.2s ease;
     }
-    .rec-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-      flex-shrink: 0;
+    .detail-inner.open {
+      max-height: 500px;
+      opacity: 1;
     }
-    .rec-chevron { font-size: 18px; color: var(--muted); }
+    .detail-body {
+      padding: 12px;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+    }
+    .detail-field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--navy);
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .detail-field span {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text);
+    }
+    .detail-close {
+      display: block;
+      text-align: right;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--navy);
+      cursor: pointer;
+      margin-top: 8px;
+    }
 
-    .state-box {
+    /* ── Empty state ── */
+    .empty-row td {
       text-align: center;
-      padding: 48px 20px;
-      color: var(--muted);
+      padding: 32px 16px;
     }
-    .state-box .icon { font-size: 40px; display: block; margin-bottom: 10px; }
-    .state-box .msg  { font-size: 13px; font-weight: 500; }
-    .state-box .sub  { font-size: 11px; margin-top: 4px; }
+    .empty-row .empty-main { font-size: 13px; color: var(--muted); }
+    .empty-row .empty-sub  { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-    .badge-accepted { background: #DCFCE7; color: #15803D; }
-    .badge-released { background: #DCFCE7; color: #15803D; }
-    .badge-rejected { background: #FEE2E2; color: #B91C1C; }
-    .badge-open     { background: #FFF3CD; color: #B45309; }
-    .badge-closed   { background: #DCFCE7; color: #15803D; }
-    .badge-issued   { background: #DBEAFE; color: #1D4ED8; }
+    /* ── Skeleton ── */
+    @keyframes skeleton-pulse {
+      0%   { opacity: 0.4; }
+      50%  { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+    .skeleton-row td { padding: 10px; }
+    .skel-bar {
+      height: 16px;
+      border-radius: 4px;
+      background: var(--navy-light);
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
+    }
 
+    /* ── Toast ── */
     .toast {
       position: fixed;
-      bottom: 80px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--navy);
-      color: var(--white);
-      padding: 10px 20px;
-      border-radius: 8px;
+      background: #B91C1C;
+      color: #fff;
       font-size: 13px;
-      font-weight: 600;
-      z-index: 9999;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
+      font-weight: 500;
+      padding: 10px 18px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 200;
+      cursor: pointer;
+      display: none;
       white-space: nowrap;
-      max-width: 88vw;
-      text-align: center;
     }
-    .toast.show    { opacity: 1; pointer-events: auto; }
-    .toast.error   { background: var(--danger); }
-    .toast.success { background: var(--success); }
+    .toast.show { display: block; }
+
+    /* ── Loading dim ── */
+    .table-loading { opacity: 0.5; pointer-events: none; transition: opacity 0.1s; }
+
+    /* ── Fade in for new content ── */
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .fade-in { animation: fade-in 0.2s ease forwards; }
+
+    /* ── Desktop: filter bar rows inline ── */
+    @media (min-width: 900px) {
+      .filter-bar .date-row { margin-bottom: 0; flex: 1; }
+      .filter-bar .filter-desktop-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+      }
+      .filter-bar .search-wrap { flex: 1; }
+    }
   </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="pm-header">
-  <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
-  </button>
-  <span class="page-title">Records</span>
-  <span class="doc-badge" id="totalBadge" style="display:none;"></span>
+  <div class="logo" id="logoBtn">Pack Masters</div>
+  <div class="screen-label">Records</div>
+  <div class="role-chip" id="roleChip">—</div>
 </div>
 
-<div class="tab-bar" id="tabBar">
-  <button class="tab-btn active" data-type="GRN">GRN <span class="tab-count" id="cnt-GRN">—</span></button>
-  <button class="tab-btn"        data-type="IQC">IQC <span class="tab-count" id="cnt-IQC">—</span></button>
-  <button class="tab-btn"        data-type="IPQC">IPQC <span class="tab-count" id="cnt-IPQC">—</span></button>
-  <button class="tab-btn"        data-type="OQC">OQC <span class="tab-count" id="cnt-OQC">—</span></button>
-  <button class="tab-btn"        data-type="Gatepass">Gatepass <span class="tab-count" id="cnt-Gatepass">—</span></button>
-</div>
-
-<div class="rec-filter">
-  <input type="date" id="fFrom" title="From date">
-  <input type="date" id="fTo"   title="To date">
-  <input type="search" id="fSearch" placeholder="Search doc no. or name…">
-  <button class="btn-filter" id="btnFilter">Filter</button>
-  <button class="btn-clear"  id="btnClear">Clear</button>
-</div>
-
-<div class="rec-list" id="recList">
-  <div class="state-box">
-    <span class="icon">⏳</span>
-    <div class="msg">Loading records…</div>
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <div class="filter-desktop-row">
+    <div class="date-row">
+      <div class="date-field">
+        <label>FROM</label>
+        <input type="date" id="fromDate">
+      </div>
+      <div class="date-field">
+        <label>TO</label>
+        <input type="date" id="toDate">
+      </div>
+    </div>
+    <div style="margin-top:0;" class="search-wrap" id="searchWrap">
+      <label>SEARCH</label>
+      <div style="position:relative;">
+        <input type="search" id="searchInput" placeholder="Search ID, item, operator…">
+        <span class="search-clear" id="searchClear">×</span>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="toast" id="pmToast"></div>
+<!-- Tab Bar -->
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-module="GRN">GRN <span class="tab-count" id="cnt-GRN">—</span></button>
+  <button class="tab-btn" data-module="IQC">IQC <span class="tab-count" id="cnt-IQC">—</span></button>
+  <button class="tab-btn" data-module="IPQC">IPQC <span class="tab-count" id="cnt-IPQC">—</span></button>
+  <button class="tab-btn" data-module="OQC">OQC <span class="tab-count" id="cnt-OQC">—</span></button>
+  <button class="tab-btn" data-module="Gatepass">Gatepass <span class="tab-count" id="cnt-Gatepass">—</span></button>
+</div>
+
+<!-- Content -->
+<div class="content-area">
+  <div class="table-section" id="tableSection">
+    <table id="recordsTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script>
-var sessionId   = sessionStorage.getItem('dwmSessionId') || '';
-var currentTab  = 'GRN';
-var searchTimer = null;
+(function() {
+  'use strict';
 
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('backBtn').addEventListener('click', function() {
-    if (typeof goHome === 'function') goHome();
+  // ── XSS helper ──
+  function esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── State ──
+  var state = {
+    module: 'GRN',
+    fromDate: '',
+    toDate: '',
+    search: '',
+    openDocNo: null,
+    requestId: 0
+  };
+
+  // ── Role chip ──
+  var roleEl = document.getElementById('roleChip');
+  if (roleEl) roleEl.style.display = 'none';
+
+  // ── Logo → back to Landing ──
+  document.getElementById('logoBtn').addEventListener('click', function() {
+    google.script.run
+      .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+      .withFailureHandler(function() {})
+      .getFormHtml('Landing');
   });
 
-  document.getElementById('btnFilter').addEventListener('click', loadList);
+  // ── Date defaults: 7 days ago → today ──
+  function toYMD(d) {
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+  var today = new Date();
+  var weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 7);
+  var fromEl = document.getElementById('fromDate');
+  var toEl   = document.getElementById('toDate');
+  fromEl.value = toYMD(weekAgo);
+  toEl.value   = toYMD(today);
+  state.fromDate = fromEl.value;
+  state.toDate   = toEl.value;
 
-  document.getElementById('btnClear').addEventListener('click', function() {
-    document.getElementById('fFrom').value   = '';
-    document.getElementById('fTo').value     = '';
-    document.getElementById('fSearch').value = '';
-    loadList();
+  // ── Date inputs ──
+  fromEl.addEventListener('change', function() { state.fromDate = this.value; load(); });
+  toEl.addEventListener('change',   function() { state.toDate   = this.value; load(); });
+
+  // ── Search input with debounce ──
+  var searchEl    = document.getElementById('searchInput');
+  var searchClear = document.getElementById('searchClear');
+  var debTimer    = null;
+  searchEl.addEventListener('input', function() {
+    searchClear.style.display = this.value ? 'block' : 'none';
+    clearTimeout(debTimer);
+    debTimer = setTimeout(function() {
+      state.search = searchEl.value.trim();
+      load();
+    }, 400);
+  });
+  searchClear.addEventListener('click', function() {
+    searchEl.value = '';
+    searchClear.style.display = 'none';
+    state.search = '';
+    load();
   });
 
-  document.getElementById('fSearch').addEventListener('input', function() {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(loadList, 400);
-  });
-
+  // ── Tab bar ──
   document.getElementById('tabBar').addEventListener('click', function(e) {
     var btn = e.target.closest('.tab-btn');
-    if (!btn || !btn.dataset.type) return;
-    switchTab(btn.dataset.type);
+    if (!btn) return;
+    var mod = btn.getAttribute('data-module');
+    if (mod === state.module) return;
+    state.module = mod;
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    state.openDocNo = null;
+    load();
   });
 
-  document.getElementById('recList').addEventListener('click', function(e) {
-    var card = e.target.closest('.rec-card');
-    if (!card) return;
-    openRecord(card.dataset.docno);
-  });
-
-  loadCounts();
-  loadList();
-});
-
-function switchTab(type) {
-  if (type === currentTab) return;
-  var prev = document.querySelector('#tabBar .tab-btn.active');
-  if (prev) prev.classList.remove('active');
-  var next = document.querySelector('#tabBar .tab-btn[data-type="' + type + '"]');
-  if (next) next.classList.add('active');
-  currentTab = type;
-  loadList();
-}
-
-function loadCounts() {
-  google.script.run
-    .withSuccessHandler(function(counts) {
-      if (!counts) return;
-      setCount('GRN',      counts.grn);
-      setCount('IQC',      counts.iqc);
-      setCount('OQC',      counts.oqc);
-      setCount('Gatepass', counts.gp);
-      setCount('IPQC',     counts.ipqc);
-    })
-    .withFailureHandler(function() {})
-    .getRecordsCounts();
-}
-
-function setCount(type, n) {
-  var el = document.getElementById('cnt-' + type);
-  if (el) el.textContent = (n !== undefined && n !== null) ? n : '—';
-}
-
-function loadList() {
-  showLoading();
-  var filters = {
-    fromDate: document.getElementById('fFrom').value,
-    toDate:   document.getElementById('fTo').value,
-    search:   document.getElementById('fSearch').value.trim()
+  // ── Column definitions per module ──
+  var COLS = {
+    GRN:      ['Date', 'GRN ID', 'Supplier', 'Status', 'OP'],
+    IQC:      ['Date', 'IQC ID', 'GRN · Material', 'Result', 'OP'],
+    IPQC:     ['Date', 'IPQC ID', 'Product · Batch', 'Status', 'OP'],
+    OQC:      ['Date', 'OQC ID', 'Customer', 'Result', 'OP'],
+    Gatepass: ['Date', 'GP ID', 'Type · Party', 'Status', 'OP']
   };
-  google.script.run
-    .withSuccessHandler(renderList)
-    .withFailureHandler(showError)
-    .getRecordsList(currentTab, filters);
-}
 
-function showLoading() {
-  document.getElementById('recList').innerHTML =
-    '<div class="state-box"><span class="spinner"></span>' +
-    '<div class="msg" style="margin-top:8px;">Loading…</div></div>';
-  document.getElementById('totalBadge').style.display = 'none';
-}
-
-function showError(err) {
-  document.getElementById('recList').innerHTML =
-    '<div class="state-box"><span class="icon">⚠️</span>' +
-    '<div class="msg">Could not load records</div>' +
-    '<div class="sub">' + esc((err && err.message) || String(err)) + '</div></div>';
-}
-
-function renderList(rows) {
-  var badge = document.getElementById('totalBadge');
-
-  if (!rows || rows.length === 0) {
-    document.getElementById('recList').innerHTML =
-      '<div class="empty-state"><span class="icon">📭</span>' +
-      '<div>No records found</div>' +
-      '<div style="font-size:11px;margin-top:4px;">Try adjusting filters or date range</div></div>';
-    badge.style.display = 'none';
-    return;
+  // ── Render table header ──
+  function renderHead(module) {
+    var cols = COLS[module] || COLS.GRN;
+    var html = '<tr>';
+    cols.forEach(function(c, i) {
+      var cls = (i === 4) ? ' class="col-op"' : '';
+      html += '<th' + cls + '>' + esc(c) + '</th>';
+    });
+    html += '</tr>';
+    document.getElementById('tableHead').innerHTML = html;
   }
 
-  badge.textContent = rows.length;
-  badge.style.display = 'inline-block';
-
-  var html = '';
-  for (var i = 0; i < rows.length; i++) {
-    var r = rows[i];
-    html +=
-      '<div class="rec-card" data-type="' + esc(currentTab) + '" data-docno="' + esc(r.docNo) + '">' +
-        '<div class="rec-card-accent"></div>' +
-        '<div class="rec-main">' +
-          '<div class="rec-docno">' + esc(r.docNo) + '</div>' +
-          '<div class="rec-meta">' + esc(r.date) + '</div>' +
-          '<div class="rec-name">' + esc(r.name) + '</div>' +
-        '</div>' +
-        '<div class="rec-right">' +
-          statusBadge(r.status) +
-          '<span class="rec-chevron">›</span>' +
-        '</div>' +
-      '</div>';
+  // ── Status chip ──
+  function chipHtml(status) {
+    var s = (status || '').toUpperCase();
+    var cls = 'chip-default';
+    if (s === 'PASS' || s === 'ACCEPTED') cls = 'chip-pass';
+    else if (s === 'FAIL' || s === 'REJECTED') cls = 'chip-fail';
+    else if (s === 'PENDING' || s === 'OPEN') cls = 'chip-pending';
+    else if (s === 'ISSUED') cls = 'chip-issued';
+    return '<span class="chip ' + cls + '">' + esc(status || '—') + '</span>';
   }
 
-  document.getElementById('recList').innerHTML = html;
-}
-
-function statusBadge(status) {
-  var s = (status || 'PENDING').toUpperCase();
-  var cls = 'badge-pending';
-  if      (s === 'ACCEPTED' || s === 'RELEASED' || s === 'PASS') cls = 'badge-accepted';
-  else if (s === 'REJECTED' || s === 'FAIL')                      cls = 'badge-rejected';
-  else if (s === 'HOLD')                                          cls = 'badge-hold';
-  else if (s === 'OPEN')                                          cls = 'badge-open';
-  else if (s === 'CLOSED')                                        cls = 'badge-closed';
-  else if (s === 'ISSUED')                                        cls = 'badge-issued';
-  return '<span class="badge ' + cls + '">' + esc(status || 'PENDING') + '</span>';
-}
-
-function openRecord(docNo) {
-  if (currentTab === 'IPQC') {
-    showToast('Document view not available for IPQC sessions.');
-    return;
+  // ── Row class based on status ──
+  function rowClass(status) {
+    var s = (status || '').toUpperCase();
+    if (s === 'FAIL' || s === 'REJECTED') return ' fail-row';
+    if (s === 'PENDING' || s === 'OPEN')  return ' pending-row';
+    return '';
   }
-  google.script.run
-    .withSuccessHandler(function(html) {
-      if (html) { document.open(); document.write(html); document.close(); }
-    })
-    .withFailureHandler(function(err) {
-      showToast('Could not open record: ' + ((err && err.message) || String(err)), 'error');
-    })
-    .getDocViewHtml(currentTab, docNo);
-}
 
-function showToast(msg, type) {
-  var t = document.getElementById('pmToast');
-  t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  clearTimeout(t._tmr);
-  t._tmr = setTimeout(function() { t.className = 'toast'; }, 3000);
-}
+  // ── Parse date string into two lines ──
+  function dtCell(dateStr) {
+    // dateStr from backend: 'dd-MMM-yyyy' e.g. '14-Mar-2026'
+    return '<td class="dt-cell">'
+      + '<span class="dt-date">' + esc(dateStr || '—') + '</span>'
+      + '</td>';
+  }
 
-function esc(s) {
-  if (!s && s !== 0) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+  // ── Detail fields per record ──
+  function detailFields(rec) {
+    var fields = [];
+    fields.push({ label: 'Doc No', value: rec.docNo });
+    fields.push({ label: 'Date',   value: rec.date  });
+    fields.push({ label: 'Name',   value: rec.name  });
+    fields.push({ label: 'Status', value: rec.status });
+    return fields;
+  }
+
+  // ── Detail row HTML ──
+  function detailRowHtml(rec, colCount) {
+    var flds = detailFields(rec);
+    var gridHtml = flds.map(function(f) {
+      return '<div class="detail-field"><label>' + esc(f.label) + '</label>'
+           + '<span>' + esc(f.value) + '</span></div>';
+    }).join('');
+    return '<tr class="detail-row" data-detail="' + esc(rec.docNo) + '">'
+         + '<td colspan="' + colCount + '">'
+         + '<div class="detail-inner" id="di-' + esc(rec.docNo.replace(/[^a-zA-Z0-9]/g, '_')) + '">'
+         + '<div class="detail-body">'
+         + '<div class="detail-grid">' + gridHtml + '</div>'
+         + '<span class="detail-close" data-closedoc="' + esc(rec.docNo) + '">Close ×</span>'
+         + '</div></div></td></tr>';
+  }
+
+  // ── Skeleton rows ──
+  function renderSkeleton() {
+    var html = '';
+    for (var i = 0; i < 8; i++) {
+      html += '<tr class="skeleton-row"><td colspan="5"><div class="skel-bar"></div></td></tr>';
+    }
+    document.getElementById('tableBody').innerHTML = html;
+  }
+
+  // ── Render records ──
+  function renderRecords(records) {
+    var module = state.module;
+    var tbody  = document.getElementById('tableBody');
+    var colCount = 5;
+
+    if (!records || records.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="' + colCount + '">'
+        + '<div class="empty-main">No records match your search.</div>'
+        + '<div class="empty-sub">Try adjusting the date range or clearing the search.</div>'
+        + '</td></tr>';
+      document.getElementById('tableSection').classList.remove('table-loading');
+      return;
+    }
+
+    var html = '';
+    records.forEach(function(rec) {
+      var rc = rowClass(rec.status);
+      var docSafe = esc(rec.docNo.replace(/[^a-zA-Z0-9]/g, '_'));
+      html += '<tr class="data-row' + rc + ' fade-in" data-docno="' + esc(rec.docNo) + '">'
+            + dtCell(rec.date)
+            + '<td>' + esc(rec.docNo) + '</td>'
+            + '<td>' + esc(rec.name)  + '</td>'
+            + '<td>' + chipHtml(rec.status) + '</td>'
+            + '<td class="col-op">—</td>'
+            + '</tr>'
+            + detailRowHtml(rec, colCount);
+    });
+
+    tbody.innerHTML = html;
+    document.getElementById('tableSection').classList.remove('table-loading');
+
+    // Re-attach row tap listeners
+    attachRowTaps();
+
+    // Restore open panel if same doc is still in results
+    if (state.openDocNo) {
+      var key = state.openDocNo.replace(/[^a-zA-Z0-9]/g, '_');
+      var panel = document.getElementById('di-' + key);
+      if (panel) panel.classList.add('open');
+    }
+  }
+
+  // ── Row tap: open/close detail ──
+  function attachRowTaps() {
+    var tbody = document.getElementById('tableBody');
+
+    if (tbody._tapsAttached) return;
+    tbody._tapsAttached = true;
+    tbody.addEventListener('click', function(e) {
+      // Close button
+      var closeBtn = e.target.closest('[data-closedoc]');
+      if (closeBtn) {
+        var docNo = closeBtn.getAttribute('data-closedoc');
+        closeDetail(docNo);
+        if (state.openDocNo === docNo) state.openDocNo = null;
+        return;
+      }
+
+      // Data row tap
+      var row = e.target.closest('tr.data-row');
+      if (!row) return;
+      var docNo = row.getAttribute('data-docno');
+      if (!docNo) return;
+
+      if (state.openDocNo === docNo) {
+        closeDetail(docNo);
+        state.openDocNo = null;
+      } else {
+        if (state.openDocNo) closeDetail(state.openDocNo);
+        state.openDocNo = docNo;
+        openDetail(docNo);
+      }
+    });
+  }
+
+  function openDetail(docNo) {
+    var key   = docNo.replace(/[^a-zA-Z0-9]/g, '_');
+    var panel = document.getElementById('di-' + key);
+    if (panel) panel.classList.add('open');
+  }
+
+  function closeDetail(docNo) {
+    var key   = docNo.replace(/[^a-zA-Z0-9]/g, '_');
+    var panel = document.getElementById('di-' + key);
+    if (panel) panel.classList.remove('open');
+  }
+
+  // ── Toast ──
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+  }
+  function hideToast() {
+    document.getElementById('toast').classList.remove('show');
+  }
+  document.getElementById('toast').addEventListener('click', function() {
+    hideToast();
+    load();
+  });
+
+  // ── Main load ──
+  function load() {
+    hideToast();
+    state.openDocNo = null;
+    var reqId = ++state.requestId;
+
+    var filters = {
+      fromDate: state.fromDate,
+      toDate:   state.toDate,
+      search:   state.search
+    };
+
+    // Dim existing content or show skeleton on first load
+    var tbody = document.getElementById('tableBody');
+    if (tbody.children.length === 0 || tbody.querySelector('.skeleton-row')) {
+      renderHead(state.module);
+      renderSkeleton();
+    } else {
+      document.getElementById('tableSection').classList.add('table-loading');
+    }
+
+    google.script.run
+      .withSuccessHandler(function(records) {
+        if (reqId !== state.requestId) return; // stale
+        renderHead(state.module);
+        renderRecords(records);
+      })
+      .withFailureHandler(function(err) {
+        if (reqId !== state.requestId) return;
+        document.getElementById('tableSection').classList.remove('table-loading');
+        showToast('Could not load records. Tap to retry.');
+      })
+      .getRecordsList(state.module, filters);
+  }
+
+  // ── Load counts ──
+  function loadCounts() {
+    google.script.run
+      .withSuccessHandler(function(counts) {
+        if (!counts) return;
+        var map = { GRN: counts.grn, IQC: counts.iqc, IPQC: counts.ipqc, OQC: counts.oqc, Gatepass: counts.gp };
+        Object.keys(map).forEach(function(mod) {
+          var el = document.getElementById('cnt-' + mod);
+          if (el && map[mod] != null) el.textContent = map[mod];
+        });
+      })
+      .withFailureHandler(function() {})
+      .getRecordsCounts();
+  }
+
+  // ── Init ──
+  renderHead(state.module);
+  renderSkeleton();
+  load();
+  loadCounts();
+
+})();
 </script>
-
 </body>
 </html>

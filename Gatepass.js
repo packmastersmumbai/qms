@@ -19,21 +19,23 @@ function getGatpassFormInit() {
   };
 }
 
-function saveGatepass(data, sessionId) {
+function saveGatepass(data) {
   try {
     var ss = getSpreadsheet();
     var ws = ss.getSheetByName('GATEPASS_LOG');
     if (!ws) throw new Error('GATEPASS_LOG sheet not found. Run Setup first.');
 
+    // Outbound dispatches must reference a RELEASED/ACCEPTED OQC that has not been used.
+    // UI dropdown already filters; this defends against crafted-JSON bypass.
+    if (String(data.type || '').toUpperCase() === 'OUTBOUND') {
+      assertOQCReleasedForRef_(data.oqcRef, ss);
+    }
+
     var docNo = getNextDocNumber('gp');
     var now   = new Date();
     var user  = Session.getActiveUser().getEmail() || 'QA';
     var date  = new Date(data.date);
-    var operatorId = '';
-    if (sessionId) {
-      var sess = validateSessionFast_(sessionId);
-      if (sess) operatorId = sess.userId;
-    }
+    var operatorId = data.operatorName || '';
 
     // Support multi-item array or fallback to single-item (backward compat)
     var items = (data.items && data.items.length > 0) ? data.items : [{
@@ -75,15 +77,59 @@ function saveGatepass(data, sessionId) {
       ws.getRange(r, 18).setNumberFormat('dd-MMM-yyyy HH:mm');
     }
 
-    if (sessionId) {
-      var firstGpItem = items[0] || {};
-      autoQmsTask_(sessionId, 'Gatepass', 'Gatepass — ' + (data.partyName || '') + ' / ' + (firstGpItem.materialDesc || ''), docNo);
-    }
-
     return { success: true, docNo: docNo };
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };
+  }
+}
+
+function getReleasedOQCsForGatepass() {
+  try {
+    var ss = getSpreadsheet();
+    var oqcWs = ss.getSheetByName('OQC_LOG');
+    if (!oqcWs || oqcWs.getLastRow() < 2) return [];
+
+    var usedRefs = {};
+    var gpWs = ss.getSheetByName('GATEPASS_LOG');
+    if (gpWs && gpWs.getLastRow() > 1) {
+      var gpData = gpWs.getRange(2, 4, gpWs.getLastRow() - 1, 1).getValues();
+      gpData.forEach(function(r) { if (r[0]) usedRefs[String(r[0]).trim()] = true; });
+    }
+
+    var oqcData = ss.getSheetByName('OQC_LOG').getDataRange().getValues();
+    var cutoff  = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    var results = [];
+
+    for (var i = 1; i < oqcData.length; i++) {
+      var row      = oqcData[i];
+      var docNo    = String(row[0] || '').trim();
+      var date     = row[1];
+      var custName = String(row[3] || '');
+      var batchPO  = String(row[4] || '');
+      var material = String(row[5] || '');
+      var decision = String(row[14] || '').toUpperCase();
+
+      if (!docNo) continue;
+      if (decision !== 'RELEASED' && decision !== 'ACCEPTED') continue;
+      if (usedRefs[docNo]) continue;
+      if (date && new Date(date) < cutoff) continue;
+
+      var dateStr = date ? Utilities.formatDate(new Date(date), 'Asia/Kolkata', 'dd-MMM') : '';
+      results.push({
+        docNo:    docNo,
+        label:    docNo + ' · ' + material + (batchPO ? ' · ' + batchPO : '') + (dateStr ? ' · ' + dateStr : ''),
+        customer: custName,
+        material: material,
+        batchPO:  batchPO,
+        date:     dateStr
+      });
+    }
+    return results;
+  } catch(e) {
+    Logger.log(e);
+    return [];
   }
 }
 
@@ -110,4 +156,41 @@ function getGatewayRowForWA(row) {
     status:       r[15] || 'ISSUED',
     createdBy:    r[16]
   };
+}
+
+// Backend OQC pass-gate. Throws if oqcRef is missing, not RELEASED/ACCEPTED, or already consumed.
+// Schema matches getReleasedOQCsForGatepass(): OQC_LOG col A (0) = docNo, col O (14) = decision.
+// GATEPASS_LOG col D (3) = OQC_REF.
+function assertOQCReleasedForRef_(oqcRef, ssOpt) {
+  if (!oqcRef) throw new Error('Outbound Gatepass requires an OQC reference.');
+  var ss = ssOpt || getSpreadsheet();
+  var oqcWs = ss.getSheetByName('OQC_LOG');
+  if (!oqcWs) throw new Error('OQC_LOG sheet not found.');
+  var ref = String(oqcRef).trim();
+
+  var oqcData = oqcWs.getDataRange().getValues();
+  var found = false;
+  for (var i = 1; i < oqcData.length; i++) {
+    if (String(oqcData[i][0]).trim() === ref) {
+      var decision = String(oqcData[i][14] || '').toUpperCase();
+      if (decision !== 'RELEASED' && decision !== 'ACCEPTED') {
+        throw new Error('Cannot dispatch — OQC ' + ref + ' has decision "' + (decision || 'PENDING') + '".');
+      }
+      found = true;
+      break;
+    }
+  }
+  if (!found) throw new Error('OQC reference ' + ref + ' not found in OQC_LOG.');
+
+  // Replay guard — reject if this ref is already consumed by another gatepass.
+  var gpWs = ss.getSheetByName('GATEPASS_LOG');
+  if (gpWs && gpWs.getLastRow() > 1) {
+    var used = gpWs.getRange(2, 4, gpWs.getLastRow() - 1, 1).getValues();
+    for (var j = 0; j < used.length; j++) {
+      if (String(used[j][0] || '').trim() === ref) {
+        throw new Error('OQC ' + ref + ' has already been dispatched on a prior Gatepass.');
+      }
+    }
+  }
+  return true;
 }

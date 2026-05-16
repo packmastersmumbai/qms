@@ -5,1322 +5,551 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+    /* ── Tab bar ── */
+    .masters-tabs {
+      display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: var(--navy-light);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 56px;
+      z-index: 90;
+      scrollbar-width: none;
+    }
+    .masters-tabs::-webkit-scrollbar { display: none; }
 
-    .table-toolbar {
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-btn.active {
+      color: var(--navy);
+      background: var(--navy-light);
+      border-bottom-color: var(--navy);
+    }
+
+    /* ── Search bar ── */
+    .masters-search-bar {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 12px;
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-    }
-    .table-toolbar h2 {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      flex: 1;
-      white-space: nowrap;
+      padding: 10px 10px 0;
     }
     .search-input {
       flex: 1;
-      min-width: 120px;
-      max-width: 220px;
+      height: 36px;
       border: 1.5px solid var(--border);
       border-radius: 6px;
-      padding: 6px 10px;
+      padding: 0 11px;
       font-size: 12px;
+      font-weight: 400;
       font-family: inherit;
       color: var(--text);
-      background: var(--bg);
+      background: var(--white);
+      transition: border-color 0.15s;
     }
     .search-input:focus { outline: none; border-color: var(--navy); }
 
-    .btn-add {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      padding: 7px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
-      white-space: nowrap;
-      touch-action: manipulation;
-      flex-shrink: 0;
-    }
-    .btn-add:hover { background: var(--navy-hover, #1A2D9E); }
-
-    .inline-form {
-      display: none;
+    /* ── Read-only notice ── */
+    .readonly-notice {
+      margin: 10px 10px 0;
+      padding: 8px 12px;
       background: var(--navy-light);
-      border-top: 2px solid var(--navy);
-      padding: 14px 12px;
-    }
-    .inline-form.open { display: block; }
-    .inline-form h3 {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--navy);
-      margin-bottom: 12px;
-    }
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .form-grid-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-    }
-    @media (max-width: 480px) {
-      .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
-    }
-    .form-grid .field,
-    .form-grid-3 .field { margin-bottom: 0; }
-    .field-full { grid-column: 1 / -1; }
-    .field .field-error {
+      border-left: 3px solid var(--navy);
+      border-radius: 4px;
       font-size: 11px;
-      color: var(--danger);
-      margin-top: 3px;
-      display: none;
+      font-weight: 500;
+      color: var(--navy);
     }
-    .field input.invalid,
-    .field select.invalid { border-color: var(--danger); }
-    .form-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 14px;
-    }
-    .btn-save {
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      padding: 9px 20px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
-      touch-action: manipulation;
-    }
-    .btn-save:hover { background: #1A2D9E; }
-    .btn-save:disabled { background: #9CA3AF; cursor: not-allowed; }
-    .btn-cancel {
-      background: var(--white);
-      color: var(--text);
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 9px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
-      touch-action: manipulation;
-    }
-    .btn-cancel:hover { border-color: var(--navy); }
 
-    .appr-toggle-wrap { display: flex; gap: 8px; }
-    .appr-toggle {
-      flex: 1;
-      padding: 8px 4px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      background: var(--white);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
-      touch-action: manipulation;
-    }
-    .appr-toggle.sel-yes { background: #DCFCE7; border-color: var(--success); color: #15803D; }
-    .appr-toggle.sel-no  { background: #F3F4F6; border-color: #9CA3AF; color: var(--muted); }
+    /* ── Table panel ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    .table-wrap { overflow-x: auto; background: var(--white); }
+    .masters-table-wrap {
+      margin: 10px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
     .masters-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 480px;
+      table-layout: auto;
     }
     .masters-table thead th {
-      background: var(--navy);
-      color: var(--white);
+      background: var(--navy-light);
+      color: var(--navy);
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       padding: 8px 10px;
       text-align: left;
-      letter-spacing: 0.4px;
       white-space: nowrap;
+      position: sticky;
+      top: calc(56px + 45px);
+      z-index: 10;
     }
     .masters-table tbody tr {
       border-bottom: 1px solid var(--border);
-      transition: background 0.1s;
+      min-height: 44px;
     }
     .masters-table tbody tr:last-child { border-bottom: none; }
-    .masters-table tbody tr:hover { background: #F0F4FF; }
+    .masters-table tbody tr:nth-child(even) { background: #FAFBFF; }
     .masters-table tbody td {
-      padding: 8px 10px;
+      padding: 10px 10px;
       font-size: 12px;
+      font-weight: 400;
       color: var(--text);
       vertical-align: middle;
+      min-height: 44px;
     }
-    .masters-table td.actions { white-space: nowrap; text-align: right; padding-right: 8px; }
-
-    .icon-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px; height: 28px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      background: var(--white);
-      cursor: pointer;
-      transition: all 0.15s;
-      padding: 0;
-      touch-action: manipulation;
-      color: var(--navy);
-    }
-    .icon-btn:hover { border-color: var(--navy); background: var(--navy-light); }
-    .icon-btn.danger { color: var(--danger); }
-    .icon-btn.danger:hover { border-color: var(--danger); background: #FEE2E2; }
-    .icon-btn svg { pointer-events: none; }
-
-    .appr-pill {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      border: none;
-      font-family: inherit;
-      transition: all 0.15s;
-    }
-    .appr-pill.yes { background: #DCFCE7; color: #15803D; }
-    .appr-pill.no  { background: #F3F4F6; color: var(--muted); }
 
     .method-chip {
+      display: inline-block;
       font-size: 10px;
       padding: 2px 7px;
       border-radius: 12px;
       background: var(--navy-light);
       color: var(--navy);
       font-weight: 600;
+      white-space: nowrap;
     }
 
-    .card-list { display: none; }
-    .entry-card {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 12px;
+    /* ── Skeleton ── */
+    @keyframes skeleton-pulse {
+      0%   { opacity: 0.4; }
+      50%  { opacity: 1; }
+      100% { opacity: 0.4; }
     }
-    .entry-card:last-child { border-bottom: none; }
-    .entry-card-top {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-    .entry-card-name {
-      flex: 1;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .entry-card-code {
-      font-size: 10px;
-      font-family: monospace;
-      color: var(--muted);
-      margin-top: 1px;
-    }
-    .entry-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .entry-card-meta {
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    @media (max-width: 540px) {
-      .table-wrap { display: none; }
-      .card-list { display: block; }
-    }
-
-    .skel-cell {
-      height: 14px;
-      background: linear-gradient(90deg, var(--border) 25%, #f3f4f6 50%, var(--border) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.2s infinite;
-      border-radius: 4px;
+    .skel-bar {
       display: inline-block;
-    }
-    @keyframes shimmer {
-      0%   { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+      height: 13px;
+      background: var(--navy-light);
+      border-radius: 4px;
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
     }
 
-    .req-star { color: var(--danger); }
+    /* ── Empty / error states ── */
+    .masters-empty {
+      text-align: center;
+      padding: 32px 16px;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .masters-empty a {
+      color: var(--navy);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ── Toast ── */
+    .pm-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      min-width: 220px;
+      max-width: 320px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--white);
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      text-align: center;
+    }
+    .pm-toast.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    .pm-toast.success { background: var(--success); }
+    .pm-toast.error   { background: var(--danger); cursor: pointer; }
   </style>
 </head>
 <body>
 
+<!-- ── Header ── -->
 <div class="pm-header">
-  <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
+  <button class="back-btn" id="backBtn" aria-label="Back">
+    <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
   </button>
-  <span class="page-title">Masters</span>
-  <span class="doc-badge">QMS-MST</span>
+  <span class="page-title" style="flex:1;text-align:center;font-size:13px;font-weight:500;opacity:0.85;">Masters</span>
+  <span id="roleChip" class="doc-badge" style="display:none;"></span>
 </div>
 
-<div class="tab-bar">
-  <button class="tab-btn active" id="tab-suppliers">Suppliers</button>
-  <button class="tab-btn" id="tab-materials">Items (RM)</button>
-  <button class="tab-btn" id="tab-fg">FG</button>
-  <button class="tab-btn" id="tab-parameters">Parameters</button>
-  <button class="tab-btn" id="tab-customers">Customers</button>
-  <button class="tab-btn" id="tab-inspectors">Inspectors</button>
+<!-- ── Tab bar ── -->
+<div class="masters-tabs" id="mastersTabBar">
+  <button class="tab-btn active" data-tab="suppliers">Suppliers</button>
+  <button class="tab-btn" data-tab="materials">Materials</button>
+  <button class="tab-btn" data-tab="customers">Customers</button>
+  <button class="tab-btn" data-tab="parameters">Parameters</button>
 </div>
 
-<!-- ════ SUPPLIERS ════ -->
+<!-- ── Read-only notice ── -->
+<div class="readonly-notice">View only — contact system admin to modify master data.</div>
+
+<!-- ── Search bar ── -->
+<div class="masters-search-bar">
+  <input class="search-input" id="searchInput" type="search" placeholder="Search..." autocomplete="off">
+</div>
+
+<!-- ── Panels ── -->
+
+<!-- SUPPLIERS -->
 <div class="tab-panel active" id="panel-suppliers">
-  <div class="table-toolbar">
-    <h2>Suppliers</h2>
-    <input class="search-input" id="search-suppliers" type="search" placeholder="Search…">
-    <button class="btn-add" id="add-supplier-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add Supplier
-    </button>
-  </div>
-  <div class="inline-form" id="supplier-form">
-    <h3 id="supplier-form-title">Add Supplier</h3>
-    <div class="form-grid">
-      <div class="field">
-        <label>Code <span class="req-star">*</span></label>
-        <input type="text" id="s-code" placeholder="e.g. SUP001" autocomplete="off">
-        <div class="field-error" id="s-code-err">Code is required</div>
-      </div>
-      <div class="field">
-        <label>Name <span class="req-star">*</span></label>
-        <input type="text" id="s-name" placeholder="Supplier name" autocomplete="off">
-        <div class="field-error" id="s-name-err">Name is required</div>
-      </div>
-      <div class="field">
-        <label>Contact Person</label>
-        <input type="text" id="s-contact" placeholder="Contact name" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Phone</label>
-        <input type="tel" id="s-phone" placeholder="+91 XXXXX XXXXX" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Material Supplied</label>
-        <input type="text" id="s-material" placeholder="e.g. Labels, Cartons" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>City</label>
-        <input type="text" id="s-city" placeholder="e.g. Mumbai" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Approved</label>
-        <div class="appr-toggle-wrap">
-          <button type="button" class="appr-toggle sel-yes" id="s-appr-yes">Yes</button>
-          <button type="button" class="appr-toggle" id="s-appr-no">No</button>
-        </div>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-save" id="supplier-save-btn">Save</button>
-      <button class="btn-cancel" id="supplier-cancel-btn">Cancel</button>
-    </div>
-  </div>
-  <div class="table-wrap">
+  <div class="masters-table-wrap">
     <table class="masters-table">
-      <thead><tr>
-        <th>Code</th><th>Name</th><th>Contact</th><th>Phone</th><th>Material</th><th>City</th><th>Approved</th><th style="width:72px;"></th>
-      </tr></thead>
-      <tbody id="suppliers-tbody"></tbody>
+      <thead>
+        <tr>
+          <th style="width:80px;">Code</th>
+          <th>Name</th>
+          <th style="width:130px;">Contact</th>
+          <th style="width:120px;">Phone</th>
+          <th style="width:150px;">Material</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-suppliers"></tbody>
     </table>
   </div>
-  <div class="card-list" id="suppliers-cards"></div>
 </div>
 
-<!-- ════ MATERIALS ════ -->
+<!-- MATERIALS -->
 <div class="tab-panel" id="panel-materials">
-  <div class="table-toolbar">
-    <h2>Items (RM)</h2>
-    <input class="search-input" id="search-materials" type="search" placeholder="Search…">
-    <button class="btn-add" id="add-material-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add Item
-    </button>
-  </div>
-  <div class="inline-form" id="material-form">
-    <h3 id="material-form-title">Add Item</h3>
-    <div class="form-grid">
-      <div class="field">
-        <label>Code <span class="req-star">*</span></label>
-        <input type="text" id="m-code" placeholder="e.g. MAT001" autocomplete="off">
-        <div class="field-error" id="m-code-err">Code is required</div>
-      </div>
-      <div class="field">
-        <label>Description <span class="req-star">*</span></label>
-        <input type="text" id="m-desc" placeholder="Item description" autocomplete="off">
-        <div class="field-error" id="m-desc-err">Description is required</div>
-      </div>
-      <div class="field">
-        <label>Unit</label>
-        <select id="m-unit">
-          <option value="KG">KG</option><option value="PC">PC</option>
-          <option value="M">M</option><option value="LTR">LTR</option><option value="BOX">BOX</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Category</label>
-        <select id="m-cat">
-          <option value="BULK">BULK</option><option value="LABEL">LABEL</option><option value="TAPE">TAPE</option>
-          <option value="CANS">CANS</option><option value="CARTONS">CARTONS</option><option value="BOTTLES">BOTTLES</option>
-          <option value="PLUG">PLUG</option><option value="CAP">CAP</option><option value="RIBBON">RIBBON</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-save" id="material-save-btn">Save</button>
-      <button class="btn-cancel" id="material-cancel-btn">Cancel</button>
-    </div>
-  </div>
-  <div class="table-wrap">
+  <div class="masters-table-wrap">
     <table class="masters-table">
-      <thead><tr>
-        <th>Code</th><th>Description</th><th>Unit</th><th>Category</th><th style="width:72px;"></th>
-      </tr></thead>
-      <tbody id="materials-tbody"></tbody>
+      <thead>
+        <tr>
+          <th style="width:90px;">Code</th>
+          <th>Description</th>
+          <th style="width:70px;">Unit</th>
+          <th style="width:110px;">Category</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-materials"></tbody>
     </table>
   </div>
-  <div class="card-list" id="materials-cards"></div>
 </div>
 
-<!-- ════ FG ════ -->
-<div class="tab-panel" id="panel-fg">
-  <div class="table-toolbar">
-    <h2>Finished Goods</h2>
-    <input class="search-input" id="search-fg" type="search" placeholder="Search…">
-    <button class="btn-add" id="add-fg-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add FG
-    </button>
-  </div>
-  <div class="inline-form" id="fg-form">
-    <h3 id="fg-form-title">Add Finished Good</h3>
-    <div class="form-grid">
-      <div class="field">
-        <label>Code <span class="req-star">*</span></label>
-        <input type="text" id="fg-code" placeholder="e.g. FG001" autocomplete="off">
-        <div class="field-error" id="fg-code-err">Code is required</div>
-      </div>
-      <div class="field">
-        <label>Name <span class="req-star">*</span></label>
-        <input type="text" id="fg-name" placeholder="FG name" autocomplete="off">
-        <div class="field-error" id="fg-name-err">Name is required</div>
-      </div>
-      <div class="field">
-        <label>Category</label>
-        <input type="text" id="fg-category" placeholder="e.g. Labels, Cartons" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>UOM</label>
-        <select id="fg-uom">
-          <option value="PC">PC</option><option value="KG">KG</option><option value="M">M</option>
-          <option value="LTR">LTR</option><option value="BOX">BOX</option><option value="ROLL">ROLL</option>
-        </select>
-      </div>
-      <div class="field field-full">
-        <label>Description</label>
-        <input type="text" id="fg-desc" placeholder="Brief description" autocomplete="off">
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-save" id="fg-save-btn">Save</button>
-      <button class="btn-cancel" id="fg-cancel-btn">Cancel</button>
-    </div>
-  </div>
-  <div class="table-wrap">
-    <table class="masters-table">
-      <thead><tr>
-        <th>Code</th><th>Name</th><th>Category</th><th>UOM</th><th>Description</th><th style="width:72px;"></th>
-      </tr></thead>
-      <tbody id="fg-tbody"></tbody>
-    </table>
-  </div>
-  <div class="card-list" id="fg-cards"></div>
-</div>
-
-<!-- ════ PARAMETERS ════ -->
-<div class="tab-panel" id="panel-parameters">
-  <div class="table-toolbar">
-    <h2>Quality Parameters</h2>
-    <input class="search-input" id="search-parameters" type="search" placeholder="Search…">
-    <button class="btn-add" id="add-parameter-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add Parameter
-    </button>
-  </div>
-  <div class="inline-form" id="parameter-form">
-    <h3 id="parameter-form-title">Add Quality Parameter</h3>
-    <div class="form-grid-3">
-      <div class="field">
-        <label>Code <span class="req-star">*</span></label>
-        <input type="text" id="p-code" placeholder="e.g. QP001" autocomplete="off">
-        <div class="field-error" id="p-code-err">Code is required</div>
-      </div>
-      <div class="field">
-        <label>Name <span class="req-star">*</span></label>
-        <input type="text" id="p-name" placeholder="Parameter name" autocomplete="off">
-        <div class="field-error" id="p-name-err">Name is required</div>
-      </div>
-      <div class="field">
-        <label>Unit</label>
-        <input type="text" id="p-unit" placeholder="e.g. mm, gsm, %" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Standard Value</label>
-        <input type="text" id="p-std" placeholder="e.g. 75" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Tolerance Min</label>
-        <input type="text" id="p-min" placeholder="e.g. 70" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Tolerance Max</label>
-        <input type="text" id="p-max" placeholder="e.g. 80" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Method Type</label>
-        <select id="p-method">
-          <option value="Visual">Visual</option>
-          <option value="Measurement">Measurement</option>
-          <option value="Test">Test</option>
-          <option value="Weight">Weight</option>
-          <option value="Count">Count</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Tools Required</label>
-        <input type="text" id="p-tools" placeholder="e.g. Vernier, Scale" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Doc Reference</label>
-        <input type="text" id="p-docref" placeholder="e.g. SOP-QC-001" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Doc Number</label>
-        <input type="text" id="p-docno" placeholder="e.g. PM/QC/001" autocomplete="off">
-      </div>
-      <div class="field field-full">
-        <label>Check Brief</label>
-        <input type="text" id="p-checkbrief" placeholder="Brief description of how to perform this check" autocomplete="off">
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-save" id="parameter-save-btn">Save</button>
-      <button class="btn-cancel" id="parameter-cancel-btn">Cancel</button>
-    </div>
-  </div>
-  <div class="table-wrap">
-    <table class="masters-table">
-      <thead><tr>
-        <th>Code</th><th>Name</th><th>Unit</th><th>Std</th><th>Min</th><th>Max</th><th>Method</th><th>Tools</th><th>Doc Ref</th><th>Doc No.</th><th style="width:72px;"></th>
-      </tr></thead>
-      <tbody id="parameters-tbody"></tbody>
-    </table>
-  </div>
-  <div class="card-list" id="parameters-cards"></div>
-</div>
-
-<!-- ════ CUSTOMERS ════ -->
+<!-- CUSTOMERS -->
 <div class="tab-panel" id="panel-customers">
-  <div class="table-toolbar">
-    <h2>Customers</h2>
-    <input class="search-input" id="search-customers" type="search" placeholder="Search…">
-    <button class="btn-add" id="add-customer-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add Customer
-    </button>
-  </div>
-  <div class="inline-form" id="customer-form">
-    <h3 id="customer-form-title">Add Customer</h3>
-    <div class="form-grid">
-      <div class="field">
-        <label>Code <span class="req-star">*</span></label>
-        <input type="text" id="c-code" placeholder="e.g. CUST001" autocomplete="off">
-        <div class="field-error" id="c-code-err">Code is required</div>
-      </div>
-      <div class="field">
-        <label>Name <span class="req-star">*</span></label>
-        <input type="text" id="c-name" placeholder="Customer name" autocomplete="off">
-        <div class="field-error" id="c-name-err">Name is required</div>
-      </div>
-      <div class="field">
-        <label>Contact Person</label>
-        <input type="text" id="c-contact" placeholder="Contact name" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Phone</label>
-        <input type="tel" id="c-phone" placeholder="+91 XXXXX XXXXX" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="c-email" placeholder="email@example.com" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Products</label>
-        <input type="text" id="c-products" placeholder="e.g. Labels, Cartons" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>City</label>
-        <input type="text" id="c-city" placeholder="e.g. Mumbai" autocomplete="off">
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-save" id="customer-save-btn">Save</button>
-      <button class="btn-cancel" id="customer-cancel-btn">Cancel</button>
-    </div>
-  </div>
-  <div class="table-wrap">
+  <div class="masters-table-wrap">
     <table class="masters-table">
-      <thead><tr>
-        <th>Code</th><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Products</th><th>City</th><th style="width:72px;"></th>
-      </tr></thead>
-      <tbody id="customers-tbody"></tbody>
+      <thead>
+        <tr>
+          <th style="width:80px;">Code</th>
+          <th>Name</th>
+          <th style="width:130px;">Contact</th>
+          <th style="width:120px;">Phone</th>
+          <th style="width:180px;">Email</th>
+          <th style="width:140px;">Products</th>
+          <th style="width:100px;">City</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-customers"></tbody>
     </table>
   </div>
-  <div class="card-list" id="customers-cards"></div>
 </div>
 
-<!-- ════ INSPECTORS ════ -->
-<div class="tab-panel" id="panel-inspectors">
-  <div class="table-toolbar">
-    <h2>Inspectors / Personnel</h2>
-    <input class="search-input" id="search-inspectors" type="search" placeholder="Search…">
-    <button class="btn-add" id="add-inspector-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add Inspector
-    </button>
-  </div>
-  <div class="inline-form" id="inspector-form">
-    <h3 id="inspector-form-title">Add Inspector</h3>
-    <div class="form-grid">
-      <div class="field">
-        <label>Name <span class="req-star">*</span></label>
-        <input type="text" id="i-name" placeholder="Full name" autocomplete="off">
-        <div class="field-error" id="i-name-err">Name is required</div>
-      </div>
-      <div class="field">
-        <label>Role / Designation <span class="req-star">*</span></label>
-        <input type="text" id="i-role" placeholder="e.g. QC Inspector" autocomplete="off">
-        <div class="field-error" id="i-role-err">Role is required</div>
-      </div>
-      <div class="field">
-        <label>Department</label>
-        <input type="text" id="i-dept" placeholder="e.g. Quality" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>WhatsApp No.</label>
-        <input type="tel" id="i-phone" placeholder="+91 XXXXX XXXXX" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Notify</label>
-        <div class="appr-toggle-wrap">
-          <button type="button" class="appr-toggle sel-yes" id="i-notify-yes">Yes</button>
-          <button type="button" class="appr-toggle" id="i-notify-no">No</button>
-        </div>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-save" id="inspector-save-btn">Save</button>
-      <button class="btn-cancel" id="inspector-cancel-btn">Cancel</button>
-    </div>
-  </div>
-  <div class="table-wrap">
+<!-- PARAMETERS -->
+<div class="tab-panel" id="panel-parameters">
+  <div class="masters-table-wrap">
     <table class="masters-table">
-      <thead><tr>
-        <th>Name</th><th>Role</th><th>Dept</th><th>WhatsApp</th><th>Notify</th><th style="width:72px;"></th>
-      </tr></thead>
-      <tbody id="inspectors-tbody"></tbody>
+      <thead>
+        <tr>
+          <th style="width:72px;">Code</th>
+          <th>Parameter</th>
+          <th style="width:60px;">Unit</th>
+          <th style="width:72px;">Std</th>
+          <th style="width:60px;">Min</th>
+          <th style="width:60px;">Max</th>
+          <th style="width:100px;">Method</th>
+          <th style="width:140px;">Tools</th>
+          <th style="width:100px;">Doc Ref</th>
+          <th style="width:90px;">Doc No.</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-parameters"></tbody>
     </table>
   </div>
-  <div class="card-list" id="inspectors-cards"></div>
 </div>
 
-<div id="toast" class="toast"></div>
+<div class="pm-toast" id="pmToast"></div>
 
 <script>
-  var suppliersData  = [];
-  var materialsData  = [];
-  var fgData         = [];
-  var parametersData = [];
-  var customersData  = [];
-  var inspectorsData = [];
-  var activeTab      = 'suppliers';
+(function() {
+  'use strict';
 
-  var formState = {
-    supplier:  { mode: null, editKey: null },
-    material:  { mode: null, editKey: null },
-    fg:        { mode: null, editKey: null },
-    parameter: { mode: null, editKey: null },
-    customer:  { mode: null, editKey: null },
-    inspector: { mode: null, editKey: null }
-  };
+  var TABS = ['suppliers', 'materials', 'customers', 'parameters'];
+  var activeTab = 'suppliers';
+  var cache = {};        // cache[tab] = array of rows
+  var loadState = {};    // cache[tab] = 'loading' | 'loaded' | 'error'
+  var searchTimer = null;
 
-  var supplierApproved = 'Y';
-  var inspectorNotify  = 'Y';
+  /* ── XSS helper ── */
+  function esc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
-  var pendingDelete = { type: null, key: null, timer: null };
+  function td(v) { return '<td>' + esc(v) + '</td>'; }
 
-  var ALL_TABS = ['suppliers','materials','fg','parameters','customers','inspectors'];
+  /* ── Role gate ── */
+  function getRole() {
+    return sessionStorage.getItem('userRole') || '';
+  }
 
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('backBtn').addEventListener('click', goHome);
+  function checkRole() {
+    var role = getRole();
+    var chip = document.getElementById('roleChip');
+    if (chip && role) {
+      chip.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+      chip.style.display = '';
+    }
+    if (role === 'user') {
+      google.script.run
+        .withSuccessHandler(function(html) {
+          document.open(); document.write(html); document.close();
+        })
+        .withFailureHandler(function() {})
+        .getFormHtml('Landing');
+      return false; // caller must not proceed
+    }
+    return true;
+  }
 
-    // Tab switching
-    ALL_TABS.forEach(function(t) {
-      document.getElementById('tab-' + t).addEventListener('click', function() { switchTab(t); });
-    });
-
-    // Search inputs
-    ALL_TABS.forEach(function(t) {
-      var el = document.getElementById('search-' + t);
-      if (el) el.addEventListener('input', function() { filterList(t); });
-    });
-
-    // Add buttons
-    document.getElementById('add-supplier-btn').addEventListener('click', function() { openForm('supplier', 'add'); });
-    document.getElementById('add-material-btn').addEventListener('click', function() { openForm('material', 'add'); });
-    document.getElementById('add-fg-btn').addEventListener('click', function() { openForm('fg', 'add'); });
-    document.getElementById('add-parameter-btn').addEventListener('click', function() { openForm('parameter', 'add'); });
-    document.getElementById('add-customer-btn').addEventListener('click', function() { openForm('customer', 'add'); });
-    document.getElementById('add-inspector-btn').addEventListener('click', function() { openForm('inspector', 'add'); });
-
-    // Save buttons
-    document.getElementById('supplier-save-btn').addEventListener('click', function() { saveRecord('supplier'); });
-    document.getElementById('material-save-btn').addEventListener('click', function() { saveRecord('material'); });
-    document.getElementById('fg-save-btn').addEventListener('click', function() { saveRecord('fg'); });
-    document.getElementById('parameter-save-btn').addEventListener('click', function() { saveRecord('parameter'); });
-    document.getElementById('customer-save-btn').addEventListener('click', function() { saveRecord('customer'); });
-    document.getElementById('inspector-save-btn').addEventListener('click', function() { saveRecord('inspector'); });
-
-    // Cancel buttons
-    document.getElementById('supplier-cancel-btn').addEventListener('click', function() { closeForm('supplier'); });
-    document.getElementById('material-cancel-btn').addEventListener('click', function() { closeForm('material'); });
-    document.getElementById('fg-cancel-btn').addEventListener('click', function() { closeForm('fg'); });
-    document.getElementById('parameter-cancel-btn').addEventListener('click', function() { closeForm('parameter'); });
-    document.getElementById('customer-cancel-btn').addEventListener('click', function() { closeForm('customer'); });
-    document.getElementById('inspector-cancel-btn').addEventListener('click', function() { closeForm('inspector'); });
-
-    // Approved toggles
-    document.getElementById('s-appr-yes').addEventListener('click', function() { setApproved('s', 'Y'); });
-    document.getElementById('s-appr-no').addEventListener('click', function() { setApproved('s', 'N'); });
-    document.getElementById('i-notify-yes').addEventListener('click', function() { setNotify('Y'); });
-    document.getElementById('i-notify-no').addEventListener('click', function() { setNotify('N'); });
-
-    // Event delegation for dynamically rendered buttons
-    document.addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      var action = btn.getAttribute('data-action');
-      var type   = btn.getAttribute('data-type');
-      var key    = btn.getAttribute('data-key');
-      if (action === 'edit')            openForm(type, 'edit', key);
-      if (action === 'delete')          handleDelete(type, key, btn);
-      if (action === 'toggle-approved') toggleApproved(key);
-      if (action === 'toggle-notify')   toggleNotify(key);
-    });
-
-    // Show skeleton while loading
-    ALL_TABS.forEach(function(t) { renderSkeleton(t); });
-
-    google.script.run
-      .withSuccessHandler(function(data) {
-        suppliersData  = data.suppliers  || [];
-        materialsData  = data.materials  || [];
-        fgData         = data.fg         || [];
-        parametersData = data.parameters || [];
-        customersData  = data.customers  || [];
-        inspectorsData = data.inspectors || [];
-        renderAll();
-      })
-      .withFailureHandler(function(err) {
-        showToast('Failed to load data: ' + (err.message || err), 'error');
-      })
-      .getMastersData();
-  });
-
+  /* ── Tab switching ── */
   function switchTab(tab) {
-    ALL_TABS.forEach(function(t) { closeForm(tabToType(t)); });
+    if (tab === activeTab) return;
     activeTab = tab;
-    ALL_TABS.forEach(function(t) {
-      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-      document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+
+    TABS.forEach(function(t) {
+      var btn = document.querySelector('[data-tab="' + t + '"]');
+      var panel = document.getElementById('panel-' + t);
+      if (btn)   btn.classList.toggle('active', t === tab);
+      if (panel) panel.classList.toggle('active', t === tab);
     });
-  }
 
-  function tabToType(tab) {
-    var map = { suppliers:'supplier', materials:'material', fg:'fg', parameters:'parameter', customers:'customer', inspectors:'inspector' };
-    return map[tab] || tab;
-  }
+    document.getElementById('searchInput').value = '';
 
-  function renderAll() {
-    renderSuppliers();
-    renderMaterials();
-    renderFG();
-    renderParameters();
-    renderCustomers();
-    renderInspectors();
-  }
-
-  function filterList(tab) {
-    var el = document.getElementById('search-' + tab);
-    var query = el ? el.value.toLowerCase() : '';
-    var type = tabToType(tab);
-    switch(type) {
-      case 'supplier':  renderSuppliers(query);  break;
-      case 'material':  renderMaterials(query);  break;
-      case 'fg':        renderFG(query);         break;
-      case 'parameter': renderParameters(query); break;
-      case 'customer':  renderCustomers(query);  break;
-      case 'inspector': renderInspectors(query); break;
+    if (!loadState[tab]) {
+      loadTab(tab);
     }
   }
 
-  function emptyRow(colspan, icon, label) {
-    return '<tr><td colspan="' + colspan + '"><div class="empty-state"><span class="icon">' + icon + '</span>' + label + '</div></td></tr>';
-  }
-  function emptyCard(icon, label) {
-    return '<div class="empty-state"><span class="icon">' + icon + '</span>' + label + '</div>';
-  }
+  /* ── Skeleton ── */
+  var SKEL_COLS = { suppliers: 5, materials: 4, customers: 7, parameters: 10 };
 
-  function renderSuppliers(q) {
-    var items = q ? suppliersData.filter(function(s) {
-      return (s.code + s.name + (s.material||'')).toLowerCase().indexOf(q) !== -1;
-    }) : suppliersData;
-
-    var tbody = document.getElementById('suppliers-tbody');
-    if (!items.length) {
-      tbody.innerHTML = emptyRow(8, '🏭', 'No suppliers found');
-    } else {
-      tbody.innerHTML = items.map(function(s) {
-        var pillCls = s.approved === 'Y' ? 'yes' : 'no';
-        var pillTxt = s.approved === 'Y' ? 'Approved' : 'Pending';
-        var pill = '<button class="appr-pill ' + pillCls + '" data-action="toggle-approved" data-key="' + esc(s.code) + '">' + pillTxt + '</button>';
-        return '<tr>' + td(s.code) + td(s.name) + td(s.contact) + td(s.phone) + td(s.material) + td(s.city) +
-          '<td>' + pill + '</td>' +
-          '<td class="actions">' + editBtn('supplier', s.code) + ' ' + delBtn('supplier', s.code) + '</td></tr>';
-      }).join('');
-    }
-
-    var cards = document.getElementById('suppliers-cards');
-    if (!items.length) {
-      cards.innerHTML = emptyCard('🏭', 'No suppliers found');
-    } else {
-      cards.innerHTML = items.map(function(s) {
-        return '<div class="entry-card">' +
-          '<div class="entry-card-top">' +
-            '<div><div class="entry-card-name">' + esc(s.name) + '</div><div class="entry-card-code">' + esc(s.code) + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('supplier', s.code) + ' ' + delBtn('supplier', s.code) + '</div>' +
-          '</div>' +
-          '<div class="entry-card-meta">' + (s.phone ? 'Phone: ' + esc(s.phone) + ' &nbsp;' : '') + (s.city ? 'City: ' + esc(s.city) : '') + '</div>' +
-        '</div>';
-      }).join('');
-    }
-  }
-
-  function renderMaterials(q) {
-    var items = q ? materialsData.filter(function(m) {
-      return (m.code + (m.desc||'')).toLowerCase().indexOf(q) !== -1;
-    }) : materialsData;
-
-    var tbody = document.getElementById('materials-tbody');
-    tbody.innerHTML = !items.length
-      ? emptyRow(5, '📦', 'No items found')
-      : items.map(function(m) {
-          return '<tr>' + td(m.code) + td(m.desc||m.description||'') + td(m.unit) + td(m.category) +
-            '<td class="actions">' + editBtn('material', m.code) + ' ' + delBtn('material', m.code) + '</td></tr>';
-        }).join('');
-
-    var cards = document.getElementById('materials-cards');
-    cards.innerHTML = !items.length
-      ? emptyCard('📦', 'No items found')
-      : items.map(function(m) {
-          return '<div class="entry-card"><div class="entry-card-top">' +
-            '<div><div class="entry-card-name">' + esc(m.desc||m.description||'') + '</div><div class="entry-card-code">' + esc(m.code) + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('material', m.code) + ' ' + delBtn('material', m.code) + '</div>' +
-            '</div><div class="entry-card-meta">Unit: ' + esc(m.unit||'') + ' &nbsp; Cat: ' + esc(m.category||'') + '</div></div>';
-        }).join('');
-  }
-
-  function renderFG(q) {
-    var items = q ? fgData.filter(function(f) {
-      return (f.code + f.name + (f.description||'')).toLowerCase().indexOf(q) !== -1;
-    }) : fgData;
-
-    var tbody = document.getElementById('fg-tbody');
-    tbody.innerHTML = !items.length
-      ? emptyRow(6, '🏷️', 'No finished goods found')
-      : items.map(function(f) {
-          return '<tr>' + td(f.code) + td(f.name) + td(f.category) + td(f.uom) + td(f.description) +
-            '<td class="actions">' + editBtn('fg', f.code) + ' ' + delBtn('fg', f.code) + '</td></tr>';
-        }).join('');
-
-    var cards = document.getElementById('fg-cards');
-    cards.innerHTML = !items.length
-      ? emptyCard('🏷️', 'No finished goods found')
-      : items.map(function(f) {
-          return '<div class="entry-card"><div class="entry-card-top">' +
-            '<div><div class="entry-card-name">' + esc(f.name) + '</div><div class="entry-card-code">' + esc(f.code) + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('fg', f.code) + ' ' + delBtn('fg', f.code) + '</div>' +
-            '</div><div class="entry-card-meta">UOM: ' + esc(f.uom||'') + ' &nbsp; Cat: ' + esc(f.category||'') + '</div></div>';
-        }).join('');
-  }
-
-  function renderParameters(q) {
-    var items = q ? parametersData.filter(function(p) {
-      return (p.code + p.name + (p.methodType||'')).toLowerCase().indexOf(q) !== -1;
-    }) : parametersData;
-
-    var tbody = document.getElementById('parameters-tbody');
-    tbody.innerHTML = !items.length
-      ? emptyRow(11, '📏', 'No parameters found')
-      : items.map(function(p) {
-          return '<tr>' + td(p.code) + td(p.name) + td(p.unit) + td(p.stdValue) + td(p.tolMin) + td(p.tolMax) +
-            '<td><span class="method-chip">' + esc(p.methodType||'') + '</span></td>' +
-            td(p.tools) + td(p.docRef) + td(p.docNumber) +
-            '<td class="actions">' + editBtn('parameter', p.code) + ' ' + delBtn('parameter', p.code) + '</td></tr>';
-        }).join('');
-
-    var cards = document.getElementById('parameters-cards');
-    cards.innerHTML = !items.length
-      ? emptyCard('📏', 'No parameters found')
-      : items.map(function(p) {
-          return '<div class="entry-card"><div class="entry-card-top">' +
-            '<div><div class="entry-card-name">' + esc(p.name) + '</div><div class="entry-card-code">' + esc(p.code) + (p.unit ? ' &bull; ' + esc(p.unit) : '') + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('parameter', p.code) + ' ' + delBtn('parameter', p.code) + '</div>' +
-            '</div><div class="entry-card-meta">' +
-              (p.stdValue ? 'Std: ' + esc(p.stdValue) + ' &nbsp;' : '') +
-              (p.tolMin ? 'Min: ' + esc(p.tolMin) + ' &nbsp;' : '') +
-              (p.tolMax ? 'Max: ' + esc(p.tolMax) + ' &nbsp;' : '') +
-              (p.methodType ? 'Method: ' + esc(p.methodType) : '') +
-            '</div></div>';
-        }).join('');
-  }
-
-  function renderCustomers(q) {
-    var items = q ? customersData.filter(function(c) {
-      return (c.code + c.name + (c.city||'')).toLowerCase().indexOf(q) !== -1;
-    }) : customersData;
-
-    var tbody = document.getElementById('customers-tbody');
-    tbody.innerHTML = !items.length
-      ? emptyRow(8, '🤝', 'No customers found')
-      : items.map(function(c) {
-          return '<tr>' + td(c.code) + td(c.name) + td(c.contact) + td(c.phone) + td(c.email) + td(c.products) + td(c.city) +
-            '<td class="actions">' + editBtn('customer', c.code) + ' ' + delBtn('customer', c.code) + '</td></tr>';
-        }).join('');
-
-    var cards = document.getElementById('customers-cards');
-    cards.innerHTML = !items.length
-      ? emptyCard('🤝', 'No customers found')
-      : items.map(function(c) {
-          return '<div class="entry-card"><div class="entry-card-top">' +
-            '<div><div class="entry-card-name">' + esc(c.name) + '</div><div class="entry-card-code">' + esc(c.code) + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('customer', c.code) + ' ' + delBtn('customer', c.code) + '</div>' +
-            '</div><div class="entry-card-meta">' + (c.phone ? 'Phone: ' + esc(c.phone) + ' &nbsp;' : '') + (c.city ? 'City: ' + esc(c.city) : '') + '</div></div>';
-        }).join('');
-  }
-
-  function renderInspectors(q) {
-    var items = q ? inspectorsData.filter(function(p) {
-      return (p.name + (p.role||'')).toLowerCase().indexOf(q) !== -1;
-    }) : inspectorsData;
-
-    var tbody = document.getElementById('inspectors-tbody');
-    tbody.innerHTML = !items.length
-      ? emptyRow(6, '👤', 'No inspectors found')
-      : items.map(function(p) {
-          var pillCls = p.notify === 'Y' ? 'yes' : 'no';
-          var pill = '<button class="appr-pill ' + pillCls + '" data-action="toggle-notify" data-key="' + esc(p.name) + '">' + (p.notify === 'Y' ? 'Yes' : 'No') + '</button>';
-          return '<tr>' + td(p.name) + td(p.role) + td(p.dept) + td(p.phone) +
-            '<td>' + pill + '</td>' +
-            '<td class="actions">' + editBtn('inspector', p.name) + ' ' + delBtn('inspector', p.name) + '</td></tr>';
-        }).join('');
-
-    var cards = document.getElementById('inspectors-cards');
-    cards.innerHTML = !items.length
-      ? emptyCard('👤', 'No inspectors found')
-      : items.map(function(p) {
-          return '<div class="entry-card"><div class="entry-card-top">' +
-            '<div><div class="entry-card-name">' + esc(p.name) + '</div><div class="entry-card-code">' + esc(p.role||'') + '</div></div>' +
-            '<div class="entry-card-actions">' + editBtn('inspector', p.name) + ' ' + delBtn('inspector', p.name) + '</div>' +
-            '</div><div class="entry-card-meta">' + (p.dept ? 'Dept: ' + esc(p.dept) + ' &nbsp;' : '') + (p.phone ? 'WA: ' + esc(p.phone) : '') + '</div></div>';
-        }).join('');
-  }
-
-  function renderSkeleton(tab) {
-    var type = tabToType(tab);
-    var tbodyId = type + 's-tbody';
-    if (type === 'material')  tbodyId = 'materials-tbody';
-    if (type === 'parameter') tbodyId = 'parameters-tbody';
-    if (type === 'inspector') tbodyId = 'inspectors-tbody';
-    var tbodyEl = document.getElementById(tbodyId);
-    if (!tbodyEl) return;
-    var cols = { supplier:8, material:5, fg:6, parameter:11, customer:8, inspector:6 }[type] || 5;
+  function showSkeleton(tab) {
+    var tbody = document.getElementById('tbody-' + tab);
+    if (!tbody) return;
+    var cols = SKEL_COLS[tab] || 4;
     var html = '';
-    for (var i = 0; i < 3; i++) {
+    var widths = [55, 70, 62, 80, 58, 66, 72];
+    for (var r = 0; r < 6; r++) {
       html += '<tr>';
-      for (var j = 0; j < cols; j++) {
-        html += '<td><span class="skel-cell" style="width:' + (50 + (Math.random()*35|0)) + '%">&nbsp;</span></td>';
+      for (var c = 0; c < cols; c++) {
+        html += '<td><span class="skel-bar" style="width:' + widths[(r + c) % widths.length] + '%">&nbsp;</span></td>';
       }
       html += '</tr>';
     }
-    tbodyEl.innerHTML = html;
+    tbody.innerHTML = html;
   }
 
-  function openForm(type, mode, key) {
-    var formEl = document.getElementById(type + '-form');
-    if (!formEl) return;
-    formState[type].mode = mode;
-    formState[type].editKey = key || null;
-    var titleEl = document.getElementById(type + '-form-title');
-    var saveBtn = document.getElementById(type + '-save-btn');
-    if (mode === 'add') {
-      clearForm(type);
-      if (titleEl) titleEl.textContent = 'Add ' + typeName(type);
-      if (saveBtn) saveBtn.textContent = 'Save';
-    } else {
-      populateForm(type, key);
-      if (titleEl) titleEl.textContent = 'Edit ' + typeName(type) + ': ' + key;
-      if (saveBtn) saveBtn.textContent = 'Update';
-    }
-    formEl.classList.add('open');
-    formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
+  /* ── Load functions ── */
+  function loadTab(tab) {
+    loadState[tab] = 'loading';
+    showSkeleton(tab);
 
-  function typeName(type) {
-    var m = { supplier:'Supplier', material:'Item', fg:'Finished Good', parameter:'Parameter', customer:'Customer', inspector:'Inspector' };
-    return m[type] || type;
-  }
-
-  function closeForm(type) {
-    var formEl = document.getElementById(type + '-form');
-    if (formEl) formEl.classList.remove('open');
-    if (formState[type]) { formState[type].mode = null; formState[type].editKey = null; }
-  }
-
-  function clearForm(type) {
-    var maps = {
-      supplier:  { fields: ['s-code','s-name','s-contact','s-phone','s-material','s-city'], req: ['s-code','s-name'] },
-      material:  { fields: ['m-code','m-desc'], req: ['m-code','m-desc'] },
-      fg:        { fields: ['fg-code','fg-name','fg-category','fg-desc'], req: ['fg-code','fg-name'] },
-      parameter: { fields: ['p-code','p-name','p-unit','p-std','p-min','p-max','p-tools','p-docref','p-docno','p-checkbrief'], req: ['p-code','p-name'] },
-      customer:  { fields: ['c-code','c-name','c-contact','c-phone','c-email','c-products','c-city'], req: ['c-code','c-name'] },
-      inspector: { fields: ['i-name','i-role','i-dept','i-phone'], req: ['i-name','i-role'] }
-    };
-    var m = maps[type];
-    if (!m) return;
-    m.fields.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) { el.value = ''; el.classList.remove('invalid'); }
-    });
-    m.req.forEach(function(id) {
-      var err = document.getElementById(id + '-err');
-      if (err) err.style.display = 'none';
-    });
-    if (type === 'material')  { setIfEl('m-unit','KG'); setIfEl('m-cat','BULK'); }
-    if (type === 'fg')        { setIfEl('fg-uom','PC'); }
-    if (type === 'parameter') { setIfEl('p-method','Visual'); }
-    if (type === 'supplier')  { setApproved('s','Y'); }
-    if (type === 'inspector') { setNotify('Y'); }
-  }
-
-  function setIfEl(id, val) {
-    var el = document.getElementById(id);
-    if (el) el.value = val;
-  }
-
-  function populateForm(type, key) {
-    clearForm(type);
-    var item;
-    switch(type) {
-      case 'supplier':
-        item = suppliersData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
-        setIfEl('s-code', item.code); setIfEl('s-name', item.name); setIfEl('s-contact', item.contact);
-        setIfEl('s-phone', item.phone); setIfEl('s-material', item.material); setIfEl('s-city', item.city);
-        setApproved('s', item.approved || 'Y');
+    var fn, handler;
+    switch (tab) {
+      case 'suppliers':
+        google.script.run
+          .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
+          .withFailureHandler(function(e) { onError(tab, e); })
+          .getSuppliers();
         break;
-      case 'material':
-        item = materialsData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
-        setIfEl('m-code', item.code); setIfEl('m-desc', item.desc || item.description || '');
-        setIfEl('m-unit', item.unit || 'KG'); setIfEl('m-cat', item.category || 'BULK');
+      case 'materials':
+        google.script.run
+          .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
+          .withFailureHandler(function(e) { onError(tab, e); })
+          .getMaterials();
         break;
-      case 'fg':
-        item = fgData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
-        setIfEl('fg-code', item.code); setIfEl('fg-name', item.name || '');
-        setIfEl('fg-category', item.category || ''); setIfEl('fg-uom', item.uom || 'PC');
-        setIfEl('fg-desc', item.description || '');
+      case 'customers':
+        google.script.run
+          .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
+          .withFailureHandler(function(e) { onError(tab, e); })
+          .getCustomers();
         break;
-      case 'parameter':
-        item = parametersData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
-        setIfEl('p-code', item.code); setIfEl('p-name', item.name); setIfEl('p-unit', item.unit || '');
-        setIfEl('p-std', item.stdValue || ''); setIfEl('p-min', item.tolMin || ''); setIfEl('p-max', item.tolMax || '');
-        setIfEl('p-method', item.methodType || 'Visual'); setIfEl('p-tools', item.tools || '');
-        setIfEl('p-docref', item.docRef || ''); setIfEl('p-docno', item.docNumber || '');
-        setIfEl('p-checkbrief', item.checkBrief || '');
-        break;
-      case 'customer':
-        item = customersData.filter(function(x) { return x.code === key; })[0]; if (!item) return;
-        setIfEl('c-code', item.code); setIfEl('c-name', item.name); setIfEl('c-contact', item.contact || '');
-        setIfEl('c-phone', item.phone || ''); setIfEl('c-email', item.email || '');
-        setIfEl('c-products', item.products || ''); setIfEl('c-city', item.city || '');
-        break;
-      case 'inspector':
-        item = inspectorsData.filter(function(x) { return x.name === key; })[0]; if (!item) return;
-        setIfEl('i-name', item.name); setIfEl('i-role', item.role || '');
-        setIfEl('i-dept', item.dept || ''); setIfEl('i-phone', item.phone || '');
-        setNotify(item.notify || 'Y');
+      case 'parameters':
+        google.script.run
+          .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
+          .withFailureHandler(function(e) { onError(tab, e); })
+          .getParameters();
         break;
     }
   }
 
-  function collectForm(type) {
-    var g  = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
-    var gs = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
-    switch(type) {
-      case 'supplier':  return { code: g('s-code'), name: g('s-name'), contact: g('s-contact'), phone: g('s-phone'), material: g('s-material'), city: g('s-city'), approved: supplierApproved };
-      case 'material':  return { code: g('m-code'), desc: g('m-desc'), unit: gs('m-unit'), category: gs('m-cat') };
-      case 'fg':        return { code: g('fg-code'), name: g('fg-name'), category: g('fg-category'), uom: gs('fg-uom'), description: g('fg-desc') };
-      case 'parameter': return { code: g('p-code'), name: g('p-name'), unit: g('p-unit'), stdValue: g('p-std'), tolMin: g('p-min'), tolMax: g('p-max'), methodType: gs('p-method'), tools: g('p-tools'), docRef: g('p-docref'), docNumber: g('p-docno'), checkBrief: g('p-checkbrief') };
-      case 'customer':  return { code: g('c-code'), name: g('c-name'), contact: g('c-contact'), phone: g('c-phone'), email: g('c-email'), products: g('c-products'), city: g('c-city') };
-      case 'inspector': return { name: g('i-name'), role: g('i-role'), dept: g('i-dept'), phone: g('i-phone'), notify: inspectorNotify };
+  function onLoaded(tab, rows) {
+    loadState[tab] = 'loaded';
+    cache[tab] = rows;
+    renderTab(tab, '');
+  }
+
+  function onError(tab, err) {
+    loadState[tab] = 'error';
+    var tbody = document.getElementById('tbody-' + tab);
+    var cols = SKEL_COLS[tab] || 4;
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="' + cols + '">' +
+        '<div class="masters-empty">Could not load data. ' +
+        '<a onclick="retryTab(\'' + tab + '\')">Tap to retry.</a></div></td></tr>';
     }
+    showToast('Could not load ' + tab + '.', 'error');
   }
 
-  function validateForm(type, data) {
-    var required = {
-      supplier:  [['code','s-code','s-code-err'],['name','s-name','s-name-err']],
-      material:  [['code','m-code','m-code-err'],['desc','m-desc','m-desc-err']],
-      fg:        [['code','fg-code','fg-code-err'],['name','fg-name','fg-name-err']],
-      parameter: [['code','p-code','p-code-err'],['name','p-name','p-name-err']],
-      customer:  [['code','c-code','c-code-err'],['name','c-name','c-name-err']],
-      inspector: [['name','i-name','i-name-err'],['role','i-role','i-role-err']]
-    };
-    var checks = required[type] || [];
-    var valid = true;
-    checks.forEach(function(c) {
-      var val = data[c[0]];
-      var inp = document.getElementById(c[1]);
-      var err = document.getElementById(c[2]);
-      if (!val) {
-        if (inp) inp.classList.add('invalid');
-        if (err) err.style.display = 'block';
-        valid = false;
-      } else {
-        if (inp) inp.classList.remove('invalid');
-        if (err) err.style.display = 'none';
-      }
-    });
-    return valid;
-  }
+  window.retryTab = function(tab) {
+    loadState[tab] = null;
+    loadTab(tab);
+  };
 
-  function saveRecord(type) {
-    var data = collectForm(type);
-    if (!validateForm(type, data)) return;
-    var mode = formState[type].mode;
-    var editKey = formState[type].editKey;
-    var btn = document.getElementById(type + '-save-btn');
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>' + (mode === 'edit' ? 'Updating…' : 'Saving…');
+  /* ── Render functions ── */
+  function renderTab(tab, query) {
+    var rows = cache[tab] || [];
+    var q = (query || '').toLowerCase();
+    if (q) {
+      rows = rows.filter(function(r) {
+        return Object.values(r).some(function(v) {
+          return v && String(v).toLowerCase().indexOf(q) !== -1;
+        });
+      });
     }
-    google.script.run
-      .withSuccessHandler(function() {
-        var arr = getDataArray(type);
-        var keyField = type === 'inspector' ? 'name' : 'code';
-        if (mode === 'add') {
-          arr.push(data);
-          showToast(typeName(type) + ' added', 'success');
-        } else {
-          for (var i = 0; i < arr.length; i++) {
-            if (arr[i][keyField] === editKey) { arr[i] = data; break; }
-          }
-          showToast(typeName(type) + ' updated', 'success');
-        }
-        closeForm(type);
-        renderType(type);
-        if (btn) { btn.disabled = false; btn.textContent = mode === 'edit' ? 'Update' : 'Save'; }
-      })
-      .withFailureHandler(function(err) {
-        showToast('Save failed: ' + (err.message || err), 'error');
-        if (btn) { btn.disabled = false; btn.textContent = mode === 'edit' ? 'Update' : 'Save'; }
-      })
-      .saveMaster(type, data);
-  }
 
-  function getDataArray(type) {
-    switch(type) {
-      case 'supplier':  return suppliersData;
-      case 'material':  return materialsData;
-      case 'fg':        return fgData;
-      case 'parameter': return parametersData;
-      case 'customer':  return customersData;
-      case 'inspector': return inspectorsData;
+    var tbody = document.getElementById('tbody-' + tab);
+    if (!tbody) return;
+
+    if (!rows.length) {
+      var cols = SKEL_COLS[tab] || 4;
+      var msg = q
+        ? 'No results for &ldquo;' + esc(query) + '&rdquo;. <a onclick="clearSearch()">Clear search</a>'
+        : 'No ' + tab + ' found.';
+      tbody.innerHTML = '<tr><td colspan="' + cols + '"><div class="masters-empty">' + msg + '</div></td></tr>';
+      return;
     }
-    return [];
-  }
 
-  function renderType(type) {
-    switch(type) {
-      case 'supplier':  renderSuppliers(); break;
-      case 'material':  renderMaterials(); break;
-      case 'fg':        renderFG(); break;
-      case 'parameter': renderParameters(); break;
-      case 'customer':  renderCustomers(); break;
-      case 'inspector': renderInspectors(); break;
+    var html = '';
+    switch (tab) {
+      case 'suppliers':
+        rows.forEach(function(r) {
+          html += '<tr>' + td(r.code) + td(r.name) + td(r.contact) + td(r.phone) + td(r.material) + '</tr>';
+        });
+        break;
+      case 'materials':
+        rows.forEach(function(r) {
+          html += '<tr>' + td(r.code) + td(r.desc) + td(r.unit) + td(r.category) + '</tr>';
+        });
+        break;
+      case 'customers':
+        rows.forEach(function(r) {
+          html += '<tr>' + td(r.code) + td(r.name) + td(r.contact) + td(r.phone) + td(r.email) + td(r.products) + td(r.city) + '</tr>';
+        });
+        break;
+      case 'parameters':
+        rows.forEach(function(r) {
+          html += '<tr>' +
+            td(r.code) + td(r.name) + td(r.unit) + td(r.stdValue) + td(r.tolMin) + td(r.tolMax) +
+            '<td><span class="method-chip">' + esc(r.methodType || '') + '</span></td>' +
+            td(r.tools) + td(r.docRef) + td(r.docNumber) +
+          '</tr>';
+        });
+        break;
     }
+    tbody.innerHTML = html;
   }
 
-  function handleDelete(type, key, btn) {
-    if (pendingDelete.type === type && pendingDelete.key === key) {
-      clearTimeout(pendingDelete.timer);
-      pendingDelete = { type: null, key: null, timer: null };
-      executeDelete(type, key);
-    } else {
-      if (pendingDelete.timer) {
-        clearTimeout(pendingDelete.timer);
-        pendingDelete = { type: null, key: null, timer: null };
-      }
-      pendingDelete.type = type;
-      pendingDelete.key = key;
-      showToast('Tap delete again to confirm removal', '');
-      pendingDelete.timer = setTimeout(function() {
-        pendingDelete = { type: null, key: null, timer: null };
-      }, 3000);
-    }
+  /* ── Search ── */
+  function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    renderTab(activeTab, '');
   }
+  window.clearSearch = clearSearch;
 
-  function executeDelete(type, key) {
-    google.script.run
-      .withSuccessHandler(function() {
-        var keyField = type === 'inspector' ? 'name' : 'code';
-        var arr = getDataArray(type);
-        var filtered = arr.filter(function(x) { return x[keyField] !== key; });
-        switch(type) {
-          case 'supplier':  suppliersData  = filtered; break;
-          case 'material':  materialsData  = filtered; break;
-          case 'fg':        fgData         = filtered; break;
-          case 'parameter': parametersData = filtered; break;
-          case 'customer':  customersData  = filtered; break;
-          case 'inspector': inspectorsData = filtered; break;
-        }
-        renderType(type);
-        if (formState[type] && formState[type].editKey === key) closeForm(type);
-        showToast(typeName(type) + ' deleted', 'success');
-      })
-      .withFailureHandler(function(err) {
-        showToast('Delete failed: ' + (err.message || err), 'error');
-      })
-      .deleteMaster(type, key);
-  }
-
-  function toggleApproved(code) {
-    var s;
-    for (var i = 0; i < suppliersData.length; i++) {
-      if (suppliersData[i].code === code) { s = suppliersData[i]; break; }
-    }
-    if (!s) return;
-    var newVal = s.approved === 'Y' ? 'N' : 'Y';
-    var updated = {};
-    for (var k in s) updated[k] = s[k];
-    updated.approved = newVal;
-    google.script.run
-      .withSuccessHandler(function() { s.approved = newVal; renderSuppliers(); showToast(code + ' approval updated', 'success'); })
-      .withFailureHandler(function(err) { showToast('Update failed: ' + (err.message || err), 'error'); })
-      .saveMaster('supplier', updated);
-  }
-
-  function toggleNotify(name) {
-    var p;
-    for (var i = 0; i < inspectorsData.length; i++) {
-      if (inspectorsData[i].name === name) { p = inspectorsData[i]; break; }
-    }
-    if (!p) return;
-    var newVal = p.notify === 'Y' ? 'N' : 'Y';
-    var updated = {};
-    for (var k in p) updated[k] = p[k];
-    updated.notify = newVal;
-    google.script.run
-      .withSuccessHandler(function() { p.notify = newVal; renderInspectors(); showToast(name + ' notify updated', 'success'); })
-      .withFailureHandler(function(err) { showToast('Update failed: ' + (err.message || err), 'error'); })
-      .saveMaster('inspector', updated);
-  }
-
-  function setApproved(prefix, val) {
-    supplierApproved = val;
-    var y = document.getElementById(prefix + '-appr-yes');
-    var n = document.getElementById(prefix + '-appr-no');
-    if (y) y.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
-    if (n) n.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
-  }
-
-  function setNotify(val) {
-    inspectorNotify = val;
-    var y = document.getElementById('i-notify-yes');
-    var n = document.getElementById('i-notify-no');
-    if (y) y.className = 'appr-toggle' + (val === 'Y' ? ' sel-yes' : '');
-    if (n) n.className = 'appr-toggle' + (val === 'N' ? ' sel-no' : '');
-  }
-
-  function td(val) { return '<td>' + esc(val || '') + '</td>'; }
-
-  function editBtn(type, key) {
-    return '<button class="icon-btn" title="Edit" data-action="edit" data-type="' + type + '" data-key="' + esc(key) + '">' + iconPencil() + '</button>';
-  }
-
-  function delBtn(type, key) {
-    return '<button class="icon-btn danger" title="Delete" data-action="delete" data-type="' + type + '" data-key="' + esc(key) + '">' + iconTrash() + '</button>';
-  }
-
-  function iconPencil() {
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
-  }
-
-  function iconTrash() {
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
-  }
-
-  function esc(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-
+  /* ── Toast ── */
+  var toastTimer = null;
   function showToast(msg, type) {
-    var t = document.getElementById('toast');
+    var t = document.getElementById('pmToast');
     t.textContent = msg;
-    t.className = 'toast show' + (type ? ' ' + type : '');
-    setTimeout(function() { t.className = 'toast'; }, 2800);
+    t.className = 'pm-toast show' + (type ? ' ' + type : '');
+    if (toastTimer) clearTimeout(toastTimer);
+    var delay = type === 'error' ? 5000 : 3000;
+    toastTimer = setTimeout(function() { t.className = 'pm-toast'; }, delay);
   }
+
+  /* ── Init ── */
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!checkRole()) return;
+
+    document.getElementById('backBtn').addEventListener('click', function() {
+      google.script.run
+        .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function() {})
+        .getFormHtml('Landing');
+    });
+
+    document.getElementById('mastersTabBar').addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-tab]');
+      if (btn) switchTab(btn.getAttribute('data-tab'));
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function() {
+      var val = this.value;
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(function() {
+        if (loadState[activeTab] === 'loaded') {
+          renderTab(activeTab, val);
+        }
+      }, 250);
+    });
+
+    document.getElementById('pmToast').addEventListener('click', function() {
+      this.className = 'pm-toast';
+    });
+
+    // Load first tab
+    loadTab('suppliers');
+  });
+
+})();
 </script>
 </body>
 </html>

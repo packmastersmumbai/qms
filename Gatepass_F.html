@@ -256,6 +256,17 @@
         </select>
       </div>
 
+      <div class="field" id="fieldOqcRef">
+        <label>OQC Reference <span style="color:var(--danger)">*</span></label>
+        <select id="oqcRef">
+          <option value="">— Loading released OQCs… —</option>
+        </select>
+        <div class="hint">Select the released OQC batch being dispatched</div>
+        <div id="oqcRefWarn" style="display:none;font-size:11px;color:var(--amber);margin-top:4px;font-weight:600;">
+          ⚠ No released OQC records found. Proceed manually.
+        </div>
+      </div>
+
       <div class="field">
         <label>Description <span style="color:var(--danger)">*</span></label>
         <input type="text" id="description" placeholder="Material description" required>
@@ -370,9 +381,6 @@ var _today      = '';
 var _docNo      = '';
 var _disposition = '';   // 'APPROVED' | 'REJECTED'
 var _saved      = false;
-var _taskId     = null;
-var _dwmSid     = sessionStorage.getItem('dwmSessionId') || null;
-
 // ── Utility ────────────────────────────────────────────────────────────
 function escHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -392,6 +400,8 @@ function trunc(s, n) {
 
 // ── Validation / save-button state ────────────────────────────────────
 function refreshSaveBtn() {
+  var isFG    = document.getElementById('materialType').value === 'Finished Goods';
+  var oqcOk   = !isFG || document.getElementById('oqcRef').value !== '';
   var ok = (
     document.getElementById('description').value.trim() !== '' &&
     document.getElementById('qty').value.trim() !== '' &&
@@ -399,7 +409,8 @@ function refreshSaveBtn() {
     document.getElementById('vehicleNo').value.trim() !== '' &&
     document.getElementById('driverName').value.trim() !== '' &&
     document.getElementById('authorizedBy').value !== '' &&
-    _disposition !== ''
+    _disposition !== '' &&
+    oqcOk
   );
   document.getElementById('btnSave').disabled = !ok;
 }
@@ -432,31 +443,6 @@ function syncFooterLabel() {
     sel.options[sel.selectedIndex].text;
 }
 
-// ── DWM bridge ────────────────────────────────────────────────────────
-function startDwmTask() {
-  if (!_dwmSid) return;
-  google.script.run
-    .withSuccessHandler(function(tid) { _taskId = tid || null; })
-    .withFailureHandler(function() {})
-    .autoQmsTask_(_dwmSid, 'Gatepass', 'Gatepass', null);
-}
-
-function stopDwmTask() {
-  if (!_taskId || !_dwmSid) return;
-  google.script.run
-    .withSuccessHandler(function() {})
-    .withFailureHandler(function() {})
-    .stopTimer(_taskId, _dwmSid);
-}
-
-// ── Beforeunload guard ────────────────────────────────────────────────
-window.addEventListener('beforeunload', function() {
-  if (_taskId && !_saved) {
-    // best-effort — no guarantee in Apps Script iframe
-    try { stopDwmTask(); } catch(e) {}
-  }
-});
-
 // ── Load init data ─────────────────────────────────────────────────────
 function loadInit() {
   google.script.run
@@ -464,17 +450,59 @@ function loadInit() {
     .withFailureHandler(function(e) { showToast('Load error: ' + e.message, 'error'); })
     .getGatpassFormInit();
 
-  // Authorized users from listActiveUsersForLogin
   google.script.run
-    .withSuccessHandler(onUsersLoaded)
-    .withFailureHandler(function() { showAuthWarn(); })
-    .listActiveUsersForLogin();
+    .withSuccessHandler(onOqcRefsLoaded)
+    .withFailureHandler(function(e) {
+      document.getElementById('oqcRefWarn').style.display = '';
+      document.getElementById('oqcRefWarn').textContent = 'OQC load error: ' + (e && e.message ? e.message : e);
+      showToast('OQC load error: ' + (e && e.message ? e.message : e), 'error');
+    })
+    .getReleasedOQCsForGatepass();
+}
+
+function onOqcRefsLoaded(refs) {
+  var sel = document.getElementById('oqcRef');
+  sel.innerHTML = '';
+  if (!refs || refs.length === 0) {
+    document.getElementById('oqcRefWarn').style.display = '';
+    var opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '— No released OQC found —';
+    sel.appendChild(opt);
+    refreshSaveBtn();
+    return;
+  }
+  var ph = document.createElement('option');
+  ph.value = '';
+  ph.textContent = '— Select OQC record —';
+  sel.appendChild(ph);
+  refs.forEach(function(r) {
+    var opt = document.createElement('option');
+    opt.value = r.docNo;
+    opt.textContent = r.label;
+    opt.dataset.customer = r.customer || '';
+    opt.dataset.material = r.material || '';
+    opt.dataset.batch    = r.batchPO  || '';
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', function() {
+    var opt = this.options[this.selectedIndex];
+    if (opt && opt.dataset.material) {
+      document.getElementById('description').value = opt.dataset.material;
+    }
+    refreshSaveBtn();
+  });
+  refreshSaveBtn();
 }
 
 function onInitData(data) {
   _today = (data && data.today) || new Date().toISOString().split('T')[0];
   _docNo = (data && data.docNumber) || '';
   document.getElementById('docBadge').textContent = _docNo || 'GATE';
+
+  var personnel = (data && data.personnel) || [];
+  var users = personnel.map(function(p) { return { name: p.name || p.code || String(p) }; });
+  onUsersLoaded(users);
 }
 
 function onUsersLoaded(users) {
@@ -539,17 +567,20 @@ function doSave() {
   var purpose = document.getElementById('purpose').value.trim();
   var remarks = document.getElementById('remarks').value.trim();
 
+  var oqcRefVal = document.getElementById('oqcRef') ? document.getElementById('oqcRef').value : '';
   var data = {
     date:         _today,
     type:         matType,
+    oqcRef:       oqcRefVal,
     partyName:    '',
     vehicleNo:    vehicle,
     driverName:   driver,
     transporter:  '',
     authorizedBy: authBy,
     disposition:  _disposition,
+    operatorName: window.QMS ? window.QMS.getOperatorName() : '',
     remarks:      (purpose ? 'Purpose: ' + purpose + (remarks ? '. ' + remarks : '') : remarks),
-    sessionId:    _dwmSid || '',
+    sessionId:    '',
     items: [{
       materialCode: '',
       materialDesc: desc,
@@ -558,15 +589,7 @@ function doSave() {
     }]
   };
 
-  // Stop DWM timer first, then save
-  if (_taskId && _dwmSid) {
-    google.script.run
-      .withSuccessHandler(function() { callSaveGatepass(data, matType, desc, parseFloat(qtyRaw), unit, vehicle); })
-      .withFailureHandler(function() { callSaveGatepass(data, matType, desc, parseFloat(qtyRaw), unit, vehicle); })
-      .stopTimer(_taskId, _dwmSid);
-  } else {
-    callSaveGatepass(data, matType, desc, parseFloat(qtyRaw), unit, vehicle);
-  }
+  callSaveGatepass(data, matType, desc, parseFloat(qtyRaw), unit, vehicle);
 }
 
 function callSaveGatepass(data, matType, desc, qty, unit, vehicle) {
@@ -578,7 +601,7 @@ function callSaveGatepass(data, matType, desc, qty, unit, vehicle) {
       btn.disabled = false;
       btn.innerHTML = 'Save Gatepass &#8594;';
     })
-    .saveGatepass(data, _dwmSid || '');
+    .saveGatepass(data);
 }
 
 function onSaveSuccess(res, matType, desc, qty, unit, vehicle) {
@@ -590,7 +613,6 @@ function onSaveSuccess(res, matType, desc, qty, unit, vehicle) {
     return;
   }
   _saved = true;
-  _taskId = null;
   showConfirmation(res.docNo, matType, desc, qty, unit, vehicle);
 }
 
@@ -651,9 +673,13 @@ function bindEvents() {
 
   // Footer label tracks material type
   document.getElementById('materialType').addEventListener('change', function() {
+    var isFG = this.value === 'Finished Goods';
+    document.getElementById('fieldOqcRef').style.display = isFG ? '' : 'none';
     syncFooterLabel();
     refreshSaveBtn();
   });
+  // Show OQC ref on initial load (default is Finished Goods)
+  document.getElementById('fieldOqcRef').style.display = '';
 
   // Refresh save state on any required field change
   var watchIds = ['description', 'qty', 'vehicleNo', 'driverName', 'authorizedBy'];
@@ -670,7 +696,6 @@ window.onload = function() {
   bindEvents();
   syncFooterLabel();
   loadInit();
-  startDwmTask();
 };
 </script>
 </body>

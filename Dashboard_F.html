@@ -5,409 +5,514 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
     body {
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+      padding-bottom: 60px;
     }
 
-    .tab-bar {
-      top: 56px;
-    }
-
-    .dash-filter {
+    /* ── Header override for dashboard layout ── */
+    .pm-header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
+      justify-content: space-between;
+      padding: 0 16px;
+      min-height: 56px;
+    }
+    .hdr-left  { font-size: 15px; font-weight: 700; color: #fff; }
+    .hdr-center { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.8); }
+    .hdr-right { display: flex; align-items: center; }
+    .role-chip {
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 12px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      background: var(--navy-light);
+      border-bottom: none;
+      top: 56px;
+      z-index: 99;
+      height: 44px;
+      display: flex;
+      scrollbar-width: none;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      height: 44px;
+      padding: 0 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      border-radius: 0;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--white);
+      color: var(--navy);
+      font-weight: 700;
+      border-bottom: 3px solid var(--navy);
+      border-radius: 4px 4px 0 0;
+      margin-bottom: 0;
+    }
+
+    /* ── Filter bar ── */
+    .filter-bar {
       background: var(--white);
       border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
       position: sticky;
-      top: 103px;
-      z-index: 85;
+      top: 100px;
+      z-index: 98;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-end;
     }
-    .dash-filter select {
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 100px;
+    }
+    .filter-group label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .filter-group input[type="date"] {
       border: 1.5px solid var(--border);
       border-radius: 6px;
-      padding: 6px 10px;
+      padding: 6px 8px;
       font-size: 12px;
       font-family: inherit;
       background: var(--white);
       color: var(--text);
-      -webkit-appearance: none;
-      cursor: pointer;
-      flex: 1;
+      width: 100%;
       transition: border-color 0.15s;
+      -webkit-appearance: none;
     }
-    .dash-filter select:focus { outline: none; border-color: var(--navy); }
-    .dash-filter .btn-refresh {
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-size: 12px;
+    .filter-group input[type="date"]:focus {
+      outline: none;
+      border-color: var(--navy);
+    }
+    #fRangeChips {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .range-chip {
+      font-size: 11px;
       font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      color: var(--muted);
       cursor: pointer;
       font-family: inherit;
-      white-space: nowrap;
-      transition: background 0.15s;
+      transition: all 0.12s;
     }
-    .dash-filter .btn-refresh:active { background: #0A1450; }
-    #lastRefresh { font-size: 10px; color: var(--muted); white-space: nowrap; }
-
-    .sum-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      padding: 10px 12px;
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .sum-card-defect {
+    .range-chip.active {
       background: var(--navy);
       color: var(--white);
-      border-radius: var(--radius);
-      padding: 10px 12px;
-      text-align: center;
+      border-color: var(--navy);
     }
-    .sum-card-defect .sc-num {
+
+    /* ── Summary grid ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 10px 12px;
+    }
+    @media (min-width: 900px) {
+      .summary-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .sum-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      padding: 12px;
+      border-left: 3px solid var(--border);
+    }
+    .sum-card .sc-lbl {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 599px) {
+      .sum-card .sc-lbl { font-size: 10px; }
+    }
+    .sum-card .sc-num {
       font-size: 28px;
       font-weight: 700;
       line-height: 1;
       font-variant-numeric: tabular-nums;
-      color: var(--white);
     }
-    .sum-card-defect .sc-lbl {
+    .sum-card.total   { border-left-color: var(--navy);    }
+    .sum-card.total   .sc-num { color: var(--navy); }
+    .sum-card.pass    { border-left-color: var(--success); }
+    .sum-card.pass    .sc-num { color: var(--success); }
+    .sum-card.fail    { border-left-color: var(--amber);   }
+    .sum-card.fail    .sc-num { color: var(--danger); }
+    .sum-card.pending { border-left-color: var(--amber);   }
+    .sum-card.pending .sc-num { color: var(--amber); }
+
+    /* Skeleton pulse */
+    @keyframes skeleton-pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1;   }
+    }
+    .skel {
+      background: var(--navy-light);
+      border-radius: 4px;
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
+    }
+    .skel-card {
+      background: var(--navy-light);
+      border-radius: var(--radius);
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
+      height: 72px;
+    }
+
+    /* ── Table section ── */
+    .table-section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      margin: 0 10px 10px;
+      overflow: hidden;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table.rec-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 380px;
+    }
+    table.rec-table thead th {
+      background: var(--navy-light);
+      color: var(--navy);
       font-size: 11px;
       font-weight: 600;
-      margin-top: 3px;
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      color: rgba(255,255,255,0.75);
-    }
-
-    .recent-section {
-      padding: 0 10px 80px;
-    }
-    .recent-hdr {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 2px 6px;
-    }
-    .recent-hdr-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--navy);
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
-    .recent-hdr-count {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .r-card {
-      background: var(--white);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
       padding: 10px 12px;
-      margin-bottom: 6px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 2px solid var(--border);
+    }
+    table.rec-table thead th.col-time   { width: 60px; }
+    table.rec-table thead th.col-id     { width: 90px; }
+    table.rec-table thead th.col-mid    { }
+    table.rec-table thead th.col-result { width: 80px; }
+    table.rec-table thead th.col-op     { width: 100px; }
+    @media (max-width: 599px) {
+      table.rec-table thead th.col-op,
+      table.rec-table tbody td.col-op { display: none; }
+    }
+    table.rec-table tbody tr {
+      border-bottom: 1px solid var(--border);
       cursor: pointer;
-      transition: border-color 0.12s, box-shadow 0.12s;
-      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s;
     }
-    .r-card:hover  { border-color: var(--navy); box-shadow: var(--shadow-1); }
-    .r-card:active { background: #F0F4FF; }
-
-    .r-card[data-type="GRN"]      { background: #EDE9FE22; }
-    .r-card[data-type="IQC"]      { background: #DBEAFE22; }
-    .r-card[data-type="OQC"]      { background: #FCE7F322; }
-    .r-card[data-type="IPQC"]     { background: #FFF3CD22; }
-    .r-card[data-type="GP"],
-    .r-card[data-type="Gatepass"] { background: #DCFCE722; }
-
-    .r-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 3px;
-    }
-    .r-docno {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--navy);
-    }
-    .r-date { font-size: 10px; color: var(--muted); white-space: nowrap; }
-    .r-name {
+    table.rec-table tbody tr:nth-child(even):not(.detail-row) { background: #FAFBFF; }
+    table.rec-table tbody tr:hover:not(.detail-row)  { background: var(--navy-light); }
+    table.rec-table tbody tr.row-fail   { background: #FEF2F2 !important; }
+    table.rec-table tbody tr.row-pending { background: #FFFBEB !important; }
+    table.rec-table tbody td {
+      padding: 8px 12px;
       font-size: 12px;
       color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 4px;
+      vertical-align: middle;
     }
-    .r-foot {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .r-inspector { font-size: 10px; color: var(--muted); }
+    table.rec-table tbody td.col-time { color: var(--muted); font-size: 11px; }
 
-    .rec-detail-panel {
-      background: var(--white);
-      border-top: 2px solid var(--navy);
-      border-radius: 0 0 var(--radius) var(--radius);
-      margin: 0 0 6px 0;
-      overflow: hidden;
-      display: none;
+    /* Result chip */
+    .chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
     }
-    .rec-detail-panel.open { display: block; }
-    .rec-detail-hdr {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
+    .chip-pass    { background: #DCFCE7; color: var(--success); }
+    .chip-fail    { background: #FEE2E2; color: var(--danger);  }
+    .chip-pending { background: #FEF3C7; color: var(--amber);   }
+    .chip-hold    { background: #FEF3C7; color: var(--hold);    }
+    .chip-open    { background: #DBEAFE; color: #1D4ED8;        }
+
+    /* Detail row */
+    tr.detail-row td {
+      padding: 0;
+      cursor: default;
+    }
+    tr.detail-row td > div {
       background: var(--navy-light);
-      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.2s ease, opacity 0.2s ease;
+      opacity: 0;
     }
-    .rec-detail-title { font-size: 12px; font-weight: 700; color: var(--navy); }
-    .rec-detail-close {
+    tr.detail-row.open td > div {
+      max-height: 500px;
+      opacity: 1;
+    }
+    .detail-inner {
+      padding: 12px;
+    }
+    .detail-close-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+    .btn-detail-close {
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 16px;
-      color: var(--muted);
-      padding: 0 4px;
-      font-family: inherit;
-    }
-    .rec-detail-grid {
-      display: grid;
-      grid-template-columns: 110px 1fr;
-      gap: 0;
-      padding: 8px 12px;
-    }
-    .rec-detail-grid .di-label {
       font-size: 11px;
       font-weight: 600;
-      color: var(--muted);
-      padding: 5px 8px 5px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .rec-detail-grid .di-value {
-      font-size: 12px;
-      color: var(--text);
-      padding: 5px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .rec-detail-actions {
-      display: flex;
-      gap: 8px;
-      padding: 10px 12px 12px;
-      flex-wrap: wrap;
-    }
-    .btn-detail-wa {
-      background: #25D366;
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      padding: 8px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
-    }
-    .btn-detail-wa:hover { background: #1EBA59; }
-    .btn-detail-open {
-      background: transparent;
       color: var(--navy);
-      border: 1.5px solid var(--navy);
-      border-radius: 6px;
-      padding: 8px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
       font-family: inherit;
-      transition: background 0.15s;
+      padding: 2px 6px;
     }
-    .btn-detail-open:hover { background: var(--navy-light); }
+    .detail-fields {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 12px;
+    }
+    .detail-fields .df-lbl {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--navy);
+      text-transform: uppercase;
+      white-space: nowrap;
+      padding: 3px 0;
+    }
+    .detail-fields .df-val {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text);
+      padding: 3px 0;
+      word-break: break-word;
+    }
 
-    .state-box {
-      text-align: center;
-      padding: 48px 20px;
-      color: var(--muted);
+    /* Skeleton rows */
+    .skel-row td { padding: 10px 12px; }
+    .skel-row td .skel-bar {
+      height: 14px;
+      border-radius: 4px;
+      background: var(--navy-light);
+      animation: skeleton-pulse 0.8s ease-in-out infinite;
     }
-    .state-box .icon { font-size: 40px; display: block; margin-bottom: 10px; }
-    .state-box .msg  { font-size: 13px; font-weight: 500; }
+
+    /* Empty + error state */
+    .empty-row td {
+      text-align: center;
+      padding: 24px 12px;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+      height: 40px;
+      cursor: default;
+    }
+
+    /* Toast */
+    .toast { cursor: pointer; }
+
+    /* Loading overlay */
+    .table-loading { opacity: 0.6; pointer-events: none; transition: opacity 0.15s; }
+    .table-loaded  { opacity: 1;   transition: opacity 0.2s ease; }
   </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="pm-header">
-  <div class="logo-box">PM</div>
-  <div class="header-text">
-    <span class="logo-text">QMS Dashboard</span>
-    <span class="logo-sub">Pack Masters</span>
+  <span class="hdr-left">Pack Masters</span>
+  <span class="hdr-center">Dashboard</span>
+  <div class="hdr-right">
+    <span class="role-chip" id="roleChip"></span>
   </div>
 </div>
 
-<div class="tab-bar" id="typeTabs">
-  <button class="tab-btn active" data-type="ALL">All</button>
-  <button class="tab-btn" data-type="GRN">GRN</button>
-  <button class="tab-btn" data-type="IQC">IQC</button>
-  <button class="tab-btn" data-type="IPQC">IPQC</button>
-  <button class="tab-btn" data-type="OQC">OQC</button>
-  <button class="tab-btn" data-type="GP">Gatepass</button>
+<!-- Tab bar -->
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-module="GRN">GRN</button>
+  <button class="tab-btn" data-module="IQC">IQC</button>
+  <button class="tab-btn" data-module="IPQC">IPQC</button>
+  <button class="tab-btn" data-module="OQC">OQC</button>
+  <button class="tab-btn" data-module="GP">Gatepass</button>
 </div>
 
-<div class="dash-filter">
-  <select id="fRange">
-    <option value="TODAY">Today</option>
-    <option value="WEEK" selected>This Week</option>
-    <option value="MONTH">This Month</option>
-    <option value="ALL">All Time</option>
-  </select>
-  <button class="btn-refresh" id="btnRefresh">Refresh</button>
-  <span id="lastRefresh"></span>
-</div>
-
-<div class="sum-row" id="sumRow">
-  <div class="sum-card total">  <div class="sc-num" id="cTotal">—</div><div class="sc-lbl">Total</div></div>
-  <div class="sum-card pass">   <div class="sc-num" id="cPass">—</div> <div class="sc-lbl">Accepted</div></div>
-  <div class="sum-card fail">   <div class="sc-num" id="cFail">—</div> <div class="sc-lbl">Rejected</div></div>
-  <div class="sum-card hold">   <div class="sc-num" id="cHold">—</div> <div class="sc-lbl">Hold</div></div>
-  <div class="sum-card pending"><div class="sc-num" id="cPend">—</div> <div class="sc-lbl">Pending</div></div>
-  <div class="sum-card-defect" id="cIPQCCard">
-    <div class="sc-num" id="cIPQCRate">—</div>
-    <div class="sc-lbl">Defect Rate</div>
+<!-- Filter bar -->
+<div class="filter-bar">
+  <div id="fRangeChips">
+    <button class="range-chip active" data-range="TODAY">Today</button>
+    <button class="range-chip" data-range="WEEK">Week</button>
+    <button class="range-chip" data-range="MONTH">Month</button>
+    <button class="range-chip" data-range="ALL">All</button>
   </div>
 </div>
 
-<div class="recent-section">
-  <div class="recent-hdr">
-    <span class="recent-hdr-title" id="recentTitle">Recent Entries</span>
-    <span class="recent-hdr-count" id="recentCount"></span>
-  </div>
-  <div id="recList">
-    <div class="state-box">
-      <span class="spinner"></span>
-      <div class="msg" style="margin-top:8px;">Loading…</div>
-    </div>
-  </div>
+<!-- Summary cards -->
+<div class="summary-grid" id="sumGrid">
+  <div class="skel-card"></div>
+  <div class="skel-card"></div>
+  <div class="skel-card"></div>
+  <div class="skel-card"></div>
 </div>
 
-<div class="rec-detail-panel" id="detailPanel">
-  <div class="rec-detail-hdr">
-    <span class="rec-detail-title" id="detailTitle">Detail</span>
-    <button class="rec-detail-close" id="detailClose">✕</button>
+<!-- Records table -->
+<div class="table-section" id="tableSection">
+  <div class="table-wrap">
+    <table class="rec-table" id="recTable">
+      <thead id="recThead">
+        <tr>
+          <th class="col-time">Time</th>
+          <th class="col-id">GRN ID</th>
+          <th class="col-mid">Item</th>
+          <th class="col-result">Disposition</th>
+          <th class="col-op">Operator</th>
+        </tr>
+      </thead>
+      <tbody id="recTbody">
+        <tr class="skel-row"><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td class="col-op"><div class="skel-bar"></div></td></tr>
+        <tr class="skel-row"><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td class="col-op"><div class="skel-bar"></div></td></tr>
+        <tr class="skel-row"><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td class="col-op"><div class="skel-bar"></div></td></tr>
+        <tr class="skel-row"><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td class="col-op"><div class="skel-bar"></div></td></tr>
+        <tr class="skel-row"><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td><div class="skel-bar"></div></td><td class="col-op"><div class="skel-bar"></div></td></tr>
+      </tbody>
+    </table>
   </div>
-  <div class="rec-detail-grid" id="detailGrid"></div>
-  <div class="rec-detail-actions" id="detailActions"></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-var sessionId = sessionStorage.getItem('dwmSessionId') || '';
+// ── State ──────────────────────────────────────────────────────────
+var activeModule = 'GRN';
+var activeRange  = 'TODAY';
+var currentRows  = [];
+var openDetailIdx = -1;   // index into currentRows of the open detail row
+var loading = false;
 
-var allRows    = [];
-var activeTab  = 'ALL';
-var openCardEl = null;
-var currentSlice = [];
-
+// ── Init ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('btnRefresh').addEventListener('click', loadData);
-  document.getElementById('detailClose').addEventListener('click', closeDetail);
+  // Role chip
+  var roleEl = document.getElementById('roleChip');
+  if (roleEl) roleEl.style.display = 'none';
 
-  document.getElementById('typeTabs').addEventListener('click', function(e) {
+  // Tab events
+  document.getElementById('tabBar').addEventListener('click', function(e) {
     var btn = e.target.closest('.tab-btn');
-    if (!btn) return;
-    switchTab(btn.dataset.type);
+    if (!btn || btn.classList.contains('active')) return;
+    switchModule(btn.dataset.module, btn);
   });
 
-  document.getElementById('recList').addEventListener('click', function(e) {
-    var card = e.target.closest('.r-card');
-    if (!card) return;
-    var idx = parseInt(card.dataset.idx, 10);
-    showDetail(currentSlice[idx], card);
+  // Range chip events
+  document.getElementById('fRangeChips').addEventListener('click', function(e) {
+    var chip = e.target.closest('.range-chip');
+    if (!chip || chip.classList.contains('active')) return;
+    document.querySelectorAll('.range-chip').forEach(function(c) { c.classList.remove('active'); });
+    chip.classList.add('active');
+    activeRange = chip.dataset.range;
+    loadData();
   });
 
-  document.getElementById('detailActions').addEventListener('click', function(e) {
-    var btn = e.target.closest('button');
-    if (!btn) return;
-    if (btn.dataset.action === 'wa')   sendWADetail();
-    if (btn.dataset.action === 'open') openFullRecord();
+  // Toast retry
+  document.getElementById('toast').addEventListener('click', function() {
+    if (this.dataset.retry === '1') loadData();
   });
 
   loadData();
 });
 
-function loadData() {
-  document.getElementById('recList').innerHTML =
-    '<div class="state-box"><span class="spinner"></span><div class="msg" style="margin-top:8px;">Loading\u2026</div></div>';
-  closeDetail();
+// ── Module switch ──────────────────────────────────────────────────
+function switchModule(mod, btn) {
+  activeModule = mod;
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  openDetailIdx = -1;
+  renderTableHead();
+  loadData();
+}
 
-  var range = document.getElementById('fRange').value;
+// ── Load data ──────────────────────────────────────────────────────
+function loadData() {
+  if (loading) return;
+  loading = true;
+
+  var section = document.getElementById('tableSection');
+  section.classList.add('table-loading');
+  renderSkeletonCards();
+
+  var filter = { type: activeModule, range: activeRange };
 
   google.script.run
     .withSuccessHandler(function(data) {
-      if (!data || !data.rows) {
-        var msg = (data && data.error) ? data.error : 'No data. Run Setup from QMS System menu first.';
-        document.getElementById('recList').innerHTML =
-          '<div class="state-box"><span class="icon">\u26a0\ufe0f</span><div class="msg">' + esc(msg) + '</div></div>';
+      loading = false;
+      section.classList.remove('table-loading');
+      section.classList.add('table-loaded');
+      setTimeout(function() { section.classList.remove('table-loaded'); }, 300);
+
+      if (!data || data.rows === null || data.rows === undefined) {
+        var msg = (data && data.error) ? data.error : 'No data returned from server.';
+        renderSummaryCards({ total: 0, pass: 0, fail: 0, hold: 0, pending: 0 });
+        renderEmpty(msg);
+        showToast('Error: ' + msg, 'error', true);
         return;
       }
-      allRows = data.rows;
-      renderCounts(data.counts);
-      renderList(filteredRows());
-      document.getElementById('lastRefresh').textContent =
-        'at ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      currentRows = data.rows || [];
+      openDetailIdx = -1;
+      renderSummaryCards(data.counts || buildCounts(currentRows));
+      renderTableHead();
+      renderRows(currentRows);
     })
-    .withFailureHandler(function(e) {
-      document.getElementById('recList').innerHTML =
-        '<div class="state-box"><span class="icon">\u26a0\ufe0f</span><div class="msg">Load error: ' +
-        esc((e && e.message) || String(e)) + '</div></div>';
+    .withFailureHandler(function(err) {
+      loading = false;
+      section.classList.remove('table-loading');
+      var msg = (err && err.message) ? err.message : String(err);
+      renderSummaryCards({ total: 0, pass: 0, fail: 0, hold: 0, pending: 0 });
+      renderEmpty('Failed to load. Tap the error banner to retry.');
+      showToast('Load error: ' + msg, 'error', true);
     })
-    .getDashboardData({ type: 'ALL', range: range });
-
-  google.script.run
-    .withSuccessHandler(renderIPQCRate)
-    .withFailureHandler(function() { renderIPQCRate(null); })
-    .getIPQCDefectRate();
+    .getDashboardData(filter);
 }
 
-function switchTab(type) {
-  activeTab = type;
-  document.querySelectorAll('.tab-btn').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.type === type);
-  });
-  closeDetail();
-  renderList(filteredRows());
-}
-
-function filteredRows() {
-  if (activeTab === 'ALL') return allRows;
-  return allRows.filter(function(r) { return r.type === activeTab; });
-}
-
-function renderCounts(c) {
-  if (!c) return;
-  var rows = filteredRows();
-  if (activeTab !== 'ALL') {
-    c = buildCounts(rows);
-  }
-  document.getElementById('cTotal').textContent = c.total;
-  document.getElementById('cPass').textContent  = c.pass;
-  document.getElementById('cFail').textContent  = c.fail;
-  document.getElementById('cHold').textContent  = c.hold || 0;
-  document.getElementById('cPend').textContent  = c.pending || 0;
-}
-
+// ── Counts ─────────────────────────────────────────────────────────
 function buildCounts(rows) {
   var c = { total: rows.length, pass: 0, fail: 0, hold: 0, pending: 0 };
   rows.forEach(function(r) {
@@ -420,238 +525,325 @@ function buildCounts(rows) {
   return c;
 }
 
-function renderIPQCRate(data) {
-  var card = document.getElementById('cIPQCCard');
-  var el   = document.getElementById('cIPQCRate');
-  if (!data || !data.total || data.total === 0) {
-    el.textContent = '—';
-    card.style.background = 'var(--navy)';
-    return;
-  }
-  var rate = parseFloat(data.rate) || 0;
-  el.textContent = data.rate;
-  card.style.background = rate === 0 ? 'var(--success)' : rate > 5 ? 'var(--hold)' : 'var(--navy)';
+// ── Skeleton cards ─────────────────────────────────────────────────
+function renderSkeletonCards() {
+  var g = document.getElementById('sumGrid');
+  g.innerHTML =
+    '<div class="skel-card"></div>' +
+    '<div class="skel-card"></div>' +
+    '<div class="skel-card"></div>' +
+    '<div class="skel-card"></div>';
 }
 
-function renderList(rows) {
-  var title = activeTab === 'ALL' ? 'Recent Entries' : activeTab + ' \u2014 Recent';
-  document.getElementById('recentTitle').textContent = title;
+// ── Summary cards ──────────────────────────────────────────────────
+function renderSummaryCards(c) {
+  if (!c) c = { total: 0, pass: 0, fail: 0, hold: 0, pending: 0 };
+  document.getElementById('sumGrid').innerHTML =
+    card('total',   'TOTAL',   c.total) +
+    card('pass',    'PASS',    c.pass)  +
+    card('fail',    'FAIL',    c.fail)  +
+    card('pending', 'PENDING', (c.pending || 0) + (c.hold || 0));
+}
+function card(cls, lbl, val) {
+  return '<div class="sum-card ' + cls + '">' +
+    '<div class="sc-lbl">' + lbl + '</div>' +
+    '<div class="sc-num">' + (val !== undefined ? val : '—') + '</div>' +
+    '</div>';
+}
 
-  renderCounts(buildCounts(rows));
+// ── Table head per module ──────────────────────────────────────────
+var MODULE_COLS = {
+  GRN:  ['Time', 'GRN ID',  'Item',    'Disposition', 'Operator'],
+  IQC:  ['Time', 'IQC ID',  'GRN Ref', 'Result',      'Operator'],
+  IPQC: ['Time', 'IPQC ID', 'Line',    'Result',      'Operator'],
+  OQC:  ['Time', 'OQC ID',  'Batch',   'Result',      'Operator'],
+  GP:   ['Time', 'GP ID',   'Party',   'Status',      'Operator']
+};
 
+function renderTableHead() {
+  var cols = MODULE_COLS[activeModule] || MODULE_COLS['GRN'];
+  var th = document.getElementById('recThead');
+  th.innerHTML = '<tr>' +
+    '<th class="col-time">'   + esc(cols[0]) + '</th>' +
+    '<th class="col-id">'     + esc(cols[1]) + '</th>' +
+    '<th class="col-mid">'    + esc(cols[2]) + '</th>' +
+    '<th class="col-result">' + esc(cols[3]) + '</th>' +
+    '<th class="col-op">'     + esc(cols[4]) + '</th>' +
+    '</tr>';
+}
+
+// ── Row renderer ───────────────────────────────────────────────────
+function renderRows(rows) {
+  var tbody = document.getElementById('recTbody');
   if (!rows || rows.length === 0) {
-    document.getElementById('recentCount').textContent = '';
-    document.getElementById('recList').innerHTML =
-      '<div class="state-box"><span class="icon">\ud83d\udcad</span>' +
-      '<div class="msg">No records for this period</div></div>';
-    currentSlice = [];
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No records found for this filter.</td></tr>';
     return;
   }
-
-  var slice = rows.slice(0, 10);
-  currentSlice = slice;
-  document.getElementById('recentCount').textContent = rows.length + ' total, showing ' + slice.length;
 
   var html = '';
-  slice.forEach(function(r, i) {
-    var typeLower = r.type ? r.type.toLowerCase() : '';
-    var dispType  = r.type === 'GP' ? 'Gatepass' : r.type;
+  rows.forEach(function(r, i) {
+    var time    = extractTime(r.date, r.rawDate);
+    var mid     = getMidCell(r);
+    var chipHtml = statusChip(r.status);
+    var rowCls  = getRowClass(r.status);
+
     html +=
-      '<div class="r-card" data-type="' + esc(r.type) + '" data-idx="' + i + '">' +
-        '<div class="r-top">' +
-          '<span class="r-docno">' + esc(r.docNo) + '</span>' +
-          '<span class="r-date">' + esc(r.date) + '</span>' +
-        '</div>' +
-        '<div class="r-name">' + esc(r.party || r.material || '') + '</div>' +
-        '<div class="r-foot">' +
-          '<span class="badge badge-' + typeLower + '">' + esc(dispType) + '</span>' +
-          statusBadge(r.status) +
-          '<span class="r-inspector">' + esc(r.inspector || '') + '</span>' +
-        '</div>' +
-      '</div>';
+      '<tr class="data-row ' + rowCls + '" data-idx="' + i + '">' +
+        '<td class="col-time">' + esc(time) + '</td>' +
+        '<td class="col-id">'   + esc(r.docNo || '') + '</td>' +
+        '<td class="col-mid">'  + esc(mid) + '</td>' +
+        '<td class="col-result">' + chipHtml + '</td>' +
+        '<td class="col-op">'   + esc(r.inspector || '') + '</td>' +
+      '</tr>' +
+      '<tr class="detail-row" id="dr-' + i + '">' +
+        '<td colspan="5"><div id="dp-' + i + '"></div></td>' +
+      '</tr>';
   });
 
-  document.getElementById('recList').innerHTML = html;
+  tbody.innerHTML = html;
+
+  if (!tbody._tapsAttached) {
+    tbody._tapsAttached = true;
+    tbody.addEventListener('click', function(e) {
+      var row = e.target.closest('tr.data-row');
+      if (!row) return;
+      var idx = parseInt(row.dataset.idx, 10);
+      toggleDetail(idx);
+    });
+  }
 }
 
-function showDetail(r, cardEl) {
-  if (openCardEl === cardEl) {
-    closeDetail();
+function renderEmpty(msg) {
+  var tbody = document.getElementById('recTbody');
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="5">' + esc(msg) + '</td></tr>';
+}
+
+function renderSkeleton() {
+  var tbody = document.getElementById('recTbody');
+  var html = '';
+  for (var i = 0; i < 5; i++) {
+    html += '<tr class="skel-row">' +
+      '<td><div class="skel-bar"></div></td>' +
+      '<td><div class="skel-bar"></div></td>' +
+      '<td><div class="skel-bar"></div></td>' +
+      '<td><div class="skel-bar"></div></td>' +
+      '<td class="col-op"><div class="skel-bar"></div></td>' +
+      '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+// ── Mid-column value per module ────────────────────────────────────
+function getMidCell(r) {
+  switch (r.type) {
+    case 'GRN':  return r.material || r.party || '';
+    case 'IQC':  return (r.detail && r.detail.grnRef) ? r.detail.grnRef : (r.material || '');
+    case 'IPQC': return (r.detail && r.detail.line) ? r.detail.line : (r.material || '');
+    case 'OQC':  return r.batch || r.material || '';
+    case 'GP':   return r.party || r.material || '';
+    default:     return r.material || r.party || '';
+  }
+}
+
+// ── Time extraction ────────────────────────────────────────────────
+function extractTime(dateStr, rawDate) {
+  if (rawDate) {
+    var d = new Date(rawDate);
+    if (!isNaN(d)) {
+      var h = d.getHours(), m = d.getMinutes();
+      return pad2(h) + ':' + pad2(m);
+    }
+  }
+  return '';
+}
+function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+// ── Row class ──────────────────────────────────────────────────────
+function getRowClass(status) {
+  var s = (status || '').toUpperCase();
+  if (s === 'REJECTED' || s === 'FAIL') return 'row-fail';
+  if (s === 'PENDING' || s === 'OPEN' || !s) return 'row-pending';
+  return '';
+}
+
+// ── Status chip ────────────────────────────────────────────────────
+function statusChip(status) {
+  if (!status) status = 'PENDING';
+  var s  = status.toUpperCase();
+  var cls, label;
+  if (s === 'ACCEPTED' || s === 'RELEASED' || s === 'CLOSED') {
+    cls = 'chip-pass'; label = s === 'CLOSED' ? 'CLOSED' : s === 'RELEASED' ? 'PASS' : 'PASS';
+  } else if (s === 'REJECTED') {
+    cls = 'chip-fail'; label = 'FAIL';
+  } else if (s === 'HOLD') {
+    cls = 'chip-hold'; label = 'HOLD';
+  } else if (s === 'ISSUED' || s === 'OPEN') {
+    cls = 'chip-open'; label = s;
+  } else {
+    cls = 'chip-pending'; label = 'PENDING';
+  }
+  return '<span class="chip ' + cls + '">' + esc(label) + '</span>';
+}
+
+// ── Inline detail panel ────────────────────────────────────────────
+function toggleDetail(idx) {
+  if (openDetailIdx === idx) {
+    closeDetail(idx);
+    openDetailIdx = -1;
     return;
   }
-  openCardEl = cardEl;
+  if (openDetailIdx >= 0) closeDetail(openDetailIdx);
+  openDetailIdx = idx;
+  openDetail(idx);
+}
 
-  var panel    = document.getElementById('detailPanel');
-  var d        = r.detail || {};
-  var dispType = r.type === 'GP' ? 'Gatepass' : r.type;
+function openDetail(idx) {
+  var row = currentRows[idx];
+  if (!row) return;
+  var dp  = document.getElementById('dp-' + idx);
+  var dr  = document.getElementById('dr-' + idx);
+  if (!dp || !dr) return;
 
-  document.getElementById('detailTitle').innerHTML =
-    '<span class="badge badge-' + (r.type || '').toLowerCase() + '">' + esc(dispType) + '</span> ' +
-    esc(r.docNo);
-
-  var items    = buildDetailItems(r, d);
-  var gridHtml = '';
-  items.forEach(function(item) {
-    var val = (item[1] !== undefined && item[1] !== null && item[1] !== '') ? item[1] : '—';
-    gridHtml +=
-      '<div class="di-label">' + esc(item[0]) + '</div>' +
-      '<div class="di-value">' + val + '</div>';
+  var fields = buildDetailFields(row);
+  var fieldsHtml = '';
+  fields.forEach(function(f) {
+    fieldsHtml +=
+      '<div class="df-lbl">' + esc(f[0]) + '</div>' +
+      '<div class="df-val">' + esc(f[1]) + '</div>';
   });
-  document.getElementById('detailGrid').innerHTML = gridHtml;
 
-  var actHtml = '';
-  if (r.type !== 'IPQC') {
-    actHtml +=
-      '<button class="btn-detail-wa" data-action="wa">Send WhatsApp</button>' +
-      '<button class="btn-detail-open" data-action="open">Open Record</button>';
+  dp.innerHTML =
+    '<div class="detail-inner">' +
+      '<div class="detail-close-row">' +
+        '<button class="btn-detail-close" onclick="closeDetail(' + idx + ');openDetailIdx=-1;">Close ×</button>' +
+      '</div>' +
+      '<div class="detail-fields">' + fieldsHtml + '</div>' +
+    '</div>';
+
+  dr.classList.add('open');
+  dr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeDetail(idx) {
+  var dr = document.getElementById('dr-' + idx);
+  if (dr) dr.classList.remove('open');
+}
+
+// ── Build detail fields per row type ──────────────────────────────
+function buildDetailFields(r) {
+  var d = r.detail || {};
+  var out = [];
+  function add(lbl, val) {
+    out.push([lbl, (val !== undefined && val !== null && val !== '') ? String(val) : '—']);
   }
-  document.getElementById('detailActions').innerHTML = actHtml;
 
-  cardEl.parentNode.insertBefore(panel, cardEl.nextSibling);
-  panel.classList.add('open');
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function closeDetail() {
-  var panel = document.getElementById('detailPanel');
-  panel.classList.remove('open');
-  openCardEl = null;
-}
-
-function buildDetailItems(r, d) {
   if (r.type === 'GRN') {
-    return [
-      ['GRN No.',      d.grnNo    || r.docNo],
-      ['Date',         r.date],
-      ['Supplier',     d.supplier || r.party],
-      ['PO Ref',       d.poRef],
-      ['Invoice No.',  d.invoiceNo],
-      ['Material',     d.material || r.material],
-      ['Batch',        d.batch    || r.batch],
-      ['Qty Ordered',  d.qtyOrdered],
-      ['Qty Received', d.qtyReceived],
-      ['COA',          d.coa],
-      ['IQC Status',   statusBadge(d.iqcStatus)],
-      ['Remarks',      d.remarks  || '—']
-    ];
+    add('GRN No.',      d.grnNo      || r.docNo);
+    add('Date',         r.date);
+    add('Supplier',     d.supplier   || r.party);
+    add('PO Ref',       d.poRef);
+    add('Invoice No.',  d.invoiceNo);
+    add('Material',     d.material   || r.material);
+    add('Batch',        d.batch      || r.batch);
+    add('Qty Ordered',  d.qtyOrdered);
+    add('Qty Received', d.qtyReceived);
+    add('COA',          d.coa);
+    add('Expiry',       d.expiry);
+    add('IQC Status',   d.iqcStatus  || r.status);
+    add('Remarks',      d.remarks);
   } else if (r.type === 'IQC') {
-    return [
-      ['IQC No.',      d.iqcNo    || r.docNo],
-      ['GRN Ref',      d.grnRef],
-      ['Date',         r.date],
-      ['Supplier',     d.supplier || r.party],
-      ['Material',     d.material || r.material],
-      ['Batch',        d.batch    || r.batch],
-      ['Inspector',    d.inspector|| r.inspector],
-      ['Sample Size',  d.sampleSize],
-      ['Disposition',  statusBadge(d.disposition)],
-      ['Accepted Qty', d.acceptedQty !== undefined ? d.acceptedQty : '—'],
-      ['Rejected Qty', d.rejectedQty !== undefined ? d.rejectedQty : '—'],
-      ['Remarks',      d.remarks  || '—']
-    ];
-  } else if (r.type === 'OQC') {
-    return [
-      ['OQC No.',    d.oqcNo     || r.docNo],
-      ['Date',       r.date],
-      ['Customer',   d.customer  || r.party],
-      ['Batch / PO', d.batchPO   || r.batch],
-      ['Material',   d.material  || r.material],
-      ['Inspector',  d.inspector || r.inspector],
-      ['Sample Size',d.sampleSize],
-      ['Decision',   statusBadge(d.releaseDecision)],
-      ['Remarks',    d.remarks   || '—']
-    ];
+    add('IQC No.',      d.iqcNo      || r.docNo);
+    add('GRN Ref',      d.grnRef);
+    add('Date',         r.date);
+    add('Supplier',     d.supplier   || r.party);
+    add('Material',     d.material   || r.material);
+    add('Batch',        d.batch      || r.batch);
+    add('Inspector',    d.inspector  || r.inspector);
+    add('AQL',          d.aql);
+    add('Sample Size',  d.sampleSize);
+    add('Disposition',  d.disposition || r.status);
+    add('Accepted Qty', d.acceptedQty);
+    add('Rejected Qty', d.rejectedQty);
+    add('NCR Ref',      d.ncrRef);
+    add('Remarks',      d.remarks);
   } else if (r.type === 'IPQC') {
-    return [
-      ['Session',    d.sessionId   || r.docNo],
-      ['Product',    d.productName || r.material],
-      ['Batch',      d.batch       || r.batch],
-      ['Inspector',  d.inspector   || r.inspector],
-      ['Line',       d.line        || '—'],
-      ['Rounds',     d.rounds      || '—'],
-      ['Start',      d.startTime   || '—'],
-      ['End',        d.endTime     || '—'],
-      ['Status',     statusBadge(r.status)]
-    ];
+    add('Session',      d.sessionId  || r.docNo);
+    add('Date',         r.date);
+    add('Product',      d.productName || r.material);
+    add('Product Code', d.productCode);
+    add('Batch',        d.batch      || r.batch);
+    add('Inspector',    d.inspector  || r.inspector);
+    add('Line',         d.line);
+    add('Rounds',       d.rounds);
+    add('Start Time',   d.startTime);
+    add('End Time',     d.endTime);
+    add('Status',       d.status     || r.status);
+  } else if (r.type === 'OQC') {
+    add('OQC No.',      d.oqcNo      || r.docNo);
+    add('Date',         r.date);
+    add('Customer',     d.customer   || r.party);
+    add('Batch / PO',   d.batchPO    || r.batch);
+    add('Material',     d.material   || r.material);
+    add('Inspector',    d.inspector  || r.inspector);
+    add('Sample Size',  d.sampleSize);
+    add('IPQC Reviewed',d.ipqcReviewed);
+    add('Decision',     d.releaseDecision || r.status);
+    add('IPQC Ref',     d.ipqcSessionRef);
+    add('Remarks',      d.remarks);
   } else if (r.type === 'GP') {
-    return [
-      ['Gatepass No.',  d.gpNo     || r.docNo],
-      ['Date',          r.date],
-      ['Dispatch Type', d.dispatchType],
-      ['Party',         d.party    || r.party],
-      ['Material',      d.materialDesc || r.material],
-      ['Qty',           d.qty],
-      ['Vehicle No.',   d.vehicleNo|| '—'],
-      ['Authorized By', d.authorizedBy || '—'],
-      ['Status',        statusBadge(r.status)]
-    ];
+    add('Gatepass No.', d.gpNo       || r.docNo);
+    add('Date',         r.date);
+    add('Dispatch Type',d.dispatchType);
+    add('OQC Ref',      d.oqcRef);
+    add('Party',        d.party      || r.party);
+    add('Material Code',d.materialCode);
+    add('Material',     d.materialDesc || r.material);
+    add('Qty',          d.qty);
+    add('Unit',         d.unit);
+    add('Vehicle No.',  d.vehicleNo);
+    add('Driver',       d.driverName);
+    add('Transporter',  d.transporter);
+    add('Authorized By',d.authorizedBy);
+    add('Security',     d.securityGuard);
+    add('Dispatch Zone',d.dispatchZone);
+    add('Status',       d.status     || r.status);
+    add('Remarks',      d.remarks);
+  } else {
+    add('Doc No.',  r.docNo);
+    add('Date',     r.date);
+    add('Status',   r.status);
+    add('Inspector',r.inspector);
   }
-  return [['Doc No.', r.docNo], ['Date', r.date], ['Status', statusBadge(r.status)]];
+  return out;
 }
 
-function openFullRecord() {
-  if (!openCardEl) return;
-  var idx = parseInt(openCardEl.dataset.idx, 10);
-  var r   = currentSlice[idx];
-  if (!r) return;
-  var docType = r.type === 'GP' ? 'Gatepass' : r.type;
-  google.script.run
-    .withSuccessHandler(function(html) {
-      if (html) { document.open(); document.write(html); document.close(); }
-    })
-    .withFailureHandler(function(err) {
-      showToast('Error: ' + ((err && err.message) || String(err)), 'error');
-    })
-    .getDocViewHtml(docType, r.docNo);
-}
-
-function sendWADetail() {
-  if (!openCardEl) return;
-  var idx = parseInt(openCardEl.dataset.idx, 10);
-  var r   = currentSlice[idx];
-  if (!r) return;
-  var rec = {
-    type: r.type, docNo: r.docNo, date: r.date,
-    supplier: r.party, material: r.material, batch: r.batch,
-    inspector: r.inspector, status: r.status,
-    disposition: r.status, releaseDecision: r.status,
-    customer: r.party, batchPO: r.batch,
-    grnNo: r.detail && r.detail.grnRef,
-    ncrRef: r.detail && r.detail.ncrRef
-  };
-  google.script.run
-    .withSuccessHandler(function(url) { window.open(url, '_blank'); })
-    .withFailureHandler(function(err) {
-      showToast('WhatsApp error: ' + ((err && err.message) || String(err)), 'error');
-    })
-    .getWhatsAppURLForRecord(rec);
-}
-
-function statusBadge(s) {
-  if (!s) s = 'PENDING';
-  var su  = s.toUpperCase();
-  var cls = (su === 'ACCEPTED' || su === 'RELEASED' || su === 'CLOSED') ? 'pass' :
-             su === 'REJECTED'                                           ? 'fail' :
-             su === 'HOLD'                                               ? 'hold' :
-            (su === 'ISSUED'   || su === 'OPEN')                        ? 'awd'  : 'pending';
-  return '<span class="badge badge-' + cls + '">' + esc(s) + '</span>';
-}
-
-function showToast(msg, type) {
+// ── Toast ──────────────────────────────────────────────────────────
+function showToast(msg, type, retryable) {
   var t = document.getElementById('toast');
-  t.textContent = msg;
+  t.textContent = retryable ? msg + ' Tap to retry.' : msg;
+  t.dataset.retry = retryable ? '1' : '0';
   t.className = 'toast show' + (type ? ' ' + type : '');
-  setTimeout(function() { t.className = 'toast'; }, 3500);
+  if (!retryable) {
+    setTimeout(function() { t.className = 'toast'; }, 3500);
+  }
 }
 
+// ── Error state ────────────────────────────────────────────────────
+function showError(msg) {
+  renderSummaryCards({ total: 0, pass: 0, fail: 0, hold: 0, pending: 0 });
+  renderEmpty(msg);
+  showToast(msg, 'error', false);
+}
+
+// ── XSS escape ─────────────────────────────────────────────────────
 function esc(s) {
-  if (!s && s !== 0) return '';
+  if (s === null || s === undefined) return '';
   return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;')
+    .replace(/'/g,  '&#39;');
 }
 </script>
 </body>

@@ -7,15 +7,16 @@ function getOQCFormInit() {
   var allMats = getMaterials();
   var fgMats  = allMats.filter(function(m) { return m.category && m.category.toUpperCase() === 'FG'; });
   return {
-    docNumber:  peekNextDocNumber('oqc'),
-    customers:  getCustomers(),
-    materials:  fgMats,
-    inspectors: getInspectors(),
-    today:      Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
+    docNumber:    peekNextDocNumber('oqc'),
+    customers:    getCustomers(),
+    materials:    fgMats,
+    inspectors:   getInspectors(),
+    ipqcSessions: (typeof getClosedIPQCSessionsForOQC === 'function') ? getClosedIPQCSessionsForOQC() : [],
+    today:        Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
   };
 }
 
-function saveOQC(data, sessionId) {
+function saveOQC(data) {
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('OQC_LOG');
@@ -24,11 +25,7 @@ function saveOQC(data, sessionId) {
     var now    = new Date();
     var dec    = data.releaseDecision || 'PENDING';
     var docNos = [];
-    var operatorId = '';
-    if (sessionId) {
-      var sess = validateSessionFast_(sessionId);
-      if (sess) operatorId = sess.userId;
-    }
+    var operatorId = data.operatorName || '';
 
     data.items.forEach(function(item) {
       var docNo  = getNextDocNumber('oqc');
@@ -72,12 +69,22 @@ function saveOQC(data, sessionId) {
       docNos.push(docNo);
     });
 
-    if (sessionId) {
-      var firstOqcItem = data.items[0] || {};
-      autoQmsTask_(sessionId, 'OQC', 'OQC — ' + (data.customerName || '') + ' / ' + (firstOqcItem.materialDesc || ''), docNos[0] || '');
+    // Auto-raise NCR for rejected OQC sessions.
+    var ncrNo = '';
+    if (dec === 'REJECTED' && docNos.length > 0) {
+      var firstItem = data.items[0] || {};
+      ncrNo = raiseNCR_({
+        date:         data.date,
+        source:       'OQC',
+        sourceRef:    docNos.join(', '),
+        materialDesc: firstItem.materialDesc || '',
+        batchNo:      firstItem.batchPO || '',
+        qtyAffected:  data.items.reduce(function(s, it) { return s + (Number(it.rejectedQty) || 0); }, 0),
+        defectDesc:   data.remarks || 'OQC rejection — see ' + docNos.join(', ')
+      });
     }
 
-    return { success: true, docNos: docNos };
+    return { success: true, docNos: docNos, ncrNo: ncrNo };
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };

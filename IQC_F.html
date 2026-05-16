@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
     /* ── IQC-specific styles ── */
@@ -557,8 +557,6 @@ var IQC_PARAMS = [
 /* ────────────────────────────────────────────────
    STATE
 ──────────────────────────────────────────────── */
-var sessionId    = sessionStorage.getItem('dwmSessionId') || null;
-var taskId       = null;
 var formSaved    = false;
 
 /* Prefill data (from sessionStorage.grnPrefill) */
@@ -610,11 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
     .getIQCFormInit();
 });
 
-window.addEventListener('beforeunload', function() {
-  if (!formSaved && taskId && sessionId) {
-    try { google.script.run.stopTimer(taskId, sessionId); } catch(e) {}
-  }
-});
+window.addEventListener('beforeunload', function() {});
 
 /* ────────────────────────────────────────────────
    INIT LOADED
@@ -633,6 +627,9 @@ function onInitLoaded(d) {
     o.textContent = ins.name ? (ins.name + (ins.role ? ' — ' + ins.role : '')) : ins;
     iSel.appendChild(o);
   }
+  /* Pre-select if QMS operator name matches an option */
+  var opName = window.QMS ? window.QMS.getOperatorName() : '';
+  if (opName) iSel.value = opName;
 
   /* Populate AQL select */
   var aqlSel = document.getElementById('aqlLevel');
@@ -673,17 +670,6 @@ function onInitLoaded(d) {
     /* manual mode - show form fields, nothing more until GRN selected */
   }
 
-  /* DWM task */
-  if (sessionId) {
-    var title = 'IQC Inspection' + (prefill && prefill.itemName ? ' — ' + prefill.itemName : '');
-    var grnId = prefill ? (prefill.grnId || '') : '';
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (res && res.taskId) taskId = res.taskId;
-      })
-      .withFailureHandler(function() {})
-      .autoQmsTask_(sessionId, 'IQC', title, grnId);
-  }
 }
 
 /* ────────────────────────────────────────────────
@@ -1196,14 +1182,22 @@ function setOverallDisp(val) {
 function saveIQC() {
   if (!overallDisp) { showToast('Please select overall disposition.', 'error'); return; }
 
+  /* Ensure operator is identified before saving */
+  if (window.QMS && !window.QMS.getOperatorName()) {
+    var inspList = (initData && initData.inspectors)
+      ? initData.inspectors.map(function(i) { return i.name || i; })
+      : [];
+    window.QMS.requireOperator(inspList, function() { doSaveIQC(); });
+    return;
+  }
+  doSaveIQC();
+}
+
+function doSaveIQC() {
+
   var btn = document.getElementById('saveBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
-
-  /* Stop timer first (best-effort) */
-  if (taskId && sessionId) {
-    try { google.script.run.stopTimer(taskId, sessionId); } catch(e) {}
-  }
 
   /* Build items array */
   var items = [];
@@ -1249,6 +1243,7 @@ function saveIQC() {
     remarks:      document.getElementById('remarks').value,
     ncrRef:       document.getElementById('ncrRef').value,
     deviationRef: document.getElementById('deviationRef').value,
+    operatorName: window.QMS ? window.QMS.getOperatorName() : '',
     items:        items
   };
 
@@ -1269,7 +1264,7 @@ function saveIQC() {
       btn.disabled = false;
       btn.textContent = 'SAVE IQC RECORD';
     })
-    .saveIQC(data, sessionId);
+    .saveIQC(data);
 }
 
 /* ────────────────────────────────────────────────

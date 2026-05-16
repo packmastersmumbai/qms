@@ -5,19 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    :root {
-      --navy-hover:    #1A2D9E;
-      --navy-active:   #0A1450;
-      --disabled-bg:   #9CA3AF;
-      --enabled-row:   #F0FFF4;
-    }
-
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
+    /* ── product bar ── */
     .product-bar {
       display: flex;
       align-items: center;
@@ -26,7 +17,7 @@
       background: var(--white);
       border-bottom: 1px solid var(--border);
       position: sticky;
-      top: 106px;
+      top: 56px;
       z-index: 80;
       flex-wrap: wrap;
     }
@@ -39,7 +30,7 @@
     .product-bar select {
       flex: 1;
       min-width: 160px;
-      max-width: 320px;
+      max-width: 340px;
       font-size: 13px;
       border: 1.5px solid var(--border);
       border-radius: 6px;
@@ -54,224 +45,231 @@
       border-color: var(--navy);
     }
 
-    .btn-save-plan {
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      white-space: nowrap;
-      transition: background 0.15s;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
+    /* ── content area ── */
+    .content-area {
+      padding: 10px 12px 80px;
     }
-    .btn-save-plan:hover  { background: var(--navy-hover); }
-    .btn-save-plan:active { transform: scale(0.97); }
-    .btn-save-plan:disabled { background: var(--disabled-bg); cursor: not-allowed; }
 
-    .step-section {
-      margin: 10px 12px 0;
-    }
-    .step-section:last-child { margin-bottom: 10px; }
-
-    .step-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--navy);
-      color: var(--white);
-      padding: 7px 12px;
-      border-radius: 8px 8px 0 0;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .step-header .step-count {
-      margin-left: auto;
-      background: rgba(255,255,255,0.2);
-      color: var(--white);
-      font-size: 10px;
-      font-weight: 600;
-      padding: 1px 7px;
-      border-radius: 10px;
-    }
-    .step-chevron {
-      transition: transform 0.2s;
-      flex-shrink: 0;
-    }
-    .step-section.collapsed .step-chevron { transform: rotate(-90deg); }
-
-    .step-body {
+    /* ── table ── */
+    .table-wrap {
       background: var(--white);
-      border-radius: 0 0 8px 8px;
+      border-radius: 10px;
       box-shadow: var(--shadow-1);
       overflow: hidden;
     }
-    .step-section.collapsed .step-body { display: none; }
-
-    .matrix-scroll {
+    .table-scroll {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
-    .matrix-table {
+    .cp-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 600px;
+      min-width: 640px;
     }
-    .matrix-table thead th {
+    .cp-table thead th {
       background: var(--navy-light);
       color: var(--navy);
       font-size: 10px;
       font-weight: 700;
-      padding: 6px 10px;
+      padding: 8px 10px;
       text-align: left;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.5px;
       white-space: nowrap;
       border-bottom: 2px solid var(--border);
     }
-    .matrix-table thead th:nth-child(2),
-    .matrix-table tbody td:nth-child(2) {
-      position: sticky;
-      left: 0;
-      z-index: 2;
-      min-width: 130px;
-      max-width: 180px;
-    }
-    .matrix-table thead th:nth-child(2) {
-      background: var(--navy-light);
-      z-index: 3;
-    }
-    .matrix-table tbody td:nth-child(2) {
-      background: var(--white);
-      font-weight: 600;
-      box-shadow: 2px 0 4px rgba(0,0,0,0.05);
-    }
-    .matrix-table tbody tr.enabled-row td:nth-child(2) {
-      background: var(--enabled-row);
-    }
-    .matrix-table tbody tr {
+    .cp-table tbody tr {
       border-bottom: 1px solid var(--border);
+      min-height: 44px;
       transition: background 0.1s;
     }
-    .matrix-table tbody tr:last-child { border-bottom: none; }
-    .matrix-table tbody tr.enabled-row { background: var(--enabled-row); }
-    .matrix-table tbody td {
-      padding: 8px 10px;
+    .cp-table tbody tr:last-child { border-bottom: none; }
+    .cp-table tbody tr.row-enabled { background: #F0FFF4; }
+    .cp-table tbody td {
+      padding: 9px 10px;
       font-size: 12px;
       color: var(--text);
       vertical-align: middle;
     }
-
-    .param-toggle {
-      padding: 3px 10px;
-      border-radius: 12px;
-      border: none;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      min-width: 42px;
-      transition: all 0.15s ease;
-    }
-    .param-toggle.on  { background: var(--success); color: var(--white); }
-    .param-toggle.off { background: var(--border);  color: var(--muted); }
-    .param-toggle:active { transform: scale(0.97); }
-
-    .override-input {
-      width: 72px;
-      padding: 5px 8px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      font-family: inherit;
-      background: var(--white);
-      color: var(--text);
-    }
-    .override-input:focus   { border-color: var(--navy); outline: none; }
-    .override-input:disabled { background: var(--bg); color: var(--disabled-bg); }
-
-    .param-cards { display: none; }
-    .param-card {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .param-card:last-child { border-bottom: none; }
-    .param-card-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-    .param-card-name {
-      flex: 1;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
-    }
-    .param-card-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+    .cp-table tbody td.td-code {
+      font-family: monospace;
       font-size: 11px;
       color: var(--muted);
-      margin-bottom: 6px;
+      white-space: nowrap;
     }
-    .param-card-meta span { white-space: nowrap; }
-    .param-card-overrides {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
+    .cp-table tbody td.td-spec {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
     }
-    .param-card-overrides .ov-group label {
-      display: block;
+    .cp-table tbody td.td-toggle {
+      text-align: center;
+      width: 60px;
+    }
+
+    /* ── toggle btn ── */
+    .toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      transition: background 0.15s, transform 0.1s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .toggle-btn.btn-on  { background: var(--success); color: #fff; }
+    .toggle-btn.btn-off { background: #E5E7EB; color: #9CA3AF; }
+    .toggle-btn:active  { transform: scale(0.92); }
+    .toggle-btn.saving  { opacity: 0.5; pointer-events: none; }
+    .toggle-btn[disabled] { opacity: 0.4; cursor: default; pointer-events: none; }
+
+    /* ── override inputs ── */
+    .ov-wrap {
+      display: flex;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+    .ov-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .ov-group label {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+    .ov-input {
+      width: 66px;
+      padding: 5px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+    }
+    .ov-input:focus   { outline: none; border-color: var(--navy); }
+    .ov-input:disabled { background: var(--bg); color: var(--muted); }
+    .ov-save-btn {
+      align-self: flex-end;
+      padding: 5px 8px;
+      border: none;
+      border-radius: 5px;
+      background: var(--navy);
+      color: #fff;
       font-size: 10px;
       font-weight: 600;
-      color: var(--muted);
-      margin-bottom: 2px;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 0.12s;
     }
+    .ov-save-btn:hover   { background: #1A2D9E; }
+    .ov-save-btn:active  { transform: scale(0.96); }
+    .ov-save-btn:disabled { background: #9CA3AF; cursor: not-allowed; }
 
-    @media (max-width: 540px) {
-      .matrix-scroll { display: none; }
-      .param-cards   { display: block; }
-      .product-bar   { top: 106px; }
-    }
-
+    /* ── skeleton ── */
+    .skel-row td { padding: 10px; }
     .skel-cell {
       height: 12px;
-      background: linear-gradient(90deg, var(--border) 25%, #f3f4f6 50%, var(--border) 75%);
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--navy-light) 25%, #f3f4f6 50%, var(--navy-light) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.2s infinite;
-      border-radius: 4px;
     }
     @keyframes shimmer {
       0%   { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
 
-    .changes-notice {
-      display: none;
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--navy);
-      color: var(--white);
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 13px;
+    /* ── empty / error state ── */
+    .state-box {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .state-box .icon {
+      font-size: 32px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* ── method badge ── */
+    .method-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 10px;
       font-weight: 600;
-      box-shadow: var(--shadow-2);
-      z-index: 200;
+      background: var(--navy-light);
+      color: var(--navy);
       white-space: nowrap;
     }
-    .changes-notice.show { display: block; }
+
+    /* ── read-only indicator ── */
+    .ro-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ── responsive cards (mobile) ── */
+    .cp-cards { display: none; }
+    .cp-card {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cp-card:last-child { border-bottom: none; }
+    .cp-card.card-enabled { background: #F0FFF4; }
+    .cp-card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .cp-card-info { flex: 1; }
+    .cp-card-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .cp-card-code {
+      font-size: 10px;
+      font-family: monospace;
+      color: var(--muted);
+    }
+    .cp-card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .cp-card-meta span { white-space: nowrap; }
+    .cp-card-overrides {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 6px;
+      align-items: flex-end;
+    }
+
+    @media (max-width: 560px) {
+      .table-scroll { display: none; }
+      .cp-cards     { display: block; }
+    }
   </style>
 </head>
 <body>
@@ -282,397 +280,449 @@
       <path d="M12 4l-6 6 6 6"/>
     </svg>
   </button>
-  <span class="page-title">Control Plans</span>
-  <span class="doc-badge">QMS-CP</span>
+  <span class="page-title">Control Plan</span>
+  <span id="roleChip" class="role-chip" style="visibility:hidden;"></span>
 </div>
 
-<div class="tab-bar">
-  <button class="tab-btn active" id="tab-rm">RM Control Plan</button>
-  <button class="tab-btn" id="tab-fg">FG Control Plan</button>
+<div class="product-bar">
+  <label>Product:</label>
+  <select id="fgSelect">
+    <option value="">— Select FG —</option>
+  </select>
+  <span id="roNote" class="ro-badge" style="display:none;">
+    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="14" height="10" rx="2"/><path d="M7 9V6a3 3 0 016 0v3"/></svg>
+    Read-only
+  </span>
 </div>
 
-<div class="tab-panel active" id="panel-rm">
-  <div class="product-bar">
-    <label>RM Item:</label>
-    <select id="rm-product-select">
-      <option value="">— Select Item —</option>
-    </select>
-    <button class="btn-save-plan" id="rm-save-btn" disabled>Save Plan</button>
-  </div>
-  <div id="rm-content">
-    <div class="empty-state"><span class="icon">📋</span>Select an item above to view or edit its control plan.</div>
-  </div>
-</div>
-
-<div class="tab-panel" id="panel-fg">
-  <div class="product-bar">
-    <label>FG:</label>
-    <select id="fg-product-select">
-      <option value="">— Select FG —</option>
-    </select>
-    <button class="btn-save-plan" id="fg-save-btn" disabled>Save Plan</button>
-  </div>
-  <div id="fg-content">
-    <div class="empty-state"><span class="icon">📋</span>Select a finished good above to view or edit its control plan.</div>
+<div class="content-area" id="contentArea">
+  <div class="state-box">
+    <span class="icon">📋</span>
+    Select a finished good above to view its control plan.
   </div>
 </div>
 
 <div id="toast" class="toast"></div>
-<div class="changes-notice" id="rm-changes-notice">Unsaved changes — tap Save Plan</div>
-<div class="changes-notice" id="fg-changes-notice">Unsaved changes — tap Save Plan</div>
 
 <script>
-  var allParameters = [];
-  var allRM         = [];
-  var allFG         = [];
-  var rmPlanData    = {};
-  var fgPlanData    = {};
-  var activePlan    = 'rm';
+  var _params   = [];
+  var _planMap  = {};
+  var _itemCode = '';
+  var _canEdit  = false;
 
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('backBtn').addEventListener('click', goHome);
-
-    document.getElementById('tab-rm').addEventListener('click', function() { switchPlan('rm'); });
-    document.getElementById('tab-fg').addEventListener('click', function() { switchPlan('fg'); });
-
-    document.getElementById('rm-product-select').addEventListener('change', function() { loadPlan('rm'); });
-    document.getElementById('fg-product-select').addEventListener('change', function() { loadPlan('fg'); });
-
-    document.getElementById('rm-save-btn').addEventListener('click', function() { savePlan('rm'); });
-    document.getElementById('fg-save-btn').addEventListener('click', function() { savePlan('fg'); });
-
-    google.script.run
-      .withSuccessHandler(function(data) {
-        allParameters = data.parameters || [];
-        allRM         = data.materials  || [];
-        allFG         = data.fg         || [];
-        populateSelect('rm-product-select', allRM, 'code', 'desc');
-        populateSelect('fg-product-select', allFG, 'code', 'name');
-      })
-      .withFailureHandler(function(err) {
-        showToast('Failed to load data: ' + (err.message || err), 'error');
-      })
-      .getMastersData();
-  });
-
-  function populateSelect(selectId, items, valField, labelField) {
-    var sel = document.getElementById(selectId);
-    items.forEach(function(item) {
-      var opt = document.createElement('option');
-      opt.value = item[valField];
-      var label = item[labelField] || item['name'] || item['desc'] || item[valField];
-      opt.textContent = item[valField] + ' — ' + label;
-      sel.appendChild(opt);
-    });
+  // ── role ──────────────────────────────────────────────
+  function getRole() {
+    return (sessionStorage.getItem('userRole') || '').toLowerCase();
   }
 
-  function switchPlan(plan) {
-    activePlan = plan;
-    ['rm', 'fg'].forEach(function(p) {
-      document.getElementById('tab-' + p).classList.toggle('active', p === plan);
-      document.getElementById('panel-' + p).classList.toggle('active', p === plan);
-    });
-  }
-
-  function loadPlan(planType) {
-    var itemCode  = document.getElementById(planType + '-product-select').value;
-    var contentEl = document.getElementById(planType + '-content');
-
-    if (!itemCode) {
-      contentEl.innerHTML = '<div class="empty-state"><span class="icon">📋</span>Select an item above to view or edit its control plan.</div>';
-      document.getElementById(planType + '-save-btn').disabled = true;
-      hideNotice(planType);
-      return;
-    }
-
-    contentEl.innerHTML = renderSkeletonSections();
-
-    google.script.run
-      .withSuccessHandler(function(rows) {
-        var planData = {};
-        rows.forEach(function(r) { planData[r.paramCode] = r; });
-        if (planType === 'rm') rmPlanData = planData;
-        else fgPlanData = planData;
-        renderGroupedPlan(planType, itemCode);
-        document.getElementById(planType + '-save-btn').disabled = false;
-        hideNotice(planType);
-      })
-      .withFailureHandler(function(err) {
-        showToast('Load failed: ' + (err.message || err), 'error');
-      })
-      .getControlPlan(planType, itemCode);
-  }
-
-  function groupByStep(params) {
-    var groups = {};
-    var order  = [];
-    params.forEach(function(p) {
-      var step = (p.methodType || 'General').trim();
-      if (!groups[step]) { groups[step] = []; order.push(step); }
-      groups[step].push(p);
-    });
-    return { groups: groups, order: order };
-  }
-
-  function renderGroupedPlan(planType, itemCode) {
-    var planData  = planType === 'rm' ? rmPlanData : fgPlanData;
-    var contentEl = document.getElementById(planType + '-content');
-
-    if (!allParameters.length) {
-      contentEl.innerHTML = '<div class="empty-state"><span class="icon">⚙️</span>No parameters defined yet. Add them in Masters → Parameters.</div>';
-      return;
-    }
-
-    var grouped    = groupByStep(allParameters);
-    var html       = '';
-    var globalIdx  = 0;
-
-    grouped.order.forEach(function(step) {
-      var params       = grouped.groups[step];
-      var enabledCount = params.filter(function(p) { return (planData[p.code] || {}).enabled; }).length;
-
-      html += '<div class="step-section" id="step-' + planType + '-' + esc(step) + '">';
-      html += '<div class="step-header">';
-      html += '<svg class="step-chevron" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l5 5 5-5"/></svg>';
-      html += esc(step);
-      if (enabledCount > 0) {
-        html += '<span class="step-count">' + enabledCount + ' active</span>';
-      }
-      html += '</div>';
-      html += '<div class="step-body">';
-
-      html += '<div class="matrix-scroll">';
-      html += '<table class="matrix-table">';
-      html += '<thead><tr>' +
-        '<th style="width:42px;"></th>' +
-        '<th>Parameter</th>' +
-        '<th>Unit</th>' +
-        '<th>Std Value</th>' +
-        '<th>Override Std</th>' +
-        '<th>Min</th>' +
-        '<th>Override Min</th>' +
-        '<th>Max</th>' +
-        '<th>Override Max</th>' +
-        '<th>Tools</th>' +
-        '<th>Check Brief</th>' +
-        '</tr></thead>';
-      html += '<tbody>';
-
-      var cardsHtml = '<div class="param-cards">';
-
-      params.forEach(function(p) {
-        var existing = planData[p.code] || {};
-        var enabled  = existing.enabled || false;
-        var stdOvr   = existing.stdValueOverride || '';
-        var minOvr   = existing.tolMinOverride   || '';
-        var maxOvr   = existing.tolMaxOverride   || '';
-        var rowClass = enabled ? 'enabled-row' : '';
-        var dis      = enabled ? '' : 'disabled';
-        var rowId    = planType + '-row-' + globalIdx;
-        var btnCls   = enabled ? 'on' : 'off';
-        var btnTxt   = enabled ? 'ON' : 'OFF';
-
-        html += '<tr class="' + rowClass + '" id="' + rowId + '" data-code="' + esc(p.code) + '" data-enabled="' + (enabled ? '1' : '0') + '" data-plantype="' + planType + '">' +
-          '<td style="text-align:center;">' +
-            '<button class="param-toggle ' + btnCls + '" data-plantype="' + planType + '">' + btnTxt + '</button>' +
-          '</td>' +
-          '<td>' + esc(p.name) + ' <span style="font-size:10px;color:var(--muted);font-family:monospace;">' + esc(p.code) + '</span></td>' +
-          '<td style="color:var(--muted);">' + esc(p.unit || '') + '</td>' +
-          '<td style="color:var(--muted);">' + esc(p.stdValue || '') + '</td>' +
-          '<td><input class="override-input ov-std" type="text" ' + dis + ' value="' + esc(stdOvr) + '" placeholder="—"></td>' +
-          '<td style="color:var(--muted);">' + esc(p.tolMin || '') + '</td>' +
-          '<td><input class="override-input ov-min" type="text" ' + dis + ' value="' + esc(minOvr) + '" placeholder="—"></td>' +
-          '<td style="color:var(--muted);">' + esc(p.tolMax || '') + '</td>' +
-          '<td><input class="override-input ov-max" type="text" ' + dis + ' value="' + esc(maxOvr) + '" placeholder="—"></td>' +
-          '<td style="font-size:11px;color:var(--muted);">' + esc(p.tools || '') + '</td>' +
-          '<td style="font-size:11px;color:var(--muted);max-width:160px;">' + esc(p.checkBrief || '') + '</td>' +
-          '</tr>';
-
-        cardsHtml += '<div class="param-card" id="card-' + rowId + '" data-code="' + esc(p.code) + '" data-enabled="' + (enabled ? '1' : '0') + '">' +
-          '<div class="param-card-row">' +
-            '<div class="param-card-name">' + esc(p.name) + ' <span style="font-size:10px;color:var(--muted);font-family:monospace;">' + esc(p.code) + '</span></div>' +
-            '<button class="param-toggle ' + btnCls + '" data-rowid="' + rowId + '" data-plantype="' + planType + '">' + btnTxt + '</button>' +
-          '</div>' +
-          '<div class="param-card-meta">' +
-            (p.unit     ? '<span>Unit: '  + esc(p.unit)     + '</span>' : '') +
-            (p.stdValue ? '<span>Std: '   + esc(p.stdValue) + '</span>' : '') +
-            (p.tolMin   ? '<span>Min: '   + esc(p.tolMin)   + '</span>' : '') +
-            (p.tolMax   ? '<span>Max: '   + esc(p.tolMax)   + '</span>' : '') +
-            (p.tools    ? '<span>Tools: ' + esc(p.tools)    + '</span>' : '') +
-          '</div>' +
-          '<div class="param-card-overrides">' +
-            '<div class="ov-group"><label>Ovr Std</label><input class="override-input ov-std" type="text" ' + dis + ' value="' + esc(stdOvr) + '" placeholder="—"></div>' +
-            '<div class="ov-group"><label>Ovr Min</label><input class="override-input ov-min" type="text" ' + dis + ' value="' + esc(minOvr) + '" placeholder="—"></div>' +
-            '<div class="ov-group"><label>Ovr Max</label><input class="override-input ov-max" type="text" ' + dis + ' value="' + esc(maxOvr) + '" placeholder="—"></div>' +
-          '</div>' +
-        '</div>';
-
-        globalIdx++;
-      });
-
-      cardsHtml += '</div>';
-      html += '</tbody></table></div>';
-      html += cardsHtml;
-      html += '</div></div>';
-    });
-
-    contentEl.innerHTML = html;
-    attachContentListeners(planType);
-    attachToggleListeners(planType);
-  }
-
-  function attachContentListeners(planType) {
-    var contentEl = document.getElementById(planType + '-content');
-    if (!contentEl) return;
-
-    contentEl.addEventListener('click', function(e) {
-      var header = e.target.closest('.step-header');
-      if (header) {
-        toggleSection(header.parentNode);
-      }
-    });
-
-    contentEl.addEventListener('input', function(e) {
-      if (e.target.classList.contains('override-input')) {
-        markChanged(planType);
-      }
-    });
-  }
-
-  function toggleSection(sectionEl) {
-    sectionEl.classList.toggle('collapsed');
-  }
-
-  function attachToggleListeners(planType) {
-    var contentEl = document.getElementById(planType + '-content');
-    if (!contentEl) return;
-    var buttons = contentEl.querySelectorAll('.param-toggle');
-    for (var i = 0; i < buttons.length; i++) {
-      (function(btn) {
-        btn.addEventListener('click', function() {
-          var rowId = btn.getAttribute('data-rowid');
-          var row, card;
-          if (rowId) {
-            row  = document.getElementById(rowId);
-            card = document.getElementById('card-' + rowId);
-          } else {
-            row  = btn.parentNode.parentNode;
-            var code = row.getAttribute('data-code');
-            card = contentEl.querySelector('[id^="card-"][data-code="' + code + '"]');
-          }
-
-          var target = row || card;
-          if (!target) return;
-          var nowOn = target.getAttribute('data-enabled') !== '1';
-
-          if (row) {
-            row.setAttribute('data-enabled', nowOn ? '1' : '0');
-            row.classList.toggle('enabled-row', nowOn);
-            var rowBtn = row.querySelector('.param-toggle');
-            if (rowBtn) {
-              rowBtn.textContent = nowOn ? 'ON' : 'OFF';
-              rowBtn.className   = 'param-toggle ' + (nowOn ? 'on' : 'off');
-            }
-            row.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !nowOn; });
-          }
-          if (card) {
-            card.setAttribute('data-enabled', nowOn ? '1' : '0');
-            var cardBtn = card.querySelector('.param-toggle');
-            if (cardBtn) {
-              cardBtn.textContent = nowOn ? 'ON' : 'OFF';
-              cardBtn.className   = 'param-toggle ' + (nowOn ? 'on' : 'off');
-            }
-            card.querySelectorAll('.override-input').forEach(function(inp) { inp.disabled = !nowOn; });
-          }
-
-          markChanged(planType);
-        });
-      })(buttons[i]);
-    }
-  }
-
-  function markChanged(planType) {
-    document.getElementById(planType + '-changes-notice').classList.add('show');
-  }
-  function hideNotice(planType) {
-    document.getElementById(planType + '-changes-notice').classList.remove('show');
-  }
-
-  function collectPlanRows(planType, itemCode) {
-    var contentEl = document.getElementById(planType + '-content');
-    var rows      = contentEl ? contentEl.querySelectorAll('tr[data-code]') : [];
-    var result    = [];
-    rows.forEach(function(row) {
-      if (row.getAttribute('data-enabled') !== '1') return;
-      var stdInp = row.querySelector('.ov-std');
-      var minInp = row.querySelector('.ov-min');
-      var maxInp = row.querySelector('.ov-max');
-      result.push({
-        itemCode:         itemCode,
-        paramCode:        row.getAttribute('data-code'),
-        enabled:          true,
-        stdValueOverride: stdInp ? stdInp.value.trim() : '',
-        tolMinOverride:   minInp ? minInp.value.trim() : '',
-        tolMaxOverride:   maxInp ? maxInp.value.trim() : ''
-      });
-    });
-    return result;
-  }
-
-  function savePlan(planType) {
-    var itemCode = document.getElementById(planType + '-product-select').value;
-    if (!itemCode) return;
-    var rows = collectPlanRows(planType, itemCode);
-    var btn  = document.getElementById(planType + '-save-btn');
-    btn.disabled    = true;
-    btn.innerHTML   = '<span class="spinner"></span>Saving…';
-    google.script.run
-      .withSuccessHandler(function() {
-        showToast('Control Plan saved (' + rows.length + ' parameters)', 'success');
-        hideNotice(planType);
-        btn.disabled  = false;
-        btn.textContent = 'Save Plan';
-      })
-      .withFailureHandler(function(err) {
-        showToast('Save failed: ' + (err.message || err), 'error');
-        btn.disabled  = false;
-        btn.textContent = 'Save Plan';
-      })
-      .saveControlPlan(planType, itemCode, rows);
-  }
-
-  function renderSkeletonSections() {
-    var html = '';
-    for (var s = 0; s < 2; s++) {
-      html += '<div class="step-section"><div class="step-header" style="opacity:0.6;">Loading parameters…</div>';
-      html += '<div class="step-body"><div class="matrix-scroll"><table class="matrix-table"><tbody>';
-      for (var i = 0; i < 3; i++) {
-        html += '<tr>';
-        for (var j = 0; j < 9; j++) {
-          html += '<td><div class="skel-cell" style="width:' + (40 + Math.floor(Math.random() * 40)) + '%"></div></td>';
-        }
-        html += '</tr>';
-      }
-      html += '</tbody></table></div></div></div>';
-    }
-    return html;
-  }
-
-  function showToast(msg, type) {
-    var t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className   = 'toast show' + (type ? ' ' + type : '');
-    setTimeout(function() { t.className = 'toast'; }, 2800);
-  }
-
-  function esc(str) {
-    if (str === null || str === undefined) return '';
-    return String(str)
+  // ── XSS helper ────────────────────────────────────────
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  // ── toast ─────────────────────────────────────────────
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(t._tid);
+    t._tid = setTimeout(function() { t.className = 'toast'; }, 2800);
+  }
+
+  // ── init ──────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    // Role
+    var role = getRole();
+    _canEdit = ['admin', 'owner', 'master', 'qc manager', 'manager'].indexOf(role) !== -1;
+    var chip = document.getElementById('roleChip');
+    chip.textContent = role || 'guest';
+    chip.style.visibility = 'visible';
+    if (!_canEdit) {
+      document.getElementById('roNote').style.display = 'inline-flex';
+    }
+
+    document.getElementById('backBtn').addEventListener('click', function() {
+      google.script.run
+        .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function() {})
+        .getFormHtml('Landing');
+    });
+
+    document.getElementById('fgSelect').addEventListener('change', function() {
+      _itemCode = this.value;
+      if (_itemCode) loadPlan(_itemCode);
+      else showEmpty();
+    });
+
+    // Load FG list + parameters via two sequential calls
+    google.script.run
+      .withSuccessHandler(function(fgList) {
+        var sel = document.getElementById('fgSelect');
+        (fgList || []).forEach(function(item) {
+          var opt = document.createElement('option');
+          opt.value = item.code;
+          opt.textContent = item.code + ' — ' + (item.name || item.code);
+          sel.appendChild(opt);
+        });
+        // Now load parameters
+        google.script.run
+          .withSuccessHandler(function(params) {
+            _params = (params || []).slice().sort(function(a, b) {
+              return String(a.code).localeCompare(String(b.code));
+            });
+            // Auto-select first FG
+            if (sel.options.length > 1) {
+              sel.selectedIndex = 1;
+              _itemCode = sel.value;
+              loadPlan(_itemCode);
+            } else {
+              showEmpty();
+            }
+          })
+          .withFailureHandler(function(err) {
+            showToast('Failed to load parameters: ' + (err.message || err), 'error');
+          })
+          .getParameters();
+      })
+      .withFailureHandler(function(err) {
+        showToast('Failed to load products: ' + (err.message || err), 'error');
+      })
+      .getFG();
+  });
+
+  // ── load plan ─────────────────────────────────────────
+  function loadPlan(itemCode) {
+    document.getElementById('contentArea').innerHTML = renderSkeleton();
+    _planMap = {};
+    google.script.run
+      .withSuccessHandler(function(rows) {
+        _planMap = {};
+        (rows || []).forEach(function(r) { _planMap[r.paramCode] = r; });
+        renderTable(itemCode);
+      })
+      .withFailureHandler(function(err) {
+        showToast('Load failed: ' + (err.message || err), 'error');
+        document.getElementById('contentArea').innerHTML =
+          '<div class="state-box"><span class="icon">⚠️</span>Failed to load plan. ' + esc(err.message || err) + '</div>';
+      })
+      .getControlPlan('fg', itemCode);
+  }
+
+  function showEmpty() {
+    document.getElementById('contentArea').innerHTML =
+      '<div class="state-box"><span class="icon">📋</span>Select a finished good above to view its control plan.</div>';
+  }
+
+  // ── render ────────────────────────────────────────────
+  function renderTable(itemCode) {
+    var area = document.getElementById('contentArea');
+    if (!_params.length) {
+      area.innerHTML = '<div class="state-box"><span class="icon">⚙️</span>No parameters defined yet. Add them in Masters → Parameters.</div>';
+      return;
+    }
+
+    var tRows = '';
+    var cards = '';
+    _params.forEach(function(p, idx) {
+      var ov      = _planMap[p.code] || {};
+      var enabled = ov.enabled === true;
+      var stdOvr  = ov.stdValueOverride != null ? ov.stdValueOverride : '';
+      var minOvr  = ov.tolMinOverride   != null ? ov.tolMinOverride   : '';
+      var maxOvr  = ov.tolMaxOverride   != null ? ov.tolMaxOverride   : '';
+
+      var specStr = '';
+      var effStd  = stdOvr !== '' ? stdOvr : (p.stdValue || '');
+      var effMin  = minOvr !== '' ? minOvr : (p.tolMin   || '');
+      var effMax  = maxOvr !== '' ? maxOvr : (p.tolMax   || '');
+      if (effStd !== '') specStr = effStd;
+      if (effMin !== '' || effMax !== '') {
+        var range = '';
+        if (effMin !== '' && effMax !== '') range = effMin + ' – ' + effMax;
+        else if (effMin !== '') range = '≥ ' + effMin;
+        else range = '≤ ' + effMax;
+        specStr = specStr ? specStr + '  (' + range + ')' : range;
+      }
+      if (specStr && p.unit) specStr += ' ' + p.unit;
+
+      var rowCls  = enabled ? 'row-enabled' : '';
+      var btnCls  = enabled ? 'btn-on' : 'btn-off';
+      var btnIcon = enabled ? '✓' : '○';
+      var disAttr = (!_canEdit || !enabled) ? ' disabled' : '';
+      var editDisAttr = !_canEdit ? ' disabled' : '';
+
+      // TABLE ROW
+      tRows += '<tr class="' + rowCls + '" id="row-' + idx + '" data-idx="' + idx + '" data-code="' + esc(p.code) + '" data-enabled="' + (enabled ? '1' : '0') + '">' +
+        '<td class="td-code">' + esc(p.code) + '</td>' +
+        '<td style="font-weight:600;">' + esc(p.name) + '</td>' +
+        '<td class="td-spec">' + esc(specStr) + '</td>' +
+        '<td>' + (p.methodType ? '<span class="method-badge">' + esc(p.methodType) + '</span>' : '<span style="color:var(--muted);font-size:11px;">—</span>') + '</td>' +
+        '<td class="td-toggle">' +
+          '<button class="toggle-btn ' + btnCls + '" id="tog-' + idx + '" data-idx="' + idx + '" title="' + (enabled ? 'Enabled — click to disable' : 'Disabled — click to enable') + '"' + (!_canEdit ? ' disabled' : '') + '>' + btnIcon + '</button>' +
+        '</td>' +
+        '<td>' +
+          '<div class="ov-wrap">' +
+            '<div class="ov-group"><label>Std</label><input class="ov-input" id="ov-std-' + idx + '" type="text"' + disAttr + ' value="' + esc(stdOvr) + '" placeholder="' + esc(p.stdValue || '—') + '"></div>' +
+            '<div class="ov-group"><label>Min</label><input class="ov-input" id="ov-min-' + idx + '" type="text"' + disAttr + ' value="' + esc(minOvr) + '" placeholder="' + esc(p.tolMin || '—') + '"></div>' +
+            '<div class="ov-group"><label>Max</label><input class="ov-input" id="ov-max-' + idx + '" type="text"' + disAttr + ' value="' + esc(maxOvr) + '" placeholder="' + esc(p.tolMax || '—') + '"></div>' +
+            (_canEdit && enabled ? '<button class="ov-save-btn" id="ov-save-' + idx + '" data-idx="' + idx + '">Save</button>' : '') +
+          '</div>' +
+        '</td>' +
+        '</tr>';
+
+      // CARD (mobile)
+      cards += '<div class="cp-card' + (enabled ? ' card-enabled' : '') + '" id="card-' + idx + '" data-idx="' + idx + '" data-code="' + esc(p.code) + '" data-enabled="' + (enabled ? '1' : '0') + '">' +
+        '<div class="cp-card-top">' +
+          '<div class="cp-card-info">' +
+            '<div class="cp-card-name">' + esc(p.name) + '</div>' +
+            '<div class="cp-card-code">' + esc(p.code) + '</div>' +
+          '</div>' +
+          '<button class="toggle-btn ' + btnCls + '" id="ctog-' + idx + '" data-idx="' + idx + '" data-card="1"' + (!_canEdit ? ' disabled' : '') + '>' + btnIcon + '</button>' +
+        '</div>' +
+        '<div class="cp-card-meta">' +
+          (p.unit       ? '<span>Unit: '   + esc(p.unit)       + '</span>' : '') +
+          (p.stdValue   ? '<span>Std: '    + esc(p.stdValue)   + '</span>' : '') +
+          (p.tolMin     ? '<span>Min: '    + esc(p.tolMin)     + '</span>' : '') +
+          (p.tolMax     ? '<span>Max: '    + esc(p.tolMax)     + '</span>' : '') +
+          (p.methodType ? '<span>Method: ' + esc(p.methodType) + '</span>' : '') +
+        '</div>' +
+        '<div class="cp-card-overrides">' +
+          '<div class="ov-group"><label>Ovr Std</label><input class="ov-input" id="cov-std-' + idx + '" type="text"' + disAttr + editDisAttr + ' value="' + esc(stdOvr) + '" placeholder="' + esc(p.stdValue || '—') + '"></div>' +
+          '<div class="ov-group"><label>Ovr Min</label><input class="ov-input" id="cov-min-' + idx + '" type="text"' + disAttr + editDisAttr + ' value="' + esc(minOvr) + '" placeholder="' + esc(p.tolMin || '—') + '"></div>' +
+          '<div class="ov-group"><label>Ovr Max</label><input class="ov-input" id="cov-max-' + idx + '" type="text"' + disAttr + editDisAttr + ' value="' + esc(maxOvr) + '" placeholder="' + esc(p.tolMax || '—') + '"></div>' +
+          (_canEdit && enabled ? '<button class="ov-save-btn" id="cov-save-' + idx + '" data-idx="' + idx + '" data-card="1">Save</button>' : '') +
+        '</div>' +
+        '</div>';
+    });
+
+    area.innerHTML =
+      '<div class="table-wrap">' +
+        '<div class="table-scroll">' +
+          '<table class="cp-table">' +
+            '<thead><tr>' +
+              '<th>CODE</th>' +
+              '<th>PARAMETER</th>' +
+              '<th>SPECIFICATION</th>' +
+              '<th>METHOD</th>' +
+              '<th style="text-align:center;">ENABLED</th>' +
+              '<th>OVERRIDES</th>' +
+            '</tr></thead>' +
+            '<tbody id="tableBody">' + tRows + '</tbody>' +
+          '</table>' +
+        '</div>' +
+        '<div class="cp-cards" id="cardBody">' + cards + '</div>' +
+      '</div>';
+
+    attachListeners();
+  }
+
+  // ── listeners ─────────────────────────────────────────
+  function attachListeners() {
+    // Toggle buttons (table + card)
+    var btns = document.querySelectorAll('.toggle-btn:not([disabled])');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', onToggleClick);
+    }
+    // Override save buttons
+    var saveBtns = document.querySelectorAll('.ov-save-btn');
+    for (var j = 0; j < saveBtns.length; j++) {
+      saveBtns[j].addEventListener('click', onOvSaveClick);
+    }
+  }
+
+  function onToggleClick(e) {
+    var btn  = e.currentTarget;
+    var idx  = parseInt(btn.getAttribute('data-idx'), 10);
+    var row  = document.getElementById('row-' + idx);
+    var card = document.getElementById('card-' + idx);
+    var ref  = row || card;
+    if (!ref) return;
+    var wasEnabled = ref.getAttribute('data-enabled') === '1';
+    var nowEnabled = !wasEnabled;
+
+    // Optimistic UI update
+    setRowState(idx, nowEnabled);
+
+    // Persist
+    var p = _params[idx];
+    var ov = _planMap[p.code] || {};
+    var saveRow = {
+      itemCode:         _itemCode,
+      paramCode:        p.code,
+      enabled:          nowEnabled,
+      stdValueOverride: ov.stdValueOverride || '',
+      tolMinOverride:   ov.tolMinOverride   || '',
+      tolMaxOverride:   ov.tolMaxOverride   || ''
+    };
+
+    var togEl  = document.getElementById('tog-' + idx);
+    var ctogEl = document.getElementById('ctog-' + idx);
+    if (togEl)  togEl.classList.add('saving');
+    if (ctogEl) ctogEl.classList.add('saving');
+
+    google.script.run
+      .withSuccessHandler(function() {
+        if (togEl)  togEl.classList.remove('saving');
+        if (ctogEl) ctogEl.classList.remove('saving');
+        _planMap[p.code] = saveRow;
+        showToast((nowEnabled ? 'Enabled' : 'Disabled') + ': ' + esc(p.name), 'success');
+        // Refresh override save buttons visibility
+        refreshOvSaveBtn(idx, nowEnabled);
+      })
+      .withFailureHandler(function(err) {
+        if (togEl)  togEl.classList.remove('saving');
+        if (ctogEl) ctogEl.classList.remove('saving');
+        // Rollback
+        setRowState(idx, wasEnabled);
+        showToast('Save failed: ' + (err.message || err), 'error');
+      })
+      .saveControlPlanRow('fg', saveRow);
+  }
+
+  function setRowState(idx, enabled) {
+    var row  = document.getElementById('row-' + idx);
+    var card = document.getElementById('card-' + idx);
+    var togEl  = document.getElementById('tog-' + idx);
+    var ctogEl = document.getElementById('ctog-' + idx);
+    var enabledStr = enabled ? '1' : '0';
+
+    if (row) {
+      row.setAttribute('data-enabled', enabledStr);
+      row.classList.toggle('row-enabled', enabled);
+      row.querySelectorAll('.ov-input').forEach(function(inp) { inp.disabled = !enabled; });
+    }
+    if (card) {
+      card.setAttribute('data-enabled', enabledStr);
+      card.classList.toggle('card-enabled', enabled);
+      card.querySelectorAll('.ov-input').forEach(function(inp) { inp.disabled = !enabled; });
+    }
+    [togEl, ctogEl].forEach(function(btn) {
+      if (!btn) return;
+      btn.className = 'toggle-btn ' + (enabled ? 'btn-on' : 'btn-off');
+      btn.textContent = enabled ? '✓' : '○';
+      btn.title = enabled ? 'Enabled — click to disable' : 'Disabled — click to enable';
+    });
+  }
+
+  function refreshOvSaveBtn(idx, enabled) {
+    // Re-render override save button based on enabled state (only for editors)
+    if (!_canEdit) return;
+    var saveRow  = document.getElementById('ov-save-' + idx);
+    var csaveRow = document.getElementById('cov-save-' + idx);
+    var oWrap = saveRow ? saveRow.parentNode : null;
+    var cWrap = csaveRow ? csaveRow.parentNode : null;
+
+    if (oWrap) {
+      if (!enabled && saveRow) { saveRow.remove(); }
+      else if (enabled && !saveRow) {
+        var btn = document.createElement('button');
+        btn.className = 'ov-save-btn';
+        btn.id = 'ov-save-' + idx;
+        btn.setAttribute('data-idx', idx);
+        btn.textContent = 'Save';
+        btn.addEventListener('click', onOvSaveClick);
+        oWrap.appendChild(btn);
+      }
+    }
+    if (cWrap) {
+      if (!enabled && csaveRow) { csaveRow.remove(); }
+      else if (enabled && !csaveRow) {
+        var cbtn = document.createElement('button');
+        cbtn.className = 'ov-save-btn';
+        cbtn.id = 'cov-save-' + idx;
+        cbtn.setAttribute('data-idx', idx);
+        cbtn.setAttribute('data-card', '1');
+        cbtn.textContent = 'Save';
+        cbtn.addEventListener('click', onOvSaveClick);
+        cWrap.appendChild(cbtn);
+      }
+    }
+  }
+
+  function onOvSaveClick(e) {
+    var btn   = e.currentTarget;
+    var idx   = parseInt(btn.getAttribute('data-idx'), 10);
+    var isCard = btn.getAttribute('data-card') === '1';
+    var prefix = isCard ? 'cov' : 'ov';
+
+    var stdEl = document.getElementById(prefix + '-std-' + idx);
+    var minEl = document.getElementById(prefix + '-min-' + idx);
+    var maxEl = document.getElementById(prefix + '-max-' + idx);
+
+    var p = _params[idx];
+    var row = document.getElementById('row-' + idx);
+    var enabled = row ? row.getAttribute('data-enabled') === '1' : false;
+
+    var saveRow = {
+      itemCode:         _itemCode,
+      paramCode:        p.code,
+      enabled:          enabled,
+      stdValueOverride: stdEl ? stdEl.value.trim() : '',
+      tolMinOverride:   minEl ? minEl.value.trim() : '',
+      tolMaxOverride:   maxEl ? maxEl.value.trim() : ''
+    };
+
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+        _planMap[p.code] = saveRow;
+        showToast('Overrides saved for ' + esc(p.name), 'success');
+        // Sync sibling inputs
+        syncOverrideInputs(idx, saveRow, isCard);
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+        showToast('Save failed: ' + (err.message || err), 'error');
+      })
+      .saveControlPlanRow('fg', saveRow);
+  }
+
+  function syncOverrideInputs(idx, saved, fromCard) {
+    var pairs = [
+      ['ov-std-' + idx,  saved.stdValueOverride],
+      ['ov-min-' + idx,  saved.tolMinOverride],
+      ['ov-max-' + idx,  saved.tolMaxOverride],
+      ['cov-std-' + idx, saved.stdValueOverride],
+      ['cov-min-' + idx, saved.tolMinOverride],
+      ['cov-max-' + idx, saved.tolMaxOverride]
+    ];
+    pairs.forEach(function(pair) {
+      var el = document.getElementById(pair[0]);
+      if (el) el.value = pair[1];
+    });
+  }
+
+  // ── skeleton ─────────────────────────────────────────
+  function renderSkeleton() {
+    var rows = '';
+    var widths = [30, 60, 50, 40, 20, 80];
+    for (var i = 0; i < 6; i++) {
+      rows += '<tr class="skel-row">';
+      widths.forEach(function(w) {
+        rows += '<td><div class="skel-cell" style="width:' + w + '%"></div></td>';
+      });
+      rows += '</tr>';
+    }
+    return '<div class="table-wrap">' +
+      '<div class="table-scroll">' +
+        '<table class="cp-table">' +
+          '<thead><tr>' +
+            '<th>CODE</th><th>PARAMETER</th><th>SPECIFICATION</th><th>METHOD</th><th>ENABLED</th><th>OVERRIDES</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
   }
 </script>
 </body>
