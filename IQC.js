@@ -51,7 +51,7 @@ function getUnInspectedGRNs() {
   });
 }
 
-function saveIQC(data, sessionId) {
+function saveIQC(data) {
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('IQC_LOG');
@@ -59,17 +59,12 @@ function saveIQC(data, sessionId) {
 
     var now  = new Date();
     var disp = data.disposition || '';
-    var operatorId = '';
-    if (sessionId) {
-      var sess = validateSessionFast_(sessionId);
-      if (sess) operatorId = sess.userId;
-    }
+    var operatorId = data.operatorName || '';
 
-    // Pre-generate NCR once for the whole session (before the loop)
+    // NCR is raised once for the whole rejected session (after rows are written),
+    // and back-stamped into col 24 of every row in this batch. ncrRef can be
+    // pre-supplied by caller to override; otherwise auto-raised on REJECTED.
     var ncrNo = data.ncrRef || '';
-    if (disp === 'REJECTED' && !ncrNo) {
-      ncrNo = getNextDocNumber('ncr');
-    }
 
     var docNos = [];
 
@@ -123,18 +118,73 @@ function saveIQC(data, sessionId) {
       else if (disp === 'HOLD')                   dispCell.setBackground('#FFF3CD');
       else if (disp === 'ACCEPTED WITH DEVIATION') dispCell.setBackground('#FFE0B2');
 
+      // STOCK_LEDGER mirror: on REJECT, transfer rejected qty from GRN location → QUARANTINE.
+      // ACCEPT writes a zero-qty status marker so the ledger shows the IQC pass event.
+      if (typeof writeStockLedger_ === 'function') {
+        try {
+          var grnLoc = '';
+          var grnWs2 = ss.getSheetByName('GRN_LOG');
+          if (grnWs2 && grnWs2.getLastRow() > 1 && data.grnNo) {
+            var grnData = grnWs2.getDataRange().getValues();
+            for (var gi = 1; gi < grnData.length; gi++) {
+              if (String(grnData[gi][0]).trim() === String(data.grnNo).trim() &&
+                  String(grnData[gi][8]).trim() === String(item.batchNo || '').trim()) {
+                grnLoc = String(grnData[gi][20] || '').trim();  // col 21 = Location ID
+                break;
+              }
+            }
+          }
+          var matCode = item.materialCode || '';
+          var rejQty  = Number(item.rejectedQty) || 0;
+
+          if (disp === 'ACCEPTED' || disp === 'ACCEPTED WITH DEVIATION') {
+            if (grnLoc && matCode && item.batchNo) {
+              writeStockLedger_('IQC_ACCEPT', matCode, item.batchNo, grnLoc,
+                0, 0, 'IQC', docNo, data.inspector || '',
+                'IQC passed — stock available for issuance');
+            }
+          } else if (disp === 'REJECTED' && rejQty > 0 && grnLoc && matCode && item.batchNo) {
+            var qLocs = (typeof getLocations === 'function') ? getLocations('QUARANTINE') : [];
+            var quarId = qLocs.length > 0 ? qLocs[0].id : 'QUARANTINE';
+            writeStockLedger_('IQC_REJECT_OUT', matCode, item.batchNo, grnLoc,
+              0, rejQty, 'IQC', docNo, data.inspector || '',
+              'IQC reject — moved to ' + quarId);
+            writeStockLedger_('IQC_REJECT_QUARANTINE', matCode, item.batchNo, quarId,
+              rejQty, 0, 'IQC', docNo, data.inspector || '',
+              'IQC reject — quarantined pending NCR disposition');
+          }
+        } catch(ledgerErr) {
+          Logger.log('IQC ledger mirror failed: ' + ledgerErr.message);
+        }
+      }
+
       docNos.push(docNo);
     });
 
     // Update GRN status once, after all rows are written
     if (data.grnNo) updateGRNIQCStatus(data.grnNo, disp || 'PENDING');
 
-    if (sessionId) {
+    // Auto-raise NCR for rejected sessions, then back-stamp col 24 (NCR Ref) on every row of this batch.
+    if (disp === 'REJECTED' && !ncrNo && docNos.length > 0) {
       var firstItem = data.items[0] || {};
-      autoQmsTask_(sessionId, 'IQC', 'IQC — ' + (data.supplierName || '') + ' / ' + (firstItem.materialDesc || ''), data.grnNo || '');
+      ncrNo = raiseNCR_({
+        date:         data.date,
+        source:       'IQC',
+        sourceRef:    docNos.join(', '),
+        materialCode: firstItem.materialCode || '',
+        materialDesc: firstItem.materialDesc || '',
+        batchNo:      firstItem.batchNo || '',
+        qtyAffected:  data.items.reduce(function(s, it) { return s + (Number(it.rejectedQty) || 0); }, 0),
+        unit:         firstItem.unit || '',
+        defectDesc:   data.remarks || 'IQC rejection — see ' + docNos.join(', ')
+      });
+      if (ncrNo) {
+        var startRow = ws.getLastRow() - docNos.length + 1;
+        ws.getRange(startRow, 24, docNos.length, 1).setValue(ncrNo);
+      }
     }
 
-    return { success: true, docNos: docNos };
+    return { success: true, docNos: docNos, ncrNo: ncrNo };
 
   } catch(e) {
     Logger.log(e);

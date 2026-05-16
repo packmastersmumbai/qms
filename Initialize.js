@@ -73,7 +73,49 @@ var GRN_HEADERS = [
   'GRN No.', 'Date', 'Supplier Code', 'Supplier Name', 'PO Reference',
   'Invoice No.', 'Material Code', 'Material Description', 'Batch / Lot No.',
   'Qty Ordered', 'Qty Received', 'Unit', 'COA Received', 'Expiry Date',
-  'Remarks', 'IQC Status', 'Created By', 'Timestamp'
+  'Remarks', 'IQC Status', 'Created By', 'Timestamp',
+  'Storage Zone', 'Operator ID', 'Location ID'
+];
+
+var STOCK_LEDGER_HEADERS = [
+  'Txn ID', 'Timestamp', 'Txn Type', 'Material Code', 'Batch / Lot No.',
+  'Location ID', 'Qty In', 'Qty Out', 'Balance After',
+  'Ref Doc Type', 'Ref Doc No.', 'Operator', 'Remarks'
+];
+
+var LOCATIONS_HEADERS = [
+  'Location ID', 'Floor', 'Section', 'Aisle', 'Rack', 'Shelf', 'Bin',
+  'Label', 'Type', 'Capacity Qty', 'Capacity Unit', 'Active'
+];
+
+var LOCATIONS_SEED = [
+  ['RM-STORE-A',    'GF', 'Stores',  '', '', '', '', 'RM Store — Bay A',    'RM',         '', '', 'Y'],
+  ['RM-STORE-B',    'GF', 'Stores',  '', '', '', '', 'RM Store — Bay B',    'RM',         '', '', 'Y'],
+  ['QUARANTINE',    'GF', 'Stores',  '', '', '', '', 'Quarantine area',     'QUARANTINE', '', '', 'Y'],
+  ['FG-STORE',      'GF', 'FG',      '', '', '', '', 'FG Store',            'FG',         '', '', 'Y'],
+  ['FG-HOLD',       'GF', 'FG',      '', '', '', '', 'FG Hold (pre-OQC)',   'FG_HOLD',    '', '', 'Y'],
+  ['SCRAP-AREA',    'GF', 'Stores',  '', '', '', '', 'Scrap collection',    'SCRAP',      '', '', 'Y'],
+  ['SAMPLE-CABINET','GF', 'QA Lab',  '', '', '', '', 'Sample retention',    'SAMPLE',     '', '', 'Y']
+];
+
+var CUSTOMER_RETURN_HEADERS = [
+  'Return No.', 'Return Date', 'Customer Code', 'Customer Name',
+  'Original Gatepass No.', 'Product Code', 'Product Description',
+  'FG Batch No.', 'Qty Returned', 'Unit', 'Return Reason',
+  'Received By', 'IQC Status', 'Disposition', 'NCR Ref', 'Status',
+  'Remarks', 'Timestamp'
+];
+
+var SCRAP_LOG_HEADERS = [
+  'Scrap ID', 'Timestamp', 'Ref Doc Type', 'Ref Doc No.',
+  'Material Code', 'Batch / Lot No.', 'Qty Scrap', 'Unit',
+  'Scrap Reason', 'Scrap Destination', 'Recorded By'
+];
+
+var SAMPLE_LOG_HEADERS = [
+  'Sample ID', 'Timestamp', 'Ref Doc Type', 'Ref Doc No.',
+  'Material Code', 'Batch / Lot No.', 'Qty Sample', 'Unit',
+  'Sample Purpose', 'Taken By', 'Location Stored'
 ];
 
 var IQC_HEADERS = [
@@ -83,7 +125,7 @@ var IQC_HEADERS = [
   '6-Net Weight', '7-Cleanliness', '8-Odour', '9-Label Accuracy',
   '10-MSDS/SDS', '11-Shelf Life', '12-COA/Test Report',
   'Disposition', 'NCR Ref', 'Deviation Ref', 'Remarks',
-  'Accepted Qty', 'Rejected Qty', 'Timestamp'
+  'Accepted Qty', 'Rejected Qty', 'Timestamp', 'Operator ID'
 ];
 
 var OQC_HEADERS = [
@@ -91,7 +133,15 @@ var OQC_HEADERS = [
   'Material Description', 'IPQC Reviewed', 'AQL Sample Size',
   'Fill Weight', 'Label Accuracy', 'Seal Integrity', 'Appearance', 'Customer Spec',
   'Inspector', 'Release Decision', 'Remarks',
-  'Accepted Qty', 'Rejected Qty', 'Timestamp'
+  'Accepted Qty', 'Rejected Qty', 'Timestamp',
+  'IPQC Session Ref', 'Operator ID'
+];
+
+var NCR_HEADERS = [
+  'NCR No.', 'Date', 'Source', 'Source Ref', 'Material Code', 'Material Desc',
+  'Batch No.', 'Qty Affected', 'Unit', 'Defect Description',
+  'Disposition', 'Disposition By', 'Disposition At', 'CAPA Ref',
+  'Status', 'Created By', 'Timestamp'
 ];
 
 var GATEPASS_HEADERS = [
@@ -99,7 +149,8 @@ var GATEPASS_HEADERS = [
   'MATERIAL_CODE', 'MATERIAL_DESC', 'QTY', 'UNIT',
   'VEHICLE_NO', 'DRIVER', 'TRANSPORTER',
   'AUTHORIZED_BY', 'SECURITY_GUARD', 'REMARKS',
-  'STATUS', 'CREATED_BY', 'CREATED_AT'
+  'STATUS', 'CREATED_BY', 'CREATED_AT',
+  'DISPATCH_ZONE', 'OPERATOR_ID'
 ];
 
 // ── Main setup function ───────────────────────────────────────
@@ -123,10 +174,16 @@ function initializeProject() {
     createMasterSheet_(ss, 'MASTERS_Materials',  ['Item Code','Item Description','Unit','Category'], MATERIALS);
     createMasterSheet_(ss, 'MASTERS_Customers',  ['Customer Code','Customer Name','Contact Person','Phone / WhatsApp','Email','Products Supplied','City'], CUSTOMERS);
     createMasterSheet_(ss, 'MASTERS_Personnel',  ['Name','Role / Designation','Department','WhatsApp No.','Send Notifications (Y/N)'], PERSONNEL);
+    createMasterSheet_(ss, 'LOCATIONS',          LOCATIONS_HEADERS, LOCATIONS_SEED);
     createLogSheet_(ss, 'GRN_LOG',  GRN_HEADERS);
     createLogSheet_(ss, 'IQC_LOG',  IQC_HEADERS);
     createLogSheet_(ss, 'OQC_LOG',  OQC_HEADERS);
     createLogSheet_(ss, 'GATEPASS_LOG', GATEPASS_HEADERS);
+    createLogSheet_(ss, 'NCR_LOG',      NCR_HEADERS);
+    createLogSheet_(ss, 'STOCK_LEDGER',         STOCK_LEDGER_HEADERS);
+    createLogSheet_(ss, 'CUSTOMER_RETURN_LOG',  CUSTOMER_RETURN_HEADERS);
+    createLogSheet_(ss, 'SCRAP_LOG',            SCRAP_LOG_HEADERS);
+    createLogSheet_(ss, 'SAMPLE_LOG',           SAMPLE_LOG_HEADERS);
     createLogSheet_(ss, 'REVISIONS_LOG', ['TYPE', 'DOC_NO', 'TIMESTAMP', 'REVISED_BY', 'FIELD', 'OLD_VALUE', 'NEW_VALUE']);
     createDashboardSheet_(ss);
     createReadmeSheet_(ss);
@@ -159,11 +216,17 @@ function createConfigSheet_(ss) {
     ['oqc_prefix',      'PM/OQC/2026-'],
     ['ncr_prefix',      'PM/NCR/2026-'],
     ['gp_prefix',       'PM/GP/2026-'],
+    ['rtn_prefix',      'PM/RTN/2026-'],
+    ['scr_prefix',      'PM/SCR/2026-'],
+    ['smp_prefix',      'PM/SMP/2026-'],
     ['grn_counter',     1],
     ['iqc_counter',     1],
     ['oqc_counter',     1],
     ['ncr_counter',     1],
     ['gp_counter',      1],
+    ['rtn_counter',     1],
+    ['scr_counter',     1],
+    ['smp_counter',     1],
     ['logo_url',        'https://drive.google.com/open?id=188w1SoyRbRApB9fcXXEFE9KqjlOc5VzA'],
     ['default_aql',     'AQL 2.5']
   ];
@@ -309,7 +372,13 @@ function ensureConfigKeys_() {
       ['oqc_prefix', 'PM/OQC/2026-'],
       ['oqc_counter', 1],
       ['ncr_prefix', 'PM/NCR/2026-'],
-      ['ncr_counter', 1]
+      ['ncr_counter', 1],
+      ['rtn_prefix', 'PM/RTN/2026-'],
+      ['rtn_counter', 1],
+      ['scr_prefix', 'PM/SCR/2026-'],
+      ['scr_counter', 1],
+      ['smp_prefix', 'PM/SMP/2026-'],
+      ['smp_counter', 1]
     ];
     required.forEach(function(pair) {
       if (!existing[pair[0]]) ws.appendRow(pair);
@@ -317,4 +386,469 @@ function ensureConfigKeys_() {
   } catch(e) {
     Logger.log('ensureConfigKeys_: ' + e.message);
   }
+}
+
+// ── Sheet schema verifier / repairer ──────────────────────────
+// Idempotent. Safe to run on a populated spreadsheet.
+// - Creates any missing log sheets with the canonical headers.
+// - For existing sheets, appends missing trailing columns to row 1
+//   (only at the END — does not touch existing column order or data).
+function verifyAndRepairSheets() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = getSpreadsheet();
+  if (!ss) { ui.alert('No spreadsheet bound.'); return; }
+
+  var EXPECTED = {
+    'GRN_LOG':             GRN_HEADERS,
+    'IQC_LOG':             IQC_HEADERS,
+    'OQC_LOG':             OQC_HEADERS,
+    'GATEPASS_LOG':        GATEPASS_HEADERS,
+    'NCR_LOG':             NCR_HEADERS,
+    'STOCK_LEDGER':        STOCK_LEDGER_HEADERS,
+    'CUSTOMER_RETURN_LOG': CUSTOMER_RETURN_HEADERS,
+    'SCRAP_LOG':           SCRAP_LOG_HEADERS,
+    'SAMPLE_LOG':          SAMPLE_LOG_HEADERS
+  };
+
+  var report = [];
+
+  // Ensure LOCATIONS master sheet exists with seed (only if absent)
+  if (!ss.getSheetByName('LOCATIONS')) {
+    createMasterSheet_(ss, 'LOCATIONS', LOCATIONS_HEADERS, LOCATIONS_SEED);
+    report.push('✅ CREATED  LOCATIONS (master, ' + LOCATIONS_HEADERS.length + ' cols, ' + LOCATIONS_SEED.length + ' seed rows)');
+  }
+
+  Object.keys(EXPECTED).forEach(function(name) {
+    var expected = EXPECTED[name];
+    var ws = ss.getSheetByName(name);
+    if (!ws) {
+      createLogSheet_(ss, name, expected);
+      report.push('✅ CREATED  ' + name + ' (' + expected.length + ' cols)');
+      return;
+    }
+    var lastCol = ws.getLastColumn();
+    if (lastCol >= expected.length) {
+      // Check header text parity for the first lastCol cells
+      var current = ws.getRange(1, 1, 1, lastCol).getValues()[0];
+      var mismatches = [];
+      for (var i = 0; i < expected.length; i++) {
+        if (String(current[i] || '').trim() !== expected[i]) {
+          mismatches.push('col ' + (i + 1) + ' is "' + current[i] + '" (expected "' + expected[i] + '")');
+        }
+      }
+      if (mismatches.length === 0) {
+        report.push('✅ OK       ' + name + ' (' + lastCol + ' cols)');
+      } else {
+        report.push('⚠️ HEADER  ' + name + ' — ' + mismatches.join('; '));
+      }
+      return;
+    }
+    // Append missing trailing headers
+    var missing = expected.slice(lastCol);
+    ws.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]).setFontWeight('bold');
+    report.push('🔧 REPAIRED ' + name + ' — added ' + missing.length + ' col(s): ' + missing.join(', '));
+  });
+
+  ui.alert('Sheet Verify & Repair', report.join('\n'), ui.ButtonSet.OK);
+  Logger.log(report.join('\n'));
+}
+
+// Integration smoke test — read-only trace of the most recent batch flow.
+// Picks the N latest GRNs and reports forward linkage: GRN → IQC → IPQC session → OQC → Gatepass.
+// Flags broken or missing handoffs. Does not write anything.
+function smokeTestBatchFlow() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = getSpreadsheet();
+  if (!ss) { ui.alert('No spreadsheet bound.'); return; }
+
+  var N = 5;  // sample size — last 5 GRNs
+  var report = [];
+
+  var grnWs = ss.getSheetByName('GRN_LOG');
+  var iqcWs = ss.getSheetByName('IQC_LOG');
+  var ipqcSessWs = ss.getSheetByName('IPQC_Sessions');
+  var oqcWs = ss.getSheetByName('OQC_LOG');
+  var gpWs  = ss.getSheetByName('GATEPASS_LOG');
+
+  if (!grnWs || grnWs.getLastRow() < 2) { ui.alert('No GRN data.'); return; }
+
+  var grnRows = grnWs.getDataRange().getValues();
+  var sample = grnRows.slice(Math.max(1, grnRows.length - N));
+
+  // Pre-index downstream sheets by relevant ref
+  var iqcByGrn = {};
+  if (iqcWs && iqcWs.getLastRow() > 1) {
+    iqcWs.getDataRange().getValues().slice(1).forEach(function(r) {
+      var grn = String(r[2] || '').trim();
+      if (grn) (iqcByGrn[grn] = iqcByGrn[grn] || []).push({ docNo: r[0], disp: r[22], batch: r[5] });
+    });
+  }
+
+  var ipqcByBatch = {};
+  if (ipqcSessWs && ipqcSessWs.getLastRow() > 1) {
+    ipqcSessWs.getDataRange().getValues().slice(1).forEach(function(r) {
+      // Schema unknown — sample col indices for batch / docNo
+      var batch = String(r[3] || r[2] || '').trim();
+      if (batch) (ipqcByBatch[batch] = ipqcByBatch[batch] || []).push({ docNo: r[0], row: r });
+    });
+  }
+
+  var oqcByBatch = {};
+  if (oqcWs && oqcWs.getLastRow() > 1) {
+    oqcWs.getDataRange().getValues().slice(1).forEach(function(r) {
+      var batch = String(r[4] || '').trim();  // col E = Batch / PO
+      if (batch) (oqcByBatch[batch] = oqcByBatch[batch] || []).push({
+        docNo: r[0], decision: r[14], ipqcRef: r[19]
+      });
+    });
+  }
+
+  var gpByOqcRef = {};
+  if (gpWs && gpWs.getLastRow() > 1) {
+    gpWs.getDataRange().getValues().slice(1).forEach(function(r) {
+      var ref = String(r[3] || '').trim();
+      if (ref) (gpByOqcRef[ref] = gpByOqcRef[ref] || []).push({ docNo: r[0], status: r[15] });
+    });
+  }
+
+  report.push('=== Last ' + sample.length + ' GRNs — forward trace ===\n');
+  sample.forEach(function(r) {
+    var grnNo = r[0], batch = String(r[8] || '').trim(), mat = r[7], iqcStatus = r[15];
+    report.push('▸ ' + grnNo + '  batch=' + batch + '  iqcStatus=' + iqcStatus);
+
+    var iqcs = iqcByGrn[grnNo] || [];
+    if (iqcs.length === 0) {
+      report.push('   ❌ no IQC found for this GRN');
+      return;
+    }
+    iqcs.forEach(function(iq) {
+      report.push('   ✅ IQC ' + iq.docNo + '  disp=' + iq.disp);
+    });
+
+    // FG check: only FG batches expected to flow to IPQC/OQC/GP
+    var ipqcs = ipqcByBatch[batch] || [];
+    var oqcs  = oqcByBatch[batch]  || [];
+    if (ipqcs.length === 0 && oqcs.length === 0) {
+      report.push('   — no downstream IPQC/OQC for batch (expected for RM)');
+      return;
+    }
+    ipqcs.forEach(function(ip) { report.push('   ✅ IPQC session ' + ip.docNo); });
+    oqcs.forEach(function(oq) {
+      report.push('   ✅ OQC ' + oq.docNo + '  decision=' + oq.decision + '  ipqcRef=' + (oq.ipqcRef || '∅'));
+      var gps = gpByOqcRef[oq.docNo] || [];
+      if (oq.decision === 'RELEASED' || oq.decision === 'ACCEPTED') {
+        if (gps.length === 0) report.push('      — no Gatepass yet (OK if pending dispatch)');
+        else gps.forEach(function(g) { report.push('      ✅ Gatepass ' + g.docNo + '  status=' + g.status); });
+      } else if (gps.length > 0) {
+        report.push('      ❌ Gatepass exists for non-released OQC!');
+      }
+    });
+  });
+
+  // Orphan check: gatepass refs that point to nothing
+  report.push('\n=== Orphan check — Gatepass OQC_REFs not in OQC_LOG ===');
+  var oqcDocs = {};
+  if (oqcWs && oqcWs.getLastRow() > 1) {
+    oqcWs.getDataRange().getValues().slice(1).forEach(function(r) {
+      if (r[0]) oqcDocs[String(r[0]).trim()] = true;
+    });
+  }
+  var orphans = 0, legacy = 0;
+  Object.keys(gpByOqcRef).forEach(function(ref) {
+    if (/\s+to\s+/i.test(ref)) { legacy++; return; }  // legacy range-style ref, grandfathered
+    if (!oqcDocs[ref]) {
+      report.push('   ❌ Gatepass ref "' + ref + '" not found in OQC_LOG (' + gpByOqcRef[ref].length + ' GPs)');
+      orphans++;
+    }
+  });
+  if (orphans === 0) report.push('   ✅ all single-ref Gatepass OQC refs resolve');
+  if (legacy > 0)    report.push('   — ' + legacy + ' legacy range-style ref(s) skipped (grandfathered)');
+
+  var out = report.join('\n');
+  Logger.log(out);
+  var dump = ss.getSheetByName('_SMOKETEST') || ss.insertSheet('_SMOKETEST');
+  dump.clear();
+  dump.getRange(1, 1).setValue(out);
+  ui.alert('Smoke Test Complete', 'Report written to "_SMOKETEST" sheet.', ui.ButtonSet.OK);
+}
+
+// Verifies master data tabs have minimum rows + required categories.
+function verifyMastersSeed() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = getSpreadsheet();
+  if (!ss) { ui.alert('No spreadsheet bound.'); return; }
+
+  var report = [];
+
+  function rowCount(name) {
+    var ws = ss.getSheetByName(name);
+    return ws ? Math.max(0, ws.getLastRow() - 1) : -1;
+  }
+
+  ['MASTERS_Suppliers', 'MASTERS_Materials', 'MASTERS_Customers', 'MASTERS_Personnel'].forEach(function(name) {
+    var n = rowCount(name);
+    if (n < 0)      report.push('❌ ' + name + ' MISSING');
+    else if (n === 0) report.push('⚠️ ' + name + ' empty');
+    else            report.push('✅ ' + name + ' rows=' + n);
+  });
+
+  // Materials: OQC needs ≥1 FG; GRN/IQC need ≥1 non-FG (RM = anything not FG).
+  var mats = ss.getSheetByName('MASTERS_Materials');
+  if (mats && mats.getLastRow() > 1) {
+    var data = mats.getRange(2, 1, mats.getLastRow() - 1, 4).getValues();
+    var fg = data.filter(function(r) { return String(r[3] || '').toUpperCase() === 'FG'; });
+    var rm = data.filter(function(r) {
+      var c = String(r[3] || '').toUpperCase();
+      return c && c !== 'FG';
+    });
+    report.push((fg.length > 0 ? '✅' : '❌') + ' Materials FG (OQC source) = ' + fg.length);
+    report.push((rm.length > 0 ? '✅' : '❌') + ' Materials non-FG (RM, GRN/IQC source) = ' + rm.length);
+  }
+
+  // Personnel: getInspectors() returns ALL personnel — no role filter in code.
+  var ppl = ss.getSheetByName('MASTERS_Personnel');
+  if (ppl && ppl.getLastRow() > 1) {
+    var pdata = ppl.getRange(2, 1, ppl.getLastRow() - 1, 5).getValues();
+    var active = pdata.filter(function(r) { return r[0]; });
+    report.push((active.length > 0 ? '✅' : '❌') + ' Personnel (Inspector dropdown source) = ' + active.length);
+  }
+
+  ui.alert('Masters Seed Check', report.join('\n'), ui.ButtonSet.OK);
+  Logger.log(report.join('\n'));
+}
+
+// Verifies CONFIG doc-number counters against actual max in each log sheet.
+// Reports mismatches and offers to auto-bump CONFIG to max+1.
+function verifyDocCounters() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = getSpreadsheet();
+  if (!ss) { ui.alert('No spreadsheet bound.'); return; }
+
+  var MAP = [
+    { counter: 'grn_counter', sheet: 'GRN_LOG',             prefix: 'PM/GRN/2026-' },
+    { counter: 'iqc_counter', sheet: 'IQC_LOG',             prefix: 'PM/IQC/2026-' },
+    { counter: 'oqc_counter', sheet: 'OQC_LOG',             prefix: 'PM/OQC/2026-' },
+    { counter: 'gp_counter',  sheet: 'GATEPASS_LOG',        prefix: 'PM/GP/2026-'  },
+    { counter: 'ncr_counter', sheet: 'NCR_LOG',             prefix: 'PM/NCR/2026-' },
+    { counter: 'rtn_counter', sheet: 'CUSTOMER_RETURN_LOG', prefix: 'PM/RTN/2026-' },
+    { counter: 'scr_counter', sheet: 'SCRAP_LOG',           prefix: 'PM/SCR/2026-' },
+    { counter: 'smp_counter', sheet: 'SAMPLE_LOG',          prefix: 'PM/SMP/2026-' }
+  ];
+
+  var cfg = ss.getSheetByName('CONFIG');
+  if (!cfg) { ui.alert('CONFIG sheet missing.'); return; }
+  var cfgData = cfg.getDataRange().getValues();
+  var cfgIdx = {};
+  for (var i = 1; i < cfgData.length; i++) cfgIdx[cfgData[i][0]] = i + 1;
+
+  var report = [], fixes = [];
+  MAP.forEach(function(m) {
+    var ws = ss.getSheetByName(m.sheet);
+    var maxSeq = 0;
+    if (ws && ws.getLastRow() > 1) {
+      var col1 = ws.getRange(2, 1, ws.getLastRow() - 1, 1).getValues();
+      col1.forEach(function(r) {
+        var s = String(r[0] || '');
+        if (s.indexOf(m.prefix) === 0) {
+          var n = parseInt(s.substring(m.prefix.length), 10);
+          if (!isNaN(n) && n > maxSeq) maxSeq = n;
+        }
+      });
+    }
+    var cfgRow = cfgIdx[m.counter];
+    var cfgVal = cfgRow ? Number(cfgData[cfgRow - 1][1]) : 0;
+    var expected = maxSeq + 1;
+    if (!cfgRow) {
+      report.push('⚠️ ' + m.counter + ' missing in CONFIG (sheet max=' + maxSeq + ')');
+      fixes.push({ counter: m.counter, expected: expected, missing: true });
+    } else if (cfgVal < expected) {
+      report.push('🔧 ' + m.counter + ' is ' + cfgVal + ', should be ≥ ' + expected + ' (max in ' + m.sheet + '=' + maxSeq + ')');
+      fixes.push({ counter: m.counter, expected: expected, row: cfgRow });
+    } else {
+      report.push('✅ ' + m.counter + ' = ' + cfgVal + ' (max in ' + m.sheet + '=' + maxSeq + ')');
+    }
+  });
+
+  if (fixes.length === 0) {
+    ui.alert('Doc Counters', report.join('\n'), ui.ButtonSet.OK);
+    return;
+  }
+
+  var resp = ui.alert('Doc Counters — Fix?',
+    report.join('\n') + '\n\nAuto-bump ' + fixes.length + ' counter(s) to max+1?',
+    ui.ButtonSet.YES_NO);
+  if (resp !== ui.Button.YES) return;
+
+  fixes.forEach(function(f) {
+    if (f.missing) {
+      cfg.appendRow([f.counter, f.expected]);
+    } else {
+      cfg.getRange(f.row, 2).setValue(f.expected);
+    }
+  });
+  ui.alert('Doc Counters fixed.', 'Bumped ' + fixes.length + ' counter(s).', ui.ButtonSet.OK);
+}
+
+// Force-mode repair: overwrites header row 1 to canonical AND deletes any
+// trailing extra columns beyond the expected schema. Destructive to headers
+// only — never touches data rows. Confirmed safe only after inspectSheetData()
+// shows data columns line up with expected positions.
+function forceFixSheetHeaders() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = getSpreadsheet();
+  if (!ss) { ui.alert('No spreadsheet bound.'); return; }
+
+  var resp = ui.alert(
+    '⚠️ Force-fix headers',
+    'This will:\n' +
+    ' • Overwrite header row 1 of GRN_LOG, IQC_LOG, OQC_LOG, GATEPASS_LOG with canonical headers.\n' +
+    ' • Delete any trailing extra columns beyond the expected schema (data in them WILL be lost).\n\n' +
+    'Data rows are not touched. Run "Inspect Sheet Data" first to confirm data columns line up.\n\n' +
+    'Proceed?',
+    ui.ButtonSet.YES_NO);
+  if (resp !== ui.Button.YES) return;
+
+  var EXPECTED = {
+    'GRN_LOG':             GRN_HEADERS,
+    'IQC_LOG':             IQC_HEADERS,
+    'OQC_LOG':             OQC_HEADERS,
+    'GATEPASS_LOG':        GATEPASS_HEADERS,
+    'NCR_LOG':             NCR_HEADERS,
+    'STOCK_LEDGER':        STOCK_LEDGER_HEADERS,
+    'CUSTOMER_RETURN_LOG': CUSTOMER_RETURN_HEADERS,
+    'SCRAP_LOG':           SCRAP_LOG_HEADERS,
+    'SAMPLE_LOG':          SAMPLE_LOG_HEADERS
+  };
+
+  var report = [];
+  Object.keys(EXPECTED).forEach(function(name) {
+    var expected = EXPECTED[name];
+    var ws = ss.getSheetByName(name);
+    if (!ws) { report.push('— skipped ' + name + ' (not found)'); return; }
+
+    var lastCol = ws.getLastColumn();
+
+    // 1. Truncate trailing extras
+    var truncated = 0;
+    if (lastCol > expected.length) {
+      truncated = lastCol - expected.length;
+      ws.deleteColumns(expected.length + 1, truncated);
+    }
+
+    // 2. Overwrite header row 1 with canonical
+    ws.getRange(1, 1, 1, expected.length).setValues([expected]).setFontWeight('bold');
+
+    report.push('✅ ' + name + ' — headers rewritten (' + expected.length + ' cols)' +
+                (truncated ? ', deleted ' + truncated + ' extra col(s)' : ''));
+  });
+
+  ui.alert('Force-fix complete', report.join('\n'), ui.ButtonSet.OK);
+  Logger.log(report.join('\n'));
+}
+
+// Diagnostic — for each log sheet, samples the LAST data row and prints
+// per-column: index | current header | value | inferred type.
+// Use to decide whether a HEADER mismatch from verifyAndRepairSheets()
+// is cosmetic (rename) or structural (data shifted).
+// Diagnostic: dump latest OQC_LOG row + what getReleasedOQCsForGatepass returns.
+function diagnoseOQCDropdown() {
+  var ss = getSpreadsheet();
+  var oqc = ss.getSheetByName('OQC_LOG');
+  var msg = '';
+  if (!oqc || oqc.getLastRow() < 2) {
+    msg = 'OQC_LOG empty or missing.';
+  } else {
+    var lr = oqc.getLastRow();
+    var lc = oqc.getLastColumn();
+    var row = oqc.getRange(lr, 1, 1, lc).getValues()[0];
+    msg += 'Latest OQC_LOG row #' + lr + ' (' + lc + ' cols):\n';
+    row.forEach(function(v, i) {
+      msg += '  col ' + (i+1) + ' [' + String.fromCharCode(65+i) + '] = ' + JSON.stringify(v) + '\n';
+    });
+    msg += '\nCol O (15, index 14) decision = ' + JSON.stringify(row[14]) + '\n';
+    msg += 'Decision uppercased = ' + String(row[14] || '').toUpperCase() + '\n';
+    msg += 'Matches RELEASED/ACCEPTED? ' + (['RELEASED','ACCEPTED'].indexOf(String(row[14] || '').toUpperCase()) >= 0) + '\n';
+    var d = row[1];
+    msg += 'Col B date = ' + JSON.stringify(d) + ' parsed=' + (d ? new Date(d).toString() : 'null') + '\n';
+    var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    msg += 'Cutoff (30d) = ' + cutoff.toString() + '\n';
+    msg += 'Within 30d? ' + (d ? new Date(d) >= cutoff : 'no date') + '\n';
+
+    var gp = ss.getSheetByName('GATEPASS_LOG');
+    var alreadyUsed = false;
+    if (gp && gp.getLastRow() > 1) {
+      var refs = gp.getRange(2, 4, gp.getLastRow() - 1, 1).getValues();
+      refs.forEach(function(r) { if (String(r[0]).trim() === String(row[0]).trim()) alreadyUsed = true; });
+    }
+    msg += 'Already in GATEPASS_LOG col D? ' + alreadyUsed + '\n';
+  }
+  msg += '\n--- getReleasedOQCsForGatepass() returns ---\n';
+  var result = getReleasedOQCsForGatepass();
+  msg += 'Count: ' + result.length + '\n';
+  result.forEach(function(r, i) { msg += (i+1) + '. ' + r.label + '\n'; });
+  SpreadsheetApp.getUi().alert(msg);
+}
+
+function inspectSheetData() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = getSpreadsheet();
+  if (!ss) { ui.alert('No spreadsheet bound.'); return; }
+
+  var SHEETS = ['GRN_LOG', 'IQC_LOG', 'OQC_LOG', 'GATEPASS_LOG'];
+  var EXPECTED = {
+    'GRN_LOG':             GRN_HEADERS,
+    'IQC_LOG':             IQC_HEADERS,
+    'OQC_LOG':             OQC_HEADERS,
+    'GATEPASS_LOG':        GATEPASS_HEADERS,
+    'NCR_LOG':             NCR_HEADERS,
+    'STOCK_LEDGER':        STOCK_LEDGER_HEADERS,
+    'CUSTOMER_RETURN_LOG': CUSTOMER_RETURN_HEADERS,
+    'SCRAP_LOG':           SCRAP_LOG_HEADERS,
+    'SAMPLE_LOG':          SAMPLE_LOG_HEADERS
+  };
+
+  function inferType(v) {
+    if (v === '' || v === null || v === undefined) return 'empty';
+    if (v instanceof Date) return 'date';
+    if (typeof v === 'number') return 'number';
+    var s = String(v);
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return 'date-str';
+    if (/^\d+(\.\d+)?$/.test(s))      return 'numeric-str';
+    if (/PM\/(GRN|IQC|OQC|GP|NCR|IPQC)\//.test(s)) return 'docNo';
+    if (/^(PASS|FAIL|HOLD|PENDING|RELEASED|REJECTED|ACCEPTED|ISSUED)$/i.test(s.trim())) return 'status';
+    return 'text(' + s.length + ')';
+  }
+
+  var report = [];
+  SHEETS.forEach(function(name) {
+    report.push('═══ ' + name + ' ═══');
+    var ws = ss.getSheetByName(name);
+    if (!ws) { report.push('  (sheet not found)'); return; }
+    var lastRow = ws.getLastRow();
+    var lastCol = ws.getLastColumn();
+    report.push('  rows=' + (lastRow - 1) + '  cols=' + lastCol + '  expected_cols=' + EXPECTED[name].length);
+    if (lastRow < 2) { report.push('  (no data rows)'); return; }
+
+    var headers = ws.getRange(1, 1, 1, lastCol).getValues()[0];
+    var sampleRow = ws.getRange(lastRow, 1, 1, lastCol).getValues()[0];
+    var expected = EXPECTED[name];
+
+    for (var i = 0; i < lastCol; i++) {
+      var hdr = String(headers[i] || '').trim();
+      var exp = expected[i] || '(none)';
+      var val = sampleRow[i];
+      var type = inferType(val);
+      var flag = (hdr === exp) ? '  ' : ' ❗';
+      var valDisp = (val instanceof Date) ? val.toISOString().slice(0,10) : String(val).slice(0, 30);
+      report.push(flag + ' c' + (i + 1) + ' hdr="' + hdr + '" exp="' + exp + '" | ' + type + ' | ' + valDisp);
+    }
+  });
+
+  var out = report.join('\n');
+  Logger.log(out);
+  // Also write to a temp sheet so the user can read all of it
+  var dump = ss.getSheetByName('_INSPECT') || ss.insertSheet('_INSPECT');
+  dump.clear();
+  dump.getRange(1, 1).setValue(out);
+  ui.alert('Inspect Sheet Data', 'Wrote diagnostic to sheet "_INSPECT" and to Logger.\n\nOpen "_INSPECT" tab to read the full report.', ui.ButtonSet.OK);
 }

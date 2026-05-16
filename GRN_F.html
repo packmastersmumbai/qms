@@ -350,10 +350,11 @@
 
 <script>
 // ── State ──────────────────────────────────────────────────────────
-var SUPPLIERS    = [];
-var ALL_MATS     = [];
-var sessionId    = null;
-var taskId       = null;
+var SUPPLIERS        = [];
+var ALL_MATS         = [];
+var LOCATIONS        = [];   // [{ id, type, label, ... }] — from getGRNFormInit
+
+var _inspectorNames  = [];
 var formSaved    = false;
 var disposition  = '';
 var supplierObj  = {};   // { code, name }
@@ -372,16 +373,8 @@ function showToast(msg, type) {
 
 function showErr(msg) { showToast(msg, 'error'); }
 
-// ── Session bridge ─────────────────────────────────────────────────
-function initSession() {
-  try { sessionId = sessionStorage.getItem('dwmSessionId') || null; } catch(e) { sessionId = null; }
-}
-
 // ── beforeunload guard ─────────────────────────────────────────────
 window.addEventListener('beforeunload', function() {
-  if (!formSaved && taskId && sessionId) {
-    try { google.script.run.stopTimer(taskId, sessionId); } catch(e) {}
-  }
 });
 
 // ── Inline error helpers ───────────────────────────────────────────
@@ -592,7 +585,17 @@ function doSave() {
     storageZone:  disposition === 'ACCEPT' ? 'Approved Zone' :
                   disposition === 'REJECT' ? 'Rejected Zone' :
                   disposition === 'HOLD'   ? 'Quarantine Zone' : 'Quarantine Zone',
-    sessionId:    sessionId || '',
+    locationId:   (function(){
+                    var want = disposition === 'ACCEPT' ? 'RM' : 'QUARANTINE';
+                    for (var i = 0; i < LOCATIONS.length; i++) {
+                      if (String(LOCATIONS[i].type || '').toUpperCase() === want) return LOCATIONS[i].id;
+                    }
+                    // fallback to any RM location, then any location
+                    for (var j = 0; j < LOCATIONS.length; j++) {
+                      if (String(LOCATIONS[j].type || '').toUpperCase() === 'RM') return LOCATIONS[j].id;
+                    }
+                    return LOCATIONS.length ? LOCATIONS[0].id : '';
+                  })(),
     items: [{
       materialCode: itemObj.code || document.getElementById('item').value,
       materialDesc: itemObj.desc || '',
@@ -607,7 +610,8 @@ function doSave() {
     }]
   };
 
-  function afterStop() {
+  function afterStop(operatorName) {
+    data.operatorName = operatorName || '';
     google.script.run
       .withSuccessHandler(function(res) {
         if (res && res.success) {
@@ -636,19 +640,13 @@ function doSave() {
         btn.disabled = false;
         btn.textContent = 'SAVE GRN RECORD';
       })
-      .saveGRN(data, sessionId);
+      .saveGRN(data);
   }
 
-  // Stop timer first (if taskId available), then save
-  if (taskId && sessionId) {
-    try {
-      google.script.run
-        .withSuccessHandler(function() { afterStop(); })
-        .withFailureHandler(function()  { afterStop(); })
-        .stopTimer(taskId, sessionId);
-    } catch(e) { afterStop(); }
+  if (window.QMS) {
+    window.QMS.requireOperator(_inspectorNames, afterStop);
   } else {
-    afterStop();
+    afterStop('');
   }
 }
 
@@ -693,12 +691,14 @@ function goToIqc() {
 
 // ── Init ───────────────────────────────────────────────────────────
 function init() {
-  initSession();
-
   google.script.run
     .withSuccessHandler(function(data) {
-      SUPPLIERS = data.suppliers || [];
-      ALL_MATS  = data.materials  || [];
+      SUPPLIERS       = data.suppliers  || [];
+      ALL_MATS        = data.materials  || [];
+      LOCATIONS       = data.locations  || [];
+      _inspectorNames = (data.inspectors || []).map(function(i) {
+        return typeof i === 'string' ? i : (i.name || '');
+      }).filter(Boolean);
 
       // Populate doc badge
       if (data.docNumber) {
@@ -719,13 +719,6 @@ function init() {
     })
     .getGRNFormInit();
 
-  // Start DWM task (fire-and-forget; store taskId)
-  if (sessionId) {
-    google.script.run
-      .withSuccessHandler(function(tid) { taskId = tid || null; })
-      .withFailureHandler(function() { taskId = null; })
-      .autoQmsTask_(sessionId, 'GRN', 'GRN — incoming material', '');
-  }
 }
 
 // ── Event wiring ───────────────────────────────────────────────────

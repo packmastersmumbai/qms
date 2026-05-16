@@ -3,15 +3,19 @@
 // ============================================================
 
 function getGRNFormInit() {
+  var locations = [];
+  try { locations = (typeof getOpenRMLocations === 'function') ? getOpenRMLocations() : []; } catch(e) {}
   return {
     docNumber:  peekNextDocNumber('grn'),
     suppliers:  getSuppliers(),
     materials:  getMaterials(),
+    inspectors: getInspectors(),
+    locations:  locations,
     today:      Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
   };
 }
 
-function saveGRN(data, sessionId) {
+function saveGRN(data) {
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('GRN_LOG');
@@ -21,11 +25,7 @@ function saveGRN(data, sessionId) {
     var now   = new Date();
     var user  = Session.getActiveUser().getEmail() || 'QA';
     var date  = new Date(data.date);
-    var operatorId = '';
-    if (sessionId) {
-      var sess = validateSessionFast_(sessionId);
-      if (sess) operatorId = sess.userId;
-    }
+    var operatorId = data.operatorName || '';
 
     // Support multi-item array or fallback to single-item (backward compat)
     var items = (data.items && data.items.length > 0) ? data.items : [{
@@ -38,7 +38,17 @@ function saveGRN(data, sessionId) {
       expiryDate:   data.expiryDate   || ''
     }];
 
+    // Resolve a default RM intake location if caller didn't supply one
+    var defaultLocation = data.locationId || '';
+    if (!defaultLocation) {
+      try {
+        var rmLocs = (typeof getLocations === 'function') ? getLocations('RM') : [];
+        if (rmLocs.length > 0) defaultLocation = rmLocs[0].id;
+      } catch(e) {}
+    }
+
     items.forEach(function(item) {
+      var itemLocation = item.locationId || defaultLocation;
       ws.appendRow([
         docNo,
         date,
@@ -59,8 +69,25 @@ function saveGRN(data, sessionId) {
         user,
         now,
         data.storageZone   || '',
-        operatorId           // last col: operator_id — add this header manually in the sheet
+        operatorId,           // col 20: operator_id
+        itemLocation         // col 21: location_id — feeds STOCK_LEDGER
       ]);
+
+      // Mirror receipt into STOCK_LEDGER. Status PENDING IQC = not yet issuable.
+      if (typeof writeStockLedger_ === 'function' && item.materialCode && item.batchNo && itemLocation) {
+        writeStockLedger_(
+          'GRN_RECEIPT',
+          item.materialCode,
+          item.batchNo,
+          itemLocation,
+          Number(item.qtyReceived) || 0,
+          0,
+          'GRN',
+          docNo,
+          operatorId || user,
+          'GRN receipt — pending IQC'
+        );
+      }
     });
 
     // Format date columns on all new rows
@@ -70,11 +97,6 @@ function saveGRN(data, sessionId) {
       ws.getRange(r, 2).setNumberFormat('dd-MMM-yyyy');
       ws.getRange(r, 14).setNumberFormat('dd-MMM-yyyy');
       ws.getRange(r, 18).setNumberFormat('dd-MMM-yyyy HH:mm');
-    }
-
-    if (sessionId) {
-      var firstItemCode = items[0] ? (items[0].materialCode || '') : '';
-      autoQmsTask_(sessionId, 'GRN', 'GRN — ' + (data.supplierName || '') + ' / ' + firstItemCode, docNo);
     }
 
     return { success: true, docNo: docNo };
