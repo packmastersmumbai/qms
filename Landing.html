@@ -103,7 +103,17 @@
       padding: 12px;
     }
 
-    /* ── Module grid ── */
+    /* ── Module groups ── */
+    .module-group { margin-bottom: 14px; }
+    .module-group:last-child { margin-bottom: 0; }
+    .module-group-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 0 2px 6px;
+    }
     .module-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -229,6 +239,7 @@
 
 <!-- ── Header ── -->
 <header class="pm-header" role="banner">
+  <div class="logo-box" aria-hidden="true">PM</div>
   <div class="header-text" style="flex:1;display:flex;flex-direction:column;gap:2px;">
     <span class="logo-text">Pack Masters</span>
     <span id="headerSub" class="logo-sub"></span>
@@ -256,15 +267,16 @@
 <!-- ── Modules section ── -->
 <div class="lnd-section" id="modulesSection">
   <div class="lnd-section-title">MODULES</div>
-  <div class="lnd-section-body">
-    <div class="module-grid" id="moduleGrid">
-      <!-- skeleton tiles -->
-      <div class="skel-module"></div>
-      <div class="skel-module"></div>
-      <div class="skel-module"></div>
-      <div class="skel-module"></div>
-      <div class="skel-module"></div>
-      <div class="skel-module"></div>
+  <div class="lnd-section-body" id="moduleGroups">
+    <div class="module-group">
+      <div class="module-grid">
+        <div class="skel-module"></div>
+        <div class="skel-module"></div>
+        <div class="skel-module"></div>
+        <div class="skel-module"></div>
+        <div class="skel-module"></div>
+        <div class="skel-module"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -383,20 +395,14 @@
       'Production': '<svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l5-3v14M10 21V7l5-3v17M15 21V11l5-3v13"/></svg>',
       'Records':  '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>'
     };
-    var modules = [
-      { name: 'GRN',        form: 'GRN'        },
-      { name: 'IQC',        form: 'IQC'        },
-      { name: 'IPQC',       form: 'IPQC'       },
-      { name: 'Production', form: 'Production' },
-      { name: 'OQC',        form: 'OQC'        },
-      { name: 'Gatepass',   form: 'Gatepass'   },
-      { name: 'Dispatch',   form: 'Dispatch'   },
-      { name: 'Records',    form: 'Records'    }
+    var groups = [
+      { label: 'Inbound',    modules: [{ name: 'GRN', form: 'GRN' }, { name: 'IQC', form: 'IQC' }] },
+      { label: 'In-Process', modules: [{ name: 'IPQC', form: 'IPQC' }, { name: 'Production', form: 'Production' }] },
+      { label: 'Outbound',   modules: [{ name: 'OQC', form: 'OQC' }, { name: 'Gatepass', form: 'Gatepass' }, { name: 'Dispatch', form: 'Dispatch' }] },
+      { label: 'Meta',       modules: [{ name: 'Records', form: 'Records' }] }
     ];
 
-    var html = '';
-    for (var i = 0; i < modules.length; i++) {
-      var m   = modules[i];
+    function tileHtml(m) {
       var cnt = counts[m.name];
       var chipHtml;
       if (m.name === 'Records') {
@@ -407,18 +413,27 @@
         chipHtml = '<span class="module-count-chip">' + (cnt != null ? String(cnt) : '0') + '</span>';
       }
       var iconSvg = icons[m.name] || '';
-      html +=
-        '<div class="module-tile fade-in" data-form="' + m.form + '" role="button" aria-label="Open ' + m.name + '">' +
+      return '<div class="module-tile fade-in" data-form="' + m.form + '" role="button" aria-label="Open ' + m.name + '">' +
         '<span class="module-tile-icon" aria-hidden="true">' + iconSvg + '</span>' +
         '<span class="module-tile-name">' + m.name + '</span>' +
-        chipHtml +
-        '</div>';
+        chipHtml + '</div>';
     }
 
-    var grid = document.getElementById('moduleGrid');
-    grid.innerHTML = html;
+    var html = '';
+    for (var g = 0; g < groups.length; g++) {
+      var grp = groups[g];
+      var tiles = '';
+      for (var j = 0; j < grp.modules.length; j++) tiles += tileHtml(grp.modules[j]);
+      html += '<div class="module-group">' +
+              '<div class="module-group-label">' + grp.label + '</div>' +
+              '<div class="module-grid">' + tiles + '</div>' +
+              '</div>';
+    }
 
-    grid.addEventListener('click', function (e) {
+    var container = document.getElementById('moduleGroups');
+    container.innerHTML = html;
+
+    container.addEventListener('click', function (e) {
       var tile = e.target.closest('.module-tile');
       if (!tile) return;
       navigateTo(tile.getAttribute('data-form'));

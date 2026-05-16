@@ -21,7 +21,7 @@
       font-size: 11px; font-weight: 700;
     }
 
-    .dsp-tabs { display: flex; background: #f7f7f9; border-bottom: 1px solid #e0e0e0; position: sticky; top: 39px; z-index: 99; }
+    .dsp-tabs { display: flex; background: #f7f7f9; border-bottom: 1px solid #e0e0e0; position: sticky; top: 56px; z-index: 99; }
     .dsp-tab {
       flex: 1; padding: 10px; cursor: pointer; text-align: center;
       font-size: 12px; font-weight: 600; color: #777;
@@ -110,9 +110,12 @@
 </head>
 <body>
   <div class="dsp-wrap">
-    <div class="dsp-header">
-      <div class="dsp-title">🚚 Dispatch — FG Outbound (FIFO)</div>
-      <span class="dsp-count" id="docNoPreview">—</span>
+    <div class="pm-header">
+      <button class="back-btn" id="backBtn" aria-label="Back" onclick="goHome()">
+        <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
+      </button>
+      <span class="page-title">Dispatch — FG Outbound (FIFO)</span>
+      <span class="doc-badge" id="docNoPreview">DISP</span>
     </div>
 
     <div class="dsp-tabs">
@@ -569,6 +572,21 @@
       });
     });
     window.addEventListener('load', loadInit);
+
+    // ── nav ──
+    function navigate(page) {
+      google.script.run
+        .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function(){})
+        .getFormHtml(page);
+    }
+    function goHome() {
+      var hasData = (document.getElementById('fCustomer') && document.getElementById('fCustomer').value) ||
+                    (document.getElementById('fProduct') && document.getElementById('fProduct').value) ||
+                    (document.getElementById('fQty') && document.getElementById('fQty').value);
+      if (hasData && !confirm('Unsaved changes. Leave?')) return;
+      navigate('Landing');
+    }
   </script>
 </body>
 </html>
