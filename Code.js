@@ -65,6 +65,7 @@ function onOpen() {
     .addItem('🌱  Verify Masters Seed',    'verifyMastersSeed')
     .addItem('🧪  Smoke Test Batch Flow',  'smokeTestBatchFlow')
     .addItem('🧫  Run Integration Smoke',  'runIntegrationSmoke')
+    .addItem('🩻  Diagnose Production Pipeline','runProductionDiagnostics')
     .addItem('🔍  Diagnose Production Lots','diagnoseProductionLotsUI')
     .addItem('♻️  Backfill Stock Ledger from GRN','backfillStockLedgerFromGRNUI')
     .addItem('📍  Backfill GRN Locations (from Master)','backfillGRNLocationsUI')
