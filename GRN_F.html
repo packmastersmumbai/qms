@@ -237,6 +237,15 @@
     <div class="section-title">SUPPLIER</div>
     <div class="section-body">
 
+      <!-- P2: PO Reference (optional) -->
+      <div class="field" id="f-poRef" style="border:1px solid #e0c080;background:#fffbeb;border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+        <label style="color:#92400E;">PO Reference <span style="font-size:10px;color:#b45309;font-weight:400;">(optional — pick to auto-fill)</span></label>
+        <select id="poRefSelect" onchange="onPORefChange()">
+          <option value="">— no PO — (free GRN)</option>
+        </select>
+        <div id="clearPOLink" style="display:none;font-size:11px;color:var(--navy);cursor:pointer;margin-top:4px;text-decoration:underline;" onclick="clearPORef()">✕ Clear PO reference (unlock fields)</div>
+      </div>
+
       <div class="field" id="f-supplier">
         <label>Supplier <span style="color:var(--danger);font-size:10px;">•</span></label>
         <select id="supplier">
@@ -582,6 +591,91 @@ function goHome() {
 }
 
 // ── Save ───────────────────────────────────────────────────────────
+// ── P2: PO Reference logic ────────────────────────────────────────────
+
+var _activePO = null; // holds selected PO object or null
+
+function loadPODropdown() {
+  google.script.run
+    .withSuccessHandler(function(poList) {
+      var sel = document.getElementById('poRefSelect');
+      (poList || []).forEach(function(po) {
+        var o = document.createElement('option');
+        o.value = po.poNo;
+        o.textContent = po.poNo + ' — ' + po.supplierName + ' (Due: ' + (po.dueDate || '?') + ')';
+        o.setAttribute('data-po', JSON.stringify(po));
+        sel.appendChild(o);
+      });
+    })
+    .withFailureHandler(function() { /* non-critical — proceed without PO */ })
+    .getOpenPOsForSupplier(null);
+}
+
+function onPORefChange() {
+  var sel = document.getElementById('poRefSelect');
+  var poNo = sel.value;
+  if (!poNo) { clearPORef(); return; }
+  var opt = sel.options[sel.selectedIndex];
+  var poData = null;
+  try { poData = JSON.parse(opt.getAttribute('data-po') || 'null'); } catch(e) {}
+  if (!poData) { clearPORef(); return; }
+  _activePO = poData;
+
+  // Lock supplier
+  var suppSel = document.getElementById('supplier');
+  for (var i = 0; i < suppSel.options.length; i++) {
+    if (suppSel.options[i].value === poData.supplierCode) {
+      suppSel.selectedIndex = i;
+      break;
+    }
+  }
+  suppSel.disabled = true;
+  suppSel.dispatchEvent(new Event('change'));
+
+  // Show clear link
+  document.getElementById('clearPOLink').style.display = 'block';
+
+  // Per-line pending qty warning will be shown in qtyReceived input change
+}
+
+function clearPORef() {
+  _activePO = null;
+  document.getElementById('poRefSelect').value = '';
+  document.getElementById('clearPOLink').style.display = 'none';
+  document.getElementById('supplier').disabled = false;
+}
+
+function getPendingQtyForCurrentItem() {
+  if (!_activePO || !_activePO.lines) return null;
+  var itemCode = document.getElementById('item').value;
+  if (!itemCode) return null;
+  var match = null;
+  _activePO.lines.forEach(function(l) {
+    if (l.materialCode === itemCode && (match === null || l.qtyPending > match)) {
+      match = l.qtyPending;
+    }
+  });
+  return match;
+}
+
+function checkOverReceiptWarning() {
+  var pending = getPendingQtyForCurrentItem();
+  if (pending === null) return;
+  var qtyR = parseFloat(document.getElementById('qtyReceived').value) || 0;
+  var warn = document.getElementById('po-pending-warn');
+  if (!warn) {
+    warn = document.createElement('div');
+    warn.id = 'po-pending-warn';
+    warn.style.cssText = 'font-size:11px;color:#c65c00;font-weight:600;margin-top:4px;';
+    document.getElementById('qtyReceived').parentNode.appendChild(warn);
+  }
+  if (qtyR > pending) {
+    warn.textContent = 'Warning: qty received (' + qtyR + ') > PO pending (' + pending + ')';
+  } else {
+    warn.textContent = pending !== null ? 'PO pending: ' + pending : '';
+  }
+}
+
 function doSave() {
   clearAllErrors();
   if (!validate()) { showErr('Please fill all required fields.'); return; }
@@ -599,7 +693,8 @@ function doSave() {
     date:         new Date().toISOString().split('T')[0],
     supplierCode: supplierObj.code || document.getElementById('supplier').value,
     supplierName: supplierObj.name || '',
-    poRef:        '',
+    poRef:        _activePO ? _activePO.poNo : '',
+    poNo:         _activePO ? _activePO.poNo : '',
     invoiceNo:    '',
     coaReceived:  'N/A',
     remarks:      document.getElementById('remarks').value,
@@ -627,7 +722,13 @@ function doSave() {
       vehicleNo:    document.getElementById('vehicleNo').value.trim(),
       qtyAccepted:  qtyA,
       disposition:  disposition,
-      locationId:   (disposition === 'ACCEPT' && itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : ''
+      locationId:   (disposition === 'ACCEPT' && itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '',
+      poLineNo:     (function() {
+        if (!_activePO || !_activePO.lines) return null;
+        var code = itemObj.code || document.getElementById('item').value;
+        var match = _activePO.lines.filter(function(l) { return l.materialCode === code; });
+        return match.length === 1 ? match[0].lineNo : null;
+      })()
     }]
   };
 
@@ -747,7 +848,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('backBtn').addEventListener('click', goHome);
   document.getElementById('supplier').addEventListener('change', onSupplierChange);
   document.getElementById('item').addEventListener('change', onItemChange);
-  document.getElementById('qtyReceived').addEventListener('input', onQtyReceivedInput);
+  document.getElementById('qtyReceived').addEventListener('input', function() { onQtyReceivedInput(); checkOverReceiptWarning(); });
   document.getElementById('qtyAccepted').addEventListener('input', onQtyAcceptedInput);
   document.getElementById('batchNo').addEventListener('input', refreshSaveBtn);
   document.getElementById('btnSubmit').addEventListener('click', doSave);
@@ -765,6 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   init();
+  loadPODropdown();
 });
 </script>
 </body>

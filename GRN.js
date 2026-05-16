@@ -16,6 +16,13 @@ function getGRNFormInit() {
 }
 
 function saveGRN(data) {
+  // MUST-FIX #1: Lock acquired FIRST, before getNextDocNumber, so the counter
+  // is only advanced while we hold the lock. getNextDocNumber('grn') internally
+  // acquires LockService.getScriptLock() — same script lock, re-entry safe in V8
+  // (Apps Script V8 allows same-execution re-entry on the same lock handle).
+  // writeStockLedger_ is lock-free. applyGRNReceiptsToPO_ self-checks via tryLock(0).
+  var lock = LockService.getScriptLock();
+  if (!lock.waitLock(10000)) return { success: false, error: 'Could not acquire lock (timeout 10s).' };
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('GRN_LOG');
@@ -54,6 +61,38 @@ function saveGRN(data) {
         var rmLocs = (typeof getLocations === 'function') ? getLocations('RM') : [];
         if (rmLocs.length > 0) fallbackLocation = rmLocs[0].id;
       } catch(e) {}
+    }
+
+    // PO validation (backward compat: data.poNo empty → skip)
+    var poNo = String(data.poNo || data.poRef || '').trim();
+    var warnings = [];
+    if (poNo && (typeof isPOAttached_ === 'function') && isPOAttached_(poNo)) {
+      // Validate PO status
+      try {
+        var poHdrWs = ss.getSheetByName('PO_HEADER');
+        if (poHdrWs && poHdrWs.getLastRow() > 1) {
+          var poHdrData = poHdrWs.getDataRange().getValues();
+          var poFound = false;
+          for (var ph = 1; ph < poHdrData.length; ph++) {
+            if (String(poHdrData[ph][0] || '').trim() !== poNo) continue;
+            poFound = true;
+            var poStatus = String(poHdrData[ph][11] || '').trim();
+            if (poStatus !== 'OPEN' && poStatus !== 'PARTIAL_RECEIVED') {
+              return { success: false, error: 'PO ' + poNo + ' is not open (status: ' + poStatus + ').' };
+            }
+            // Supplier match (warn only)
+            var poSupp = String(poHdrData[ph][2] || '').trim();
+            var grnSupp = String(data.supplierCode || '').trim();
+            if (poSupp && grnSupp && poSupp !== grnSupp) {
+              warnings.push('Supplier mismatch: PO has ' + poSupp + ', GRN has ' + grnSupp);
+            }
+            break;
+          }
+          if (!poFound) warnings.push('PO ' + poNo + ' not found in PO_HEADER (GRN will still save).');
+        }
+      } catch(poValErr) { Logger.log('PO validation: ' + poValErr.message); }
+    } else {
+      poNo = ''; // treat as unattached if not PO-format
     }
 
     items.forEach(function(item) {
@@ -111,10 +150,35 @@ function saveGRN(data) {
       ws.getRange(r, 18).setNumberFormat('dd-MMM-yyyy HH:mm');
     }
 
-    return { success: true, docNo: docNo };
+    // PO writeback: only if all appendRow + writeStockLedger_ succeeded
+    // MUST-FIX #2: partial-failure strategy = self-heal via reconcilePOReceipts().
+    // We do NOT rollback appendRow (fragile with concurrent writers). If applyGRNReceiptsToPO_
+    // fails here, ops runs reconcilePOReceipts() from menu to re-sync PO_LINES.
+    if (poNo && typeof applyGRNReceiptsToPO_ === 'function') {
+      try {
+        var receipts = items.map(function(item) {
+          return {
+            materialCode: String(item.materialCode || '').trim(),
+            qtyReceived:  Number(item.qtyReceived) || 0,
+            poLineNo:     item.poLineNo ? Number(item.poLineNo) : null
+          };
+        });
+        var poResult = applyGRNReceiptsToPO_(poNo, receipts, docNo);
+        if (poResult.overReceiptWarnings && poResult.overReceiptWarnings.length) {
+          warnings = warnings.concat(poResult.overReceiptWarnings);
+        }
+      } catch(poWriteErr) {
+        Logger.log('applyGRNReceiptsToPO_ failed: ' + poWriteErr.message + '. Run reconcilePOReceipts() to self-heal.');
+        warnings.push('PO update pending — run Reconcile PO Receipts from menu if PO status looks wrong.');
+      }
+    }
+
+    return { success: true, docNo: docNo, warnings: warnings };
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };
+  } finally {
+    lock.releaseLock();
   }
 }
 
