@@ -253,6 +253,12 @@
         <div class="field-error" id="err-item">Item is required</div>
       </div>
 
+      <div class="field" id="f-storage-loc">
+        <label>Storage Location <span style="font-size:10px;color:var(--muted);">(from material master)</span></label>
+        <input type="text" id="storageLocation" disabled placeholder="Pick a material…">
+        <div class="hint" id="hint-storage-loc">Auto-assigned from the material's default location.</div>
+      </div>
+
     </div>
   </div>
 
@@ -487,6 +493,21 @@ function onItemChange() {
   var opt = sel.options[sel.selectedIndex];
   itemObj = (opt && opt.dataset.obj) ? JSON.parse(opt.dataset.obj) : {};
   setFieldErr('f-item', 'err-item', false);
+
+  // Populate Storage Location from the material's defaultLocation (master).
+  var locInput = document.getElementById('storageLocation');
+  var hint = document.getElementById('hint-storage-loc');
+  if (locInput) {
+    var loc = (itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '';
+    if (loc) {
+      locInput.value = loc;
+      if (hint) hint.textContent = 'From master record for ' + (itemObj.code || '');
+    } else {
+      locInput.value = '';
+      if (hint) hint.textContent = 'No default location in master — fallback (first RM bay) will be used.';
+    }
+  }
+
   refreshSaveBtn();
 }
 
@@ -586,15 +607,14 @@ function doSave() {
                   disposition === 'REJECT' ? 'Rejected Zone' :
                   disposition === 'HOLD'   ? 'Quarantine Zone' : 'Quarantine Zone',
     locationId:   (function(){
-                    var want = disposition === 'ACCEPT' ? 'RM' : 'QUARANTINE';
-                    for (var i = 0; i < LOCATIONS.length; i++) {
-                      if (String(LOCATIONS[i].type || '').toUpperCase() === want) return LOCATIONS[i].id;
+                    // HOLD/REJECT always overrides to first QUARANTINE bay at receipt.
+                    // ACCEPT uses material's defaultLocation; server picks fallback if blank.
+                    if (disposition !== 'ACCEPT') {
+                      for (var i = 0; i < LOCATIONS.length; i++) {
+                        if (String(LOCATIONS[i].type || '').toUpperCase() === 'QUARANTINE') return LOCATIONS[i].id;
+                      }
                     }
-                    // fallback to any RM location, then any location
-                    for (var j = 0; j < LOCATIONS.length; j++) {
-                      if (String(LOCATIONS[j].type || '').toUpperCase() === 'RM') return LOCATIONS[j].id;
-                    }
-                    return LOCATIONS.length ? LOCATIONS[0].id : '';
+                    return (itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '';
                   })(),
     items: [{
       materialCode: itemObj.code || document.getElementById('item').value,
@@ -606,7 +626,8 @@ function doSave() {
       expiryDate:   '',
       vehicleNo:    document.getElementById('vehicleNo').value.trim(),
       qtyAccepted:  qtyA,
-      disposition:  disposition
+      disposition:  disposition,
+      locationId:   (disposition === 'ACCEPT' && itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : ''
     }]
   };
 

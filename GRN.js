@@ -38,17 +38,29 @@ function saveGRN(data) {
       expiryDate:   data.expiryDate   || ''
     }];
 
-    // Resolve a default RM intake location if caller didn't supply one
-    var defaultLocation = data.locationId || '';
-    if (!defaultLocation) {
+    // Build material-default-location map from MASTERS_Materials (col E)
+    var matLocByCode = {};
+    try {
+      var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+      mats.forEach(function(m){
+        if (m.code && m.defaultLocation) matLocByCode[m.code] = m.defaultLocation;
+      });
+    } catch(e) {}
+
+    // Fallback chain: explicit data.locationId → first RM location
+    var fallbackLocation = data.locationId || '';
+    if (!fallbackLocation) {
       try {
         var rmLocs = (typeof getLocations === 'function') ? getLocations('RM') : [];
-        if (rmLocs.length > 0) defaultLocation = rmLocs[0].id;
+        if (rmLocs.length > 0) fallbackLocation = rmLocs[0].id;
       } catch(e) {}
     }
 
     items.forEach(function(item) {
-      var itemLocation = item.locationId || defaultLocation;
+      // Per-item location: explicit item.locationId → material's defaultLocation → fallback
+      var itemLocation = item.locationId
+        || matLocByCode[item.materialCode]
+        || fallbackLocation;
       ws.appendRow([
         docNo,
         date,

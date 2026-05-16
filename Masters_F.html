@@ -249,6 +249,7 @@
           <th>Description</th>
           <th style="width:70px;">Unit</th>
           <th style="width:110px;">Category</th>
+          <th style="width:140px;">Default Location</th>
         </tr>
       </thead>
       <tbody id="tbody-materials"></tbody>
@@ -368,7 +369,7 @@
   }
 
   /* ── Skeleton ── */
-  var SKEL_COLS = { suppliers: 5, materials: 4, customers: 7, parameters: 10 };
+  var SKEL_COLS = { suppliers: 5, materials: 5, customers: 7, parameters: 10 };
 
   function showSkeleton(tab) {
     var tbody = document.getElementById('tbody-' + tab);
@@ -476,7 +477,7 @@
         break;
       case 'materials':
         rows.forEach(function(r) {
-          html += '<tr>' + td(r.code) + td(r.desc) + td(r.unit) + td(r.category) + '</tr>';
+          html += '<tr>' + td(r.code) + td(r.desc) + td(r.unit) + td(r.category) + td(r.defaultLocation) + '</tr>';
         });
         break;
       case 'customers':

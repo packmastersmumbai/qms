@@ -53,6 +53,8 @@ function onOpen() {
   } catch(e) {}
   // Ensure all required CONFIG keys exist (adds missing ones without touching existing)
   ensureConfigKeys_();
+  // Ensure MASTERS_Materials has the Default Location column (idempotent)
+  try { ensureMaterialsLocationColumn_(); } catch(e) {}
   SpreadsheetApp.getUi()
     .createMenu('QMS System')
     .addItem('⚙️  Setup / Initialize Project', 'initializeProject')
@@ -63,6 +65,9 @@ function onOpen() {
     .addItem('🌱  Verify Masters Seed',    'verifyMastersSeed')
     .addItem('🧪  Smoke Test Batch Flow',  'smokeTestBatchFlow')
     .addItem('🧫  Run Integration Smoke',  'runIntegrationSmoke')
+    .addItem('🔍  Diagnose Production Lots','diagnoseProductionLotsUI')
+    .addItem('♻️  Backfill Stock Ledger from GRN','backfillStockLedgerFromGRNUI')
+    .addItem('📍  Backfill GRN Locations (from Master)','backfillGRNLocationsUI')
     .addItem('🧨  Raise Test NCR',         'testRaiseNCR')
     .addItem('🔎  Diagnose OQC→Gatepass',  'diagnoseOQCDropdown')
     .addSeparator()

@@ -16,7 +16,70 @@ function getMaterials() {
   if (!ws) return [];
   var data = ws.getDataRange().getValues();
   return data.slice(1).filter(function(r) { return r[0]; })
-    .map(function(r) { return { code: String(r[0]).trim(), desc: r[1], unit: r[2], category: r[3] }; });
+    .map(function(r) {
+      return {
+        code: String(r[0]).trim(),
+        desc: r[1],
+        unit: r[2],
+        category: r[3],
+        defaultLocation: String(r[4] || '').trim()
+      };
+    });
+}
+
+// Backfill GRN_LOG rows whose Location ID (col U / index 20) is blank,
+// using the material's defaultLocation from MASTERS_Materials.
+// Idempotent — only touches rows whose location is currently blank.
+function backfillGRNLocations() {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('GRN_LOG');
+  if (!ws || ws.getLastRow() < 2) return { success: false, error: 'GRN_LOG empty.' };
+
+  var mats = getMaterials();
+  var locByCode = {};
+  mats.forEach(function(m){
+    if (m.code && m.defaultLocation) locByCode[m.code] = m.defaultLocation;
+  });
+
+  var data = ws.getDataRange().getValues();
+  var filled = 0, noMaster = 0, alreadySet = 0;
+  for (var i = 1; i < data.length; i++) {
+    var curLoc = String(data[i][20] || '').trim();
+    if (curLoc) { alreadySet++; continue; }
+    var matCode = String(data[i][6] || '').trim();
+    var loc = locByCode[matCode];
+    if (!loc) { noMaster++; continue; }
+    ws.getRange(i + 1, 21).setValue(loc);
+    filled++;
+  }
+  return { success: true, filled: filled, alreadySet: alreadySet, noMaster: noMaster };
+}
+
+function backfillGRNLocationsUI() {
+  var ui = SpreadsheetApp.getUi();
+  var res = backfillGRNLocations();
+  if (!res.success) { ui.alert('Failed', res.error, ui.ButtonSet.OK); return; }
+  ui.alert('GRN location backfill',
+    'Filled: ' + res.filled +
+    '\nAlready had location: ' + res.alreadySet +
+    '\nNo default in material master: ' + res.noMaster +
+    (res.noMaster ? '\n\nAdd Default Location (col E) to those materials in MASTERS_Materials, then re-run.' : ''),
+    ui.ButtonSet.OK);
+}
+
+// Ensures MASTERS_Materials has a 'Default Location' header in column E.
+// Idempotent — only writes header if missing.
+function ensureMaterialsLocationColumn_() {
+  var ws = getSpreadsheet().getSheetByName('MASTERS_Materials');
+  if (!ws) return;
+  var lastCol = ws.getLastColumn();
+  if (lastCol < 5) {
+    ws.getRange(1, 5).setValue('Default Location');
+    ws.getRange(1, 5).setFontWeight('bold').setBackground('#0B2A4A').setFontColor('#FFFFFF');
+    return;
+  }
+  var header = String(ws.getRange(1, 5).getValue() || '').trim();
+  if (!header) ws.getRange(1, 5).setValue('Default Location');
 }
 
 function getCustomers() {
@@ -231,7 +294,8 @@ function saveMaster(type, data) {
   } else if (type === 'material') {
     var ws2 = ss.getSheetByName('MASTERS_Materials');
     if (!ws2) throw new Error('Sheet MASTERS_Materials not found');
-    row = [data.code, data.desc, data.unit, data.category];
+    ensureMaterialsLocationColumn_();
+    row = [data.code, data.desc, data.unit, data.category, data.defaultLocation || ''];
     var values2 = ws2.getDataRange().getValues();
     for (var j = 1; j < values2.length; j++) {
       if (String(values2[j][0]).trim() === String(data.code).trim()) {
