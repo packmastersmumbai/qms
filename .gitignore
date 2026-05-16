@@ -19,3 +19,14 @@ docs/
 
 # clasp auth (global, not project-specific)
 # .clasp.json is intentionally included for CI/CD
+
+# Editor / tooling state — never commit
+.claude/
+.playwright-cli/
+
+# File backups (pre-edit snapshots)
+*.bak
+
+# Playwright accessibility-tree dumps (not source)
+landing-post-deploy.yml
+*-accessibility.yml
