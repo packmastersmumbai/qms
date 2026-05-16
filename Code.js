@@ -59,6 +59,7 @@ function onOpen() {
     .createMenu('QMS System')
     .addItem('⚙️  Setup / Initialize Project', 'initializeProject')
     .addItem('🩺  Verify & Repair Sheets', 'verifyAndRepairSheets')
+    .addItem('🔧  Force Release Stuck Lock','forceReleaseStuckLock')
     .addItem('🔬  Inspect Sheet Data',     'inspectSheetData')
     .addItem('🔨  Force-Fix Sheet Headers','forceFixSheetHeaders')
     .addItem('🔢  Verify Doc Counters',    'verifyDocCounters')
@@ -442,4 +443,26 @@ function getQmsLandingState() {
   } catch(e) { Logger.log('getQmsLandingState PO count: ' + e); }
 
   return { name: 'Team', role: 'user', todayCounts: counts, pendingActions: pendingActions };
+}
+
+// ============================================================
+// Force-release a stuck script lock.
+// Use after a hung save / timeout error to clear residual state.
+// ============================================================
+function forceReleaseStuckLock() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    var lock = LockService.getScriptLock();
+    // tryLock(0): if it succeeds, no lock was held — nothing to clear.
+    // if it fails, lock is held by another execution; we cannot force-release a foreign lock.
+    var got = lock.tryLock(0);
+    if (got) {
+      lock.releaseLock();
+      ui.alert('Lock state: FREE (no stuck lock found). You can retry the save now.');
+    } else {
+      ui.alert('Lock state: HELD by another execution. Apps Script will release it automatically when that execution ends (max 6 minutes). Check Apps Script editor → Executions tab for the holder.');
+    }
+  } catch (e) {
+    ui.alert('Lock check failed: ' + e.message);
+  }
 }
