@@ -6,13 +6,7 @@
 // ── Spreadsheet accessor (works in both bound and web app context) ──
 var _SS_CACHE = null;
 
-var QMS_DWM_MAP = {
-  GRN:      { projectId: 'Quality',    categoryId: 'Inspection', priority: 'high'   },
-  IQC:      { projectId: 'Quality',    categoryId: 'Inspection', priority: 'high'   },
-  IPQC:     { projectId: 'Production', categoryId: 'Operations', priority: 'medium' },
-  OQC:      { projectId: 'Quality',    categoryId: 'Inspection', priority: 'high'   },
-  Gatepass: { projectId: 'Production', categoryId: 'Operations', priority: 'medium' }
-};
+
 function getSpreadsheet() {
   if (_SS_CACHE) return _SS_CACHE;
 
@@ -62,12 +56,22 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('QMS System')
     .addItem('⚙️  Setup / Initialize Project', 'initializeProject')
+    .addItem('🩺  Verify & Repair Sheets', 'verifyAndRepairSheets')
+    .addItem('🔬  Inspect Sheet Data',     'inspectSheetData')
+    .addItem('🔨  Force-Fix Sheet Headers','forceFixSheetHeaders')
+    .addItem('🔢  Verify Doc Counters',    'verifyDocCounters')
+    .addItem('🌱  Verify Masters Seed',    'verifyMastersSeed')
+    .addItem('🧪  Smoke Test Batch Flow',  'smokeTestBatchFlow')
+    .addItem('🧨  Raise Test NCR',         'testRaiseNCR')
+    .addItem('🔎  Diagnose OQC→Gatepass',  'diagnoseOQCDropdown')
     .addSeparator()
     .addItem('📥  New GRN', 'openGRNForm')
     .addItem('🔍  New IQC', 'openIQCForm')
     .addItem('🏭  New IPQC Check', 'openIPQCForm')
     .addItem('📤  New OQC', 'openOQCForm')
     .addItem('🚚  New Gatepass', 'openGatpassForm')
+    .addItem('📋  NCR Triage',   'openNCRForm')
+    .addItem('📦  Customer Returns', 'openCustomerReturnForm')
     .addSeparator()
     .addItem('📊  Open Dashboard', 'openDashboard')
     .addItem('📋  Records', 'openRecords')
@@ -123,6 +127,20 @@ function openGatpassForm() {
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
+function openNCRForm() {
+  var html = HtmlService.createTemplateFromFile('NCR_F').evaluate()
+    .setWidth(740)
+    .setTitle('NCR Triage');
+  SpreadsheetApp.getUi().showModalDialog(html, 'NCR Triage');
+}
+
+function openCustomerReturnForm() {
+  var html = HtmlService.createTemplateFromFile('CustomerReturn_F').evaluate()
+    .setWidth(740)
+    .setTitle('Customer Returns');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Customer Returns');
+}
+
 function openIPQCForm() {
   var html = HtmlService.createTemplateFromFile('IPQC_F').evaluate()
     .setWidth(640)
@@ -149,9 +167,6 @@ function doGet(e) {
     }
   } catch(ex) {}
 
-  var app = e && e.parameter && e.parameter.app ? String(e.parameter.app).toLowerCase() : '';
-  if (app === 'dwm') return dwmDoGet_(e);
-
   var page = e && e.parameter && e.parameter.page ? e.parameter.page : '';
   var template;
   if (page === 'masters') {
@@ -165,17 +180,6 @@ function doGet(e) {
   return template.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function dwmDoGet_(e) {
-  var page = (e && e.parameter && e.parameter.page) ? String(e.parameter.page).toLowerCase() : 'login';
-  var validPages = { login:'Login_Dwm', dashboard:'Dashboard_Dwm', taskform:'TaskForm_Dwm', report:'Report_Dwm', admin:'Admin_Dwm', changepin:'Login_Dwm' };
-  var tplName = validPages[page] || 'Login_Dwm';
-  var tpl = HtmlService.createTemplateFromFile(tplName);
-  tpl.scriptUrl = ScriptApp.getService().getUrl();
-  return tpl.evaluate()
-    .setTitle('Daily Work Manager')
-    .addMetaTag('viewport','width=device-width, initial-scale=1, maximum-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
 
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
@@ -184,7 +188,7 @@ function include(filename) {
 // ── Called by client to inject sub-pages ─────────────────────
 
 function getFormHtml(type) {
-  var pageMap = { GRN: 'GRN_F', IQC: 'IQC_F', OQC: 'OQC_F', IPQC: 'IPQC_F', Dashboard: 'Dashboard_F', ImportCSV: 'ImportCSV_F', Records: 'Records_F', Gatepass: 'Gatepass_F', Masters: 'Masters_F', ControlPlan: 'ControlPlan_F', Landing: 'Landing', DwmLogin: 'Login_Dwm' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Landing:'Landing' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();
@@ -237,63 +241,44 @@ function sendWhatsAppSelected() {
   SpreadsheetApp.getUi().showModelessDialog(html, 'Send WhatsApp Update');
 }
 
-function autoQmsTask_(sessionId, type, title, linkedRecord) {
-  try {
-    var session = validateSessionFast_(sessionId);
-    if (!session) return null;
-    var map = QMS_DWM_MAP[type];
-    if (!map) return null;
-    // Use createTask_ (internal) to skip re-validation — session already resolved above
-    return createTask_(session, {
-      title: title,
-      projectId: map.projectId,
-      categoryId: map.categoryId,
-      priority: map.priority,
-      assignedTo: session.userId,
-      linkedRecord: linkedRecord || '',
-      description: 'Auto-created from ' + type
-    });
-  } catch (e) {
-    Logger.log('autoQmsTask_ failed: ' + e);
-    return null;
-  }
-}
 
-function getQmsLandingState(sessionId) {
-  var session = validateSessionFast_(sessionId);
-  if (!session) return { authenticated: false };
-
+function getQmsLandingState() {
   var ss = getSpreadsheet();
   var today = new Date().toDateString();
   var counts = { GRN: 0, IQC: 0, IPQC: 0, OQC: 0, Gatepass: 0 };
-
-  var sheetMap = {
-    GRN:      'GRN_LOG',
-    IQC:      'IQC_LOG',
-    OQC:      'OQC_LOG',
-    Gatepass: 'GATEPASS_LOG'
+  var schemaFallback = {
+    GRN_LOG:      { tsIdx: 17, docIdx: 0, dedup: true  },
+    IQC_LOG:      { tsIdx: 28, docIdx: 0, dedup: false },
+    OQC_LOG:      { tsIdx: 18, docIdx: 0, dedup: false },
+    GATEPASS_LOG: { tsIdx: 17, docIdx: 0, dedup: true  }
   };
+  var sheetMap = { GRN: 'GRN_LOG', IQC: 'IQC_LOG', OQC: 'OQC_LOG', Gatepass: 'GATEPASS_LOG' };
   Object.keys(sheetMap).forEach(function(type) {
-    var sh = ss.getSheetByName(sheetMap[type]);
+    var shName = sheetMap[type];
+    var fb = schemaFallback[shName];
+    var sh = ss.getSheetByName(shName);
     if (!sh || sh.getLastRow() < 2) return;
     var data = sh.getDataRange().getValues();
     var headers = data[0];
-    var opCol = headers.indexOf('operator_id');
-    var tsCol = headers.indexOf('timestamp') >= 0 ? headers.indexOf('timestamp') : 0;
-    if (opCol < 0) return;
+    var tsIdx = headers.indexOf('timestamp') >= 0 ? headers.indexOf('timestamp') : fb.tsIdx;
+    var seen = {};
     for (var r = 1; r < data.length; r++) {
-      if (data[r][opCol] === session.userId &&
-          new Date(data[r][tsCol]).toDateString() === today) counts[type]++;
+      var row = data[r];
+      var ts = row[tsIdx];
+      if (!ts) continue;
+      if (new Date(ts).toDateString() !== today) continue;
+      if (fb.dedup) {
+        var docNo = row[fb.docIdx];
+        if (seen[docNo]) continue;
+        seen[docNo] = true;
+      }
+      counts[type]++;
     }
   });
-
-  // IPQC uses IPQC_Sessions — no operator_id col; count by today's date (col 6)
   (function() {
     var sh = ss.getSheetByName('IPQC_Sessions');
     if (!sh || sh.getLastRow() < 2) return;
     var data = sh.getDataRange().getValues();
-    // IPQC_Sessions columns: session_id[0], product_code[1], product_name[2], batch[3],
-    //   inspector[4], line[5], date[6 — 'yyyy-MM-dd' string], start_time[7], end_time[8], status[9], rounds[10]
     var todayYmd = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
     for (var r = 1; r < data.length; r++) {
       var rowDate = data[r][6] instanceof Date
@@ -303,11 +288,107 @@ function getQmsLandingState(sessionId) {
     }
   })();
 
-  return {
-    authenticated: true,
-    userId: session.userId,
-    name: session.name,
-    role: session.role,
-    todayCounts: counts
-  };
+  // ── Real pending actions ──────────────────────────────────────────
+  var pendingActions = [];
+  var cutoff7 = new Date();
+  cutoff7.setDate(cutoff7.getDate() - 7);
+
+  // Rule 1: GRNs with status PENDING that have no IQC record
+  try {
+    var grnWs = ss.getSheetByName('GRN_LOG');
+    var iqcWs = ss.getSheetByName('IQC_LOG');
+    if (grnWs && grnWs.getLastRow() > 1) {
+      // Build set of GRN numbers already in IQC_LOG (col 2, 0-indexed)
+      var inspectedGrns = {};
+      if (iqcWs && iqcWs.getLastRow() > 1) {
+        var iqcVals = iqcWs.getRange(2, 3, iqcWs.getLastRow() - 1, 1).getValues();
+        iqcVals.forEach(function(r) { if (r[0]) inspectedGrns[String(r[0]).trim()] = true; });
+      }
+      var grnData = grnWs.getDataRange().getValues();
+      var seenGrn = {};
+      for (var r = 1; r < grnData.length; r++) {
+        var row = grnData[r];
+        var gNo   = String(row[0] || '').trim();
+        var gDate = row[1];
+        var gMat  = String(row[7] || '').trim();
+        var gStat = String(row[15] || '').trim().toUpperCase();
+        if (!gNo || seenGrn[gNo]) continue;
+        seenGrn[gNo] = true;
+        if (gDate && new Date(gDate) < cutoff7) continue;
+        if (gStat !== 'PENDING' && gStat !== '') continue;
+        if (inspectedGrns[gNo]) continue;
+        pendingActions.push({
+          module: 'IQC',
+          detail: 'IQC needed · ' + gNo + (gMat ? ' · ' + gMat : ''),
+          grnNo:  gNo
+        });
+        if (pendingActions.length >= 10) break;
+      }
+    }
+  } catch(e) { Logger.log('pendingActions Rule1: ' + e); }
+
+  // Rule 2: OQC RELEASED with no matching Gatepass oqcRef
+  try {
+    if (pendingActions.length < 10) {
+      var oqcWs = ss.getSheetByName('OQC_LOG');
+      var gpWs  = ss.getSheetByName('GATEPASS_LOG');
+      if (oqcWs && oqcWs.getLastRow() > 1) {
+        var usedOqcRefs = {};
+        if (gpWs && gpWs.getLastRow() > 1) {
+          var gpVals = gpWs.getRange(2, 4, gpWs.getLastRow() - 1, 1).getValues();
+          gpVals.forEach(function(r) { if (r[0]) usedOqcRefs[String(r[0]).trim()] = true; });
+        }
+        var oqcData = oqcWs.getDataRange().getValues();
+        var seenOqc = {};
+        for (var r = 1; r < oqcData.length; r++) {
+          var row     = oqcData[r];
+          var oNo     = String(row[0] || '').trim();
+          var oDate   = row[1];
+          var oBatch  = String(row[4] || '').trim();
+          var oDecision = String(row[14] || '').trim().toUpperCase();
+          if (!oNo || seenOqc[oNo]) continue;
+          seenOqc[oNo] = true;
+          if (oDate && new Date(oDate) < cutoff7) continue;
+          if (oDecision !== 'RELEASED' && oDecision !== 'ACCEPTED') continue;
+          if (usedOqcRefs[oNo]) continue;
+          pendingActions.push({
+            module: 'Gatepass',
+            detail: 'Dispatch pending · ' + oNo + (oBatch ? ' · ' + oBatch : ''),
+            oqcNo:  oNo
+          });
+          if (pendingActions.length >= 10) break;
+        }
+      }
+    }
+  } catch(e) { Logger.log('pendingActions Rule2: ' + e); }
+
+  // Rule 3: IPQC sessions OPEN from before today
+  try {
+    if (pendingActions.length < 10) {
+      var ipqcWs  = ss.getSheetByName('IPQC_Sessions');
+      var todayYmd2 = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+      if (ipqcWs && ipqcWs.getLastRow() > 1) {
+        var ipqcData = ipqcWs.getDataRange().getValues();
+        for (var r = 1; r < ipqcData.length; r++) {
+          var row      = ipqcData[r];
+          var sId      = String(row[0] || '').trim();
+          var sStatus  = String(row[9] || '').trim().toUpperCase();
+          var sDateRaw = row[6];
+          var sDateStr = sDateRaw instanceof Date
+            ? Utilities.formatDate(sDateRaw, 'Asia/Kolkata', 'yyyy-MM-dd')
+            : String(sDateRaw || '').trim();
+          if (!sId || sStatus !== 'OPEN') continue;
+          if (sDateStr >= todayYmd2) continue; // today's open sessions are normal
+          pendingActions.push({
+            module:    'IPQC',
+            detail:    'Open session · ' + sId,
+            sessionId: sId
+          });
+          if (pendingActions.length >= 10) break;
+        }
+      }
+    }
+  } catch(e) { Logger.log('pendingActions Rule3: ' + e); }
+
+  return { name: 'Team', role: 'user', todayCounts: counts, pendingActions: pendingActions };
 }

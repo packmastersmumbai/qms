@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    body { background: var(--bg); }
+
+    .rtn-wrap { max-width: 720px; margin: 0 auto; padding-bottom: 40px; }
+
+    .rtn-header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .rtn-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
+    .rtn-count {
+      background: var(--amber); color: var(--navy);
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 700;
+    }
+
+    .rtn-tabs { display: flex; background: #f7f7f9; border-bottom: 1px solid #e0e0e0; position: sticky; top: 39px; z-index: 99; }
+    .rtn-tab {
+      flex: 1; padding: 10px; cursor: pointer; text-align: center;
+      font-size: 12px; font-weight: 600; color: #777;
+      border-bottom: 2px solid transparent;
+    }
+    .rtn-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: var(--white); }
+
+    .rtn-body { padding: 14px; }
+
+    .rtn-empty { text-align: center; padding: 60px 20px; color: #888; font-size: 13px; }
+    .rtn-empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+
+    .rtn-card {
+      background: var(--white);
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .rtn-card-head {
+      padding: 10px 12px; background: #FFF3CD;
+      border-bottom: 1px solid #f0e0a0;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .rtn-docno { font-weight: 700; color: var(--navy); font-size: 13px; flex: 1; }
+    .rtn-chip {
+      background: var(--navy); color: var(--white);
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    }
+
+    .rtn-card-body { padding: 10px 12px; font-size: 12px; line-height: 1.5; }
+    .rtn-row { display: flex; gap: 8px; margin-bottom: 4px; }
+    .rtn-label { color: #888; min-width: 90px; font-size: 11px; }
+    .rtn-value { color: #222; flex: 1; }
+    .rtn-reason {
+      background: #fafafa; border-left: 3px solid var(--amber);
+      padding: 6px 10px; margin-top: 6px; font-style: italic;
+      color: #555; font-size: 12px;
+    }
+
+    .rtn-actions {
+      padding: 10px 12px; background: #fafafa;
+      border-top: 1px solid #eee;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .rtn-btn {
+      background: var(--white); border: 1px solid #ccc;
+      border-radius: 5px; padding: 8px 4px;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s; color: #444;
+    }
+    .rtn-btn:hover:not(:disabled) { background: var(--navy); color: var(--white); border-color: var(--navy); }
+    .rtn-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .rtn-btn.danger:hover:not(:disabled) { background: #b71c1c; border-color: #b71c1c; }
+    .rtn-btn.ok:hover:not(:disabled) { background: #2e7d32; border-color: #2e7d32; }
+
+    /* Form */
+    .rtn-form { background: var(--white); border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px; }
+    .rtn-field { margin-bottom: 12px; }
+    .rtn-field label { display: block; font-size: 11px; color: #555; margin-bottom: 4px; font-weight: 600; }
+    .rtn-field input, .rtn-field select, .rtn-field textarea {
+      width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px;
+      font-size: 13px; font-family: inherit; box-sizing: border-box;
+    }
+    .rtn-field textarea { min-height: 70px; resize: vertical; }
+    .rtn-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .rtn-save {
+      width: 100%; padding: 11px; background: var(--navy); color: var(--white);
+      border: 0; border-radius: 5px; font-weight: 700; font-size: 13px;
+      cursor: pointer; margin-top: 6px;
+    }
+    .rtn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .rtn-toast {
+      position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+      background: #222; color: #fff; padding: 8px 16px; border-radius: 18px;
+      font-size: 12px; opacity: 0; transition: opacity 0.2s; z-index: 1000;
+    }
+    .rtn-toast.show { opacity: 1; }
+    .rtn-toast.error { background: #b71c1c; }
+  </style>
+</head>
+<body>
+  <div class="rtn-wrap">
+    <div class="rtn-header">
+      <div class="rtn-title">📦 Customer Returns</div>
+      <span class="rtn-count" id="openCount">0 open</span>
+    </div>
+
+    <div class="rtn-tabs">
+      <div class="rtn-tab active" data-tab="triage" onclick="switchTab('triage')">Triage</div>
+      <div class="rtn-tab" data-tab="new" onclick="switchTab('new')">New Return</div>
+    </div>
+
+    <div class="rtn-body">
+      <div id="paneTriage">
+        <div id="triageList" class="rtn-empty">
+          <div class="rtn-empty-icon">⏳</div>
+          Loading…
+        </div>
+      </div>
+      <div id="paneNew" style="display:none;">
+        <div class="rtn-form" id="formBox">
+          <div class="rtn-grid2">
+            <div class="rtn-field">
+              <label>Return No.</label>
+              <input id="fDocNo" disabled />
+            </div>
+            <div class="rtn-field">
+              <label>Return Date</label>
+              <input type="date" id="fDate" />
+            </div>
+          </div>
+          <div class="rtn-field">
+            <label>Customer</label>
+            <select id="fCustomer"></select>
+          </div>
+          <div class="rtn-grid2">
+            <div class="rtn-field">
+              <label>Original Gatepass No.</label>
+              <input id="fGatepass" placeholder="e.g. PM/GP/2026-014" />
+            </div>
+            <div class="rtn-field">
+              <label>FG Batch No.</label>
+              <input id="fBatch" />
+            </div>
+          </div>
+          <div class="rtn-field">
+            <label>Product Code / Description</label>
+            <input id="fProductCode" placeholder="Product code" style="margin-bottom:6px;" />
+            <input id="fProductDesc" placeholder="Product description" />
+          </div>
+          <div class="rtn-grid2">
+            <div class="rtn-field">
+              <label>Qty Returned</label>
+              <input type="number" id="fQty" min="0" step="any" />
+            </div>
+            <div class="rtn-field">
+              <label>Unit</label>
+              <input id="fUnit" placeholder="PC / KG / M" />
+            </div>
+          </div>
+          <div class="rtn-field">
+            <label>Return Reason</label>
+            <textarea id="fReason" placeholder="Why was this returned?"></textarea>
+          </div>
+          <div class="rtn-grid2">
+            <div class="rtn-field">
+              <label>Received By</label>
+              <select id="fReceivedBy"></select>
+            </div>
+            <div class="rtn-field">
+              <label>Remarks (optional)</label>
+              <input id="fRemarks" />
+            </div>
+          </div>
+          <button class="rtn-save" id="btnSave" onclick="saveReturn()">Save Return — Send to Triage</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rtn-toast" id="toast"></div>
+
+  <script>
+    var INIT = null;
+    var OPEN_RETURNS = [];
+    var DISPOSITIONS = [];
+
+    function showToast(msg, kind) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'rtn-toast show' + (kind === 'error' ? ' error' : '');
+      setTimeout(function(){ t.className = 'rtn-toast'; }, 2400);
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.rtn-tab').forEach(function(t){
+        t.classList.toggle('active', t.dataset.tab === name);
+      });
+      document.getElementById('paneTriage').style.display = name === 'triage' ? '' : 'none';
+      document.getElementById('paneNew').style.display    = name === 'new'    ? '' : 'none';
+    }
+
+    function loadInit() {
+      google.script.run
+        .withSuccessHandler(function(data){
+          INIT = data;
+          document.getElementById('fDocNo').value = data.docNumber || '';
+          document.getElementById('fDate').value  = data.today || '';
+          var cust = document.getElementById('fCustomer');
+          cust.innerHTML = '<option value="">— select —</option>' +
+            (data.customers || []).map(function(c){
+              var code = c.code || c.customerCode || '';
+              var name = c.name || c.customerName || '';
+              return '<option value="' + escapeHtml(code) + '" data-name="' + escapeHtml(name) + '">' +
+                     escapeHtml(name || code) + '</option>';
+            }).join('');
+          var rec = document.getElementById('fReceivedBy');
+          rec.innerHTML = '<option value="">— select —</option>' +
+            (data.inspectors || []).map(function(i){
+              var n = i.name || i;
+              return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>';
+            }).join('');
+        })
+        .withFailureHandler(function(e){ showToast('Init failed: ' + (e.message || e), 'error'); })
+        .getCustomerReturnFormInit();
+
+      google.script.run
+        .withSuccessHandler(function(list){ DISPOSITIONS = list || []; })
+        .withFailureHandler(function(){})
+        .getCustomerReturnDispositions();
+
+      reloadTriage();
+    }
+
+    function reloadTriage() {
+      var box = document.getElementById('triageList');
+      box.className = 'rtn-empty';
+      box.innerHTML = '<div class="rtn-empty-icon">⏳</div>Loading…';
+      google.script.run
+        .withSuccessHandler(function(list){
+          OPEN_RETURNS = list || [];
+          document.getElementById('openCount').textContent = OPEN_RETURNS.length + ' open';
+          renderTriage();
+        })
+        .withFailureHandler(function(e){
+          box.innerHTML = '<div class="rtn-empty-icon">⚠️</div>Load failed: ' + escapeHtml(e.message || e);
+        })
+        .getOpenCustomerReturns();
+    }
+
+    function renderTriage() {
+      var box = document.getElementById('triageList');
+      if (!OPEN_RETURNS.length) {
+        box.className = 'rtn-empty';
+        box.innerHTML = '<div class="rtn-empty-icon">✅</div>No open returns. All triaged.';
+        return;
+      }
+      box.className = '';
+      box.innerHTML = OPEN_RETURNS.map(function(r){
+        var btns = ['RESTOCK', 'REWORK', 'SCRAP'].map(function(d){
+          var cls = d === 'RESTOCK' ? 'ok' : (d === 'SCRAP' ? 'danger' : '');
+          return '<button class="rtn-btn ' + cls + '" onclick="dispose(\'' + escapeHtml(r.rtnNo) + '\',\'' + d + '\')">' + d + '</button>';
+        }).join('');
+        return [
+          '<div class="rtn-card" data-rtn="' + escapeHtml(r.rtnNo) + '">',
+            '<div class="rtn-card-head">',
+              '<div class="rtn-docno">' + escapeHtml(r.rtnNo) + '</div>',
+              '<span class="rtn-chip">' + escapeHtml(r.returnDate) + '</span>',
+            '</div>',
+            '<div class="rtn-card-body">',
+              '<div class="rtn-row"><div class="rtn-label">Customer</div><div class="rtn-value">' + escapeHtml(r.customerName || r.customerCode) + '</div></div>',
+              '<div class="rtn-row"><div class="rtn-label">Product</div><div class="rtn-value">' + escapeHtml(r.productDesc || r.productCode) + '</div></div>',
+              '<div class="rtn-row"><div class="rtn-label">FG Batch</div><div class="rtn-value">' + escapeHtml(r.fgBatchNo) + '</div></div>',
+              '<div class="rtn-row"><div class="rtn-label">Qty</div><div class="rtn-value">' + escapeHtml(r.qtyReturned) + ' ' + escapeHtml(r.unit || '') + '</div></div>',
+              '<div class="rtn-row"><div class="rtn-label">Gatepass</div><div class="rtn-value">' + escapeHtml(r.originalGatepass || '—') + '</div></div>',
+              '<div class="rtn-row"><div class="rtn-label">Received By</div><div class="rtn-value">' + escapeHtml(r.receivedBy) + '</div></div>',
+              r.returnReason ? '<div class="rtn-reason">' + escapeHtml(r.returnReason) + '</div>' : '',
+            '</div>',
+            '<div class="rtn-actions">' + btns + '</div>',
+          '</div>'
+        ].join('');
+      }).join('');
+    }
+
+    function dispose(rtnNo, disposition) {
+      var card = document.querySelector('.rtn-card[data-rtn="' + rtnNo + '"]');
+      if (card) card.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
+      var remarks = '';
+      if (disposition !== 'RESTOCK') {
+        remarks = prompt('Remarks for ' + disposition + ' on ' + rtnNo + ' (auto-raises NCR):', '');
+        if (remarks === null) {
+          if (card) card.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
+          return;
+        }
+      }
+      google.script.run
+        .withSuccessHandler(function(res){
+          if (!res || !res.success) {
+            showToast('Failed: ' + (res && res.error || 'unknown'), 'error');
+            if (card) card.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
+            return;
+          }
+          if (card) card.parentNode.removeChild(card);
+          OPEN_RETURNS = OPEN_RETURNS.filter(function(r){ return r.rtnNo !== rtnNo; });
+          document.getElementById('openCount').textContent = OPEN_RETURNS.length + ' open';
+          if (!OPEN_RETURNS.length) renderTriage();
+          showToast(disposition + ' recorded' + (res.ncrNo ? ' — NCR ' + res.ncrNo : ''));
+        })
+        .withFailureHandler(function(e){
+          showToast('Error: ' + (e.message || e), 'error');
+          if (card) card.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
+        })
+        .disposeCustomerReturn({ rtnNo: rtnNo, disposition: disposition, disposedBy: getCurrentUserName(), remarks: remarks });
+    }
+
+    function getCurrentUserName() {
+      var sel = document.getElementById('fReceivedBy');
+      return sel && sel.value ? sel.value : '';
+    }
+
+    function saveReturn() {
+      var data = {
+        returnDate:       document.getElementById('fDate').value,
+        customerCode:     document.getElementById('fCustomer').value,
+        customerName:     (function(){ var o = document.getElementById('fCustomer').selectedOptions[0]; return o ? o.dataset.name || o.textContent : ''; })(),
+        originalGatepass: document.getElementById('fGatepass').value.trim(),
+        productCode:      document.getElementById('fProductCode').value.trim(),
+        productDesc:      document.getElementById('fProductDesc').value.trim(),
+        fgBatchNo:        document.getElementById('fBatch').value.trim(),
+        qtyReturned:      Number(document.getElementById('fQty').value) || 0,
+        unit:             document.getElementById('fUnit').value.trim(),
+        returnReason:     document.getElementById('fReason').value.trim(),
+        receivedBy:       document.getElementById('fReceivedBy').value,
+        remarks:          document.getElementById('fRemarks').value.trim()
+      };
+      if (!data.customerCode) { showToast('Customer is required', 'error'); return; }
+      if (!data.productCode && !data.productDesc) { showToast('Product code or description required', 'error'); return; }
+      if (!data.fgBatchNo) { showToast('FG batch is required', 'error'); return; }
+      if (!data.qtyReturned) { showToast('Qty must be > 0', 'error'); return; }
+      if (!data.receivedBy) { showToast('Received By required', 'error'); return; }
+
+      var btn = document.getElementById('btnSave');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      google.script.run
+        .withSuccessHandler(function(res){
+          btn.disabled = false;
+          btn.textContent = 'Save Return — Send to Triage';
+          if (!res || !res.success) {
+            showToast('Save failed: ' + (res && res.error || 'unknown'), 'error');
+            return;
+          }
+          showToast('Return ' + res.rtnNo + ' saved');
+          // Reset form
+          document.getElementById('fGatepass').value = '';
+          document.getElementById('fBatch').value = '';
+          document.getElementById('fProductCode').value = '';
+          document.getElementById('fProductDesc').value = '';
+          document.getElementById('fQty').value = '';
+          document.getElementById('fUnit').value = '';
+          document.getElementById('fReason').value = '';
+          document.getElementById('fRemarks').value = '';
+          loadInit();
+          switchTab('triage');
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false;
+          btn.textContent = 'Save Return — Send to Triage';
+          showToast('Save error: ' + (e.message || e), 'error');
+        })
+        .saveCustomerReturn(data);
+    }
+
+    window.addEventListener('load', loadInit);
+  </script>
+</body>
+</html>
