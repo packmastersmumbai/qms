@@ -349,6 +349,18 @@ function saveDispatchWithFIFO(payload) {
       }
     }
 
+    // Hoist LOCATIONS read out of the per-lot loop (MED-1 from code review).
+    // Build locId → type map once instead of N reads while holding the lock.
+    var locTypeByLocId = {};
+    var locWs = ss.getSheetByName('LOCATIONS');
+    if (locWs && locWs.getLastRow() > 1) {
+      var ld = locWs.getRange(2, 1, locWs.getLastRow() - 1, 12).getValues();
+      for (var li = 0; li < ld.length; li++) {
+        var lKey = String(ld[li][0] || '').trim();
+        if (lKey) locTypeByLocId[lKey] = String(ld[li][8] || '').toUpperCase();
+      }
+    }
+
     // Pre-validate every chosen lot
     var resolved = [];
     for (var ci = 0; ci < chosen.length; ci++) {
@@ -394,7 +406,7 @@ function saveDispatchWithFIFO(payload) {
         _markOverrideStatus_(overrideRowIndex, 'FAILED');
         return { success: false, error: 'Lot ' + cLotId + ' has no FG location set.' };
       }
-      var locType = _locationType_(fgLoc);
+      var locType = locTypeByLocId[fgLoc] || '';
       if (locType && locType !== 'FG') {
         _markOverrideStatus_(overrideRowIndex, 'FAILED');
         return { success: false, error: 'Lot ' + cLotId + ' is at ' + fgLoc + ' (type ' + locType + '); only FG-type locations are dispatchable.' };
