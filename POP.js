@@ -10,7 +10,7 @@
  * Single source of truth — used by Diag §8 and future P7 engine.
  */
 function isPOAttached_(poRef) {
-  return /^PM\/PO\/\d{4}-\d{3}$/.test(String(poRef || '').trim());
+  return /^PM\/PO\/\d{4}-\d{3,}$/.test(String(poRef || '').trim());
 }
 
 function getPOSpreadsheet_() {
@@ -531,6 +531,17 @@ function applyGRNReceiptsToPO_(poNo, receipts, grnNo) {
     var idx = matchRows[0];
     var qtyOrdered  = Number(lnData[idx][5]) || 0;
     var prevReceived = Number(lnData[idx][8]) || 0;
+
+    // HIGH #2 drift check: re-read qty_received just before write. If it changed
+    // since the snapshot at line 514, another GRN write raced us. We use the
+    // live value as the base so neither receipt is lost, and surface a warning
+    // so ops knows to verify via reconcilePOReceipts.
+    var liveReceived = Number(lnWs.getRange(idx + 1, 9).getValue()) || 0;
+    if (Math.abs(liveReceived - prevReceived) > 0.0005) {
+      overReceiptWarnings.push('Concurrency drift detected on line ' + lnData[idx][1] + ' (' + matCode + '): snapshot=' + prevReceived + ' live=' + liveReceived + '. Both receipts retained; run Reconcile PO Receipts to verify.');
+      prevReceived = liveReceived;
+    }
+
     var newReceived  = prevReceived + qtyRcvd;
     var newPending   = Math.max(0, qtyOrdered - newReceived);
     var lineStatus   = (newReceived <= 0) ? 'OPEN' : (newReceived < qtyOrdered) ? 'PARTIAL' : 'CLOSED';
@@ -679,7 +690,8 @@ function reconcilePOReceipts() {
           if (oldRcvd !== newRcvd) {
             lnWs.getRange(idx + 1, 9).setValue(newRcvd);
             lnWs.getRange(idx + 1, 10).setValue(newPending);
-            lnWs.getRange(idx + 1, 11).setValue(lineStatus + ' (est)');
+            lnWs.getRange(idx + 1, 11).setValue(lineStatus);
+            Logger.log('reconcilePOReceipts: line ' + lnData[idx][1] + ' of ' + parts[0] + ' is estimated via proportional split.');
             lnData[idx][8]  = newRcvd;
             lnData[idx][9]  = newPending;
             lnData[idx][10] = lineStatus;
