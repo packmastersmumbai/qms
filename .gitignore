@@ -6,6 +6,8 @@ Thumbs.db
 # Credentials / local config — never commit
 .env
 *.credentials.json
+creds.json
+client_secret*.json
 
 # Large media
 *.jpg

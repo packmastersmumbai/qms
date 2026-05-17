@@ -251,3 +251,69 @@ function runKPIDiag() {
   }
   return out;
 }
+
+function persistSpreadsheetId() {
+  try {
+    var parents = DriveApp.getFileById(ScriptApp.getScriptId()).getParents();
+    while (parents.hasNext()) {
+      var p = parents.next();
+      if (p.getMimeType() === MimeType.GOOGLE_SHEETS) {
+        PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', p.getId());
+        var msg = 'Persisted SPREADSHEET_ID = ' + p.getId() + ' (name: ' + p.getName() + ')';
+        Logger.log(msg);
+        return msg;
+      }
+    }
+    return 'No GOOGLE_SHEETS parent found via DriveApp';
+  } catch(e) {
+    return 'Error: ' + e.message;
+  }
+}
+
+function listAllSheets() {
+  var ss = getSpreadsheet();
+  if (!ss) { Logger.log('NO SPREADSHEET'); return 'NO SPREADSHEET'; }
+  var names = ss.getSheets().map(function(s){ return s.getName() + ' (' + s.getLastRow() + ' rows)'; });
+  var out = names.join('\n');
+  Logger.log(out);
+  return out;
+}
+
+// ============================================================
+// dumpNCRLog — list every row in NCR_LOG with date+source+status
+// Run from Apps Script editor: Run → dumpNCRLog
+// Writes to _KPIDiag sheet and Logger.
+// ============================================================
+function dumpNCRLog() {
+  var ss = getSpreadsheet();
+  var ws = ss ? ss.getSheetByName('NCR_LOG') : null;
+  var lines = [];
+  if (!ws) { lines.push('NCR_LOG sheet MISSING'); }
+  else {
+    var d = ws.getDataRange().getValues();
+    lines.push('NCR_LOG rows: ' + (d.length - 1) + ' (excluding header)');
+    lines.push('Header: ' + JSON.stringify(d[0]));
+    lines.push('---');
+    for (var i = 1; i < d.length; i++) {
+      var r = d[i];
+      lines.push('Row ' + i +
+        ' | NCR=' + JSON.stringify(r[0]) +
+        ' | Date=' + JSON.stringify(r[1]) +
+        ' | Source=' + JSON.stringify(r[2]) +
+        ' | SrcRef=' + JSON.stringify(r[3]) +
+        ' | col12(DispAt)=' + JSON.stringify(r[12]) +
+        ' | col14(Status)=' + JSON.stringify(r[14]));
+    }
+  }
+  var out = lines.join('\n');
+  Logger.log(out);
+  try {
+    var diagWs = ss.getSheetByName('_KPIDiag') || ss.insertSheet('_KPIDiag');
+    diagWs.clear();
+    diagWs.getRange(1, 1).setValue(out);
+  } catch(e) {}
+  try {
+    SpreadsheetApp.getUi().alert('NCR_LOG Dump', out.slice(0, 1500), SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch(e) {}
+  return out;
+}
