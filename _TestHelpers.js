@@ -7,7 +7,7 @@ function _testNextSeq_(prefix) {
   var ss = getSpreadsheet();
   var year = new Date().getFullYear();
   var max = 0;
-  var sheets = ['NCR_LOG', 'OQC_LOG', '_TEST_ARCHIVE'];
+  var sheets = ['NCR_LOG', 'OQC_LOG', 'IQC_LOG', '_TEST_ARCHIVE'];
   sheets.forEach(function(name) {
     var ws = ss.getSheetByName(name);
     if (!ws || ws.getLastRow() < 2) return;
@@ -206,6 +206,72 @@ function archiveByColValue(sourceSheet, colIndex, value) {
     return { success: true, moved: moved, from: sourceSheet };
   } catch(e) {
     Logger.log('archiveByColValue failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+// Inject a minimal TEST IQC row marked ACCEPTED so downstream consumers (e.g.,
+// Production smoke) see the material as IQC-passed. Mirrors createTestOQCRelease.
+// IQC_LOG has 30 cols; disposition is col 23 (0-idx 22).
+function createTestIQCAccept(payload) {
+  try {
+    payload = payload || {};
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('IQC_LOG');
+    if (!ws) return { success: false, error: 'IQC_LOG sheet not found.' };
+    var docNo = payload.docNo || _testNextSeq_('TEST/IQC');
+    var ncols = Math.max(30, ws.getLastColumn());
+    var row = new Array(ncols).fill('');
+    var now = new Date();
+    row[0]  = docNo;                              // IQC No
+    row[1]  = now;                                // Date
+    row[2]  = payload.grnNo         || 'TEST-GRN';
+    row[3]  = payload.supplierName  || 'TEST supplier';
+    row[4]  = payload.materialDesc  || 'Test material (smoke)';
+    row[5]  = payload.batchNo       || 'TEST-BATCH';
+    row[6]  = payload.inspector     || 'claude-smoke-test';
+    row[7]  = 'AQL 2.5';
+    row[22] = 'ACCEPTED';                         // disposition
+    row[26] = Number(payload.acceptedQty) || 1;   // accepted qty
+    row[27] = 0;                                  // rejected qty
+    row[28] = now;                                // created_at
+    row[29] = 'claude-smoke-test';                // operator_id
+    ws.appendRow(row);
+    var lr = ws.getLastRow();
+    ws.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy');
+    ws.getRange(lr, 29).setNumberFormat('dd-MMM-yyyy HH:mm');
+    ws.getRange(lr, 23).setBackground('#E8F5E9');
+    return { success: true, docNo: docNo };
+  } catch(e) {
+    Logger.log('createTestIQCAccept failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+// Sweep _TEST_ARCHIVE: delete rows older than N days (by _ArchivedAt in col 2).
+// Default 30 days. Call without args to clean up old smoke residue safely.
+// Returns { success, removed, kept }. Header row is never touched.
+function clearTestArchive(olderThanDays) {
+  try {
+    var days = (olderThanDays == null) ? 30 : Number(olderThanDays);
+    if (!isFinite(days) || days < 0) return { success: false, error: 'olderThanDays must be a non-negative number' };
+    var ss = getSpreadsheet();
+    var archive = ss.getSheetByName('_TEST_ARCHIVE');
+    if (!archive || archive.getLastRow() < 2) return { success: true, removed: 0, kept: 0 };
+    var cutoff = new Date().getTime() - days * 86400000;
+    var data = archive.getDataRange().getValues();
+    var toDelete = [];
+    var kept = 0;
+    for (var i = 1; i < data.length; i++) {
+      var archivedAt = data[i][1];
+      var t = (archivedAt instanceof Date) ? archivedAt.getTime() : new Date(archivedAt).getTime();
+      if (isFinite(t) && t < cutoff) toDelete.push(i + 1);
+      else kept++;
+    }
+    for (var j = toDelete.length - 1; j >= 0; j--) archive.deleteRow(toDelete[j]);
+    return { success: true, removed: toDelete.length, kept: kept };
+  } catch(e) {
+    Logger.log('clearTestArchive failed: ' + e.message);
     return { success: false, error: e.message };
   }
 }
