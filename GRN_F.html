@@ -438,6 +438,17 @@ function clearAllErrors() {
 
 // ── Save button enable/disable ─────────────────────────────────────
 function refreshSaveBtn() {
+  // Multi-PO mode: require supplier + disposition + at least one row with qty>0
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display === 'block');
+  if (isMulti) {
+    var anyQty = false;
+    document.querySelectorAll('#po-multi-body .po-multi-qty').forEach(function(inp) {
+      if ((parseFloat(inp.value) || 0) > 0) anyQty = true;
+    });
+    var okM = document.getElementById('supplier').value && disposition && anyQty;
+    document.getElementById('btnSubmit').disabled = !okM;
+    return;
+  }
   var ok = document.getElementById('supplier').value &&
            document.getElementById('item').value &&
            document.getElementById('batchNo').value.trim() &&
@@ -678,7 +689,7 @@ function renderPOMultiTable(lines) {
       '<td style="padding:4px 6px;">' + matDisplay + '</td>' +
       '<td style="padding:4px 6px;text-align:right;">' + l.qtyOrdered + '</td>' +
       '<td style="padding:4px 6px;text-align:right;color:#b45309;font-weight:600;">' + l.qtyPending + '</td>' +
-      '<td style="padding:4px 6px;"><input type="number" class="po-multi-qty" min="0" step="any" placeholder="0" style="width:70px;padding:3px 5px;font-size:11px;text-align:right;"></td>' +
+      '<td style="padding:4px 6px;"><input type="number" class="po-multi-qty" min="0" step="any" placeholder="0" style="width:70px;padding:3px 5px;font-size:11px;text-align:right;" oninput="refreshSaveBtn()"></td>' +
       '<td style="padding:4px 6px;"><input type="text" class="po-multi-batch" placeholder="batch" style="width:95px;padding:3px 5px;font-size:11px;"></td>' +
       '</tr>';
   }).join('');
@@ -700,10 +711,7 @@ function setMultiMode(on) {
     var qtySection = qtyR.closest('.section');
     if (qtySection) qtySection.style.display = on ? 'none' : '';
   }
-  // Enable submit in multi mode regardless of disposition gating (validated on save)
-  if (on) {
-    document.getElementById('btnSubmit').disabled = false;
-  }
+  refreshSaveBtn();
 }
 
 function clearPORef() {
