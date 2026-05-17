@@ -58,4 +58,24 @@ New callable API Executable fns:
 - **Restore only `gp_counter`** — every other step bypasses `getNextDocNumber`, so no other counter advances.
 - **`SpreadsheetApp.flush()` between steps** — each upstream write must commit before next read.
 - **STOCK_LEDGER archival by refDocNo (col 11, idx 10)** — covers GRN_RECEIPT, RM_ISSUE, and FG_DISPATCH entries written during the chain. Result: 3 ledger rows archived.
+- **`setDocCounter('gp', ...)` moved into `finally` block** (judge improvement) — counter restore now executes even if archive sweeps throw.
+
+## Phase 1 Anomaly Closure — PM/PO/2026-004 L3 over-receipt
+
+Resolved 2026-05-17.
+
+**Root cause**: GRN/2026-040 (row 133 in GRN_LOG, material 2966564 / AP TrueGrip 4Lt) was entered with BOTH `qtyOrdered=199` AND `qtyReceived=199` against a PO line where the real qtyOrdered was 100. Pattern: data-entry typo at GRN creation.
+
+**Fix applied**:
+- GRN_LOG row 133: `qtyOrdered` 199→100, `qtyReceived` 199→99.
+- No STOCK_LEDGER entry existed for this GRN (legacy pre-ledger-wiring data), so no ledger correction needed.
+- PO_LINES auto-refreshed via the next `getPOById` call that touched the line; `reconcilePOReceipts()` is the explicit self-heal but errored on `getUi()` headless — POP refresh path was sufficient.
+
+**Verification**:
+- `runPOPDiag_core` after fix: `errors:0, warns:0, fails:0, total:25` (was `errors:1, warns:1, total:25` before).
+- PO/2026-004 L3 final state: `qtyOrdered=100, qtyReceived=99, qtyPending=1, lineStatus=PARTIAL`.
+
+**Tooling**:
+- One-shot inspector + fixer in `_AnomalyFix.js` (`_inspectGRN040`, `_fixGRN040Overreceipt`). Kept in repo for audit trail; safe to delete in any future session as the anomaly cannot recur on this same row (idempotent guard: only fires when `ordBefore===199 && recBefore===199`).
+- Follow-up worth doing later: refactor `reconcilePOReceipts()` into `_impl(headless)` + menu wrapper so it can be called headlessly (same pattern as `runPOPDiag_core`).
 
