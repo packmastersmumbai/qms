@@ -832,15 +832,13 @@
     html += poStatusChip(h.status);
     html += '<span style="font-size:11px;color:#777;margin-left:4px;">Due: ' + esc(h.dueDate || '—') + '</span>';
     html += '<span style="flex:1;"></span>';
-    // Cancel button: visible if DRAFT or OPEN and zero GRN receipts
-    var hasReceipts = (result.linkedGrns && result.linkedGrns.length > 0);
-    if ((h.status === 'DRAFT' || h.status === 'OPEN') && !hasReceipts) {
+    // Cancel button: visible for any active status. Server enforces the
+    // "has receipts" guard and returns the specific GRN docNo blocking cancel.
+    if (h.status !== 'CANCELLED' && h.status !== 'CLOSED') {
       html += '<button onclick="doCancelPO(\'' + esc(h.poNo) + '\')" style="background:#c62828;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">Cancel PO</button>';
     }
-    // Edit-as-draft: only for DRAFT
-    if (h.status === 'DRAFT') {
-      html += '<button onclick="openPOForm()" style="background:#0D1B6E;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;margin-left:4px;">Edit</button>';
-    }
+    // Edit-as-draft: not implemented yet (would need getPOById wire-up + form pre-fill).
+    // Plan §5 says edit-as-draft re-opens POP_F with draft loaded; deferred to polish bundle.
     html += '</div>';
 
     // Header fields
