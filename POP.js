@@ -600,11 +600,8 @@ function deriveHeaderStatus_(lnData, poNo, hdrWs) {
  * partial failures in saveGRN. Idempotent.
  */
 function reconcilePOReceipts() {
-  var lock = LockService.getScriptLock();
-  if (!lock.waitLock(20000)) {
-    SpreadsheetApp.getUi().alert('Could not acquire lock. Try again in a moment.');
-    return;
-  }
+  // Lock-free: idempotent recompute from GRN_LOG truth; safe to run anytime
+  // even under concurrent GRN saves (next run resolves any race).
   try {
     var ss = getPOSpreadsheet_();
     var grnWs = ss.getSheetByName('GRN_LOG');
@@ -702,7 +699,5 @@ function reconcilePOReceipts() {
   } catch(e) {
     Logger.log('reconcilePOReceipts: ' + e.message);
     SpreadsheetApp.getUi().alert('Error: ' + e.message);
-  } finally {
-    lock.releaseLock();
   }
 }
