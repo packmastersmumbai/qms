@@ -262,6 +262,24 @@
         <div class="field-error" id="err-item">Item is required</div>
       </div>
 
+      <!-- P2: PO multi-line table — shown only when a PO with >1 line is selected -->
+      <div id="po-multi-section" style="display:none;border:1px solid #e0c080;background:#fffbeb;border-radius:6px;padding:10px;margin-top:6px;">
+        <div style="font-size:11px;color:#92400E;font-weight:700;margin-bottom:6px;letter-spacing:0.4px;">PO LINES — enter qty received per line</div>
+        <table id="po-multi-table" style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead>
+            <tr style="background:#fef3c7;">
+              <th style="padding:4px 6px;text-align:left;">Material</th>
+              <th style="padding:4px 6px;text-align:right;width:60px;">Ordered</th>
+              <th style="padding:4px 6px;text-align:right;width:60px;">Pending</th>
+              <th style="padding:4px 6px;text-align:right;width:80px;">Receive</th>
+              <th style="padding:4px 6px;text-align:left;width:100px;">Batch</th>
+            </tr>
+          </thead>
+          <tbody id="po-multi-body"></tbody>
+        </table>
+        <div style="font-size:10px;color:#92400E;margin-top:6px;">All receipts share supplier, disposition, vehicle no, and date. Leave Receive blank to skip a line.</div>
+      </div>
+
       <div class="field" id="f-storage-loc">
         <label>Storage Location <span style="font-size:10px;color:var(--muted);">(from material master)</span></label>
         <input type="text" id="storageLocation" disabled placeholder="Pick a material…">
@@ -635,7 +653,57 @@ function onPORefChange() {
   // Show clear link
   document.getElementById('clearPOLink').style.display = 'block';
 
-  // Per-line pending qty warning will be shown in qtyReceived input change
+  // Multi-line PO: render table + hide single-item sections
+  var lines = (poData.lines || []).filter(function(l) { return Number(l.qtyPending) > 0; });
+  if (lines.length > 1) {
+    renderPOMultiTable(lines);
+    setMultiMode(true);
+  } else {
+    setMultiMode(false);
+    // Single-line PO: auto-pick the material in the legacy single-item dropdown
+    if (lines.length === 1) {
+      var sel = document.getElementById('item');
+      for (var j = 0; j < sel.options.length; j++) {
+        if (sel.options[j].value === lines[0].materialCode) { sel.selectedIndex = j; sel.dispatchEvent(new Event('change')); break; }
+      }
+    }
+  }
+}
+
+function renderPOMultiTable(lines) {
+  var tbody = document.getElementById('po-multi-body');
+  tbody.innerHTML = lines.map(function(l) {
+    var matDisplay = l.materialCode + (l.materialDesc ? ' — ' + l.materialDesc : '');
+    return '<tr data-line="' + l.lineNo + '" data-mat="' + l.materialCode + '">' +
+      '<td style="padding:4px 6px;">' + matDisplay + '</td>' +
+      '<td style="padding:4px 6px;text-align:right;">' + l.qtyOrdered + '</td>' +
+      '<td style="padding:4px 6px;text-align:right;color:#b45309;font-weight:600;">' + l.qtyPending + '</td>' +
+      '<td style="padding:4px 6px;"><input type="number" class="po-multi-qty" min="0" step="any" placeholder="0" style="width:70px;padding:3px 5px;font-size:11px;text-align:right;"></td>' +
+      '<td style="padding:4px 6px;"><input type="text" class="po-multi-batch" placeholder="batch" style="width:95px;padding:3px 5px;font-size:11px;"></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function setMultiMode(on) {
+  document.getElementById('po-multi-section').style.display = on ? 'block' : 'none';
+  // Hide single-item sections in multi mode
+  ['f-item','f-storage-loc'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = on ? 'none' : '';
+  });
+  // Hide Receipt Details (batch, vehicle) section's batch field; keep vehicle for whole GRN
+  var batchField = document.getElementById('f-batchNo');
+  if (batchField) batchField.style.display = on ? 'none' : '';
+  // Hide qty section
+  var qtyR = document.getElementById('f-qtyReceived');
+  if (qtyR) {
+    var qtySection = qtyR.closest('.section');
+    if (qtySection) qtySection.style.display = on ? 'none' : '';
+  }
+  // Enable submit in multi mode regardless of disposition gating (validated on save)
+  if (on) {
+    document.getElementById('btnSubmit').disabled = false;
+  }
 }
 
 function clearPORef() {
@@ -643,6 +711,7 @@ function clearPORef() {
   document.getElementById('poRefSelect').value = '';
   document.getElementById('clearPOLink').style.display = 'none';
   document.getElementById('supplier').disabled = false;
+  setMultiMode(false);
 }
 
 function getPendingQtyForCurrentItem() {
@@ -677,8 +746,22 @@ function checkOverReceiptWarning() {
 }
 
 function doSave() {
-  clearAllErrors();
-  if (!validate()) { showErr('Please fill all required fields.'); return; }
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section').style.display === 'block');
+
+  if (!isMulti) {
+    clearAllErrors();
+    if (!validate()) { showErr('Please fill all required fields.'); return; }
+  } else {
+    // Multi-mode validation: at least one row with qty > 0
+    var rows = document.querySelectorAll('#po-multi-body tr');
+    var anyFilled = false;
+    for (var k = 0; k < rows.length; k++) {
+      var q = parseFloat(rows[k].querySelector('.po-multi-qty').value) || 0;
+      if (q > 0) { anyFilled = true; break; }
+    }
+    if (!anyFilled) { showErr('Enter a qty for at least one PO line.'); return; }
+    if (!disposition) { showErr('Pick a disposition.'); return; }
+  }
 
   var btn = document.getElementById('btnSubmit');
   btn.disabled = true;
@@ -711,7 +794,35 @@ function doSave() {
                     }
                     return (itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '';
                   })(),
-    items: [{
+    items: isMulti ? (function() {
+      var arr = [];
+      var rows = document.querySelectorAll('#po-multi-body tr');
+      rows.forEach(function(tr) {
+        var q = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
+        if (q <= 0) return;
+        var matCode = tr.getAttribute('data-mat');
+        var lineNo  = Number(tr.getAttribute('data-line')) || null;
+        var batch   = (tr.querySelector('.po-multi-batch').value || '').trim();
+        var matInfo = (_activePO && _activePO.lines || []).filter(function(l){ return l.materialCode === matCode; })[0] || {};
+        var matMaster = (ALL_MATS || []).filter(function(m){ return m.code === matCode; })[0] || {};
+        var locId = (disposition === 'ACCEPT' && matMaster.defaultLocation) ? matMaster.defaultLocation : '';
+        arr.push({
+          materialCode: matCode,
+          materialDesc: matInfo.materialDesc || matMaster.desc || '',
+          unit:         matMaster.unit || '',
+          qtyOrdered:   q,
+          qtyReceived:  q,
+          batchNo:      batch || ('PO-' + (_activePO.poNo || '').split('/').pop() + '-L' + lineNo),
+          expiryDate:   '',
+          vehicleNo:    document.getElementById('vehicleNo').value.trim(),
+          qtyAccepted:  q,
+          disposition:  disposition,
+          locationId:   locId,
+          poLineNo:     lineNo
+        });
+      });
+      return arr;
+    })() : [{
       materialCode: itemObj.code || document.getElementById('item').value,
       materialDesc: itemObj.desc || '',
       unit:         itemObj.unit || '',
@@ -742,11 +853,11 @@ function doSave() {
             grnId:        res.docNo,
             supplierCode: supplierObj.code || '',
             supplierName: supplierObj.name || '',
-            itemCode:     itemObj.code || '',
-            itemName:     itemObj.desc || '',
-            batchNo:      data.items[0].batchNo,
-            qtyReceived:  qtyR,
-            qtyAccepted:  qtyA,
+            itemCode:     isMulti ? '' : (itemObj.code || ''),
+            itemName:     isMulti ? (data.items.length + ' lines from ' + (_activePO ? _activePO.poNo : 'PO')) : (itemObj.desc || ''),
+            batchNo:      isMulti ? ('multi: ' + data.items.map(function(i){return i.batchNo;}).join(', ')) : data.items[0].batchNo,
+            qtyReceived:  isMulti ? data.items.reduce(function(s,i){return s + i.qtyReceived;}, 0) : qtyR,
+            qtyAccepted:  isMulti ? data.items.reduce(function(s,i){return s + i.qtyAccepted;}, 0) : qtyA,
             disposition:  disposition
           };
           showConfirm(savedGrn);
