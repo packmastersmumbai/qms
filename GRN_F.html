@@ -760,15 +760,23 @@ function doSave() {
     clearAllErrors();
     if (!validate()) { showErr('Please fill all required fields.'); return; }
   } else {
-    // Multi-mode validation: at least one row with qty > 0
+    // Multi-mode validation: at least one row with qty > 0; warn on over-receipt
     var rows = document.querySelectorAll('#po-multi-body tr');
     var anyFilled = false;
+    var overRcpt = [];
     for (var k = 0; k < rows.length; k++) {
       var q = parseFloat(rows[k].querySelector('.po-multi-qty').value) || 0;
-      if (q > 0) { anyFilled = true; break; }
+      if (q > 0) anyFilled = true;
+      var matC = rows[k].getAttribute('data-mat');
+      var lnInfo = (_activePO && _activePO.lines || []).filter(function(l){ return l.materialCode === matC; })[0] || {};
+      var pending = Number(lnInfo.qtyPending) || 0;
+      if (q > pending) overRcpt.push(matC + ': receiving ' + q + ' but only ' + pending + ' pending');
     }
     if (!anyFilled) { showErr('Enter a qty for at least one PO line.'); return; }
     if (!disposition) { showErr('Pick a disposition.'); return; }
+    if (overRcpt.length) {
+      if (!confirm('Over-receipt detected:\n\n' + overRcpt.join('\n') + '\n\nProceed anyway? (PO line will close even if over-received.)')) return;
+    }
   }
 
   var btn = document.getElementById('btnSubmit');
@@ -869,6 +877,9 @@ function doSave() {
             disposition:  disposition
           };
           showConfirm(savedGrn);
+          if (res.warnings && res.warnings.length) {
+            setTimeout(function(){ showErr('Saved with warnings: ' + res.warnings.join('; ')); }, 600);
+          }
         } else {
           var msg = (res && res.error) ? res.error : 'Unknown error';
           showErr('Save failed: ' + msg);
