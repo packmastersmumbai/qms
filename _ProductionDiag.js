@@ -89,8 +89,21 @@ function traceFormPathForMaterial(materialCode) {
 }
 
 function runProductionDiagnostics() {
-  var ss = getSpreadsheet();
+  var result = runProductionDiagnostics_core();
   var ui = SpreadsheetApp.getUi();
+  var verdict = result.gateReady > 0
+    ? '✅ Production usable — ' + result.gateReady + ' material(s) ready to issue.'
+    : '❌ Production NOT usable. See _PROD_DIAG sheet for full breakdown.';
+  ui.alert('Production Pipeline Diagnosis',
+    verdict +
+    '\n\nFAILs: ' + result.fails +
+    '\nWARNs: ' + result.warns +
+    '\n\nFull report: _PROD_DIAG sheet (' + result.report.length + ' rows).',
+    ui.ButtonSet.OK);
+}
+
+function runProductionDiagnostics_core() {
+  var ss = getSpreadsheet();
   var report = []; // each entry: [section, check, value, verdict]
 
   function add(section, check, value, verdict) {
@@ -345,14 +358,5 @@ function runProductionDiagnostics() {
     add('9.5 Form path', 'Simulation error', formErr.message, 'FAIL');
   }
 
-  // ---------- Final alert ----------
-  var verdict = gateReady > 0
-    ? '✅ Production usable — ' + gateReady + ' material(s) ready to issue.'
-    : '❌ Production NOT usable. See _PROD_DIAG sheet for full breakdown.';
-  ui.alert('Production Pipeline Diagnosis',
-    verdict +
-    '\n\nFAILs: ' + fails +
-    '\nWARNs: ' + warns +
-    '\n\nFull report: _PROD_DIAG sheet (' + report.length + ' rows).',
-    ui.ButtonSet.OK);
+  return { report: report, fails: fails, warns: warns, gateReady: gateReady };
 }

@@ -11,8 +11,20 @@
 // ============================================================
 
 function runDispatchDiagnostics() {
-  var ss = getSpreadsheet();
+  var result = runDispatchDiagnostics_core();
   var ui = SpreadsheetApp.getUi();
+  ui.alert('Dispatch Pipeline Diagnosis',
+    (result.usable ? '✅' : '⚠️') + ' ' +
+    (result.usable ? 'Dispatch usable — ' + result.availPlusPartial + ' lot(s) available.'
+                   : 'Dispatch NOT usable yet (no AVAILABLE lots).') +
+    '\n\nFAILs: ' + result.fails +
+    '\nWARNs: ' + result.warns +
+    '\n\nFull report on sheet "_DISP_DIAG" (' + result.report.length + ' rows).',
+    ui.ButtonSet.OK);
+}
+
+function runDispatchDiagnostics_core() {
+  var ss = getSpreadsheet();
   var report = []; // [section, check, value, verdict]
   function add(section, check, value, verdict) {
     report.push([section, check, String(value == null ? '' : value), verdict || '']);
@@ -230,14 +242,13 @@ function runDispatchDiagnostics() {
     if (bg) diagSheet.getRange(rr+2, 4).setBackground(bg);
   }
 
-  ui.alert('Dispatch Pipeline Diagnosis',
-    (usable ? '✅' : '⚠️') + ' ' +
-    (usable ? 'Dispatch usable — ' + (fglAvail + fglPartial) + ' lot(s) available.'
-            : 'Dispatch NOT usable yet (no AVAILABLE lots).') +
-    '\n\nFAILs: ' + fails +
-    '\nWARNs: ' + warns +
-    '\n\nFull report on sheet "_DISP_DIAG" (' + report.length + ' rows).',
-    ui.ButtonSet.OK);
+  return {
+    report: report,
+    fails: fails,
+    warns: warns,
+    usable: usable,
+    availPlusPartial: (fglAvail + fglPartial)
+  };
 }
 
 // ---------- Trace one (customer, product) end-to-end ----------

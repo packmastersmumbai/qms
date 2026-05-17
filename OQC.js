@@ -25,14 +25,33 @@ function _isOQCReleasedDecision_(dec) {
 
 // P6 — resolve product code from FG material description (master desc → code).
 function _resolveProductCodeFromDesc_(desc) {
+  // P6 LOW-5 — robust match: try exact (case-insensitive), then startsWith,
+  // then includes. Log when fallback fires so masters drift is visible.
   try {
     var key = String(desc || '').trim();
     if (!key) return '';
+    var keyLc = key.toLowerCase();
     var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
-    for (var i = 0; i < mats.length; i++) {
-      var d = String(mats[i].desc || mats[i].name || '').trim();
-      if (d === key && String(mats[i].category || '').toUpperCase() === 'FG') {
-        return String(mats[i].code || '').trim();
+    var fgMats = mats.filter(function(m) { return String(m.category || '').toUpperCase() === 'FG'; });
+    // 1) Exact (case-insensitive)
+    for (var i = 0; i < fgMats.length; i++) {
+      var d = String(fgMats[i].desc || fgMats[i].name || '').trim().toLowerCase();
+      if (d === keyLc) return String(fgMats[i].code || '').trim();
+    }
+    // 2) startsWith fallback
+    for (var j = 0; j < fgMats.length; j++) {
+      var d2 = String(fgMats[j].desc || fgMats[j].name || '').trim().toLowerCase();
+      if (d2 && (d2.indexOf(keyLc) === 0 || keyLc.indexOf(d2) === 0)) {
+        Logger.log('_resolveProductCodeFromDesc_ startsWith fallback: "' + key + '" -> "' + fgMats[j].desc + '" (' + fgMats[j].code + ')');
+        return String(fgMats[j].code || '').trim();
+      }
+    }
+    // 3) includes fallback
+    for (var k = 0; k < fgMats.length; k++) {
+      var d3 = String(fgMats[k].desc || fgMats[k].name || '').trim().toLowerCase();
+      if (d3 && (d3.indexOf(keyLc) >= 0 || keyLc.indexOf(d3) >= 0)) {
+        Logger.log('_resolveProductCodeFromDesc_ includes fallback: "' + key + '" -> "' + fgMats[k].desc + '" (' + fgMats[k].code + ')');
+        return String(fgMats[k].code || '').trim();
       }
     }
   } catch(e) {}
@@ -198,7 +217,10 @@ function checkIPQCForBatch(productCode, batch) {
 function getOQCRowForWA(row) {
   var ws = getSpreadsheet().getSheetByName('OQC_LOG');
   if (!ws || row < 2) return null;
-  var r = ws.getRange(row, 1, 1, 20).getValues()[0];
+  // P6 LOW-6 — read the full row width so future columns (FG Location col 22,
+  // FG Lot ID col 23, etc.) are not silently truncated.
+  var lastCol = Math.max(20, ws.getLastColumn());
+  var r = ws.getRange(row, 1, 1, lastCol).getValues()[0];
   if (!r[0]) return null;
   return {
     type:           'OQC',

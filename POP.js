@@ -295,18 +295,28 @@ function cancelPO(poNo, reason) {
     }
     if (rowIdx === -1) return { success: false, error: 'PO not found: ' + poNo };
     var status = String(data[rowIdx][11]).trim();
-    if (status !== 'DRAFT' && status !== 'OPEN') {
-      return { success: false, error: 'Cannot cancel PO with status "' + status + '".' };
-    }
-    // Guard: check for any GRN receipts
+    // Collect blocking GRNs up-front so PARTIAL_RECEIVED error names them (P2 LOW-6).
+    var blockingGrns = [];
     var grnWs = ss.getSheetByName('GRN_LOG');
     if (grnWs && grnWs.getLastRow() > 1) {
       var grnData = grnWs.getDataRange().getValues();
       for (var g = 1; g < grnData.length; g++) {
         if (String(grnData[g][4]).trim() === String(poNo).trim()) {
-          return { success: false, error: 'Cannot cancel: GRN ' + String(grnData[g][0]).trim() + ' references this PO.' };
+          blockingGrns.push(String(grnData[g][0]).trim());
         }
       }
+    }
+    if (status !== 'DRAFT' && status !== 'OPEN') {
+      var msg = 'Cannot cancel PO with status "' + status + '".';
+      if (status === 'PARTIAL_RECEIVED' && blockingGrns.length) {
+        msg += ' Blocking GRN(s): ' + blockingGrns.join(', ') +
+               '. Reverse or void these GRNs first, then retry cancel.';
+      }
+      return { success: false, error: msg };
+    }
+    // Guard: check for any GRN receipts (OPEN/DRAFT path)
+    if (blockingGrns.length) {
+      return { success: false, error: 'Cannot cancel: GRN ' + blockingGrns[0] + ' references this PO.' };
     }
     hdrWs.getRange(rowIdx + 1, 12).setValue('CANCELLED');
     hdrWs.getRange(rowIdx + 1, 17).setValue(String(reason || ''));

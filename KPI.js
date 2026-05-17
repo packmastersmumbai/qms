@@ -16,8 +16,9 @@ function getKPIDashboard(periodOpts) {
   var cacheKey = 'kpi:v1:' + (periodOpts.preset || 'THIS_MONTH') + ':' + (periodOpts.fromISO || '') + ':' + (periodOpts.toISO || '');
 
   // Cache probe
+  var cache;
   try {
-    var cache = CacheService.getScriptCache();
+    cache = CacheService.getScriptCache();
     var cached = cache.get(cacheKey);
     if (cached) {
       var parsed = JSON.parse(cached);
@@ -26,6 +27,26 @@ function getKPIDashboard(periodOpts) {
     }
   } catch(e) {
     Logger.log('KPI cache read error: ' + e.message);
+  }
+
+  // P7 LOW-2 — stampede guard: serialise concurrent cold-cache recomputes for
+  // the same cacheKey. tryLock(8s) gives a slow first caller time to finish.
+  // After acquiring the lock, re-probe the cache (likely populated by the
+  // caller that ran the compute while we were waiting).
+  var stampedeLock = null;
+  try {
+    stampedeLock = LockService.getScriptLock();
+    if (stampedeLock.tryLock(8000) && cache) {
+      var cached2 = cache.get(cacheKey);
+      if (cached2) {
+        try { stampedeLock.releaseLock(); } catch(e) {}
+        var parsed2 = JSON.parse(cached2);
+        parsed2.cacheHit = true;
+        return parsed2;
+      }
+    }
+  } catch(eLock) {
+    Logger.log('KPI stampede lock error: ' + eLock.message);
   }
 
   var period = kpiPeriodResolve_(periodOpts);
@@ -108,13 +129,29 @@ function getKPIDashboard(periodOpts) {
   try {
     var serialized = JSON.stringify(payload);
     if (serialized.length < 90000) {
-      CacheService.getScriptCache().put(cacheKey, serialized, 300);
+      var c = CacheService.getScriptCache();
+      c.put(cacheKey, serialized, 300);
+      // P7 MED-3 — track every cacheKey so kpiCacheFlush() can purge CUSTOM
+      // keys (whose fromISO/toISO are unknown ahead of time).
+      try {
+        var idxRaw = c.get('kpi:index');
+        var idx = idxRaw ? JSON.parse(idxRaw) : [];
+        if (idx.indexOf(cacheKey) < 0) {
+          idx.push(cacheKey);
+          // Cap to most-recent 200 keys to bound size
+          if (idx.length > 200) idx = idx.slice(idx.length - 200);
+          c.put('kpi:index', JSON.stringify(idx), 21600);
+        }
+      } catch(eIdx) { Logger.log('KPI cache index write: ' + eIdx.message); }
     } else {
       Logger.log('KPI payload too large for cache (' + serialized.length + ' bytes), skipping.');
     }
   } catch(e) {
     Logger.log('KPI cache write error: ' + e.message);
   }
+
+  // Release stampede lock after cache write so waiters re-probe and hit it.
+  if (stampedeLock) { try { stampedeLock.releaseLock(); } catch(e) {} }
 
   return payload;
 }
@@ -164,11 +201,20 @@ function getKPIDrilldown(metricKey, periodOpts, subFilter) {
 /** Flush all KPI cache entries (clears script cache entirely — acceptable for this app). */
 function kpiCacheFlush() {
   try {
-    CacheService.getScriptCache().removeAll([]);
-    // removeAll([]) is a no-op; iterate known presets instead
-    var presets = ['THIS_MONTH','LAST_30','LAST_90','THIS_FY'];
-    var keys = presets.map(function(p) { return 'kpi:v1:' + JSON.stringify({ preset: p }); });
-    CacheService.getScriptCache().removeAll(keys);
+    var c = CacheService.getScriptCache();
+    // Standard preset keys (match the actual cacheKey format used in getKPIDashboard)
+    var presets = ['THIS_MONTH','LAST_30','LAST_90','THIS_FY','CUSTOM'];
+    var keys = presets.map(function(p) { return 'kpi:v1:' + p + '::'; });
+    // P7 MED-3 — also clear every tracked CUSTOM cacheKey (fromISO/toISO populated).
+    try {
+      var idxRaw = c.get('kpi:index');
+      if (idxRaw) {
+        var idx = JSON.parse(idxRaw);
+        idx.forEach(function(k) { if (keys.indexOf(k) < 0) keys.push(k); });
+      }
+    } catch(eIdx) { Logger.log('kpiCacheFlush index read: ' + eIdx.message); }
+    keys.push('kpi:index');
+    c.removeAll(keys);
     Logger.log('KPI cache flushed: ' + keys.length + ' keys.');
   } catch(e) {
     Logger.log('kpiCacheFlush error: ' + e.message);

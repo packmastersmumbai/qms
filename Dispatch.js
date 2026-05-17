@@ -57,12 +57,16 @@ function _generateFGLotId_() {
 // Canonical comparator for FIFO plan vs chosen plan (architect correction #5).
 // Returns a normalized array suitable for JSON.stringify equality testing.
 function canonicalizePlan_(plan) {
+  // P6 MED-2 — canonical field name is `qtyFromThisLot` (what plan rows write).
+  // We also accept legacy `qty` for backwards compat with older Dispatch_F.html
+  // payloads that still send the un-renamed field. New writers MUST emit
+  // qtyFromThisLot (see planFGDispatchAllocation below).
   return (plan || []).slice().sort(function(a, b) {
     return String(a.lotId || '').localeCompare(String(b.lotId || ''));
   }).map(function(p) {
     return {
       lotId: String(p.lotId || '').trim(),
-      qty: Number(Number(p.qty || p.qtyFromThisLot || 0).toFixed(3))
+      qty: Number(Number(p.qtyFromThisLot != null ? p.qtyFromThisLot : (p.qty || 0)).toFixed(3))
     };
   });
 }
@@ -551,12 +555,16 @@ function getRecentDispatches(limit) {
     var gpWs = ss.getSheetByName('GATEPASS_LOG');
     if (!gpWs || gpWs.getLastRow() < 2) return [];
     var fglWs = getFGDispatchSheet_();
+    // P6 MED-3 — one OQC ref can map to multiple FG_DISPATCH_LOTS rows
+    // (e.g. partial splits, re-mirrors). Store as array; aggregate at render.
     var lotsByOqcRef = {};
     if (fglWs && fglWs.getLastRow() > 1) {
       var fg = fglWs.getDataRange().getValues();
       for (var i = 1; i < fg.length; i++) {
         var ref = String(fg[i][2] || '').trim();
-        if (ref) lotsByOqcRef[ref] = { lotId: fg[i][0], status: fg[i][14] };
+        if (!ref) continue;
+        if (!lotsByOqcRef[ref]) lotsByOqcRef[ref] = [];
+        lotsByOqcRef[ref].push({ lotId: fg[i][0], status: fg[i][14] });
       }
     }
     var ovWs = ss.getSheetByName('FG_FIFO_OVERRIDE_LOG');
@@ -579,7 +587,8 @@ function getRecentDispatches(limit) {
       var oqcRef = String(r[3] || '').trim();
       if (!gpNo) continue;
       // Only include "P6 era" dispatches — those whose OQC refs are in FG_DISPATCH_LOTS
-      if (!lotsByOqcRef[oqcRef]) continue;
+      var lotEntries = lotsByOqcRef[oqcRef];
+      if (!lotEntries || !lotEntries.length) continue;
       if (!byGp[gpNo]) {
         byGp[gpNo] = {
           gpNo: gpNo,
@@ -594,8 +603,9 @@ function getRecentDispatches(limit) {
       }
       byGp[gpNo].totalQty += Number(r[7]) || 0;
       byGp[gpNo].itemCount += 1;
-      var lid = lotsByOqcRef[oqcRef] && lotsByOqcRef[oqcRef].lotId;
-      if (lid && byGp[gpNo].lotIds.indexOf(lid) < 0) byGp[gpNo].lotIds.push(lid);
+      lotEntries.forEach(function(le) {
+        if (le.lotId && byGp[gpNo].lotIds.indexOf(le.lotId) < 0) byGp[gpNo].lotIds.push(le.lotId);
+      });
       orderTs[gpNo] = r[17] ? new Date(r[17]).getTime() : 0;
     }
     var list = Object.keys(byGp).map(function(k){ return byGp[k]; });
@@ -632,9 +642,13 @@ function backfillFGDispatchLotsFromOQC() {
       }
     }
 
-    // Pre-index dispatch totals from GATEPASS_LOG by oqcRef
+    // Pre-index dispatch totals from GATEPASS_LOG by oqcRef.
+    // P6 LOW-4 — also capture first/last actual dispatch timestamps (col B = date,
+    // col R[17] = createdAt) so backfill records real history instead of new Date().
     var gpQtyByRef = {};
     var gpRefsByOqcRef = {};
+    var gpFirstTsByRef = {};
+    var gpLastTsByRef  = {};
     var gpWs = ss.getSheetByName('GATEPASS_LOG');
     if (gpWs && gpWs.getLastRow() > 1) {
       var g = gpWs.getDataRange().getValues();
@@ -647,6 +661,15 @@ function backfillFGDispatchLotsFromOQC() {
           if (docNo) {
             gpRefsByOqcRef[ref] = gpRefsByOqcRef[ref] || {};
             gpRefsByOqcRef[ref][docNo] = true;
+          }
+          // Prefer createdAt (col 17); fall back to date (col 1)
+          var rawTs = g[j][17] || g[j][1];
+          if (rawTs) {
+            var ts = (rawTs instanceof Date) ? rawTs : new Date(rawTs);
+            if (!isNaN(ts.getTime())) {
+              if (!gpFirstTsByRef[ref] || ts < gpFirstTsByRef[ref]) gpFirstTsByRef[ref] = ts;
+              if (!gpLastTsByRef[ref]  || ts > gpLastTsByRef[ref])  gpLastTsByRef[ref]  = ts;
+            }
           }
         }
       }
@@ -720,8 +743,8 @@ function backfillFGDispatchLotsFromOQC() {
           unit:         unitByCode[code] || '',
           status:       status,
           gatepassRefs: refsStr,
-          firstDispatchedAt: dispatched > 0 ? new Date() : '',
-          lastDispatchedAt:  dispatched > 0 ? new Date() : '',
+          firstDispatchedAt: dispatched > 0 ? (gpFirstTsByRef[docNo] || new Date()) : '',
+          lastDispatchedAt:  dispatched > 0 ? (gpLastTsByRef[docNo]  || new Date()) : '',
           remarks:      remarks
         });
         if (lotId) {

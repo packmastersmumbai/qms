@@ -446,8 +446,14 @@ function ensureConfigKeys_() {
 //   (only at the END — does not touch existing column order or data).
 function verifyAndRepairSheets() {
   var ui = SpreadsheetApp.getUi();
+  var result = verifyAndRepairSheets_core();
+  if (!result.ok) { ui.alert(result.error); return; }
+  ui.alert('Sheet Verify & Repair', result.report.join('\n'), ui.ButtonSet.OK);
+}
+
+function verifyAndRepairSheets_core() {
   var ss = getSpreadsheet();
-  if (!ss) { ui.alert('No spreadsheet bound.'); return; }
+  if (!ss) return { ok: false, error: 'No spreadsheet bound.' };
 
   var EXPECTED = {
     'GRN_LOG':              GRN_HEADERS,
@@ -514,8 +520,8 @@ function verifyAndRepairSheets() {
     report.push('🔧 REPAIRED ' + name + ' — added ' + missing.length + ' col(s): ' + missing.join(', '));
   });
 
-  ui.alert('Sheet Verify & Repair', report.join('\n'), ui.ButtonSet.OK);
   Logger.log(report.join('\n'));
+  return { ok: true, report: report };
 }
 
 // Integration smoke test — read-only trace of the most recent batch flow.
@@ -523,8 +529,14 @@ function verifyAndRepairSheets() {
 // Flags broken or missing handoffs. Does not write anything.
 function smokeTestBatchFlow() {
   var ui = SpreadsheetApp.getUi();
+  var result = smokeTestBatchFlow_core();
+  if (!result.ok) { ui.alert(result.error); return; }
+  ui.alert('Smoke Test Complete', 'Report written to "_SMOKETEST" sheet.', ui.ButtonSet.OK);
+}
+
+function smokeTestBatchFlow_core() {
   var ss = getSpreadsheet();
-  if (!ss) { ui.alert('No spreadsheet bound.'); return; }
+  if (!ss) return { ok: false, error: 'No spreadsheet bound.' };
 
   var N = 5;  // sample size — last 5 GRNs
   var report = [];
@@ -535,7 +547,7 @@ function smokeTestBatchFlow() {
   var oqcWs = ss.getSheetByName('OQC_LOG');
   var gpWs  = ss.getSheetByName('GATEPASS_LOG');
 
-  if (!grnWs || grnWs.getLastRow() < 2) { ui.alert('No GRN data.'); return; }
+  if (!grnWs || grnWs.getLastRow() < 2) return { ok: false, error: 'No GRN data.' };
 
   var grnRows = grnWs.getDataRange().getValues();
   var sample = grnRows.slice(Math.max(1, grnRows.length - N));
@@ -634,7 +646,7 @@ function smokeTestBatchFlow() {
   var dump = ss.getSheetByName('_SMOKETEST') || ss.insertSheet('_SMOKETEST');
   dump.clear();
   dump.getRange(1, 1).setValue(out);
-  ui.alert('Smoke Test Complete', 'Report written to "_SMOKETEST" sheet.', ui.ButtonSet.OK);
+  return { ok: true, report: out };
 }
 
 // Verifies master data tabs have minimum rows + required categories.

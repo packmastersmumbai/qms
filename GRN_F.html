@@ -763,21 +763,68 @@ function doSave() {
     // Multi-mode validation: at least one row with qty > 0; warn on over-receipt
     var rows = document.querySelectorAll('#po-multi-body tr');
     var anyFilled = false;
-    var overRcpt = [];
     for (var k = 0; k < rows.length; k++) {
-      var q = parseFloat(rows[k].querySelector('.po-multi-qty').value) || 0;
-      if (q > 0) anyFilled = true;
-      var matC = rows[k].getAttribute('data-mat');
-      var lnInfo = (_activePO && _activePO.lines || []).filter(function(l){ return l.materialCode === matC; })[0] || {};
-      var pending = Number(lnInfo.qtyPending) || 0;
-      if (q > pending) overRcpt.push(matC + ': receiving ' + q + ' but only ' + pending + ' pending');
+      var q0 = parseFloat(rows[k].querySelector('.po-multi-qty').value) || 0;
+      if (q0 > 0) { anyFilled = true; break; }
     }
     if (!anyFilled) { showErr('Enter a qty for at least one PO line.'); return; }
     if (!disposition) { showErr('Pick a disposition.'); return; }
-    if (overRcpt.length) {
-      if (!confirm('Over-receipt detected:\n\n' + overRcpt.join('\n') + '\n\nProceed anyway? (PO line will close even if over-received.)')) return;
-    }
+
+    // P2 MED-3 — re-fetch PO from server at confirm time so the over-receipt
+    // check uses live qty_pending (not a stale _activePO snapshot captured when
+    // the user opened the form). Skip-refresh on RPC failure: fall back to snapshot.
+    var btnEl = document.getElementById('btnSubmit');
+    var origLabel = btnEl.textContent;
+    btnEl.disabled = true;
+    btnEl.textContent = 'Checking PO…';
+    google.script.run
+      .withSuccessHandler(function(freshPO) {
+        btnEl.disabled = false;
+        btnEl.textContent = origLabel;
+        var linesSrc = (freshPO && freshPO.lines && freshPO.lines.length)
+          ? freshPO.lines
+          : ((_activePO && _activePO.lines) || []);
+        if (freshPO && freshPO.lines) _activePO.lines = freshPO.lines; // refresh local
+        var overRcpt = [];
+        var rows2 = document.querySelectorAll('#po-multi-body tr');
+        for (var kk = 0; kk < rows2.length; kk++) {
+          var qq = parseFloat(rows2[kk].querySelector('.po-multi-qty').value) || 0;
+          var matCC = rows2[kk].getAttribute('data-mat');
+          var lnInfo2 = linesSrc.filter(function(l){ return l.materialCode === matCC; })[0] || {};
+          var pending2 = Number(lnInfo2.qtyPending) || 0;
+          if (qq > pending2) overRcpt.push(matCC + ': receiving ' + qq + ' but only ' + pending2 + ' pending');
+        }
+        if (overRcpt.length) {
+          if (!confirm('Over-receipt detected (live PO data):\n\n' + overRcpt.join('\n') + '\n\nProceed anyway? (PO line will close even if over-received.)')) return;
+        }
+        _doSaveProceed();
+      })
+      .withFailureHandler(function() {
+        // RPC failure: fall back to snapshot-based check
+        btnEl.disabled = false;
+        btnEl.textContent = origLabel;
+        var overRcpt = [];
+        var rows3 = document.querySelectorAll('#po-multi-body tr');
+        for (var kk2 = 0; kk2 < rows3.length; kk2++) {
+          var qq2 = parseFloat(rows3[kk2].querySelector('.po-multi-qty').value) || 0;
+          var matCC2 = rows3[kk2].getAttribute('data-mat');
+          var lnInfo3 = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCC2; })[0] || {};
+          var pending3 = Number(lnInfo3.qtyPending) || 0;
+          if (qq2 > pending3) overRcpt.push(matCC2 + ': receiving ' + qq2 + ' but only ' + pending3 + ' pending');
+        }
+        if (overRcpt.length) {
+          if (!confirm('Over-receipt detected (cached PO snapshot):\n\n' + overRcpt.join('\n') + '\n\nProceed anyway?')) return;
+        }
+        _doSaveProceed();
+      })
+      .getPOById(_activePO ? _activePO.poNo : '');
+    return; // async continuation in _doSaveProceed
   }
+  _doSaveProceed();
+}
+
+function _doSaveProceed() {
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display === 'block');
 
   var btn = document.getElementById('btnSubmit');
   btn.disabled = true;
