@@ -7,7 +7,7 @@ function _testNextSeq_(prefix) {
   var ss = getSpreadsheet();
   var year = new Date().getFullYear();
   var max = 0;
-  var sheets = ['NCR_LOG', 'OQC_LOG', 'IQC_LOG', '_TEST_ARCHIVE'];
+  var sheets = ['NCR_LOG', 'OQC_LOG', 'IQC_LOG', 'GRN_LOG', 'PO_HEADER', 'PROD_ISSUE_LOG', 'GATEPASS_LOG', '_TEST_ARCHIVE'];
   sheets.forEach(function(name) {
     var ws = ss.getSheetByName(name);
     if (!ws || ws.getLastRow() < 2) return;

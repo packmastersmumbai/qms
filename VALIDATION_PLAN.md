@@ -38,3 +38,24 @@ Captured 2026-05-17 against deployment @142.
 - **Sequence integrity confirmed** — `_TEST_ARCHIVE` already contains 9 rows from last session's smokes, none in live sheets.
 - **Added**: `runPOPDiag_core()` (headless wrapper) and `getDiagRows(sheet, severity)` reader so future Phase-N runs can be fully automated.
 
+## Phase 2 — `smokeFullChain()`
+
+Completed 2026-05-17. New sibling file `_SmokeFullChain.js` (kept `_TestHelpers.js` focused on row-level helpers). `_testNextSeq_` scan list extended to include `GRN_LOG`, `PO_HEADER`, `PROD_ISSUE_LOG`, `GATEPASS_LOG` for cross-sheet TEST-prefix uniqueness.
+
+New callable API Executable fns:
+- `smokeFullChain()` → `{success, docNos, archived, countersBefore, countersAfter, countersRestored, errors}`
+- `createTestProductionBatch(payload)` → `{success, docNo, batchNo, issueId}` — appends to `PROD_ISSUE_LOG` + writes `STOCK_LEDGER` `RM_ISSUE` consumption
+- `createTestPO_(payload)` / `createTestGRN_(payload)` — internal but callable; bypass real `getNextDocNumber`
+
+### First successful run
+- gp_counter before: **16** → after smoke (pre-restore): 17 → after restore: **16** ✅
+- All other counters (po/grn/iqc/oqc/prod) unchanged before vs. after — TEST prefixes never touched real counters.
+- docNos: po `TEST/PO/2026-001`, grn `TEST/GRN/2026-001`, iqc `TEST/IQC/2026-001`, prod `TEST/PROD/2026-001`, oqc `TEST/OQC/2026-001`, fgLot `TEST-FGL-...`, gp `PM/GP/2026-016`
+- archived: gatepass=1, stockLedger=3, fgLots=1, oqc=1, iqc=1, grn=1, po=1, poLines=1, prod=1
+
+### Decisions
+- **Sibling file over extending `_TestHelpers.js`** — `smokeFullChain` + 3 sub-helpers run ~280 lines; keeping `_TestHelpers.js` as row-level primitives keeps both files coherent.
+- **Restore only `gp_counter`** — every other step bypasses `getNextDocNumber`, so no other counter advances.
+- **`SpreadsheetApp.flush()` between steps** — each upstream write must commit before next read.
+- **STOCK_LEDGER archival by refDocNo (col 11, idx 10)** — covers GRN_RECEIPT, RM_ISSUE, and FG_DISPATCH entries written during the chain. Result: 3 ledger rows archived.
+
