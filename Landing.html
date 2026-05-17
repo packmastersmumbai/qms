@@ -394,19 +394,20 @@
       'Gatepass': '<svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
       'Dispatch': '<svg viewBox="0 0 24 24"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 4v3h-5z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
       'Production': '<svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l5-3v14M10 21V7l5-3v17M15 21V11l5-3v13"/></svg>',
-      'Records':  '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>'
+      'Records':  '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>',
+      'KPI':      '<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
     };
     var groups = [
       { label: 'Inbound',    modules: [{ name: 'PO', form: 'PO' }, { name: 'GRN', form: 'GRN' }, { name: 'IQC', form: 'IQC' }] },
       { label: 'In-Process', modules: [{ name: 'IPQC', form: 'IPQC' }, { name: 'Production', form: 'Production' }] },
       { label: 'Outbound',   modules: [{ name: 'OQC', form: 'OQC' }, { name: 'Gatepass', form: 'Gatepass' }, { name: 'Dispatch', form: 'Dispatch' }] },
-      { label: 'Meta',       modules: [{ name: 'Records', form: 'Records' }] }
+      { label: 'Reports',    modules: [{ name: 'KPI', form: 'KPI' }, { name: 'Records', form: 'Records' }] }
     ];
 
     function tileHtml(m) {
       var cnt = counts[m.name];
       var chipHtml;
-      if (m.name === 'Records') {
+      if (m.name === 'Records' || m.name === 'KPI') {
         chipHtml = '<span class="module-count-chip">→</span>';
       } else if (cnt === 0 || cnt === '0') {
         chipHtml = '<span class="module-count-chip zero">0</span>';

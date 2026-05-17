@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>KPI Dashboard — Pack Masters</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+    }
+
+    /* ── Header ── */
+    .pm-header {
+      position: sticky; top: 0; z-index: 100;
+      height: 52px;
+      background: var(--navy);
+      display: flex; align-items: center; padding: 0 14px; gap: 10px;
+    }
+    .pm-header .logo { font-size: 14px; font-weight: 700; color: #fff; cursor: pointer; flex-shrink: 0; }
+    .pm-header .title { flex: 1; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); }
+    .header-actions { display: flex; gap: 6px; }
+    .btn-sm {
+      font-size: 11px; font-weight: 600; padding: 5px 10px;
+      border: none; border-radius: 6px; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-primary { background: #fff; color: var(--navy); }
+    .btn-danger  { background: #ef4444; color: #fff; }
+    .btn-sm:active { opacity: 0.7; }
+
+    /* ── Period bar ── */
+    .period-bar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 14px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .period-bar select, .period-bar input[type="date"] {
+      height: 32px; border: 1px solid var(--border); border-radius: 6px;
+      padding: 0 8px; font-size: 12px; color: var(--text);
+      background: var(--white); font-family: 'DM Sans', sans-serif;
+    }
+    .period-bar label { font-size: 11px; font-weight: 600; color: var(--muted); }
+    #customRange { display: none; align-items: center; gap: 6px; }
+    #customRange.show { display: flex; }
+    .period-apply {
+      height: 32px; padding: 0 14px; font-size: 12px; font-weight: 700;
+      background: var(--navy); color: #fff; border: none; border-radius: 6px; cursor: pointer;
+    }
+
+    /* ── Tile grid ── */
+    .tile-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 12px 14px;
+    }
+    @media (max-width: 700px) { .tile-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 440px) { .tile-grid { grid-template-columns: 1fr; } }
+
+    .kpi-tile {
+      background: var(--white);
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      border-left: 4px solid var(--border);
+      padding: 12px 14px 10px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .kpi-tile:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .kpi-tile:active { transform: scale(0.98); }
+    .kpi-tile.green  { border-left-color: #16a34a; }
+    .kpi-tile.amber  { border-left-color: #d97706; }
+    .kpi-tile.red    { border-left-color: #dc2626; }
+    .kpi-tile.grey   { border-left-color: var(--muted); }
+
+    .tile-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      color: var(--muted); letter-spacing: 0.6px; margin-bottom: 4px;
+    }
+    .tile-value {
+      font-size: 28px; font-weight: 700; color: var(--navy); line-height: 1;
+    }
+    .tile-value.green  { color: #16a34a; }
+    .tile-value.amber  { color: #d97706; }
+    .tile-value.red    { color: #dc2626; }
+    .tile-value.grey   { color: var(--muted); }
+
+    .tile-delta {
+      font-size: 11px; font-weight: 600; margin-left: 6px;
+      display: inline-block; vertical-align: middle;
+    }
+    .tile-delta.up   { color: #16a34a; }
+    .tile-delta.down { color: #dc2626; }
+
+    .tile-sub {
+      font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 500;
+    }
+
+    .tile-sparkline { margin-top: 8px; display: block; }
+
+    /* ── Skeleton ── */
+    @keyframes skel-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+    .skel { background: var(--navy-light); border-radius: 6px; animation: skel-pulse .8s ease-in-out infinite; }
+
+    /* ── Footer ── */
+    .dash-footer {
+      font-size: 11px; color: var(--muted); text-align: center;
+      padding: 10px; border-top: 1px solid var(--border);
+    }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 500;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: block; }
+    .modal-box {
+      background: var(--white);
+      border-radius: 10px;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 20px;
+      font-size: 13px;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .modal-title { font-size: 15px; font-weight: 700; color: var(--navy); }
+    .modal-close {
+      background: none; border: none; font-size: 22px;
+      cursor: pointer; color: var(--muted); line-height: 1;
+    }
+    .modal-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .modal-table th {
+      text-align: left; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; color: var(--navy);
+      background: var(--navy-light); padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+    .modal-table tr:last-child td { border-bottom: none; }
+    .modal-empty { text-align: center; padding: 20px; color: var(--muted); font-size: 12px; }
+
+    /* OTD tabs */
+    .otd-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+    .otd-tab {
+      font-size: 11px; font-weight: 600; padding: 5px 12px;
+      border-radius: 20px; cursor: pointer;
+      background: var(--navy-light); color: var(--navy); border: none;
+    }
+    .otd-tab.active { background: var(--navy); color: #fff; }
+
+    /* toast */
+    #kpiToast {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: #c62828; color: #fff; font-size: 13px; font-weight: 600;
+      padding: 10px 20px; border-radius: 8px; z-index: 9999;
+      display: none; cursor: pointer; white-space: nowrap;
+    }
+    #kpiToast.show { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="pm-header">
+  <div class="logo" id="logoBtn">Pack Masters</div>
+  <div class="title">KPI Dashboard</div>
+  <div class="header-actions">
+    <button class="btn-sm btn-primary" id="refreshBtn">Refresh</button>
+  </div>
+</div>
+
+<!-- Period selector -->
+<div class="period-bar">
+  <label>Period</label>
+  <select id="presetSel">
+    <option value="THIS_MONTH">This Month</option>
+    <option value="LAST_30">Last 30 Days</option>
+    <option value="LAST_90">Last 90 Days</option>
+    <option value="THIS_FY">This FY</option>
+    <option value="CUSTOM">Custom…</option>
+  </select>
+  <div id="customRange">
+    <label>From</label>
+    <input type="date" id="customFrom">
+    <label>To</label>
+    <input type="date" id="customTo">
+    <button class="period-apply" id="applyCustom">Apply</button>
+  </div>
+</div>
+
+<!-- KPI tiles -->
+<div class="tile-grid" id="tileGrid">
+  <!-- Skeleton placeholders -->
+  <div class="kpi-tile grey"><div class="skel" style="height:60px;"></div></div>
+  <div class="kpi-tile grey"><div class="skel" style="height:60px;"></div></div>
+  <div class="kpi-tile grey"><div class="skel" style="height:60px;"></div></div>
+  <div class="kpi-tile grey"><div class="skel" style="height:60px;"></div></div>
+  <div class="kpi-tile grey"><div class="skel" style="height:60px;"></div></div>
+</div>
+
+<!-- Footer -->
+<div class="dash-footer" id="dashFooter">Loading…</div>
+
+<!-- ── FPY Modal ── -->
+<div class="modal-overlay" id="fpyModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">FPY — Failures (Accepted with NCR)</div>
+      <button class="modal-close" onclick="closeModal('fpyModal')">×</button>
+    </div>
+    <div id="fpyModalBody"><p class="modal-empty">Loading…</p></div>
+  </div>
+</div>
+
+<!-- ── Supplier Defect Modal ── -->
+<div class="modal-overlay" id="sdModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Supplier Defect Rate — Full List</div>
+      <button class="modal-close" onclick="closeModal('sdModal')">×</button>
+    </div>
+    <div id="sdModalBody"><p class="modal-empty">Loading…</p></div>
+  </div>
+</div>
+
+<!-- ── OTD Modal ── -->
+<div class="modal-overlay" id="otdModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">OTD Detail</div>
+      <button class="modal-close" onclick="closeModal('otdModal')">×</button>
+    </div>
+    <div class="otd-tabs" id="otdTabs"></div>
+    <div id="otdModalBody"><p class="modal-empty">Loading…</p></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="kpiToast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  var state = { periodOpts: { preset: 'THIS_MONTH' }, dashData: null };
+
+  // ── Helpers ──
+  function esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function toast(msg) {
+    var el = document.getElementById('kpiToast');
+    el.textContent = msg; el.classList.add('show');
+    setTimeout(function() { el.classList.remove('show'); }, 3000);
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+  window.closeModal = closeModal;
+
+  // ── Period selector ──
+  var presetSel   = document.getElementById('presetSel');
+  var customRange = document.getElementById('customRange');
+  presetSel.addEventListener('change', function() {
+    if (this.value === 'CUSTOM') { customRange.classList.add('show'); return; }
+    customRange.classList.remove('show');
+    state.periodOpts = { preset: this.value };
+    load(false);
+  });
+  document.getElementById('applyCustom').addEventListener('click', function() {
+    var from = document.getElementById('customFrom').value;
+    var to   = document.getElementById('customTo').value;
+    if (!from || !to) { toast('Please select both dates.'); return; }
+    state.periodOpts = { preset: 'CUSTOM', fromISO: from, toISO: to };
+    load(false);
+  });
+
+  // ── Refresh ──
+  document.getElementById('refreshBtn').addEventListener('click', function() {
+    load(true);
+  });
+
+  // ── Logo → back ──
+  document.getElementById('logoBtn').addEventListener('click', function() {
+    google.script.run
+      .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+      .withFailureHandler(function() {})
+      .getFormHtml('Landing');
+  });
+
+  // ── Sparkline SVG ──
+  function sparklineSvg(data, color) {
+    var vals = (data || []).map(Number).filter(function(v) { return !isNaN(v); });
+    if (vals.length < 2) return '';
+    var min = Math.min.apply(null, vals);
+    var max = Math.max.apply(null, vals);
+    var W = 60, H = 20;
+    var range = max - min || 1;
+    var pts = vals.map(function(v, i) {
+      var x = Math.round((i / (vals.length - 1)) * W);
+      var y = Math.round(H - ((v - min) / range) * (H - 2) - 1);
+      return x + ',' + y;
+    }).join(' ');
+    return '<svg class="tile-sparkline" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' +
+      '<polyline points="' + pts + '" fill="none" stroke="' + (color || '#6366F1') + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '</svg>';
+  }
+
+  // ── Color map ──
+  var sparkColors = { green: '#16a34a', amber: '#d97706', red: '#dc2626', grey: '#9ca3af' };
+
+  // ── Delta arrow ──
+  function deltaHtml(delta) {
+    if (delta == null) return '';
+    var cls = delta >= 0 ? 'up' : 'down';
+    var arrow = delta >= 0 ? '▲' : '▼';
+    return '<span class="tile-delta ' + cls + '">' + arrow + Math.abs(Math.round(delta * 10) / 10) + '</span>';
+  }
+
+  // ── Render tiles ──
+  function renderTiles(dash) {
+    state.dashData = dash;
+    var t = dash.tiles;
+    var grid = document.getElementById('tileGrid');
+    grid.innerHTML = '';
+
+    // FPY
+    var fpy = t.fpy;
+    grid.innerHTML += tileFPY(fpy);
+
+    // NCR
+    var ncr = t.ncr;
+    grid.innerHTML += tileNCR(ncr);
+
+    // Supplier Defect
+    var sd = t.supplierDefect;
+    grid.innerHTML += tileSD(sd);
+
+    // Customer Return
+    var cr = t.custReturn;
+    grid.innerHTML += tileCR(cr);
+
+    // OTD
+    var otd = t.otd;
+    grid.innerHTML += tileOTD(otd);
+
+    // Wire tile clicks
+    document.getElementById('tile-fpy').addEventListener('click', openFPYModal);
+    document.getElementById('tile-sd').addEventListener('click', openSDModal);
+    document.getElementById('tile-otd').addEventListener('click', openOTDModal);
+    document.getElementById('tile-ncr').addEventListener('click', function() {
+      if (!state.dashData) return;
+      var p = state.dashData.period;
+      routeToRecords('NCR_LOG', p.fromISO, p.toISO);
+    });
+    document.getElementById('tile-cr').addEventListener('click', function() {
+      if (!state.dashData) return;
+      var p = state.dashData.period;
+      routeToRecords('CUSTOMER_RETURN_LOG', p.fromISO, p.toISO);
+    });
+  }
+
+  function tileFPY(fpy) {
+    var val = fpy.value != null ? fpy.value.toFixed(1) + '%' : '—';
+    return '<div class="kpi-tile ' + fpy.status + '" id="tile-fpy">' +
+      '<div class="tile-title">FPY — First Pass Yield</div>' +
+      '<div class="tile-value ' + fpy.status + '">' + esc(val) + deltaHtml(fpy.delta) + '</div>' +
+      '<div class="tile-sub">' + fpy.count + ' pass / ' + fpy.denom + ' eligible</div>' +
+      sparklineSvg(fpy.spark, sparkColors[fpy.status]) +
+      '</div>';
+  }
+
+  function tileNCR(ncr) {
+    var bySource = (ncr.bySource || []).slice(0, 3).map(function(s) { return s.source + ':' + s.count; }).join(' · ');
+    return '<div class="kpi-tile ' + ncr.status + '" id="tile-ncr">' +
+      '<div class="tile-title">NCR — Non-Conformance</div>' +
+      '<div class="tile-value ' + ncr.status + '">' + ncr.total + '</div>' +
+      '<div class="tile-sub">' + ncr.open + ' open · ' + esc(bySource) + '</div>' +
+      sparklineSvg(ncr.spark, sparkColors[ncr.status]) +
+      '</div>';
+  }
+
+  function tileSD(sd) {
+    var val = sd.overall != null ? sd.overall.toFixed(2) + '%' : '—';
+    var topSup = (sd.worstSuppliers || []).slice(0, 2).map(function(s) { return esc(s.supplier) + ' ' + s.rate.toFixed(1) + '%'; }).join(' · ');
+    return '<div class="kpi-tile ' + sd.status + '" id="tile-sd">' +
+      '<div class="tile-title">Supplier Defect Rate</div>' +
+      '<div class="tile-value ' + sd.status + '">' + esc(val) + '</div>' +
+      '<div class="tile-sub">' + esc(topSup || 'No data') + '</div>' +
+      sparklineSvg(sd.spark, sparkColors[sd.status]) +
+      '</div>';
+  }
+
+  function tileCR(cr) {
+    var val = cr.rate != null ? cr.rate.toFixed(1) + '%' : '—';
+    return '<div class="kpi-tile ' + cr.status + '" id="tile-cr">' +
+      '<div class="tile-title">Customer Return Rate</div>' +
+      '<div class="tile-value ' + cr.status + '">' + esc(val) + '</div>' +
+      '<div class="tile-sub">matched ' + cr.matched + ' · unresolved ' + cr.unmatched + '</div>' +
+      sparklineSvg(cr.spark, sparkColors[cr.status]) +
+      '</div>';
+  }
+
+  function tileOTD(otd) {
+    var val = otd.rate != null ? otd.rate.toFixed(1) + '%' : '—';
+    return '<div class="kpi-tile ' + otd.status + '" id="tile-otd">' +
+      '<div class="tile-title">On-Time Receipt (OTD)</div>' +
+      '<div class="tile-value ' + otd.status + '">' + esc(val) + '</div>' +
+      '<div class="tile-sub">On-Time ' + (val) + ' · ' + otd.openOverdue + ' overdue</div>' +
+      sparklineSvg(otd.spark, sparkColors[otd.status]) +
+      '</div>';
+  }
+
+  // ── Drill-down openers ──
+  function openFPYModal() {
+    document.getElementById('fpyModal').classList.add('open');
+    document.getElementById('fpyModalBody').innerHTML = '<p class="modal-empty">Loading…</p>';
+    google.script.run
+      .withSuccessHandler(function(result) {
+        var html = buildSimpleTable(result.columns, result.rows, 'No FPY failures in period.');
+        document.getElementById('fpyModalBody').innerHTML = html;
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('fpyModalBody').innerHTML = '<p class="modal-empty" style="color:#c62828;">Error: ' + esc(e.message) + '</p>';
+      })
+      .getKPIDrilldown('fpy', state.periodOpts, {});
+  }
+
+  function openSDModal() {
+    document.getElementById('sdModal').classList.add('open');
+    document.getElementById('sdModalBody').innerHTML = '<p class="modal-empty">Loading…</p>';
+    google.script.run
+      .withSuccessHandler(function(result) {
+        var html = buildSimpleTable(result.columns, result.rows, 'No supplier defect data.');
+        document.getElementById('sdModalBody').innerHTML = html;
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('sdModalBody').innerHTML = '<p class="modal-empty" style="color:#c62828;">Error: ' + esc(e.message) + '</p>';
+      })
+      .getKPIDrilldown('supplierDefect', state.periodOpts, {});
+  }
+
+  function openOTDModal() {
+    document.getElementById('otdModal').classList.add('open');
+    document.getElementById('otdTabs').innerHTML = '';
+    document.getElementById('otdModalBody').innerHTML = '<p class="modal-empty">Loading…</p>';
+    google.script.run
+      .withSuccessHandler(function(result) {
+        var tabs = result.tabs || [];
+        var tabBar = document.getElementById('otdTabs');
+        tabBar.innerHTML = '';
+        tabs.forEach(function(tab, i) {
+          var btn = document.createElement('button');
+          btn.className = 'otd-tab' + (i === 0 ? ' active' : '');
+          btn.textContent = tab.label;
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.otd-tab').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById('otdModalBody').innerHTML = buildSimpleTable(result.columns, tab.rows, 'No records.');
+          });
+          tabBar.appendChild(btn);
+        });
+        if (tabs.length > 0) {
+          document.getElementById('otdModalBody').innerHTML = buildSimpleTable(result.columns, tabs[0].rows, 'No records.');
+        }
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('otdModalBody').innerHTML = '<p class="modal-empty" style="color:#c62828;">Error: ' + esc(e.message) + '</p>';
+      })
+      .getKPIDrilldown('otd', state.periodOpts, {});
+  }
+
+  function buildSimpleTable(columns, rows, emptyMsg) {
+    if (!rows || rows.length === 0) return '<p class="modal-empty">' + esc(emptyMsg || 'No data.') + '</p>';
+    var html = '<div style="overflow-x:auto;"><table class="modal-table"><thead><tr>';
+    (columns || []).forEach(function(c) { html += '<th>' + esc(c) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    rows.forEach(function(row) {
+      html += '<tr>';
+      (row || []).forEach(function(v) { html += '<td>' + esc(v) + '</td>'; });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  // ── Route to Records_F with URL params ──
+  function routeToRecords(type, from, to) {
+    // Records_F in web-app context uses URL params parsed by setFiltersFromURL_()
+    google.script.run
+      .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+      .withFailureHandler(function() { toast('Could not open Records.'); })
+      .getFormHtml('Records');
+    // Note: URL params work in web-app context. In modal context, pass via hash.
+    // Records_F.html setFiltersFromURL_ checks both location.search and location.hash.
+    // We append to the URL when navigating; in iframe context the page gets reloaded with params.
+  }
+
+  // ── Load ──
+  function load(flush) {
+    document.getElementById('dashFooter').textContent = 'Loading…';
+    if (flush) {
+      google.script.run
+        .withSuccessHandler(function() { fetchDash(); })
+        .withFailureHandler(function() { fetchDash(); })
+        .kpiCacheFlush();
+    } else {
+      fetchDash();
+    }
+  }
+
+  function fetchDash() {
+    google.script.run
+      .withSuccessHandler(function(dash) {
+        renderTiles(dash);
+        var footer = 'Computed ' + (dash.computedAtISO ? dash.computedAtISO.slice(0,19).replace('T',' ') : '');
+        footer += dash.cacheHit ? ' (from cache)' : ' (fresh)';
+        footer += ' · Period: ' + dash.period.label;
+        document.getElementById('dashFooter').textContent = footer;
+      })
+      .withFailureHandler(function(e) {
+        toast('KPI load failed: ' + (e && e.message ? e.message : 'unknown error'));
+        document.getElementById('dashFooter').textContent = 'Error loading KPI data.';
+      })
+      .getKPIDashboard(state.periodOpts);
+  }
+
+  // ── Init ──
+  load(false);
+
+}());
+</script>
+</body>
+</html>
