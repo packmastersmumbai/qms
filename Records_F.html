@@ -933,6 +933,84 @@
       .getRecentPOs(500);
   }
 
+  // ── URL param pre-population (MUST-FIX #4) ──
+  // KPI dashboard routes here with ?type=&from=&to=&supplier=&dispoFilter=&filter=
+  // Supports both location.search (web-app) and location.hash (iframe fallback).
+  function setFiltersFromURL_() {
+    try {
+      var raw = '';
+      if (window.location && window.location.search && window.location.search.length > 1) {
+        raw = window.location.search;
+      } else if (window.location && window.location.hash && window.location.hash.indexOf('?') >= 0) {
+        raw = '?' + window.location.hash.split('?')[1];
+      }
+      if (!raw || raw.length < 2) return;
+      var params = new URLSearchParams(raw);
+
+      // type → switch tab
+      var type = params.get('type');
+      if (type) {
+        // Map sheet names → tab module names
+        var typeMap = {
+          'NCR_LOG':             'NCR',
+          'CUSTOMER_RETURN_LOG': 'CustomerReturn',
+          'GRN_LOG':             'GRN',
+          'IQC_LOG':             'IQC',
+          'OQC_LOG':             'OQC',
+          'GATEPASS_LOG':        'Gatepass'
+        };
+        var mod = typeMap[type] || type;
+        // Find matching tab button
+        var tabBtn = document.querySelector('.tab-btn[data-module="' + mod + '"]');
+        if (!tabBtn) {
+          // Try direct match (e.g. type=NCR)
+          tabBtn = document.querySelector('.tab-btn[data-module="' + type + '"]');
+        }
+        if (tabBtn && mod !== state.module) {
+          document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+          tabBtn.classList.add('active');
+          state.module = tabBtn.getAttribute('data-module');
+        }
+      }
+
+      // from / to dates
+      var from = params.get('from');
+      var to   = params.get('to');
+      if (from) { fromEl.value = from; state.fromDate = from; }
+      if (to)   { toEl.value   = to;   state.toDate   = to;   }
+
+      // supplier → append to search
+      var supplier = params.get('supplier');
+      if (supplier) {
+        searchEl.value = supplier;
+        searchClear.style.display = 'block';
+        state.search = supplier;
+      }
+
+      // dispoFilter → append to search if no supplier
+      var dispoFilter = params.get('dispoFilter');
+      if (dispoFilter && !supplier) {
+        searchEl.value = dispoFilter;
+        searchClear.style.display = 'block';
+        state.search = dispoFilter;
+      }
+
+      // generic filter (e.g. filter=poNo:X)
+      var filter = params.get('filter');
+      if (filter && !supplier && !dispoFilter) {
+        // Strip "poNo:" prefix for plain search
+        var filterVal = filter.indexOf(':') >= 0 ? filter.split(':')[1] : filter;
+        searchEl.value = filterVal;
+        searchClear.style.display = 'block';
+        state.search = filterVal;
+      }
+    } catch(e) {
+      // URL parsing errors must never break the page
+    }
+  }
+
+  setFiltersFromURL_();
+
   // ── Init ──
   renderHead(state.module);
   renderSkeleton();
