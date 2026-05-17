@@ -92,6 +92,9 @@ function onOpen() {
     .addSeparator()
     .addItem('📊  Open Dashboard', 'openDashboard')
     .addItem('📋  Records', 'openRecords')
+    .addItem('📊  Open KPI Dashboard', 'openKPIDashboard')
+    .addItem('📊  Run KPI Diagnostics', 'runKPIDiag')
+    .addItem('♻️  Flush KPI Cache', 'kpiCacheFlush')
     .addItem('📲  Send WhatsApp (selected row)', 'sendWhatsAppSelected')
     .addSeparator()
     .addItem('📂  Import Past Data (CSV)', 'openImportCSV')
@@ -188,6 +191,13 @@ function openDispatchForm() {
   SpreadsheetApp.getUi().showModelessDialog(html, 'New Dispatch (FIFO) — Pack Masters QMS');
 }
 
+function openKPIDashboard() {
+  var html = HtmlService.createTemplateFromFile('KPI_F').evaluate()
+    .setWidth(1000)
+    .setHeight(700);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'KPI Dashboard — Pack Masters QMS');
+}
+
 function openRecords() {
   var html = HtmlService.createTemplateFromFile('Records_F').evaluate()
     .setWidth(900)
@@ -228,7 +238,7 @@ function include(filename) {
 // ── Called by client to inject sub-pages ─────────────────────
 
 function getFormHtml(type) {
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', Landing:'Landing' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Landing:'Landing' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();

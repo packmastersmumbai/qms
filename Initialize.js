@@ -419,7 +419,17 @@ function ensureConfigKeys_() {
       ['smp_prefix', 'PM/SMP/2026-'],
       ['smp_counter', 1],
       ['po_prefix',  'PM/PO/2026-'],
-      ['po_counter',  1]
+      ['po_counter',  1],
+      ['KPI_FPY_GREEN',         95],
+      ['KPI_FPY_AMBER',         90],
+      ['KPI_DEFECT_AMBER',       2],
+      ['KPI_DEFECT_RED',         5],
+      ['KPI_OTD_GREEN',         90],
+      ['KPI_OTD_AMBER',         80],
+      ['KPI_RETURN_WINDOW_DAYS',60],
+      ['KPI_RETURN_AMBER',       1],
+      ['KPI_RETURN_RED',         3],
+      ['KPI_NCR_OPEN_RED',      10]
     ];
     required.forEach(function(pair) {
       if (!existing[pair[0]]) ws.appendRow(pair);
