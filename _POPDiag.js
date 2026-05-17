@@ -6,9 +6,19 @@
 //       QMS System → 🛰️ Trace PO by docNo   → writes _POP_TRACE
 // ============================================================
 
+// Headless wrapper for clasp run / scheduled jobs — no UI alert, returns
+// { errors, warns, total, fails }. Sheet write still happens.
+function runPOPDiag_core() {
+  return _runPOPDiagImpl(true);
+}
+
 function runPOPDiag() {
+  return _runPOPDiagImpl(false);
+}
+
+function _runPOPDiagImpl(headless) {
   var ss  = getSpreadsheet();
-  var ui  = SpreadsheetApp.getUi();
+  var ui  = headless ? null : SpreadsheetApp.getUi();
   var report = []; // [section, check, value, severity]
 
   function add(section, check, value, severity) {
@@ -329,6 +339,9 @@ function runPOPDiag() {
 
   var errorCount = report.filter(function(r) { return r[3] === 'ERROR'; }).length;
   var warnCount  = report.filter(function(r) { return r[3] === 'WARN';  }).length;
+  if (headless) {
+    return { fails: errorCount, errors: errorCount, warns: warnCount, total: report.length };
+  }
   ui.alert('POP Diagnostics complete',
     report.length + ' checks.\nERROR: ' + errorCount + '  WARN: ' + warnCount + '\n\nSee "_POP_DIAG" sheet.',
     ui.ButtonSet.OK);

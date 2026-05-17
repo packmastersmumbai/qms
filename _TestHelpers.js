@@ -287,3 +287,20 @@ function archiveTestNCR(docNo) {
     history: histResult
   };
 }
+
+// Quick diagnostic readout: return all rows from a diag sheet matching a severity.
+// Use after running runPOPDiag_core / others that write to _XXX_DIAG sheets.
+function getDiagRows(sheetName, severity) {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName(sheetName);
+  if (!ws || ws.getLastRow() < 2) return { success: true, rows: [] };
+  var data = ws.getDataRange().getValues();
+  var sev = (severity || '').toUpperCase();
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    if (!sev || String(data[i][3] || '').toUpperCase() === sev) {
+      rows.push({ section: data[i][0], check: data[i][1], value: data[i][2], severity: data[i][3] });
+    }
+  }
+  return { success: true, rows: rows };
+}
