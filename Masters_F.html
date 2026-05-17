@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <style>
-    /* ── Tab bar ── */
     .masters-tabs {
       display: flex;
       overflow-x: auto;
@@ -44,7 +43,6 @@
       border-bottom-color: var(--navy);
     }
 
-    /* ── Search bar ── */
     .masters-search-bar {
       display: flex;
       align-items: center;
@@ -66,25 +64,12 @@
     }
     .search-input:focus { outline: none; border-color: var(--navy); }
 
-    /* ── Read-only notice ── */
-    .readonly-notice {
-      margin: 10px 10px 0;
-      padding: 8px 12px;
-      background: var(--navy-light);
-      border-left: 3px solid var(--navy);
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--navy);
-    }
-
-    /* ── Table panel ── */
     .tab-panel { display: none; }
     .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .masters-table-wrap {
-      margin: 10px;
+      margin: 10px 10px 88px;
       background: var(--white);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -113,9 +98,12 @@
     .masters-table tbody tr {
       border-bottom: 1px solid var(--border);
       min-height: 44px;
+      cursor: pointer;
+      transition: background 0.1s;
     }
     .masters-table tbody tr:last-child { border-bottom: none; }
     .masters-table tbody tr:nth-child(even) { background: #FAFBFF; }
+    .masters-table tbody tr:hover { background: var(--navy-light); }
     .masters-table tbody td {
       padding: 10px 10px;
       font-size: 12px;
@@ -136,7 +124,6 @@
       white-space: nowrap;
     }
 
-    /* ── Skeleton ── */
     @keyframes skeleton-pulse {
       0%   { opacity: 0.4; }
       50%  { opacity: 1; }
@@ -150,7 +137,6 @@
       animation: skeleton-pulse 0.8s ease-in-out infinite;
     }
 
-    /* ── Empty / error states ── */
     .masters-empty {
       text-align: center;
       padding: 32px 16px;
@@ -164,7 +150,149 @@
       text-decoration: underline;
     }
 
-    /* ── Toast ── */
+    /* ── Floating Add button ── */
+    .fab-add {
+      position: fixed;
+      right: 18px;
+      bottom: 22px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      font-size: 28px;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(11, 42, 74, 0.35);
+      z-index: 200;
+      font-family: inherit;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .fab-add:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(11, 42, 74, 0.45); }
+    .fab-add:active { transform: translateY(0); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 42, 74, 0.55);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.15s ease;
+    }
+    .modal-overlay.show { display: flex; }
+    @media (min-width: 600px) {
+      .modal-overlay { align-items: center; }
+    }
+
+    .modal-card {
+      background: var(--white);
+      width: 100%;
+      max-width: 540px;
+      max-height: 90vh;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.2s ease;
+    }
+    @media (min-width: 600px) {
+      .modal-card { border-radius: 12px; }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0.8; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 16px 18px;
+      background: var(--navy);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title { font-size: 15px; font-weight: 600; }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--white);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 0 6px;
+      line-height: 1;
+      font-family: inherit;
+    }
+
+    .modal-body {
+      padding: 16px 18px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .field-row { margin-bottom: 12px; }
+    .field-row label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    .field-row label .req { color: var(--danger); margin-left: 2px; }
+    .field-row input, .field-row select, .field-row textarea {
+      width: 100%;
+      box-sizing: border-box;
+      height: 38px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 0 11px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      transition: border-color 0.15s;
+    }
+    .field-row textarea { height: auto; min-height: 60px; padding: 8px 11px; resize: vertical; }
+    .field-row input:focus, .field-row select:focus, .field-row textarea:focus {
+      outline: none; border-color: var(--navy);
+    }
+    .field-row input:disabled { background: #F2F4F8; color: var(--muted); }
+
+    .field-row-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .modal-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .btn {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--navy); color: var(--white); }
+    .btn-ghost { background: transparent; color: var(--muted); }
+    .btn-danger { background: var(--danger); color: var(--white); margin-right: auto; }
+
     .pm-toast {
       position: fixed;
       bottom: 20px;
@@ -177,7 +305,7 @@
       font-size: 12px;
       font-weight: 500;
       color: var(--white);
-      z-index: 500;
+      z-index: 1500;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s ease, transform 0.2s ease;
@@ -194,7 +322,6 @@
 </head>
 <body>
 
-<!-- ── Header ── -->
 <div class="pm-header">
   <button class="back-btn" id="backBtn" aria-label="Back">
     <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
@@ -203,23 +330,18 @@
   <span id="roleChip" class="doc-badge" style="display:none;"></span>
 </div>
 
-<!-- ── Tab bar ── -->
 <div class="masters-tabs" id="mastersTabBar">
   <button class="tab-btn active" data-tab="suppliers">Suppliers</button>
   <button class="tab-btn" data-tab="materials">Materials</button>
   <button class="tab-btn" data-tab="customers">Customers</button>
+  <button class="tab-btn" data-tab="inspectors">Inspectors</button>
+  <button class="tab-btn" data-tab="fg">FG</button>
   <button class="tab-btn" data-tab="parameters">Parameters</button>
 </div>
 
-<!-- ── Read-only notice ── -->
-<div class="readonly-notice">View only — contact system admin to modify master data.</div>
-
-<!-- ── Search bar ── -->
 <div class="masters-search-bar">
-  <input class="search-input" id="searchInput" type="search" placeholder="Search..." autocomplete="off">
+  <input class="search-input" id="searchInput" type="search" placeholder="Search... (tap row to edit)" autocomplete="off">
 </div>
-
-<!-- ── Panels ── -->
 
 <!-- SUPPLIERS -->
 <div class="tab-panel active" id="panel-suppliers">
@@ -277,6 +399,41 @@
   </div>
 </div>
 
+<!-- INSPECTORS -->
+<div class="tab-panel" id="panel-inspectors">
+  <div class="masters-table-wrap">
+    <table class="masters-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th style="width:120px;">Role</th>
+          <th style="width:120px;">Dept</th>
+          <th style="width:120px;">Phone</th>
+          <th style="width:70px;">Notify</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-inspectors"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- FG -->
+<div class="tab-panel" id="panel-fg">
+  <div class="masters-table-wrap">
+    <table class="masters-table">
+      <thead>
+        <tr>
+          <th style="width:90px;">Code</th>
+          <th>Name</th>
+          <th style="width:70px;">UOM</th>
+          <th style="width:90px;">Category</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-fg"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- PARAMETERS -->
 <div class="tab-panel" id="panel-parameters">
   <div class="masters-table-wrap">
@@ -300,35 +457,115 @@
   </div>
 </div>
 
+<button class="fab-add" id="fabAdd" aria-label="Add">+</button>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Add</div>
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="btnDelete" style="display:none;">Delete</button>
+      <button class="btn btn-ghost" id="btnCancel">Cancel</button>
+      <button class="btn btn-primary" id="btnSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="pm-toast" id="pmToast"></div>
 
 <script>
 (function() {
   'use strict';
 
-  var TABS = ['suppliers', 'materials', 'customers', 'parameters'];
+  var TABS = ['suppliers', 'materials', 'customers', 'inspectors', 'fg', 'parameters'];
   var activeTab = 'suppliers';
-  var cache = {};        // cache[tab] = array of rows
-  var loadState = {};    // cache[tab] = 'loading' | 'loaded' | 'error'
+  var cache = {};
+  var loadState = {};
   var searchTimer = null;
 
-  /* ── XSS helper ── */
+  // Map UI tab → server master type
+  var TYPE_BY_TAB = {
+    suppliers:  'supplier',
+    materials:  'material',
+    customers:  'customer',
+    inspectors: 'inspector',
+    fg:         'fg',
+    parameters: 'parameter'
+  };
+
+  // Per-type field schemas: { key, label, required, type, options?, placeholder?, widthHalf? }
+  var SCHEMA = {
+    supplier: [
+      { key: 'code',     label: 'Code',     required: true,  type: 'text', widthHalf: true },
+      { key: 'approved', label: 'Approved', required: true,  type: 'select', options: ['Y','N'], widthHalf: true },
+      { key: 'name',     label: 'Name',     required: true,  type: 'text' },
+      { key: 'contact',  label: 'Contact',  required: false, type: 'text', widthHalf: true },
+      { key: 'phone',    label: 'Phone',    required: false, type: 'text', widthHalf: true },
+      { key: 'material', label: 'Material', required: false, type: 'text' },
+      { key: 'city',     label: 'City',     required: false, type: 'text' }
+    ],
+    material: [
+      { key: 'code',            label: 'Code',             required: true,  type: 'text', widthHalf: true },
+      { key: 'unit',            label: 'Unit',             required: true,  type: 'text', widthHalf: true },
+      { key: 'desc',            label: 'Description',      required: true,  type: 'text' },
+      { key: 'category',        label: 'Category',         required: true,  type: 'text', widthHalf: true },
+      { key: 'defaultLocation', label: 'Default Location', required: false, type: 'text', widthHalf: true }
+    ],
+    customer: [
+      { key: 'code',     label: 'Code',     required: true,  type: 'text', widthHalf: true },
+      { key: 'city',     label: 'City',     required: false, type: 'text', widthHalf: true },
+      { key: 'name',     label: 'Name',     required: true,  type: 'text' },
+      { key: 'contact',  label: 'Contact',  required: false, type: 'text', widthHalf: true },
+      { key: 'phone',    label: 'Phone',    required: false, type: 'text', widthHalf: true },
+      { key: 'email',    label: 'Email',    required: false, type: 'email' },
+      { key: 'products', label: 'Products', required: false, type: 'text' }
+    ],
+    inspector: [
+      { key: 'name',   label: 'Name',   required: true,  type: 'text' },
+      { key: 'role',   label: 'Role',   required: false, type: 'text', widthHalf: true },
+      { key: 'dept',   label: 'Dept',   required: false, type: 'text', widthHalf: true },
+      { key: 'phone',  label: 'Phone',  required: false, type: 'text', widthHalf: true },
+      { key: 'notify', label: 'Notify', required: true,  type: 'select', options: ['Y','N'], widthHalf: true }
+    ],
+    fg: [
+      { key: 'code', label: 'Code', required: true, type: 'text', widthHalf: true },
+      { key: 'uom',  label: 'UOM',  required: true, type: 'text', widthHalf: true },
+      { key: 'name', label: 'Name', required: true, type: 'text' }
+    ],
+    parameter: [
+      { key: 'code',       label: 'Code',        required: true,  type: 'text', widthHalf: true },
+      { key: 'unit',       label: 'Unit',        required: false, type: 'text', widthHalf: true },
+      { key: 'name',       label: 'Parameter Name', required: true, type: 'text' },
+      { key: 'stdValue',   label: 'Std Value',   required: false, type: 'text' },
+      { key: 'tolMin',     label: 'Tol Min',     required: false, type: 'number', widthHalf: true },
+      { key: 'tolMax',     label: 'Tol Max',     required: false, type: 'number', widthHalf: true },
+      { key: 'methodType', label: 'Method Type', required: false, type: 'text', widthHalf: true },
+      { key: 'tools',      label: 'Tools',       required: false, type: 'text', widthHalf: true },
+      { key: 'checkBrief', label: 'Check Brief', required: false, type: 'textarea' },
+      { key: 'docRef',     label: 'Doc Ref',     required: false, type: 'text', widthHalf: true },
+      { key: 'docNumber',  label: 'Doc No.',     required: false, type: 'text', widthHalf: true }
+    ]
+  };
+
+  // Identity key per type (used to find existing record for edit/delete)
+  var ID_KEY = {
+    supplier: 'code', material: 'code', customer: 'code',
+    inspector: 'name', fg: 'code', parameter: 'code'
+  };
+
   function esc(v) {
     if (v === null || v === undefined) return '';
     return String(v)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-
   function td(v) { return '<td>' + esc(v) + '</td>'; }
 
-  /* ── Role gate ── */
-  function getRole() {
-    return sessionStorage.getItem('userRole') || '';
-  }
+  function getRole() { return sessionStorage.getItem('userRole') || ''; }
 
   function checkRole() {
     var role = getRole();
@@ -339,37 +576,28 @@
     }
     if (role === 'user') {
       google.script.run
-        .withSuccessHandler(function(html) {
-          document.open(); document.write(html); document.close();
-        })
+        .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
         .withFailureHandler(function() {})
         .getFormHtml('Landing');
-      return false; // caller must not proceed
+      return false;
     }
     return true;
   }
 
-  /* ── Tab switching ── */
   function switchTab(tab) {
     if (tab === activeTab) return;
     activeTab = tab;
-
     TABS.forEach(function(t) {
       var btn = document.querySelector('[data-tab="' + t + '"]');
       var panel = document.getElementById('panel-' + t);
       if (btn)   btn.classList.toggle('active', t === tab);
       if (panel) panel.classList.toggle('active', t === tab);
     });
-
     document.getElementById('searchInput').value = '';
-
-    if (!loadState[tab]) {
-      loadTab(tab);
-    }
+    if (!loadState[tab]) loadTab(tab);
   }
 
-  /* ── Skeleton ── */
-  var SKEL_COLS = { suppliers: 5, materials: 5, customers: 7, parameters: 10 };
+  var SKEL_COLS = { suppliers: 5, materials: 5, customers: 7, inspectors: 5, fg: 4, parameters: 10 };
 
   function showSkeleton(tab) {
     var tbody = document.getElementById('tbody-' + tab);
@@ -387,38 +615,17 @@
     tbody.innerHTML = html;
   }
 
-  /* ── Load functions ── */
   function loadTab(tab) {
     loadState[tab] = 'loading';
     showSkeleton(tab);
-
-    var fn, handler;
-    switch (tab) {
-      case 'suppliers':
-        google.script.run
-          .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
-          .withFailureHandler(function(e) { onError(tab, e); })
-          .getSuppliers();
-        break;
-      case 'materials':
-        google.script.run
-          .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
-          .withFailureHandler(function(e) { onError(tab, e); })
-          .getMaterials();
-        break;
-      case 'customers':
-        google.script.run
-          .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
-          .withFailureHandler(function(e) { onError(tab, e); })
-          .getCustomers();
-        break;
-      case 'parameters':
-        google.script.run
-          .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
-          .withFailureHandler(function(e) { onError(tab, e); })
-          .getParameters();
-        break;
-    }
+    var fnName = ({
+      suppliers: 'getSuppliers', materials: 'getMaterials', customers: 'getCustomers',
+      inspectors: 'getInspectors', fg: 'getFG', parameters: 'getParameters'
+    })[tab];
+    google.script.run
+      .withSuccessHandler(function(rows) { onLoaded(tab, rows || []); })
+      .withFailureHandler(function(e) { onError(tab, e); })
+      [fnName]();
   }
 
   function onLoaded(tab, rows) {
@@ -439,18 +646,32 @@
     showToast('Could not load ' + tab + '.', 'error');
   }
 
-  window.retryTab = function(tab) {
-    loadState[tab] = null;
-    loadTab(tab);
-  };
+  window.retryTab = function(tab) { loadState[tab] = null; loadTab(tab); };
 
-  /* ── Render functions ── */
+  function rowHtml(tab, r, idx) {
+    var ds = ' data-tab="' + tab + '" data-idx="' + idx + '"';
+    switch (tab) {
+      case 'suppliers':  return '<tr' + ds + '>' + td(r.code) + td(r.name) + td(r.contact) + td(r.phone) + td(r.material) + '</tr>';
+      case 'materials':  return '<tr' + ds + '>' + td(r.code) + td(r.desc) + td(r.unit) + td(r.category) + td(r.defaultLocation) + '</tr>';
+      case 'customers':  return '<tr' + ds + '>' + td(r.code) + td(r.name) + td(r.contact) + td(r.phone) + td(r.email) + td(r.products) + td(r.city) + '</tr>';
+      case 'inspectors': return '<tr' + ds + '>' + td(r.name) + td(r.role) + td(r.dept) + td(r.phone) + td(r.notify) + '</tr>';
+      case 'fg':         return '<tr' + ds + '>' + td(r.code) + td(r.name || r.description) + td(r.uom) + td(r.category) + '</tr>';
+      case 'parameters': return '<tr' + ds + '>' +
+        td(r.code) + td(r.name) + td(r.unit) + td(r.stdValue) + td(r.tolMin) + td(r.tolMax) +
+        '<td><span class="method-chip">' + esc(r.methodType || '') + '</span></td>' +
+        td(r.tools) + td(r.docRef) + td(r.docNumber) + '</tr>';
+    }
+    return '';
+  }
+
   function renderTab(tab, query) {
     var rows = cache[tab] || [];
     var q = (query || '').toLowerCase();
+    var filtered = rows;
     if (q) {
-      rows = rows.filter(function(r) {
-        return Object.values(r).some(function(v) {
+      filtered = rows.filter(function(r) {
+        return Object.keys(r).some(function(k) {
+          var v = r[k];
           return v && String(v).toLowerCase().indexOf(q) !== -1;
         });
       });
@@ -459,51 +680,208 @@
     var tbody = document.getElementById('tbody-' + tab);
     if (!tbody) return;
 
-    if (!rows.length) {
+    if (!filtered.length) {
       var cols = SKEL_COLS[tab] || 4;
       var msg = q
         ? 'No results for &ldquo;' + esc(query) + '&rdquo;. <a onclick="clearSearch()">Clear search</a>'
-        : 'No ' + tab + ' found.';
+        : 'No ' + tab + ' found. Tap + to add.';
       tbody.innerHTML = '<tr><td colspan="' + cols + '"><div class="masters-empty">' + msg + '</div></td></tr>';
       return;
     }
 
+    // We need to preserve idx into ORIGINAL cache so edit gets correct record;
+    // build via original index lookup.
+    var origIdxByRef = new Map();
+    rows.forEach(function(r, i) { origIdxByRef.set(r, i); });
+
     var html = '';
-    switch (tab) {
-      case 'suppliers':
-        rows.forEach(function(r) {
-          html += '<tr>' + td(r.code) + td(r.name) + td(r.contact) + td(r.phone) + td(r.material) + '</tr>';
-        });
-        break;
-      case 'materials':
-        rows.forEach(function(r) {
-          html += '<tr>' + td(r.code) + td(r.desc) + td(r.unit) + td(r.category) + td(r.defaultLocation) + '</tr>';
-        });
-        break;
-      case 'customers':
-        rows.forEach(function(r) {
-          html += '<tr>' + td(r.code) + td(r.name) + td(r.contact) + td(r.phone) + td(r.email) + td(r.products) + td(r.city) + '</tr>';
-        });
-        break;
-      case 'parameters':
-        rows.forEach(function(r) {
-          html += '<tr>' +
-            td(r.code) + td(r.name) + td(r.unit) + td(r.stdValue) + td(r.tolMin) + td(r.tolMax) +
-            '<td><span class="method-chip">' + esc(r.methodType || '') + '</span></td>' +
-            td(r.tools) + td(r.docRef) + td(r.docNumber) +
-          '</tr>';
-        });
-        break;
-    }
+    filtered.forEach(function(r) {
+      var origIdx = origIdxByRef.get(r);
+      html += rowHtml(tab, r, origIdx);
+    });
     tbody.innerHTML = html;
   }
 
-  /* ── Search ── */
   function clearSearch() {
     document.getElementById('searchInput').value = '';
     renderTab(activeTab, '');
   }
   window.clearSearch = clearSearch;
+
+  /* ── Modal ── */
+  var modalState = { mode: 'add', type: '', origIdKey: null };
+
+  function openModal(tab, rowIdx) {
+    var type = TYPE_BY_TAB[tab];
+    var schema = SCHEMA[type];
+    if (!schema) return;
+    var isEdit = (rowIdx !== null && rowIdx !== undefined && rowIdx !== -1);
+    var data = isEdit ? (cache[tab][rowIdx] || {}) : {};
+
+    modalState.mode = isEdit ? 'edit' : 'add';
+    modalState.type = type;
+    modalState.origIdKey = isEdit ? data[ID_KEY[type]] : null;
+
+    document.getElementById('modalTitle').textContent =
+      (isEdit ? 'Edit ' : 'Add ') + tabLabel(tab);
+
+    var body = document.getElementById('modalBody');
+    var halfBuf = null;
+    var html = '';
+    schema.forEach(function(f) {
+      var val = data[f.key];
+      var fieldHtml = buildField(f, val, isEdit);
+      if (f.widthHalf) {
+        if (halfBuf === null) { halfBuf = fieldHtml; }
+        else {
+          html += '<div class="field-row-2col">' + halfBuf + fieldHtml + '</div>';
+          halfBuf = null;
+        }
+      } else {
+        if (halfBuf !== null) { html += '<div class="field-row-2col">' + halfBuf + '<div></div></div>'; halfBuf = null; }
+        html += fieldHtml;
+      }
+    });
+    if (halfBuf !== null) html += '<div class="field-row-2col">' + halfBuf + '<div></div></div>';
+    body.innerHTML = html;
+
+    document.getElementById('btnDelete').style.display = isEdit ? '' : 'none';
+    document.getElementById('btnSave').disabled = false;
+    document.getElementById('btnSave').textContent = 'Save';
+    document.getElementById('modalOverlay').classList.add('show');
+  }
+
+  function buildField(f, val, isEdit) {
+    var reqMark = f.required ? '<span class="req">*</span>' : '';
+    var disabledIdAttr = (isEdit && ID_KEY[modalState.type] === f.key) ? ' disabled' : '';
+    var safeVal = esc(val == null ? '' : val);
+    var input;
+    if (f.type === 'select') {
+      var opts = (f.options || []).map(function(o) {
+        var sel = (String(val) === String(o)) ? ' selected' : '';
+        return '<option value="' + esc(o) + '"' + sel + '>' + esc(o) + '</option>';
+      }).join('');
+      input = '<select data-key="' + esc(f.key) + '"' + disabledIdAttr + '>' + opts + '</select>';
+    } else if (f.type === 'textarea') {
+      input = '<textarea data-key="' + esc(f.key) + '" rows="2">' + safeVal + '</textarea>';
+    } else {
+      input = '<input type="' + esc(f.type) + '" data-key="' + esc(f.key) + '" value="' + safeVal + '"' + disabledIdAttr + '>';
+    }
+    return '<div class="field-row"><label>' + esc(f.label) + reqMark + '</label>' + input + '</div>';
+  }
+
+  function tabLabel(tab) {
+    return ({
+      suppliers: 'Supplier', materials: 'Material', customers: 'Customer',
+      inspectors: 'Inspector', fg: 'FG Item', parameters: 'Parameter'
+    })[tab] || tab;
+  }
+
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+  function collectFormData() {
+    var inputs = document.querySelectorAll('#modalBody [data-key]');
+    var data = {};
+    inputs.forEach(function(el) {
+      var k = el.getAttribute('data-key');
+      var v = el.value;
+      if (el.tagName === 'INPUT' && el.type === 'number') {
+        v = (v === '' ? '' : Number(v));
+      } else if (typeof v === 'string') {
+        v = v.trim();
+      }
+      data[k] = v;
+    });
+    // Preserve original ID even though field was disabled (disabled inputs still post via .value, but be safe)
+    if (modalState.mode === 'edit' && modalState.origIdKey != null) {
+      data[ID_KEY[modalState.type]] = modalState.origIdKey;
+    }
+    return data;
+  }
+
+  function validate(type, data) {
+    var schema = SCHEMA[type] || [];
+    for (var i = 0; i < schema.length; i++) {
+      var f = schema[i];
+      if (f.required) {
+        var v = data[f.key];
+        if (v === null || v === undefined || v === '' || (typeof v === 'string' && !v.trim())) {
+          return f.label + ' is required.';
+        }
+      }
+    }
+    if (type === 'parameter') {
+      if (data.tolMin !== '' && data.tolMax !== '' && Number(data.tolMin) > Number(data.tolMax)) {
+        return 'Tol Min must be ≤ Tol Max.';
+      }
+    }
+    if (type === 'customer' && data.email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return 'Invalid email format.';
+    }
+    return null;
+  }
+
+  function onSave() {
+    var type = modalState.type;
+    var data = collectFormData();
+    var err = validate(type, data);
+    if (err) { showToast(err, 'error'); return; }
+
+    var saveBtn = document.getElementById('btnSave');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        showToast('Saved.', 'success');
+        closeModal();
+        // Refresh the active tab
+        loadState[activeTab] = null;
+        loadTab(activeTab);
+        // If we edited materials and FG view exists, invalidate FG too
+        if (type === 'material' || type === 'fg') {
+          loadState['materials'] = null;
+          loadState['fg'] = null;
+        }
+      })
+      .withFailureHandler(function(e) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+        showToast((e && e.message) ? e.message : 'Save failed.', 'error');
+      })
+      .saveMaster(type, data);
+  }
+
+  function onDelete() {
+    var type = modalState.type;
+    var id = modalState.origIdKey;
+    if (!id) return;
+    if (!confirm('Delete ' + tabLabel(activeTab) + ' "' + id + '"? This cannot be undone.')) return;
+
+    var btn = document.getElementById('btnDelete');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+
+    google.script.run
+      .withSuccessHandler(function() {
+        showToast('Deleted.', 'success');
+        closeModal();
+        loadState[activeTab] = null;
+        loadTab(activeTab);
+        if (type === 'material' || type === 'fg') {
+          loadState['materials'] = null;
+          loadState['fg'] = null;
+        }
+        btn.disabled = false;
+        btn.textContent = 'Delete';
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false;
+        btn.textContent = 'Delete';
+        showToast((e && e.message) ? e.message : 'Delete failed.', 'error');
+      })
+      .deleteMaster(type, id);
+  }
 
   /* ── Toast ── */
   var toastTimer = null;
@@ -536,17 +914,36 @@
       var val = this.value;
       if (searchTimer) clearTimeout(searchTimer);
       searchTimer = setTimeout(function() {
-        if (loadState[activeTab] === 'loaded') {
-          renderTab(activeTab, val);
-        }
+        if (loadState[activeTab] === 'loaded') renderTab(activeTab, val);
       }, 250);
     });
+
+    // Row click → edit
+    document.body.addEventListener('click', function(e) {
+      var tr = e.target.closest('tr[data-tab]');
+      if (!tr) return;
+      var tab = tr.getAttribute('data-tab');
+      var idx = parseInt(tr.getAttribute('data-idx'), 10);
+      if (isNaN(idx)) return;
+      openModal(tab, idx);
+    });
+
+    document.getElementById('fabAdd').addEventListener('click', function() {
+      openModal(activeTab, -1);
+    });
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('btnCancel').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    document.getElementById('btnSave').addEventListener('click', onSave);
+    document.getElementById('btnDelete').addEventListener('click', onDelete);
 
     document.getElementById('pmToast').addEventListener('click', function() {
       this.className = 'pm-toast';
     });
 
-    // Load first tab
     loadTab('suppliers');
   });
 
