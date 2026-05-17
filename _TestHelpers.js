@@ -330,6 +330,88 @@ function createTestIQCReject(payload) {
   }
 }
 
+// Inject a TEST IPQC session + 2 IPQC_LOG rows (1 PASS, 1 FAIL) mirroring the
+// real multi-sheet write of startSession + saveRound. Direct-write — does NOT
+// call real saveIPQC/startSession/saveRound. IPQC has no counter (sessionId is
+// composite productCode_batch_inspector), so nothing to bump/restore.
+//
+// IPQC_Sessions (note Title Case): session_id[0], product_code[1], product_name[2],
+//   batch[3], inspector[4], line[5], date[6], start_time[7], end_time[8],
+//   status[9], rounds[10]  -> 11 cols
+// IPQC_LOG: session_id[0], product_code[1], batch[2], round_no[3], timestamp[4],
+//   param_code[5], param_name[6], std_value[7], unit[8], actual_value[9],
+//   result[10], remark[11], elapsed_hms[12], period_start[13], period_end[14],
+//   avg_weight[15]  -> 16 cols
+//
+// "Out of spec" disposition = IPQC_LOG.result === 'FAIL' (per IPQC.js — no
+// OOS/REJECT enum; the result field is free-text, with 'PASS'/'FAIL'/'NOTE'
+// being the observed values). raiseIPQCNCR is what fires the NCR cascade.
+function createTestIPQCOutOfSpec(payload) {
+  try {
+    payload = payload || {};
+    var ss = getSpreadsheet();
+    var sessWs = ss.getSheetByName('IPQC_Sessions');
+    if (!sessWs) {
+      sessWs = ss.insertSheet('IPQC_Sessions');
+      sessWs.appendRow(['session_id', 'product_code', 'product_name', 'batch', 'inspector', 'line', 'date', 'start_time', 'end_time', 'status', 'rounds']);
+    }
+    var logWs = ss.getSheetByName('IPQC_LOG');
+    if (!logWs) {
+      logWs = ss.insertSheet('IPQC_LOG');
+      logWs.appendRow(['session_id', 'product_code', 'batch', 'round_no', 'timestamp', 'param_code', 'param_name', 'std_value', 'unit', 'actual_value', 'result', 'remark', 'elapsed_hms', 'period_start', 'period_end', 'avg_weight']);
+    }
+    var productCode = payload.productCode || 'TEST-FG';
+    var productName = payload.productName || 'Test FG (smoke)';
+    var batch       = payload.batchNo     || 'TEST-BATCH';
+    var inspector   = payload.inspector   || 'claude-smoke-test';
+    var line        = payload.line        || 'TEST-LINE';
+    var sessionId   = payload.sessionId   || (productCode + '_' + batch + '_' + inspector);
+    var now = new Date();
+    var dateStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd');
+    var timeStr = Utilities.formatDate(now, 'Asia/Kolkata', 'HH:mm:ss');
+
+    sessWs.appendRow([
+      sessionId, productCode, productName, batch, inspector, line,
+      dateStr, timeStr, '', 'OPEN', 1
+    ]);
+
+    var tsStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+    // Round 1, param 1 — PASS
+    logWs.appendRow([
+      sessionId, productCode, batch, 1, tsStr,
+      'W01', 'Avg Weight', 500, 'g', 498, 'PASS',
+      'TEST smoke IPQC pass — safe to archive',
+      '00:05:00', timeStr, timeStr, 498
+    ]);
+    // Round 1, param 2 — FAIL (out-of-spec)
+    logWs.appendRow([
+      sessionId, productCode, batch, 1, tsStr,
+      payload.oosParamCode || 'P01',
+      payload.oosParamName || 'Seal Strength',
+      payload.oosStdValue  || 'min 10 N',
+      payload.oosUnit      || 'N',
+      payload.oosActual    || 5,
+      'FAIL',
+      payload.oosRemark    || 'TEST smoke IPQC out-of-spec — safe to archive',
+      '00:05:00', timeStr, timeStr, ''
+    ]);
+    var lr = logWs.getLastRow();
+    logWs.getRange(lr, 11).setBackground('#FFEBEE'); // tint FAIL cell red
+    return {
+      success: true,
+      sessionId: sessionId,
+      docNo: sessionId,           // alias for parity with other helpers
+      paramCode: payload.oosParamCode || 'P01',
+      roundNo: 1,
+      sessionsRows: 1,
+      logRows: 2
+    };
+  } catch(e) {
+    Logger.log('createTestIPQCOutOfSpec failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 // Sweep _TEST_ARCHIVE: delete rows older than N days (by _ArchivedAt in col 2).
 // Default 30 days. Call without args to clean up old smoke residue safely.
 // Returns { success, removed, kept }. Header row is never touched.
