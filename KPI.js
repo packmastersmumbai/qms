@@ -13,7 +13,7 @@
  */
 function getKPIDashboard(periodOpts) {
   periodOpts = periodOpts || { preset: 'THIS_MONTH' };
-  var cacheKey = 'kpi:v1:' + JSON.stringify(periodOpts);
+  var cacheKey = 'kpi:v1:' + (periodOpts.preset || 'THIS_MONTH') + ':' + (periodOpts.fromISO || '') + ':' + (periodOpts.toISO || '');
 
   // Cache probe
   try {
@@ -494,12 +494,16 @@ function kpiNCR_(fromDate, toDate, ctx, thresholds) {
 // ── Supplier Defect ───────────────────────────────────────────
 
 function kpiSupplierDefect_(fromDate, toDate, ctx, thresholds) {
+  if (typeof isPOAttached_ !== 'function') {
+    Logger.log('KPI WARN: isPOAttached_ not defined — supplier defect tile cannot compute. Is POP.js deployed?');
+    return { overall: null, worstSuppliers: [], status: 'grey' };
+  }
   var bySupplier = {};
   ctx.iqcRows.forEach(function(row) {
     if (!kpiInRange_(row.date, fromDate, toDate)) return;
     var grn = ctx.grnMap[row.grnNo];
     if (!grn || !grn.poRef) return;
-    if (typeof isPOAttached_ !== 'function' || !isPOAttached_(grn.poRef)) return;
+    if (!isPOAttached_(grn.poRef)) return;
     var sup = grn.supplierCode || grn.supplierName || 'UNKNOWN';
     if (!bySupplier[sup]) bySupplier[sup] = { supplier: sup, rejQty: 0, totQty: 0 };
     var disp = row.disposition.toUpperCase().trim();

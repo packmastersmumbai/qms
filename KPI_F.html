@@ -503,14 +503,14 @@
 
   // ── Route to Records_F with URL params ──
   function routeToRecords(type, from, to) {
-    // Records_F in web-app context uses URL params parsed by setFiltersFromURL_()
+    var qs = 'type=' + encodeURIComponent(type || '') +
+             '&from=' + encodeURIComponent(from || '') +
+             '&to=' + encodeURIComponent(to || '');
+    try { window.location.hash = '?' + qs; } catch (e) {}
     google.script.run
       .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
       .withFailureHandler(function() { toast('Could not open Records.'); })
       .getFormHtml('Records');
-    // Note: URL params work in web-app context. In modal context, pass via hash.
-    // Records_F.html setFiltersFromURL_ checks both location.search and location.hash.
-    // We append to the URL when navigating; in iframe context the page gets reloaded with params.
   }
 
   // ── Load ──
