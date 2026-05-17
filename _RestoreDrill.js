@@ -106,9 +106,10 @@ function runRestoreDrill() {
     if (!ledgerMatch)   result.errors.push('ledger summary drift across drill');
     if (deleted !== 2)  result.errors.push('expected to delete 2 rows, deleted ' + deleted);
 
+    result.baselineMatch = result.phases.baselineMatch;
     result.success = (result.errors.length === 0);
     Logger.log('runRestoreDrill complete: success=' + result.success +
-      ' baselineMatch=' + result.phases.baselineMatch);
+      ' baselineMatch=' + result.baselineMatch);
     return result;
   } catch (e) {
     result.errors.push('exception: ' + e.message);
