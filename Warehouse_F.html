@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <style>
+    .wh-tabs {
+      display: flex;
+      overflow-x: auto;
+      background: var(--navy-light);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 56px;
+      z-index: 90;
+      scrollbar-width: none;
+    }
+    .wh-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-btn.active {
+      color: var(--navy);
+      background: var(--navy-light);
+      border-bottom-color: var(--navy);
+    }
+
+    .wh-toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 10px 0;
+      align-items: center;
+    }
+    .search-input {
+      flex: 1;
+      height: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 0 11px;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--white);
+      font-family: inherit;
+    }
+    .search-input:focus { outline: none; border-color: var(--navy); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .wh-table-wrap {
+      margin: 10px 10px 88px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    .wh-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .wh-table thead th {
+      background: var(--navy-light);
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+      position: sticky;
+      top: calc(56px + 45px);
+      z-index: 10;
+    }
+    .wh-table tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+    .wh-table tbody tr:nth-child(even) { background: #FAFBFF; }
+    .wh-table tbody td {
+      padding: 10px 10px;
+      font-size: 12px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .row-clickable { cursor: pointer; }
+    .row-clickable:hover { background: var(--navy-light) !important; }
+
+    .qty-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--navy);
+      color: var(--white);
+    }
+    .qty-pill.zero { background: var(--muted); }
+    .loc-chip {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: var(--navy-light);
+      color: var(--navy);
+      font-weight: 600;
+    }
+    .loc-chip.q { background: #FFE9D6; color: #B5650F; }
+    .loc-chip.s { background: #FCD9D9; color: #A4271A; }
+    .loc-chip.sm{ background: #E7EBFA; color: #4F4E96; }
+
+    @keyframes skel-pulse { 0%{opacity:0.4}50%{opacity:1}100%{opacity:0.4} }
+    .skel-bar {
+      display: inline-block;
+      height: 13px;
+      background: var(--navy-light);
+      border-radius: 4px;
+      animation: skel-pulse 0.8s ease-in-out infinite;
+    }
+    .wh-empty {
+      text-align: center;
+      padding: 32px 16px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .wh-empty a { color: var(--navy); cursor: pointer; text-decoration: underline; }
+
+    /* Action menu */
+    .action-bar {
+      position: fixed;
+      right: 18px;
+      bottom: 22px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .action-menu {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px;
+      box-shadow: 0 6px 18px rgba(11,42,74,0.18);
+    }
+    .action-menu.open { display: flex; }
+    .action-menu button {
+      background: transparent;
+      border: none;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy);
+      padding: 10px 14px;
+      border-radius: 6px;
+      text-align: left;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .action-menu button:hover { background: var(--navy-light); }
+    .fab-action {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(11,42,74,0.35);
+      font-family: inherit;
+      transition: transform 0.15s;
+    }
+    .fab-action:hover { transform: translateY(-2px); }
+    .fab-action.open { transform: rotate(45deg); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11,42,74,0.55);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.15s ease;
+    }
+    .modal-overlay.show { display: flex; }
+    @media (min-width: 600px) { .modal-overlay { align-items: center; } }
+
+    .modal-card {
+      background: var(--white);
+      width: 100%;
+      max-width: 540px;
+      max-height: 90vh;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.2s ease;
+    }
+    @media (min-width: 600px) { .modal-card { border-radius: 12px; } }
+    @keyframes slideUp { from{transform:translateY(20px);opacity:0.8} to{transform:translateY(0);opacity:1} }
+
+    .modal-header {
+      padding: 16px 18px;
+      background: var(--navy);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title { font-size: 15px; font-weight: 600; }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--white);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 0 6px;
+      font-family: inherit;
+    }
+
+    .modal-body {
+      padding: 16px 18px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .field-row { margin-bottom: 12px; }
+    .field-row label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    .field-row label .req { color: var(--danger); margin-left: 2px; }
+    .field-row input, .field-row select, .field-row textarea {
+      width: 100%;
+      box-sizing: border-box;
+      height: 38px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 0 11px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+    }
+    .field-row textarea { height: auto; min-height: 60px; padding: 8px 11px; resize: vertical; }
+    .field-row input:focus, .field-row select:focus, .field-row textarea:focus {
+      outline: none; border-color: var(--navy);
+    }
+    .field-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .balance-hint {
+      margin-top: -4px;
+      margin-bottom: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--navy);
+      padding: 6px 10px;
+      background: var(--navy-light);
+      border-radius: 6px;
+    }
+    .balance-hint.warn { color: #A4271A; background: #FCD9D9; }
+
+    .modal-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--navy); color: var(--white); }
+    .btn-ghost { background: transparent; color: var(--muted); }
+
+    .pm-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      min-width: 220px;
+      max-width: 360px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--white);
+      z-index: 1500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      text-align: center;
+    }
+    .pm-toast.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    .pm-toast.success { background: var(--success); }
+    .pm-toast.error   { background: var(--danger); cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<div class="pm-header">
+  <button class="back-btn" id="backBtn" aria-label="Back">
+    <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
+  </button>
+  <span class="page-title" style="flex:1;text-align:center;font-size:13px;font-weight:500;opacity:0.85;">Warehouse</span>
+  <span id="roleChip" class="doc-badge" style="display:none;"></span>
+</div>
+
+<div class="wh-tabs" id="whTabBar">
+  <button class="tab-btn active" data-tab="stock">Stock</button>
+  <button class="tab-btn" data-tab="locations">Locations</button>
+</div>
+
+<div class="wh-toolbar">
+  <input class="search-input" id="searchInput" type="search" placeholder="Search material / location..." autocomplete="off">
+</div>
+
+<!-- STOCK -->
+<div class="tab-panel active" id="panel-stock">
+  <div class="wh-table-wrap">
+    <table class="wh-table">
+      <thead>
+        <tr>
+          <th style="width:110px;">Material</th>
+          <th>Description</th>
+          <th style="width:120px;">Batch / Lot</th>
+          <th style="width:120px;">Location</th>
+          <th style="width:80px;">Balance</th>
+          <th style="width:50px;">Unit</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-stock"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- LOCATIONS -->
+<div class="tab-panel" id="panel-locations">
+  <div class="wh-table-wrap">
+    <table class="wh-table">
+      <thead>
+        <tr>
+          <th style="width:110px;">ID</th>
+          <th>Label</th>
+          <th style="width:90px;">Type</th>
+          <th style="width:80px;">Section</th>
+          <th style="width:70px;">Aisle</th>
+          <th style="width:70px;">Rack</th>
+          <th style="width:80px;">Capacity</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-locations"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Action FAB + menu -->
+<div class="action-bar">
+  <div class="action-menu" id="actionMenu">
+    <button data-action="transfer">↔ Transfer Stock</button>
+    <button data-action="issue">→ Issue to Production</button>
+    <button data-action="scrap">✕ Record Scrap</button>
+    <button data-action="sample">⬚ Take Sample</button>
+    <button data-action="newLocation">+ New Location</button>
+  </div>
+  <button class="fab-action" id="fabAction" aria-label="Actions">+</button>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Action</div>
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnCancel">Cancel</button>
+      <button class="btn btn-primary" id="btnSubmit">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div class="pm-toast" id="pmToast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  var activeTab = 'stock';
+  var cache = { stock: null, locations: null, materials: null };
+  var loadState = {};
+  var searchTimer = null;
+  var currentAction = null;
+
+  function esc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function td(v) { return '<td>' + esc(v) + '</td>'; }
+
+  function locTypeChipClass(t) {
+    var u = String(t || '').toUpperCase();
+    if (u === 'QUARANTINE') return 'q';
+    if (u === 'SCRAP') return 's';
+    if (u === 'SAMPLE') return 'sm';
+    return '';
+  }
+
+  /* ── Tabs ── */
+  function switchTab(tab) {
+    if (tab === activeTab) return;
+    activeTab = tab;
+    document.querySelectorAll('[data-tab]').forEach(function(el) {
+      el.classList.toggle('active', el.getAttribute('data-tab') === tab);
+    });
+    document.querySelectorAll('.tab-panel').forEach(function(p) {
+      p.classList.toggle('active', p.id === 'panel-' + tab);
+    });
+    document.getElementById('searchInput').value = '';
+    if (!loadState[tab]) loadTab(tab);
+  }
+
+  /* ── Skeleton ── */
+  function showSkeleton(tab) {
+    var tbody = document.getElementById('tbody-' + tab);
+    if (!tbody) return;
+    var cols = (tab === 'stock') ? 6 : 7;
+    var html = '';
+    var widths = [55, 70, 62, 80, 58, 66, 72];
+    for (var r = 0; r < 6; r++) {
+      html += '<tr>';
+      for (var c = 0; c < cols; c++) {
+        html += '<td><span class="skel-bar" style="width:' + widths[(r+c) % widths.length] + '%">&nbsp;</span></td>';
+      }
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+  }
+
+  /* ── Load ── */
+  function loadTab(tab) {
+    loadState[tab] = 'loading';
+    showSkeleton(tab);
+    if (tab === 'stock') {
+      // We need materials map to enrich stock rows with description/unit
+      Promise.all([
+        new Promise(function(res, rej) {
+          google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStockSummary();
+        }),
+        new Promise(function(res, rej) {
+          if (cache.materials) return res(cache.materials);
+          google.script.run.withSuccessHandler(function(m){ cache.materials = m || []; res(cache.materials); })
+            .withFailureHandler(rej).getMaterials();
+        })
+      ]).then(function(arr) {
+        var stock = arr[0] || [];
+        var mats = arr[1] || [];
+        var matMap = {};
+        mats.forEach(function(m){ matMap[String(m.code).trim()] = m; });
+        stock.forEach(function(s) {
+          var m = matMap[String(s.materialCode).trim()] || {};
+          s.desc = m.desc || '';
+          s.unit = m.unit || '';
+        });
+        cache.stock = stock;
+        loadState.stock = 'loaded';
+        renderTab('stock', '');
+      }).catch(function(e){ onError('stock', e); });
+    } else if (tab === 'locations') {
+      google.script.run
+        .withSuccessHandler(function(rows) { cache.locations = rows || []; loadState.locations = 'loaded'; renderTab('locations', ''); })
+        .withFailureHandler(function(e) { onError('locations', e); })
+        .getLocations();
+    }
+  }
+
+  function onError(tab, err) {
+    loadState[tab] = 'error';
+    var tbody = document.getElementById('tbody-' + tab);
+    var cols = (tab === 'stock') ? 6 : 7;
+    tbody.innerHTML = '<tr><td colspan="' + cols + '"><div class="wh-empty">Could not load. ' +
+      '<a onclick="retryTab(\'' + tab + '\')">Retry</a></div></td></tr>';
+    showToast('Could not load ' + tab + '.', 'error');
+  }
+  window.retryTab = function(tab) { loadState[tab] = null; loadTab(tab); };
+
+  /* ── Render ── */
+  function renderTab(tab, query) {
+    var rows = (tab === 'stock' ? cache.stock : cache.locations) || [];
+    var q = (query || '').toLowerCase();
+    var filtered = rows;
+    if (q) {
+      filtered = rows.filter(function(r){
+        return Object.keys(r).some(function(k){
+          var v = r[k];
+          return v && String(v).toLowerCase().indexOf(q) !== -1;
+        });
+      });
+    }
+
+    var tbody = document.getElementById('tbody-' + tab);
+    if (!filtered.length) {
+      var cols = (tab === 'stock') ? 6 : 7;
+      var msg = q
+        ? 'No results for &ldquo;' + esc(query) + '&rdquo;. <a onclick="clearSearch()">Clear</a>'
+        : (tab === 'stock' ? 'No stock on hand.' : 'No locations. Tap + to add.');
+      tbody.innerHTML = '<tr><td colspan="' + cols + '"><div class="wh-empty">' + msg + '</div></td></tr>';
+      return;
+    }
+
+    var html = '';
+    if (tab === 'stock') {
+      filtered.forEach(function(r) {
+        var pillCls = r.balance > 0 ? '' : 'zero';
+        html += '<tr>' +
+          td(r.materialCode) + td(r.desc) + td(r.batchOrLotNo) + td(r.locationId) +
+          '<td><span class="qty-pill ' + pillCls + '">' + esc(r.balance) + '</span></td>' +
+          td(r.unit) +
+        '</tr>';
+      });
+    } else {
+      filtered.forEach(function(r) {
+        var cap = (r.capacityQty || r.capacityQty === 0) ? (esc(r.capacityQty) + ' ' + esc(r.capacityUnit || '')) : '';
+        html += '<tr>' +
+          td(r.id) + td(r.label || r.id) +
+          '<td><span class="loc-chip ' + locTypeChipClass(r.type) + '">' + esc(r.type || '') + '</span></td>' +
+          td(r.section) + td(r.aisle) + td(r.rack) + td(cap) +
+        '</tr>';
+      });
+    }
+    tbody.innerHTML = html;
+  }
+
+  function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    renderTab(activeTab, '');
+  }
+  window.clearSearch = clearSearch;
+
+  /* ── Action menu + modal ── */
+  function toggleActionMenu(force) {
+    var menu = document.getElementById('actionMenu');
+    var fab  = document.getElementById('fabAction');
+    var open = (force === undefined) ? !menu.classList.contains('open') : force;
+    menu.classList.toggle('open', open);
+    fab.classList.toggle('open', open);
+  }
+
+  function openAction(action) {
+    currentAction = action;
+    var title, body;
+    switch (action) {
+      case 'transfer':
+        title = 'Transfer Stock';
+        body = fieldsFor('transfer');
+        break;
+      case 'issue':
+        title = 'Issue RM to Production';
+        body = fieldsFor('issue');
+        break;
+      case 'scrap':
+        title = 'Record Scrap';
+        body = fieldsFor('scrap');
+        break;
+      case 'sample':
+        title = 'Take Sample';
+        body = fieldsFor('sample');
+        break;
+      case 'newLocation':
+        title = 'Add Location';
+        body = fieldsFor('newLocation');
+        break;
+    }
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = body;
+    document.getElementById('btnSubmit').disabled = false;
+    document.getElementById('btnSubmit').textContent = 'Submit';
+    document.getElementById('modalOverlay').classList.add('show');
+    // Bind balance hint listeners for stock-aware modals
+    if (action === 'transfer' || action === 'issue' || action === 'scrap' || action === 'sample') {
+      bindBalanceHint();
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('show');
+    currentAction = null;
+  }
+
+  function stockOpts() {
+    var stock = cache.stock || [];
+    if (!stock.length) return '<option value="">(no stock on hand)</option>';
+    return '<option value="">— Choose lot —</option>' + stock.map(function(s) {
+      var v = [s.materialCode, s.batchOrLotNo, s.locationId].join('|');
+      var lbl = s.materialCode + ' / ' + s.batchOrLotNo + ' @ ' + s.locationId + ' (' + s.balance + ' ' + (s.unit || '') + ')';
+      return '<option value="' + esc(v) + '">' + esc(lbl) + '</option>';
+    }).join('');
+  }
+
+  function locOpts(excludeId) {
+    var locs = cache.locations || [];
+    return '<option value="">— Choose location —</option>' + locs.filter(function(l){
+      return l.id !== excludeId;
+    }).map(function(l) {
+      return '<option value="' + esc(l.id) + '">' + esc(l.id + ' — ' + (l.label || l.type)) + '</option>';
+    }).join('');
+  }
+
+  function fieldsFor(action) {
+    if (action === 'transfer') {
+      return '' +
+        '<div class="field-row"><label>Source Lot<span class="req">*</span></label><select data-key="lot">' + stockOpts() + '</select></div>' +
+        '<div class="balance-hint" id="balHint" style="display:none;"></div>' +
+        '<div class="field-row"><label>Destination Location<span class="req">*</span></label><select data-key="toLocationId">' + locOpts() + '</select></div>' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>Qty<span class="req">*</span></label><input type="number" data-key="qty" step="any" min="0"></div>' +
+          '<div class="field-row"><label>Transferred By</label><input type="text" data-key="transferredBy"></div>' +
+        '</div>' +
+        '<div class="field-row"><label>Reason</label><input type="text" data-key="reason"></div>';
+    }
+    if (action === 'issue') {
+      return '' +
+        '<div class="field-row"><label>Source Lot<span class="req">*</span></label><select data-key="lot">' + stockOpts() + '</select></div>' +
+        '<div class="balance-hint" id="balHint" style="display:none;"></div>' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>Qty<span class="req">*</span></label><input type="number" data-key="qtyToIssue" step="any" min="0"></div>' +
+          '<div class="field-row"><label>Production Order</label><input type="text" data-key="productionOrderNo" placeholder="auto if blank"></div>' +
+        '</div>' +
+        '<div class="field-row"><label>Issued By</label><input type="text" data-key="issuedBy"></div>';
+    }
+    if (action === 'scrap') {
+      return '' +
+        '<div class="field-row"><label>Source Lot<span class="req">*</span></label><select data-key="lot">' + stockOpts() + '</select></div>' +
+        '<div class="balance-hint" id="balHint" style="display:none;"></div>' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>Qty Scrap<span class="req">*</span></label><input type="number" data-key="qtyScrap" step="any" min="0"></div>' +
+          '<div class="field-row"><label>Destination</label><input type="text" data-key="scrapDestination" placeholder="e.g. RBP Vendor"></div>' +
+        '</div>' +
+        '<div class="field-row"><label>Reason<span class="req">*</span></label><input type="text" data-key="scrapReason"></div>' +
+        '<div class="field-row"><label>Recorded By</label><input type="text" data-key="recordedBy"></div>';
+    }
+    if (action === 'sample') {
+      return '' +
+        '<div class="field-row"><label>Source Lot<span class="req">*</span></label><select data-key="lot">' + stockOpts() + '</select></div>' +
+        '<div class="balance-hint" id="balHint" style="display:none;"></div>' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>Qty Sample<span class="req">*</span></label><input type="number" data-key="qtySample" step="any" min="0"></div>' +
+          '<div class="field-row"><label>Stored At</label><input type="text" data-key="locationStored" value="SAMPLE-CABINET"></div>' +
+        '</div>' +
+        '<div class="field-row"><label>Purpose<span class="req">*</span></label><input type="text" data-key="samplePurpose"></div>' +
+        '<div class="field-row"><label>Taken By</label><input type="text" data-key="takenBy"></div>';
+    }
+    if (action === 'newLocation') {
+      return '' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>ID<span class="req">*</span></label><input type="text" data-key="id" placeholder="LOC-RM-01"></div>' +
+          '<div class="field-row"><label>Type<span class="req">*</span></label><select data-key="type">' +
+            ['RM','FG','QUARANTINE','SCRAP','SAMPLE','FG_HOLD'].map(function(t){ return '<option value="'+t+'">'+t+'</option>'; }).join('') +
+          '</select></div>' +
+        '</div>' +
+        '<div class="field-row"><label>Label</label><input type="text" data-key="label"></div>' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>Floor</label><input type="text" data-key="floor"></div>' +
+          '<div class="field-row"><label>Section</label><input type="text" data-key="section"></div>' +
+        '</div>' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>Aisle</label><input type="text" data-key="aisle"></div>' +
+          '<div class="field-row"><label>Rack</label><input type="text" data-key="rack"></div>' +
+        '</div>' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>Shelf</label><input type="text" data-key="shelf"></div>' +
+          '<div class="field-row"><label>Bin</label><input type="text" data-key="bin"></div>' +
+        '</div>' +
+        '<div class="field-row-2col">' +
+          '<div class="field-row"><label>Capacity Qty</label><input type="number" data-key="capacityQty" step="any" min="0"></div>' +
+          '<div class="field-row"><label>Capacity Unit</label><input type="text" data-key="capacityUnit" placeholder="kg / pcs"></div>' +
+        '</div>';
+    }
+    return '';
+  }
+
+  function bindBalanceHint() {
+    var sel = document.querySelector('#modalBody select[data-key="lot"]');
+    var hint = document.getElementById('balHint');
+    if (!sel || !hint) return;
+    function update() {
+      var parts = (sel.value || '').split('|');
+      if (parts.length !== 3 || !parts[0]) { hint.style.display = 'none'; return; }
+      var lot = (cache.stock || []).find(function(s){
+        return s.materialCode === parts[0] && s.batchOrLotNo === parts[1] && s.locationId === parts[2];
+      });
+      if (!lot) { hint.style.display = 'none'; return; }
+      hint.textContent = 'Available: ' + lot.balance + ' ' + (lot.unit || '') + ' @ ' + lot.locationId;
+      hint.className = 'balance-hint' + (lot.balance > 0 ? '' : ' warn');
+      hint.style.display = '';
+    }
+    sel.addEventListener('change', update);
+  }
+
+  function collectFormData() {
+    var data = {};
+    document.querySelectorAll('#modalBody [data-key]').forEach(function(el) {
+      var k = el.getAttribute('data-key');
+      var v = el.value;
+      if (el.type === 'number') v = (v === '' ? '' : Number(v));
+      else if (typeof v === 'string') v = v.trim();
+      data[k] = v;
+    });
+    // Explode "lot" composite key into material/batch/location
+    if (data.lot) {
+      var p = data.lot.split('|');
+      data.materialCode  = p[0];
+      data.batchOrLotNo  = p[1];
+      data.fromLocationId = p[2];
+      data.locationId    = p[2];
+      delete data.lot;
+    }
+    return data;
+  }
+
+  function validate(action, data) {
+    function req(k, label) {
+      var v = data[k];
+      if (v === null || v === undefined || v === '' || (typeof v === 'string' && !v.trim())) {
+        return label + ' is required.';
+      }
+      return null;
+    }
+    if (action === 'transfer') {
+      return req('materialCode', 'Source lot')
+          || req('toLocationId', 'Destination location')
+          || req('qty', 'Qty')
+          || (data.fromLocationId === data.toLocationId ? 'Source and destination must differ.' : null);
+    }
+    if (action === 'issue')  return req('materialCode', 'Source lot') || req('qtyToIssue', 'Qty');
+    if (action === 'scrap')  return req('materialCode', 'Source lot') || req('qtyScrap', 'Qty scrap') || req('scrapReason', 'Reason');
+    if (action === 'sample') return req('materialCode', 'Source lot') || req('qtySample', 'Qty sample') || req('samplePurpose', 'Purpose');
+    if (action === 'newLocation') return req('id', 'ID') || req('type', 'Type');
+    return null;
+  }
+
+  function submitAction() {
+    var data = collectFormData();
+    var err = validate(currentAction, data);
+    if (err) { showToast(err, 'error'); return; }
+
+    var btn = document.getElementById('btnSubmit');
+    btn.disabled = true; btn.textContent = 'Submitting...';
+
+    var fn, payload = data;
+    switch (currentAction) {
+      case 'transfer':    fn = 'recordLocationTransfer'; break;
+      case 'issue':       fn = 'issueRMForProduction'; break;
+      case 'scrap':       fn = 'recordScrap'; payload.refDocType = data.refDocType || 'MANUAL'; payload.refDocNo = data.refDocNo || ''; break;
+      case 'sample':      fn = 'recordSample'; payload.refDocType = data.refDocType || 'MANUAL'; payload.refDocNo = data.refDocNo || ''; break;
+      case 'newLocation': fn = 'saveLocation'; break;
+    }
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success === false) {
+          btn.disabled = false; btn.textContent = 'Submit';
+          showToast(res.error || 'Action failed.', 'error');
+          return;
+        }
+        showToast('Done.', 'success');
+        closeModal();
+        // Refresh both tabs since most actions affect both stock + (possibly) locations
+        loadState.stock = null;
+        loadState.locations = null;
+        loadTab(activeTab);
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false; btn.textContent = 'Submit';
+        showToast((e && e.message) ? e.message : 'Action failed.', 'error');
+      })
+      [fn](payload);
+  }
+
+  /* ── Toast ── */
+  var toastTimer = null;
+  function showToast(msg, type) {
+    var t = document.getElementById('pmToast');
+    t.textContent = msg;
+    t.className = 'pm-toast show' + (type ? ' ' + type : '');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.className = 'pm-toast'; }, type === 'error' ? 5000 : 3000);
+  }
+
+  /* ── Role gate ── */
+  function checkRole() {
+    var role = sessionStorage.getItem('userRole') || '';
+    var chip = document.getElementById('roleChip');
+    if (chip && role) {
+      chip.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+      chip.style.display = '';
+    }
+    if (role === 'user') {
+      google.script.run
+        .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function(){}).getFormHtml('Landing');
+      return false;
+    }
+    return true;
+  }
+
+  /* ── Init ── */
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!checkRole()) return;
+
+    document.getElementById('backBtn').addEventListener('click', function() {
+      google.script.run
+        .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function(){}).getFormHtml('Landing');
+    });
+
+    document.getElementById('whTabBar').addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-tab]');
+      if (btn) switchTab(btn.getAttribute('data-tab'));
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function() {
+      var val = this.value;
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(function() {
+        if (loadState[activeTab] === 'loaded') renderTab(activeTab, val);
+      }, 250);
+    });
+
+    document.getElementById('fabAction').addEventListener('click', function() {
+      toggleActionMenu();
+    });
+    document.getElementById('actionMenu').addEventListener('click', function(e) {
+      var b = e.target.closest('[data-action]');
+      if (!b) return;
+      toggleActionMenu(false);
+      // Ensure both stock + locations are loaded before opening (modals need lot/loc options)
+      var promises = [];
+      if (!cache.stock)     promises.push(new Promise(function(res){ google.script.run.withSuccessHandler(function(r){
+          cache.stock = r || []; loadState.stock = 'loaded';
+          google.script.run.withSuccessHandler(function(m){
+            cache.materials = m || [];
+            var mm = {}; cache.materials.forEach(function(x){ mm[String(x.code).trim()] = x; });
+            cache.stock.forEach(function(s){ var x = mm[String(s.materialCode).trim()] || {}; s.desc = x.desc || ''; s.unit = x.unit || ''; });
+            res();
+          }).withFailureHandler(function(){ res(); }).getMaterials();
+        }).withFailureHandler(function(){ res(); }).getStockSummary(); }));
+      if (!cache.locations) promises.push(new Promise(function(res){ google.script.run.withSuccessHandler(function(r){ cache.locations = r || []; loadState.locations = 'loaded'; res(); }).withFailureHandler(function(){ res(); }).getLocations(); }));
+      Promise.all(promises).then(function(){ openAction(b.getAttribute('data-action')); });
+    });
+
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('btnCancel').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    document.getElementById('btnSubmit').addEventListener('click', submitAction);
+
+    document.getElementById('pmToast').addEventListener('click', function() {
+      this.className = 'pm-toast';
+    });
+
+    loadTab('stock');
+  });
+
+})();
+</script>
+</body>
+</html>

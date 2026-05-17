@@ -217,17 +217,20 @@ function doGet(e) {
     }
   } catch(ex) {}
 
-  var page = e && e.parameter && e.parameter.page ? e.parameter.page : '';
+  var page = e && e.parameter && e.parameter.page ? String(e.parameter.page).toLowerCase() : '';
   var template;
-  if (page === 'masters') {
-    template = HtmlService.createTemplateFromFile('Masters_F').evaluate()
-      .setTitle('Masters — Pack Masters QMS');
-  } else if (page === 'Records' || page === 'NCR' || page === 'CustomerReturn') {
-    var pageMap = { Records: 'Records_F', NCR: 'NCR_F', CustomerReturn: 'CustomerReturn_F' };
-    var fileName = pageMap[page];
-    var pgTpl = HtmlService.createTemplateFromFile(fileName);
+  // Canonical lowercase keys → { file, title }
+  var pageMap = {
+    masters:        { file: 'Masters_F',        title: 'Masters' },
+    records:        { file: 'Records_F',        title: 'Records' },
+    ncr:            { file: 'NCR_F',            title: 'NCR' },
+    customerreturn: { file: 'CustomerReturn_F', title: 'Customer Return' },
+    warehouse:      { file: 'Warehouse_F',      title: 'Warehouse' }
+  };
+  if (pageMap[page]) {
+    var pgTpl = HtmlService.createTemplateFromFile(pageMap[page].file);
     pgTpl.scriptUrl = ScriptApp.getService().getUrl();
-    template = pgTpl.evaluate().setTitle(page + ' — Pack Masters QMS');
+    template = pgTpl.evaluate().setTitle(pageMap[page].title + ' — Pack Masters QMS');
   } else {
     var landingTpl = HtmlService.createTemplateFromFile('Landing');
     landingTpl.scriptUrl = ScriptApp.getService().getUrl();
