@@ -368,12 +368,12 @@
     document.getElementById('tile-ncr').addEventListener('click', function() {
       if (!state.dashData) return;
       var p = state.dashData.period;
-      routeToRecords('NCR_LOG', p.fromISO, p.toISO);
+      openWebAppPage('NCR', p.fromISO, p.toISO);
     });
     document.getElementById('tile-cr').addEventListener('click', function() {
       if (!state.dashData) return;
       var p = state.dashData.period;
-      routeToRecords('CUSTOMER_RETURN_LOG', p.fromISO, p.toISO);
+      openWebAppPage('CustomerReturn', p.fromISO, p.toISO);
     });
   }
 
@@ -501,10 +501,9 @@
     return html;
   }
 
-  // ── Route to Records_F with URL params (opens web app in new tab) ──
-  function routeToRecords(type, from, to) {
-    var qs = '?page=Records' +
-             '&type=' + encodeURIComponent(type || '') +
+  // ── Open a dedicated web-app page in a new tab ──
+  function openWebAppPage(page, from, to) {
+    var qs = '?page=' + encodeURIComponent(page) +
              '&from=' + encodeURIComponent(from || '') +
              '&to=' + encodeURIComponent(to || '');
     google.script.run

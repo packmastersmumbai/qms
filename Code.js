@@ -222,13 +222,12 @@ function doGet(e) {
   if (page === 'masters') {
     template = HtmlService.createTemplateFromFile('Masters_F').evaluate()
       .setTitle('Masters — Pack Masters QMS');
-  } else if (page === 'Records') {
-    var recTpl = HtmlService.createTemplateFromFile('Records_F');
-    recTpl.scriptUrl = ScriptApp.getService().getUrl();
-    recTpl.urlType = (e.parameter && e.parameter.type) || '';
-    recTpl.urlFrom = (e.parameter && e.parameter.from) || '';
-    recTpl.urlTo   = (e.parameter && e.parameter.to)   || '';
-    template = recTpl.evaluate().setTitle('Records — Pack Masters QMS');
+  } else if (page === 'Records' || page === 'NCR' || page === 'CustomerReturn') {
+    var pageMap = { Records: 'Records_F', NCR: 'NCR_F', CustomerReturn: 'CustomerReturn_F' };
+    var fileName = pageMap[page];
+    var pgTpl = HtmlService.createTemplateFromFile(fileName);
+    pgTpl.scriptUrl = ScriptApp.getService().getUrl();
+    template = pgTpl.evaluate().setTitle(page + ' — Pack Masters QMS');
   } else {
     var landingTpl = HtmlService.createTemplateFromFile('Landing');
     landingTpl.scriptUrl = ScriptApp.getService().getUrl();
