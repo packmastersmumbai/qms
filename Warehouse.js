@@ -176,13 +176,67 @@ function getFGLocations() {
 function saveLocation(d) {
   var ws = getSpreadsheet().getSheetByName('LOCATIONS');
   if (!ws) return { success: false, error: 'LOCATIONS sheet missing.' };
+  var id = String(d.id || '').trim();
+  if (!id) return { success: false, error: 'Location ID required.' };
+  // Update if row exists, else append
+  if (ws.getLastRow() > 1) {
+    var ids = ws.getRange(2, 1, ws.getLastRow() - 1, 1).getValues();
+    for (var i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]).trim() === id) {
+        ws.getRange(i + 2, 1, 1, 12).setValues([[
+          id, d.floor || '', d.section || '', d.aisle || '', d.rack || '',
+          d.shelf || '', d.bin || '',
+          d.label || id,
+          d.type || 'RM', d.capacityQty || '', d.capacityUnit || '', d.active || 'Y'
+        ]]);
+        return { success: true, updated: true };
+      }
+    }
+  }
   ws.appendRow([
-    d.id, d.floor || '', d.section || '', d.aisle || '', d.rack || '',
+    id, d.floor || '', d.section || '', d.aisle || '', d.rack || '',
     d.shelf || '', d.bin || '',
-    d.label || (d.id),
+    d.label || id,
     d.type || 'RM', d.capacityQty || '', d.capacityUnit || '', d.active || 'Y'
   ]);
   return { success: true };
+}
+
+// Hard-delete if no STOCK_LEDGER rows reference this location; otherwise soft-delete (Active='N').
+// Keeps historical traceability intact for ISO 9001 audits.
+function deleteLocation(id) {
+  try {
+    var locId = String(id || '').trim();
+    if (!locId) return { success: false, error: 'Location ID required.' };
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('LOCATIONS');
+    if (!ws || ws.getLastRow() < 2) return { success: false, error: 'LOCATIONS sheet empty.' };
+
+    var ledger = ss.getSheetByName('STOCK_LEDGER');
+    var referenced = false;
+    if (ledger && ledger.getLastRow() > 1) {
+      var locCol = ledger.getRange(2, 6, ledger.getLastRow() - 1, 1).getValues();
+      for (var k = 0; k < locCol.length; k++) {
+        if (String(locCol[k][0]).trim() === locId) { referenced = true; break; }
+      }
+    }
+
+    var ids = ws.getRange(2, 1, ws.getLastRow() - 1, 1).getValues();
+    for (var i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]).trim() === locId) {
+        if (referenced) {
+          ws.getRange(i + 2, 12).setValue('N');
+          return { success: true, soft: true, message: 'Location had stock history — marked inactive.' };
+        }
+        ws.deleteRow(i + 2);
+        return { success: true, soft: false };
+      }
+    }
+    return { success: false, error: 'Location ' + locId + ' not found.' };
+  } catch(e) {
+    Logger.log('deleteLocation failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
 }
 
 // ---------- Movements ----------

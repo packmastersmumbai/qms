@@ -305,6 +305,7 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: var(--navy); color: var(--white); }
     .btn-ghost { background: transparent; color: var(--muted); }
+    .btn-danger { background: #d9534f; color: var(--white); }
 
     .pm-toast {
       position: fixed;
@@ -412,6 +413,7 @@
     </div>
     <div class="modal-body" id="modalBody"></div>
     <div class="modal-footer">
+      <button class="btn btn-danger" id="btnDelete" style="display:none;margin-right:auto;">Delete</button>
       <button class="btn btn-ghost" id="btnCancel">Cancel</button>
       <button class="btn btn-primary" id="btnSubmit">Submit</button>
     </div>
@@ -427,6 +429,7 @@
   var activeTab = 'stock';
   var cache = { stock: null, locations: null, materials: null };
   var loadState = {};
+  var editingLocationId = null;
   var searchTimer = null;
   var currentAction = null;
 
@@ -560,7 +563,7 @@
     } else {
       filtered.forEach(function(r) {
         var cap = (r.capacityQty || r.capacityQty === 0) ? (esc(r.capacityQty) + ' ' + esc(r.capacityUnit || '')) : '';
-        html += '<tr>' +
+        html += '<tr class="loc-row" data-loc-id="' + esc(r.id) + '" style="cursor:pointer;">' +
           td(r.id) + td(r.label || r.id) +
           '<td><span class="loc-chip ' + locTypeChipClass(r.type) + '">' + esc(r.type || '') + '</span></td>' +
           td(r.section) + td(r.aisle) + td(r.rack) + td(cap) +
@@ -614,6 +617,8 @@
     document.getElementById('modalBody').innerHTML = body;
     document.getElementById('btnSubmit').disabled = false;
     document.getElementById('btnSubmit').textContent = 'Submit';
+    document.getElementById('btnDelete').style.display = 'none';
+    editingLocationId = null;
     document.getElementById('modalOverlay').classList.add('show');
     // Bind balance hint listeners for stock-aware modals
     if (action === 'transfer' || action === 'issue' || action === 'scrap' || action === 'sample') {
@@ -624,6 +629,51 @@
   function closeModal() {
     document.getElementById('modalOverlay').classList.remove('show');
     currentAction = null;
+    editingLocationId = null;
+    document.getElementById('btnDelete').style.display = 'none';
+  }
+
+  // Open Edit Location modal pre-filled from a row in cache.locations
+  function openEditLocation(locId) {
+    var row = (cache.locations || []).find(function(l){ return String(l.id) === String(locId); });
+    if (!row) { showToast('Location not found.', 'error'); return; }
+    currentAction = 'newLocation';
+    editingLocationId = row.id;
+    document.getElementById('modalTitle').textContent = 'Edit Location';
+    document.getElementById('modalBody').innerHTML = fieldsFor('newLocation');
+    document.getElementById('btnSubmit').disabled = false;
+    document.getElementById('btnSubmit').textContent = 'Save';
+    document.getElementById('btnDelete').style.display = '';
+    document.getElementById('modalOverlay').classList.add('show');
+    // Pre-fill values
+    var keys = ['id','type','label','floor','section','aisle','rack','shelf','bin','capacityQty','capacityUnit'];
+    keys.forEach(function(k){
+      var el = document.querySelector('#modalBody [data-key="' + k + '"]');
+      if (el && row[k] != null) el.value = row[k];
+    });
+    var idEl = document.querySelector('#modalBody [data-key="id"]');
+    if (idEl) idEl.readOnly = true;
+  }
+
+  function deleteCurrentLocation() {
+    if (!editingLocationId) return;
+    if (!confirm('Delete location "' + editingLocationId + '"?\n\nIf the location has stock history, it will be marked inactive instead.')) return;
+    var btn = document.getElementById('btnDelete');
+    btn.disabled = true; btn.textContent = 'Deleting...';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false; btn.textContent = 'Delete';
+        if (res && res.success === false) { showToast(res.error || 'Delete failed.', 'error'); return; }
+        showToast((res && res.message) || (res && res.soft ? 'Marked inactive.' : 'Deleted.'), 'success');
+        closeModal();
+        loadState.locations = null;
+        loadTab('locations');
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false; btn.textContent = 'Delete';
+        showToast((e && e.message) ? e.message : 'Delete failed.', 'error');
+      })
+      .deleteLocation(editingLocationId);
   }
 
   function stockOpts() {
@@ -894,6 +944,13 @@
       if (e.target === this) closeModal();
     });
     document.getElementById('btnSubmit').addEventListener('click', submitAction);
+    document.getElementById('btnDelete').addEventListener('click', deleteCurrentLocation);
+
+    document.getElementById('tbody-locations').addEventListener('click', function(e) {
+      var tr = e.target.closest('tr.loc-row');
+      if (!tr) return;
+      openEditLocation(tr.getAttribute('data-loc-id'));
+    });
 
     document.getElementById('pmToast').addEventListener('click', function() {
       this.className = 'pm-toast';
