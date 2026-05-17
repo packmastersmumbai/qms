@@ -91,6 +91,14 @@
     .modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
     .btn-cancel-modal { background: #f5f5f5; color: var(--navy); border: 1px solid #ccc; padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .btn-confirm { background: #16A34A; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-load-draft { background: rgba(255,255,255,0.15); color: var(--white); border: 1px solid rgba(255,255,255,0.3); padding: 5px 12px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; letter-spacing: 0.3px; }
+    .btn-load-draft:hover { background: rgba(255,255,255,0.25); }
+    .draft-list { max-height: 360px; overflow-y: auto; margin: 4px 0 12px; }
+    .draft-row { padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 6px; cursor: pointer; background: #fafafa; }
+    .draft-row:hover { background: #eef2f7; border-color: var(--navy); }
+    .draft-row .dr-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--navy); }
+    .draft-row .dr-sub { font-size: 11px; color: #666; margin-top: 3px; }
+    .draft-empty { padding: 16px; text-align: center; color: #888; font-size: 12px; font-style: italic; }
 
     /* ── Toast ── */
     #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; max-width: 90vw; text-align: center; }
@@ -104,7 +112,8 @@
   <!-- Header -->
   <div class="pop-header">
     <button class="pop-back-btn" onclick="goHome()" title="Back to Landing">&#8592;</button>
-    <div class="pop-title">New Purchase Order</div>
+    <div class="pop-title" id="popTitle">New Purchase Order</div>
+    <button class="btn-load-draft" id="btnLoadDraft" onclick="openDraftPicker()" title="Load an existing DRAFT PO">Load DRAFT</button>
     <div class="pop-badge" id="docBadge">PO …</div>
   </div>
 
@@ -196,6 +205,17 @@
   </div>
 </div>
 
+<!-- DRAFT Picker Modal -->
+<div class="modal-overlay" id="draftPickerModal">
+  <div class="modal-box">
+    <div class="modal-title">Load DRAFT PO</div>
+    <div class="draft-list" id="draftList"><div class="draft-empty">Loading…</div></div>
+    <div class="modal-btns">
+      <button class="btn-cancel-modal" onclick="closeDraftPicker()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Preview Modal -->
 <div class="modal-overlay" id="previewModal">
   <div class="modal-box">
@@ -217,6 +237,7 @@
 var _materials = [];
 var _docNo = '';
 var _dirty = false;
+var _editPoNo = null;   // null = new PO; string = editing DRAFT
 
 /* ── Init ── */
 function init() {
@@ -352,14 +373,15 @@ window.saveDraft = function() {
   setBusy(true);
   var payload = buildPayload();
   payload.submit = false;
-  google.script.run
+  var runner = google.script.run
     .withSuccessHandler(function(r) {
       setBusy(false);
       if (r.success) { _dirty = false; showToast('Draft saved: ' + r.poNo); setTimeout(goHome, 1200); }
       else showToast('Error: ' + r.error, true);
     })
-    .withFailureHandler(function(e) { setBusy(false); showToast(e.message, true); })
-    .savePO(payload);
+    .withFailureHandler(function(e) { setBusy(false); showToast(e.message, true); });
+  if (_editPoNo) runner.updateDraftPO(_editPoNo, payload);
+  else           runner.savePO(payload);
 };
 
 /* ── Preview ── */
@@ -398,7 +420,7 @@ window.confirmSubmit = function() {
   document.getElementById('btnConfirm').disabled = true;
   var payload = buildPayload();
   payload.submit = true;
-  google.script.run
+  var runner = google.script.run
     .withSuccessHandler(function(r) {
       closeModal();
       if (r.success) { _dirty = false; showToast('PO submitted: ' + r.poNo); setTimeout(goHome, 1400); }
@@ -407,9 +429,89 @@ window.confirmSubmit = function() {
     .withFailureHandler(function(e) {
       closeModal(); showToast(e.message, true);
       document.getElementById('btnConfirm').disabled = false;
-    })
-    .savePO(payload);
+    });
+  if (_editPoNo) runner.updateDraftPO(_editPoNo, payload);
+  else           runner.savePO(payload);
 };
+
+/* ── DRAFT picker ── */
+window.openDraftPicker = function() {
+  var list = document.getElementById('draftList');
+  list.innerHTML = '<div class="draft-empty">Loading…</div>';
+  document.getElementById('draftPickerModal').classList.add('show');
+  google.script.run
+    .withSuccessHandler(function(drafts) {
+      if (!drafts || !drafts.length) {
+        list.innerHTML = '<div class="draft-empty">No DRAFT POs found.</div>';
+        return;
+      }
+      list.innerHTML = drafts.map(function(d){
+        return '<div class="draft-row" onclick="loadDraft(\'' + d.poNo + '\')">' +
+          '<div class="dr-top"><span>' + d.poNo + '</span><span>INR ' + Number(d.grandTotal).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}) + '</span></div>' +
+          '<div class="dr-sub">' + (d.supplierName || d.supplierCode || '—') + ' &middot; ' + d.poDate + ' &middot; by ' + (d.createdBy || '—') + '</div>' +
+          '</div>';
+      }).join('');
+    })
+    .withFailureHandler(function(e){ list.innerHTML = '<div class="draft-empty">Failed: ' + e.message + '</div>'; })
+    .listDraftPOs();
+};
+
+window.closeDraftPicker = function() {
+  document.getElementById('draftPickerModal').classList.remove('show');
+};
+
+window.loadDraft = function(poNo) {
+  closeDraftPicker();
+  setBusy(true);
+  google.script.run
+    .withSuccessHandler(function(po) {
+      setBusy(false);
+      if (!po || !po.header) { showToast('Failed to load PO: ' + poNo, true); return; }
+      hydrateFromPO(po);
+    })
+    .withFailureHandler(function(e){ setBusy(false); showToast(e.message, true); })
+    .getPOById(poNo);
+};
+
+function hydrateFromPO(po) {
+  var h = po.header;
+  _editPoNo = h.poNo;
+  document.getElementById('popTitle').textContent = 'Edit DRAFT PO';
+  document.getElementById('docBadge').textContent = h.poNo;
+  document.getElementById('supplierCode').value = h.supplierCode;
+  document.getElementById('poDate').value  = isoFromDisplay_(h.poDate);
+  document.getElementById('dueDate').value = isoFromDisplay_(h.dueDate);
+  document.getElementById('gstPct').value  = h.gstPct;
+  document.getElementById('paymentTerms').value = h.paymentTerms;
+  document.getElementById('remarks').value = h.remarks;
+  // Clear existing lines
+  document.getElementById('linesBody').innerHTML = '';
+  lineCount = 0;
+  (po.lines || []).forEach(function(l) {
+    addLine();
+    var idx = lineCount;
+    var tr = document.getElementById('line-' + idx);
+    if (!tr) return;
+    var sel = tr.querySelector('select');
+    if (sel) sel.value = l.materialCode;
+    document.getElementById('unit-'  + idx).value = l.unit;
+    document.getElementById('qty-'   + idx).value = l.qtyOrdered;
+    document.getElementById('price-' + idx).value = l.unitPrice;
+    document.getElementById('pdate-' + idx).value = isoFromDisplay_(l.promisedDate);
+  });
+  recomputeTotals();
+  _dirty = false;
+  document.getElementById('btnLoadDraft').style.display = 'none';
+}
+
+function isoFromDisplay_(s) {
+  // Server fmtDate_ returns 'dd-MMM-yyyy' — convert to yyyy-MM-dd for <input type=date>
+  if (!s) return '';
+  var m = String(s).match(/^(\d{2})-([A-Za-z]{3})-(\d{4})$/);
+  if (!m) return '';
+  var months = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+  return m[3] + '-' + (months[m[2]] || '01') + '-' + m[1];
+}
 
 /* ── Helpers ── */
 function setBusy(b) {

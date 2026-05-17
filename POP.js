@@ -455,6 +455,142 @@ function getPOById(poNo) {
   return { header: header, lines: lines, linkedGrns: linkedGrns };
 }
 
+// ── List DRAFT POs (for Load DRAFT picker) ──────────────────
+
+function listDraftPOs() {
+  var ss = getPOSpreadsheet_();
+  var hdrWs = ss.getSheetByName('PO_HEADER');
+  if (!hdrWs || hdrWs.getLastRow() < 2) return [];
+  var rows = hdrWs.getDataRange().getValues().slice(1);
+  var out = [];
+  for (var i = rows.length - 1; i >= 0; i--) {
+    var r = rows[i];
+    if (String(r[11] || '').trim() !== 'DRAFT') continue;
+    out.push({
+      poNo:        String(r[0]).trim(),
+      poDate:      fmtDate_(r[1]),
+      supplierCode:String(r[2] || '').trim(),
+      supplierName:String(r[3] || '').trim(),
+      grandTotal:  Number(r[10]) || 0,
+      createdAt:   fmtDateTime_(r[14]),
+      createdBy:   String(r[13] || '')
+    });
+  }
+  return out;
+}
+
+// ── Update DRAFT PO (edit-as-draft, mutate in place) ─────────
+// Header row + lines are rewritten. Guard: refuses if any GRN_LOG row
+// references this PO (defence-in-depth — DRAFTs shouldn't have GRN
+// activity, but if they do, the row may be load-bearing for audit).
+// If submit=true, status flips to OPEN in the same write.
+
+function updateDraftPO(poNo, data) {
+  try {
+    if (!poNo) return { success: false, error: 'poNo required' };
+    var result = canonicalizePO_(data);
+    if (!result.ok) return { success: false, error: result.errors.join('; ') };
+
+    var ss = getPOSpreadsheet_();
+    var hdrWs = ss.getSheetByName('PO_HEADER');
+    var lnWs  = ss.getSheetByName('PO_LINES');
+    if (!hdrWs) throw new Error('PO_HEADER sheet not found.');
+    if (!lnWs)  throw new Error('PO_LINES sheet not found.');
+
+    // Locate header row
+    var hdrData = hdrWs.getDataRange().getValues();
+    var rowIdx = -1;
+    for (var i = 1; i < hdrData.length; i++) {
+      if (String(hdrData[i][0]).trim() === String(poNo).trim()) { rowIdx = i; break; }
+    }
+    if (rowIdx < 0) return { success: false, error: 'PO not found: ' + poNo };
+
+    var curStatus = String(hdrData[rowIdx][11] || '').trim();
+    if (curStatus !== 'DRAFT') {
+      return { success: false, error: 'PO ' + poNo + ' is not in DRAFT status (current: ' + curStatus + '). Edit forbidden.' };
+    }
+
+    // GRN-ref guard
+    var grnWs = ss.getSheetByName('GRN_LOG');
+    if (grnWs && grnWs.getLastRow() > 1) {
+      var grnRows = grnWs.getDataRange().getValues().slice(1);
+      for (var g = 0; g < grnRows.length; g++) {
+        if (String(grnRows[g][4] || '').trim() === String(poNo).trim()) {
+          return { success: false, error: 'PO ' + poNo + ' has GRN activity (' + String(grnRows[g][0]).trim() + '). Edit forbidden — audit trail must be preserved.' };
+        }
+      }
+    }
+
+    var submit = !!data.submit;
+    var newStatus = submit ? 'OPEN' : 'DRAFT';
+    var now    = new Date();
+    var user   = Session.getActiveUser().getEmail() || 'QA';
+    var poDate = data.poDate ? new Date(data.poDate) : (hdrData[rowIdx][1] || now);
+    var dueDate = data.dueDate ? new Date(data.dueDate) : '';
+
+    // Overwrite header row (preserve poNo at col 1, createdBy/createdAt at cols 14/15)
+    var createdBy = String(hdrData[rowIdx][13] || user);
+    var createdAt = hdrData[rowIdx][14] || now;
+    var newRow = [
+      poNo,
+      poDate,
+      String(data.supplierCode || '').trim(),
+      String(data.supplierName || '').trim(),
+      dueDate,
+      'INR',
+      Number(data.gstPct) || 0,
+      String(data.paymentTerms || ''),
+      result.totals.subTotal,
+      result.totals.gstAmount,
+      result.totals.grandTotal,
+      newStatus,
+      String(data.remarks || ''),
+      createdBy,
+      createdAt,
+      user,   // approvedBy / lastEditedBy
+      ''
+    ];
+    hdrWs.getRange(rowIdx + 1, 1, 1, newRow.length).setValues([newRow]);
+    hdrWs.getRange(rowIdx + 1, 2).setNumberFormat('dd-MMM-yyyy');
+    hdrWs.getRange(rowIdx + 1, 5).setNumberFormat('dd-MMM-yyyy');
+    hdrWs.getRange(rowIdx + 1, 15).setNumberFormat('dd-MMM-yyyy HH:mm');
+
+    // Wipe existing lines for this poNo, then re-append
+    var lnData = lnWs.getDataRange().getValues();
+    for (var j = lnData.length - 1; j >= 1; j--) {
+      if (String(lnData[j][0]).trim() === String(poNo).trim()) {
+        lnWs.deleteRow(j + 1);
+      }
+    }
+    var headerDueDate = dueDate;
+    result.lines.forEach(function(line) {
+      var linePromised = (line.promised_date ? new Date(line.promised_date) : '') || headerDueDate || '';
+      lnWs.appendRow([
+        poNo,
+        line.line_no,
+        line.material_code,
+        line.material_desc,
+        line.unit,
+        line.qty_ordered,
+        line.unit_price,
+        line.line_amount,
+        0,
+        line.qty_ordered,
+        'OPEN',
+        '',
+        linePromised
+      ]);
+      var lastLnRow = lnWs.getLastRow();
+      if (linePromised) lnWs.getRange(lastLnRow, 13).setNumberFormat('dd-MMM-yyyy');
+    });
+
+    return { success: true, poNo: poNo, status: newStatus };
+  } catch(e) {
+    Logger.log('updateDraftPO: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 // ── Get recent POs (Landing tile + Records list) ──────────────
 
 function getRecentPOs(limit) {
