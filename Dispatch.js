@@ -622,6 +622,7 @@ function getRecentDispatches(limit) {
 // ---------- Backfill: mirror RELEASED OQCs into FG_DISPATCH_LOTS ----------
 
 function backfillFGDispatchLotsFromOQC() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     var ss = getSpreadsheet();
     var oqcWs = ss.getSheetByName('OQC_LOG');
@@ -778,6 +779,7 @@ function backfillFGDispatchLotsFromOQC() {
 }
 
 function backfillFGDispatchLotsFromOQCUI() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var resp = ui.alert('Backfill FG_DISPATCH_LOTS',
     'Mirror every RELEASED OQC row into FG_DISPATCH_LOTS (idempotent).\n\nProceed?',

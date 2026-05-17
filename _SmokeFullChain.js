@@ -17,6 +17,7 @@
 //                    locationId, qtyIssued, unit, issuedBy, grnRef, remarks }
 // Returns { success, docNo (production order no), batchNo }
 function createTestProductionBatch(payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -69,6 +70,7 @@ function createTestProductionBatch(payload) {
 // Bypasses getNextDocNumber('po') so po_counter is untouched.
 // PO_HEADER = 17 cols, PO_LINES = 13 cols.
 function createTestPO_(payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -126,6 +128,7 @@ function createTestPO_(payload) {
 // Inject a TEST GRN_LOG row + STOCK_LEDGER GRN_RECEIPT using TEST/GRN/<YYYY>-NN.
 // Bypasses getNextDocNumber('grn'). GRN_LOG = 21 cols.
 function createTestGRN_(payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -185,6 +188,7 @@ function createTestGRN_(payload) {
 // smokeFullChain — Full end-to-end synthetic chain.
 // ============================================================
 function smokeFullChain() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var result = {
     success: false,
     docNos: {},

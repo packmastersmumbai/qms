@@ -31,6 +31,7 @@ function getMaterials() {
 // using the material's defaultLocation from MASTERS_Materials.
 // Idempotent — only touches rows whose location is currently blank.
 function backfillGRNLocations() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var ws = ss.getSheetByName('GRN_LOG');
   if (!ws || ws.getLastRow() < 2) return { success: false, error: 'GRN_LOG empty.' };
@@ -56,6 +57,7 @@ function backfillGRNLocations() {
 }
 
 function backfillGRNLocationsUI() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var res = backfillGRNLocations();
   if (!res.success) { ui.alert('Failed', res.error, ui.ButtonSet.OK); return; }

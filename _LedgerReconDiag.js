@@ -20,8 +20,14 @@
 //   12 Qty Available | 14 Status
 // ============================================================
 
-function runLedgerReconcile()      { return _runLedgerReconcileImpl(false); }
-function runLedgerReconcile_core() { return _runLedgerReconcileImpl(true);  }
+function runLedgerReconcile() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
+  return _runLedgerReconcileImpl(false);
+}
+function runLedgerReconcile_core() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
+  return _runLedgerReconcileImpl(true);
+}
 
 function _runLedgerReconcileImpl(headless) {
   var ss = getSpreadsheet();

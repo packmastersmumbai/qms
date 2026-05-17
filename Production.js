@@ -100,6 +100,7 @@ function getProductionLotsForMaterial(materialCode) {
 // ---------- Diagnostic: explain why a material returns 0 lots ----------
 
 function diagnoseProductionLots(materialCode) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var report = { materialCode: materialCode, steps: [] };
   if (!materialCode) { report.steps.push('No materialCode given.'); return report; }
 
@@ -140,6 +141,7 @@ function diagnoseProductionLots(materialCode) {
 // STOCK_LEDGER. Safe to re-run.
 
 function backfillStockLedgerFromGRN() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var grnWs = ss.getSheetByName('GRN_LOG');
   var ledWs = ss.getSheetByName('STOCK_LEDGER');
@@ -249,6 +251,7 @@ function backfillStockLedgerFromGRN() {
 }
 
 function backfillStockLedgerFromGRNUI() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var ok = ui.alert('Backfill STOCK_LEDGER',
     'Replay every GRN_LOG row into STOCK_LEDGER (idempotent). Continue?',
@@ -271,6 +274,7 @@ function backfillStockLedgerFromGRNUI() {
 }
 
 function diagnoseProductionLotsUI() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var resp = ui.prompt('Diagnose Production Lots', 'Enter material code:', ui.ButtonSet.OK_CANCEL);
   if (resp.getSelectedButton() !== ui.Button.OK) return;

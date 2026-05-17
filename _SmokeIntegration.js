@@ -8,6 +8,7 @@
 // ============================================================
 
 function runIntegrationSmoke() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui;
   try { ui = SpreadsheetApp.getUi(); } catch(e) { ui = null; }
   var ss = getSpreadsheet();

@@ -9,10 +9,12 @@
 // Headless wrapper for clasp run / scheduled jobs — no UI alert, returns
 // { errors, warns, total, fails }. Sheet write still happens.
 function runPOPDiag_core() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   return _runPOPDiagImpl(true);
 }
 
 function runPOPDiag() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   return _runPOPDiagImpl(false);
 }
 
@@ -354,6 +356,7 @@ function _runPOPDiagImpl(headless) {
  * Sections: header dump | lines | GRN receipts | IQC dispositions | STOCK_LEDGER | per-line OTD
  */
 function tracePOById(poNo) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss  = getSpreadsheet();
   var ui  = SpreadsheetApp.getUi();
   poNo = String(poNo || '').trim();

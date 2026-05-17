@@ -2,6 +2,7 @@
 // Created 2026-05-17, can be deleted after Phase 1 anomaly closure.
 
 function _inspectGRN040() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var ws = ss.getSheetByName('GRN_LOG');
   var data = ws.getDataRange().getValues();
@@ -25,6 +26,7 @@ function _inspectGRN040() {
 }
 
 function _inspectLedger040() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var ws = ss.getSheetByName('STOCK_LEDGER');
   var data = ws.getDataRange().getValues();
@@ -51,6 +53,7 @@ function _inspectLedger040() {
 //   qtyReceived 199 -> 99 (true received qty, given PO qtyOrdered was 100)
 // No STOCK_LEDGER row exists for this GRN line (legacy data, pre-ledger-wiring) — nothing to update there.
 function _fixGRN040Overreceipt() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var result = { grn: null };
   var matCode = 2966564; // numeric, as stored

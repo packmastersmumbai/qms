@@ -24,6 +24,7 @@ function _testNextSeq_(prefix) {
 // Create a TEST NCR with a TEST/NCR/<YYYY>-NN docNo. Does NOT increment the
 // real NCR sequence counter. Returns the docNo so the UI smoke can target it.
 function raiseTestNCR(payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -62,6 +63,7 @@ function raiseTestNCR(payload) {
 // into _TEST_ARCHIVE (created on demand). Preserves all columns + a leading
 // "_ArchivedFrom" + "_ArchivedAt" pair so the audit trail stays intact.
 function archiveTestRows(sourceSheet, docNoPrefix, docNoColIndex) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     var col = (docNoColIndex == null) ? 0 : docNoColIndex; // 0-based; default col 1
     var ss = getSpreadsheet();
@@ -98,6 +100,7 @@ function archiveTestRows(sourceSheet, docNoPrefix, docNoColIndex) {
 // reset the counter after archiving the rows they created — keeps the
 // audit-numbered sequence gap-free).
 function getDocCounter(type) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var ws = ss.getSheetByName('CONFIG');
   if (!ws) return null;
@@ -111,6 +114,7 @@ function getDocCounter(type) {
 }
 
 function setDocCounter(type, value) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var info = getDocCounter(type);
   if (!info) return { success: false, error: type + '_counter not found' };
   var ss = getSpreadsheet();
@@ -122,6 +126,7 @@ function setDocCounter(type, value) {
 // Inject a minimal TEST OQC row marked RELEASED so saveDispatchWithFIFO's
 // decision gate passes. Returns the docNo so the FG lot can reference it.
 function createTestOQCRelease(docNo) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     var ss = getSpreadsheet();
     var ws = ss.getSheetByName('OQC_LOG');
@@ -146,6 +151,7 @@ function createTestOQCRelease(docNo) {
 // and does NOT auto-raise a real NCR (real saveOQC would bump the ncr counter).
 // Caller (smokeRejectOQC) raises a TEST NCR via raiseTestNCR for counter-purity.
 function createTestOQCReject(docNo, payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -183,6 +189,7 @@ function createTestOQCReject(docNo, payload) {
 // Inject a TEST AVAILABLE FG dispatch lot directly into FG_DISPATCH_LOTS so the
 // dispatch UI smoke can run end-to-end. Returns the generated FGL- lotId.
 function createTestFGLot(payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -220,6 +227,7 @@ function createTestFGLot(payload) {
 
 // Archive all rows from a sheet that match a column value.
 function archiveByColValue(sourceSheet, colIndex, value) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     var ss = getSpreadsheet();
     var src = ss.getSheetByName(sourceSheet);
@@ -254,6 +262,7 @@ function archiveByColValue(sourceSheet, colIndex, value) {
 // Production smoke) see the material as IQC-passed. Mirrors createTestOQCRelease.
 // IQC_LOG has 30 cols; disposition is col 23 (0-idx 22).
 function createTestIQCAccept(payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -294,6 +303,7 @@ function createTestIQCAccept(payload) {
 // smokeRejectIQC) handles those explicitly so the test stays counter-clean
 // (real saveIQC would mint a real NCR docNo and bump the ncr counter).
 function createTestIQCReject(payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -347,6 +357,7 @@ function createTestIQCReject(payload) {
 // OOS/REJECT enum; the result field is free-text, with 'PASS'/'FAIL'/'NOTE'
 // being the observed values). raiseIPQCNCR is what fires the NCR cascade.
 function createTestIPQCOutOfSpec(payload) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     payload = payload || {};
     var ss = getSpreadsheet();
@@ -416,6 +427,7 @@ function createTestIPQCOutOfSpec(payload) {
 // Default 30 days. Call without args to clean up old smoke residue safely.
 // Returns { success, removed, kept }. Header row is never touched.
 function clearTestArchive(olderThanDays) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     var days = (olderThanDays == null) ? 30 : Number(olderThanDays);
     if (!isFinite(days) || days < 0) return { success: false, error: 'olderThanDays must be a non-negative number' };
@@ -442,6 +454,7 @@ function clearTestArchive(olderThanDays) {
 
 // Archive a TEST NCR + its NCR_HISTORY trail in one call.
 function archiveTestNCR(docNo) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var logResult = archiveTestRows('NCR_LOG', String(docNo), 0);
   // NCR_HISTORY: Timestamp=col1, NCR No=col2 (0-based: 1)
   var histResult = archiveTestRows('NCR_HISTORY', String(docNo), 1);
@@ -455,6 +468,7 @@ function archiveTestNCR(docNo) {
 // Quick diagnostic readout: return all rows from a diag sheet matching a severity.
 // Use after running runPOPDiag_core / others that write to _XXX_DIAG sheets.
 function getDiagRows(sheetName, severity) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var ws = ss.getSheetByName(sheetName);
   if (!ws || ws.getLastRow() < 2) return { success: true, rows: [] };

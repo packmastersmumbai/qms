@@ -210,6 +210,7 @@ function logNCRHistory_(docNo, fromStatus, toStatus, actor, notes) {
 
 // One-shot smoke test — raises a synthetic NCR and reports back.
 function testRaiseNCR() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var docNo = raiseNCR_({
     date:         new Date(),

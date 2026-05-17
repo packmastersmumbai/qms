@@ -25,6 +25,7 @@
 // ============================================================
 
 function smokeRejectIQC() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var result = {
     success: false,
     docNos: {},
@@ -198,4 +199,7 @@ function smokeRejectIQC() {
 }
 
 // Alias for parity with the _core naming used in diag wrappers.
-function smokeRejectIQC_core() { return smokeRejectIQC(); }
+function smokeRejectIQC_core() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
+  return smokeRejectIQC();
+}

@@ -11,6 +11,7 @@
 // editor: traceFormPathForMaterial('1712485') — outputs to Logger AND
 // writes a fresh '_PROD_TRACE' sheet.
 function traceFormPathForMaterial(materialCode) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var ui = SpreadsheetApp.getUi();
   if (!materialCode) {
@@ -89,6 +90,7 @@ function traceFormPathForMaterial(materialCode) {
 }
 
 function runProductionDiagnostics() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var result = runProductionDiagnostics_core();
   var ui = SpreadsheetApp.getUi();
   var verdict = result.gateReady > 0
@@ -103,6 +105,7 @@ function runProductionDiagnostics() {
 }
 
 function runProductionDiagnostics_core() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var report = []; // each entry: [section, check, value, verdict]
 

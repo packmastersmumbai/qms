@@ -757,6 +757,7 @@ function deriveHeaderStatus_(lnData, poNo, hdrWs) {
  * partial failures in saveGRN. Idempotent.
  */
 function reconcilePOReceipts() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   // Lock-free: idempotent recompute from GRN_LOG truth; safe to run anytime
   // even under concurrent GRN saves (next run resolves any race).
   try {

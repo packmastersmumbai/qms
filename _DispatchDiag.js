@@ -11,6 +11,7 @@
 // ============================================================
 
 function runDispatchDiagnostics() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var result = runDispatchDiagnostics_core();
   var ui = SpreadsheetApp.getUi();
   ui.alert('Dispatch Pipeline Diagnosis',
@@ -24,6 +25,7 @@ function runDispatchDiagnostics() {
 }
 
 function runDispatchDiagnostics_core() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var report = []; // [section, check, value, verdict]
   function add(section, check, value, verdict) {
@@ -253,6 +255,7 @@ function runDispatchDiagnostics_core() {
 
 // ---------- Trace one (customer, product) end-to-end ----------
 function traceFGDispatchForCustomerProduct(customerCode, productCode) {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var ui = SpreadsheetApp.getUi();
   if (!customerCode) {

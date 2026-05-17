@@ -528,6 +528,7 @@ function verifyAndRepairSheets_core() {
 // Picks the N latest GRNs and reports forward linkage: GRN → IQC → IPQC session → OQC → Gatepass.
 // Flags broken or missing handoffs. Does not write anything.
 function smokeTestBatchFlow() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var result = smokeTestBatchFlow_core();
   if (!result.ok) { ui.alert(result.error); return; }
@@ -535,6 +536,7 @@ function smokeTestBatchFlow() {
 }
 
 function smokeTestBatchFlow_core() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   if (!ss) return { ok: false, error: 'No spreadsheet bound.' };
 
@@ -651,6 +653,7 @@ function smokeTestBatchFlow_core() {
 
 // Verifies master data tabs have minimum rows + required categories.
 function verifyMastersSeed() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var ss = getSpreadsheet();
   if (!ss) { ui.alert('No spreadsheet bound.'); return; }
@@ -697,6 +700,7 @@ function verifyMastersSeed() {
 // Verifies CONFIG doc-number counters against actual max in each log sheet.
 // Reports mismatches and offers to auto-bump CONFIG to max+1.
 function verifyDocCounters() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var ss = getSpreadsheet();
   if (!ss) { ui.alert('No spreadsheet bound.'); return; }
@@ -772,6 +776,7 @@ function verifyDocCounters() {
 // only — never touches data rows. Confirmed safe only after inspectSheetData()
 // shows data columns line up with expected positions.
 function forceFixSheetHeaders() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var ss = getSpreadsheet();
   if (!ss) { ui.alert('No spreadsheet bound.'); return; }
@@ -834,6 +839,7 @@ function forceFixSheetHeaders() {
 // is cosmetic (rename) or structural (data shifted).
 // Diagnostic: dump latest OQC_LOG row + what getReleasedOQCsForGatepass returns.
 function diagnoseOQCDropdown() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var oqc = ss.getSheetByName('OQC_LOG');
   var msg = '';
@@ -872,6 +878,7 @@ function diagnoseOQCDropdown() {
 }
 
 function inspectSheetData() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui = SpreadsheetApp.getUi();
   var ss = getSpreadsheet();
   if (!ss) { ui.alert('No spreadsheet bound.'); return; }

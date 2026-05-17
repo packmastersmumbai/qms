@@ -5,6 +5,7 @@
 // ============================================================
 
 function runKPIDiag() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ui;
   try { ui = SpreadsheetApp.getUi(); } catch(e) {}
   var report = [];
@@ -253,6 +254,7 @@ function runKPIDiag() {
 }
 
 function persistSpreadsheetId() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   try {
     var parents = DriveApp.getFileById(ScriptApp.getScriptId()).getParents();
     while (parents.hasNext()) {
@@ -271,6 +273,7 @@ function persistSpreadsheetId() {
 }
 
 function listAllSheets() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   if (!ss) { Logger.log('NO SPREADSHEET'); return 'NO SPREADSHEET'; }
   var names = ss.getSheets().map(function(s){ return s.getName() + ' (' + s.getLastRow() + ' rows)'; });
@@ -285,6 +288,7 @@ function listAllSheets() {
 // Writes to _KPIDiag sheet and Logger.
 // ============================================================
 function dumpNCRLog() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var ss = getSpreadsheet();
   var ws = ss ? ss.getSheetByName('NCR_LOG') : null;
   var lines = [];

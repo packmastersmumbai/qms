@@ -28,6 +28,7 @@
 // ============================================================
 
 function smokeIPQCOutOfSpec() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
   var result = {
     success: false,
     docNos: {},
@@ -233,4 +234,7 @@ function smokeIPQCOutOfSpec() {
 }
 
 // Alias for parity with the _core naming used in diag wrappers.
-function smokeIPQCOutOfSpec_core() { return smokeIPQCOutOfSpec(); }
+function smokeIPQCOutOfSpec_core() {
+  if (!CONFIG._TESTING_ENABLED) return { success: false, error: 'testing disabled' };
+  return smokeIPQCOutOfSpec();
+}
