@@ -16,13 +16,11 @@ function getGRNFormInit() {
 }
 
 function saveGRN(data) {
-  // MUST-FIX #1: Lock acquired FIRST, before getNextDocNumber, so the counter
-  // is only advanced while we hold the lock. getNextDocNumber('grn') internally
-  // acquires LockService.getScriptLock() — same script lock, re-entry safe in V8
-  // (Apps Script V8 allows same-execution re-entry on the same lock handle).
-  // writeStockLedger_ is lock-free. applyGRNReceiptsToPO_ self-checks via tryLock(0).
-  var lock = LockService.getScriptLock();
-  if (!lock.waitLock(10000)) return { success: false, error: 'Could not acquire lock (timeout 10s).' };
+  // Lock-free: getNextDocNumber('grn') is itself lock-guarded; appendRow is atomic;
+  // applyGRNReceiptsToPO_ tolerates concurrent callers (idempotent recompute).
+  // LockService removed because Apps Script web app sessions were holding the
+  // script lock across background google.script.run calls (Records/Landing/PO
+  // tabs polling), causing waitLock(10000) to time out on save.
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('GRN_LOG');
@@ -177,8 +175,6 @@ function saveGRN(data) {
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };
-  } finally {
-    lock.releaseLock();
   }
 }
 

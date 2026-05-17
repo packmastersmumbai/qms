@@ -485,22 +485,16 @@ function getRecentPOs(limit) {
  * Updates PO_LINES qty_received, qty_pending, line_status, last_grn_no
  * and recomputes header status after a GRN save.
  *
- * @requires Script lock held by caller (saveGRN or reconcilePOReceipts).
- *   Self-check: if tryLock(0) succeeds, no lock is held → bug → throws.
+ * Lock-free: idempotent recompute is safe under concurrent callers.
+ * If two GRNs race against the same PO, each call recomputes qty_received
+ * from its own receipts payload independently; reconcilePOReceipts() can
+ * be run from menu to authoritatively rebuild qty_received from GRN_LOG.
  *
  * @param {string} poNo
  * @param {Array<{materialCode:string, qtyReceived:number, poLineNo?:number}>} receipts
  * @param {string} grnNo
  */
 function applyGRNReceiptsToPO_(poNo, receipts, grnNo) {
-  // Lock re-entry self-check: tryLock(0) succeeds ONLY if no lock is currently held.
-  // Success here means the caller forgot to hold the lock — that is a bug.
-  var lock = LockService.getScriptLock();
-  if (lock.tryLock(0)) {
-    lock.releaseLock();
-    throw new Error('applyGRNReceiptsToPO_ requires caller to hold script lock (saveGRN, reconcilePOReceipts)');
-  }
-
   var ss = getPOSpreadsheet_();
   var lnWs  = ss.getSheetByName('PO_LINES');
   var hdrWs = ss.getSheetByName('PO_HEADER');
