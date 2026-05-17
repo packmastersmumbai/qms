@@ -248,6 +248,48 @@ function createTestIQCAccept(payload) {
   }
 }
 
+// Inject a minimal TEST IQC row marked REJECTED. Mirrors createTestIQCAccept;
+// disposition cell tinted red (#FFEBEE) to match the real IQC reject UI.
+// Does NOT fire the STOCK_LEDGER reject moves or auto-raise NCR — caller (e.g.
+// smokeRejectIQC) handles those explicitly so the test stays counter-clean
+// (real saveIQC would mint a real NCR docNo and bump the ncr counter).
+function createTestIQCReject(payload) {
+  try {
+    payload = payload || {};
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('IQC_LOG');
+    if (!ws) return { success: false, error: 'IQC_LOG sheet not found.' };
+    var docNo = payload.docNo || _testNextSeq_('TEST/IQC');
+    var ncols = Math.max(30, ws.getLastColumn());
+    var row = new Array(ncols).fill('');
+    var now = new Date();
+    row[0]  = docNo;                                // IQC No
+    row[1]  = now;                                  // Date
+    row[2]  = payload.grnNo         || 'TEST-GRN';
+    row[3]  = payload.supplierName  || 'TEST supplier';
+    row[4]  = payload.materialDesc  || 'Test material (smoke)';
+    row[5]  = payload.batchNo       || 'TEST-BATCH';
+    row[6]  = payload.inspector     || 'claude-smoke-test';
+    row[7]  = 'AQL 2.5';
+    row[22] = 'REJECTED';                           // disposition
+    row[23] = payload.ncrRef || '';                 // NCR ref (back-stamped later)
+    row[25] = payload.remarks || 'TEST smoke IQC reject — safe to archive';
+    row[26] = 0;                                    // accepted qty
+    row[27] = Number(payload.rejectedQty) || 1;     // rejected qty
+    row[28] = now;                                  // created_at
+    row[29] = 'claude-smoke-test';                  // operator_id
+    ws.appendRow(row);
+    var lr = ws.getLastRow();
+    ws.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy');
+    ws.getRange(lr, 29).setNumberFormat('dd-MMM-yyyy HH:mm');
+    ws.getRange(lr, 23).setBackground('#FFEBEE');
+    return { success: true, docNo: docNo };
+  } catch(e) {
+    Logger.log('createTestIQCReject failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 // Sweep _TEST_ARCHIVE: delete rows older than N days (by _ArchivedAt in col 2).
 // Default 30 days. Call without args to clean up old smoke residue safely.
 // Returns { success, removed, kept }. Header row is never touched.
