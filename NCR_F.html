@@ -47,12 +47,56 @@
       border-bottom: 1px solid #f0e0a0;
       display: flex; align-items: center; gap: 10px;
     }
+    .ncr-card.in-progress .ncr-card-head { background: #E3F2FD; border-bottom-color: #BBDEFB; }
     .ncr-docno { font-weight: 700; color: var(--navy); font-size: 13px; flex: 1; }
     .ncr-source-chip {
       background: var(--navy); color: var(--white);
       padding: 2px 8px; border-radius: 10px;
       font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
     }
+    .ncr-status-chip {
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      background: #FFA000; color: white;
+    }
+    .ncr-status-chip.in-progress { background: #1976D2; }
+
+    /* Modal */
+    .ncr-modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: none; align-items: center; justify-content: center;
+      z-index: 300;
+    }
+    .ncr-modal-bg.show { display: flex; }
+    .ncr-modal {
+      background: var(--white); border-radius: 8px;
+      width: 90%; max-width: 460px; padding: 18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    .ncr-modal h3 { margin: 0 0 12px; font-size: 15px; color: var(--navy); }
+    .ncr-modal-field { margin-bottom: 12px; }
+    .ncr-modal-field label {
+      display: block; font-size: 11px; color: #555;
+      margin-bottom: 4px; font-weight: 600;
+    }
+    .ncr-modal-field input, .ncr-modal-field select, .ncr-modal-field textarea {
+      width: 100%; padding: 7px 9px; font-size: 13px;
+      border: 1px solid #ccc; border-radius: 5px;
+      font-family: inherit; box-sizing: border-box;
+    }
+    .ncr-modal-field textarea { min-height: 60px; resize: vertical; }
+    .ncr-modal-actions {
+      display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;
+    }
+    .ncr-modal-actions button {
+      padding: 8px 16px; font-size: 12px; font-weight: 600;
+      border-radius: 5px; cursor: pointer; font-family: inherit; border: 1px solid #ccc;
+      background: var(--white); color: #444;
+    }
+    .ncr-modal-actions button.primary {
+      background: var(--navy); color: var(--white); border-color: var(--navy);
+    }
+    .ncr-modal-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .ncr-card-body { padding: 10px 12px; font-size: 12px; line-height: 1.5; }
     .ncr-row { display: flex; gap: 8px; margin-bottom: 4px; }
@@ -110,6 +154,33 @@
   </div>
   <div class="ncr-toast" id="toast"></div>
 
+  <div class="ncr-modal-bg" id="closeModal">
+    <div class="ncr-modal">
+      <h3>Close NCR <span id="closeDocNo"></span></h3>
+      <div class="ncr-modal-field">
+        <label>CAPA Reference (recommended)</label>
+        <input type="text" id="closeCapaRef" placeholder="e.g. CAPA-2026-007 or 'N/A — trivial'">
+      </div>
+      <div class="ncr-modal-field">
+        <label>Effectiveness Check *</label>
+        <select id="closeEffective">
+          <option value="">— select —</option>
+          <option value="PASS">PASS — verified no recurrence</option>
+          <option value="NOT_REQUIRED">NOT REQUIRED — trivial / one-off</option>
+          <option value="FAIL">FAIL — recurrence observed (do not close)</option>
+        </select>
+      </div>
+      <div class="ncr-modal-field">
+        <label>Closure Notes (verification evidence, customer communication ref, etc.)</label>
+        <textarea id="closeNotes" placeholder="e.g. Next 3 batches inspected clean. Customer notified via email 2026-05-17."></textarea>
+      </div>
+      <div class="ncr-modal-actions">
+        <button onclick="hideCloseModal()">Cancel</button>
+        <button class="primary" id="closeSubmit" onclick="submitClose()">Close NCR</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   var DISPOSITIONS = [];
   var WHO = '';
@@ -141,11 +212,26 @@
     }
 
     var html = rows.map(function(r) {
+      var isInProgress = r.status === 'IN_PROGRESS';
+      var statusLabel = isInProgress ? 'IN PROGRESS' : 'OPEN';
+      var actionsHtml;
+      if (isInProgress) {
+        actionsHtml = ''
+          + '<button class="ncr-btn full" onclick="showCloseModal(\'' + esc(r.docNo) + '\')">'
+          +   '✅ Close NCR (verify & sign off)'
+          + '</button>';
+      } else {
+        actionsHtml = DISPOSITIONS.map(function(d, i) {
+          var cls = (DISPOSITIONS.length === 5 && i === 4) ? 'ncr-btn full' : 'ncr-btn';
+          return '<button class="' + cls + '" onclick="pick(\'' + esc(r.docNo) + '\',\'' + esc(d) + '\')">' + esc(d) + '</button>';
+        }).join('');
+      }
       return ''
-        + '<div class="ncr-card" id="card-' + esc(r.docNo) + '">'
+        + '<div class="ncr-card' + (isInProgress ? ' in-progress' : '') + '" id="card-' + esc(r.docNo) + '">'
         +   '<div class="ncr-card-head">'
         +     '<div class="ncr-docno">' + esc(r.docNo) + '</div>'
         +     '<div class="ncr-source-chip">' + esc(r.source) + '</div>'
+        +     '<div class="ncr-status-chip' + (isInProgress ? ' in-progress' : '') + '">' + statusLabel + '</div>'
         +   '</div>'
         +   '<div class="ncr-card-body">'
         +     row('Date',     r.date)
@@ -153,17 +239,61 @@
         +     row('Material', r.materialDesc)
         +     row('Batch',    r.batchNo)
         +     row('Qty',      r.qtyAffected)
+        +     (isInProgress ? row('Disposition', r.disposition + (r.dispositionBy ? ' — ' + r.dispositionBy : '') + (r.dispositionAt ? ' (' + r.dispositionAt + ')' : '')) : '')
+        +     (isInProgress && r.capaRef ? row('CAPA Ref', r.capaRef) : '')
         +     (r.defectDesc ? '<div class="ncr-defect">' + esc(r.defectDesc) + '</div>' : '')
         +   '</div>'
         +   '<div class="ncr-actions">'
-        +     DISPOSITIONS.map(function(d, i) {
-                var cls = (DISPOSITIONS.length === 5 && i === 4) ? 'ncr-btn full' : 'ncr-btn';
-                return '<button class="' + cls + '" onclick="pick(\'' + esc(r.docNo) + '\',\'' + esc(d) + '\')">' + esc(d) + '</button>';
-              }).join('')
+        +     actionsHtml
         +   '</div>'
         + '</div>';
     }).join('');
     body.innerHTML = html;
+  }
+
+  var pendingCloseDocNo = null;
+  function showCloseModal(docNo) {
+    pendingCloseDocNo = docNo;
+    document.getElementById('closeDocNo').textContent = docNo;
+    document.getElementById('closeCapaRef').value = '';
+    document.getElementById('closeEffective').value = '';
+    document.getElementById('closeNotes').value = '';
+    document.getElementById('closeModal').classList.add('show');
+  }
+  function hideCloseModal() {
+    document.getElementById('closeModal').classList.remove('show');
+    pendingCloseDocNo = null;
+  }
+  function submitClose() {
+    if (!pendingCloseDocNo) return;
+    var eff = document.getElementById('closeEffective').value;
+    if (!eff) { toast('Pick an effectiveness check result.', true); return; }
+    if (eff === 'FAIL') { toast('FAIL means NCR stays open — re-do CAPA.', true); return; }
+    var payload = {
+      capaRef:       document.getElementById('closeCapaRef').value.trim(),
+      effectiveness: eff,
+      notes:         document.getElementById('closeNotes').value.trim(),
+      closedBy:      WHO
+    };
+    var btn = document.getElementById('closeSubmit');
+    btn.disabled = true;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false;
+        if (res && res.success) {
+          toast('✅ ' + pendingCloseDocNo + ' closed.');
+          var card = document.getElementById('card-' + pendingCloseDocNo);
+          if (card) card.remove();
+          hideCloseModal();
+          var remaining = document.querySelectorAll('.ncr-card').length;
+          document.getElementById('ncrCount').textContent = remaining;
+          if (remaining === 0) renderList([]);
+        } else {
+          toast('Error: ' + (res && res.error || 'unknown'), true);
+        }
+      })
+      .withFailureHandler(function(e) { btn.disabled = false; toast('Failed: ' + e.message, true); })
+      .closeNCR(pendingCloseDocNo, payload);
   }
 
   function row(label, value) {
