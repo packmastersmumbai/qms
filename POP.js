@@ -178,9 +178,12 @@ function previewPO(data) {
 
 // ── Save PO ───────────────────────────────────────────────────
 
+// Lock-free: getNextDocNumber('po') is itself lock-guarded; PO_HEADER and
+// PO_LINES writes use appendRow which is atomic per call. Dedupe key is
+// (po_no, line_no), so a partial line failure can be safely re-saved.
+// LockService was removed because Apps Script web app sessions were holding
+// it across background google.script.run calls, blocking submit.
 function savePO(data) {
-  var lock = LockService.getScriptLock();
-  if (!lock.waitLock(10000)) return { success: false, error: 'Could not acquire lock (timeout 10s).' };
   try {
     var result = canonicalizePO_(data);
     if (!result.ok) return { success: false, error: result.errors.join('; ') };
@@ -252,16 +255,13 @@ function savePO(data) {
   } catch(e) {
     Logger.log('savePO: ' + e.message);
     return { success: false, error: e.message };
-  } finally {
-    lock.releaseLock();
   }
 }
 
 // ── Submit PO (DRAFT → OPEN) ──────────────────────────────────
+// Lock-free: single-cell status update is atomic.
 
 function submitPO(poNo) {
-  var lock = LockService.getScriptLock();
-  if (!lock.waitLock(10000)) return { success: false, error: 'Could not acquire lock.' };
   try {
     var ss = getPOSpreadsheet_();
     var ws = ss.getSheetByName('PO_HEADER');
@@ -277,16 +277,13 @@ function submitPO(poNo) {
     return { success: false, error: 'PO not found: ' + poNo };
   } catch(e) {
     return { success: false, error: e.message };
-  } finally {
-    lock.releaseLock();
   }
 }
 
 // ── Cancel PO ────────────────────────────────────────────────
+// Lock-free: header + line writes are tolerant of partial completion (idempotent).
 
 function cancelPO(poNo, reason) {
-  var lock = LockService.getScriptLock();
-  if (!lock.waitLock(10000)) return { success: false, error: 'Could not acquire lock.' };
   try {
     var ss = getPOSpreadsheet_();
     var hdrWs = ss.getSheetByName('PO_HEADER');
@@ -326,8 +323,6 @@ function cancelPO(poNo, reason) {
     return { success: true };
   } catch(e) {
     return { success: false, error: e.message };
-  } finally {
-    lock.releaseLock();
   }
 }
 
