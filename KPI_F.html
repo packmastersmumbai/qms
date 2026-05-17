@@ -501,16 +501,19 @@
     return html;
   }
 
-  // ── Route to Records_F with URL params ──
+  // ── Route to Records_F with URL params (opens web app in new tab) ──
   function routeToRecords(type, from, to) {
-    var qs = 'type=' + encodeURIComponent(type || '') +
+    var qs = '?page=Records' +
+             '&type=' + encodeURIComponent(type || '') +
              '&from=' + encodeURIComponent(from || '') +
              '&to=' + encodeURIComponent(to || '');
-    try { window.location.hash = '?' + qs; } catch (e) {}
     google.script.run
-      .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
-      .withFailureHandler(function() { toast('Could not open Records.'); })
-      .getFormHtml('Records');
+      .withSuccessHandler(function(url) {
+        try { window.open(url + qs, '_blank'); }
+        catch(e) { toast('Pop-up blocked — allow pop-ups for this site.'); }
+      })
+      .withFailureHandler(function() { toast('Could not get web app URL.'); })
+      .getScriptUrl();
   }
 
   // ── Load ──
