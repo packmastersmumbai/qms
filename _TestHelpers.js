@@ -140,6 +140,46 @@ function createTestOQCRelease(docNo) {
   }
 }
 
+// Inject a minimal TEST OQC row marked REJECTED. Mirrors createTestOQCRelease;
+// disposition cell tinted red (#FFEBEE) to match the real OQC reject UI.
+// Does NOT fire any STOCK_LEDGER moves (real saveOQC also writes none on reject)
+// and does NOT auto-raise a real NCR (real saveOQC would bump the ncr counter).
+// Caller (smokeRejectOQC) raises a TEST NCR via raiseTestNCR for counter-purity.
+function createTestOQCReject(docNo, payload) {
+  try {
+    payload = payload || {};
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('OQC_LOG');
+    if (!ws) return { success: false, error: 'OQC_LOG sheet not found.' };
+    var ref = docNo || _testNextSeq_('TEST/OQC');
+    var ncols = Math.max(23, ws.getLastColumn());
+    var row = new Array(ncols).fill('');
+    var now = new Date();
+    row[0]  = ref;                                 // OQC No
+    row[1]  = now;                                 // Date
+    row[2]  = payload.customerCode || 'TEST-CUST';
+    row[3]  = payload.customerName || 'TEST customer';
+    row[4]  = payload.batchPO      || 'TEST-BATCH';
+    row[5]  = payload.materialDesc || 'Test FG (smoke)';
+    row[13] = payload.inspector    || 'claude-smoke-test';
+    row[14] = 'REJECTED';                          // Decision
+    row[15] = payload.remarks || 'TEST smoke OQC reject — safe to archive';
+    row[16] = 0;                                   // accepted qty
+    row[17] = Number(payload.rejectedQty) || 1;    // rejected qty
+    row[18] = now;                                 // created_at
+    row[20] = 'claude-smoke-test';                 // operator
+    ws.appendRow(row);
+    var lr = ws.getLastRow();
+    ws.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy');
+    ws.getRange(lr, 19).setNumberFormat('dd-MMM-yyyy HH:mm');
+    ws.getRange(lr, 15).setBackground('#FFEBEE');
+    return { success: true, docNo: ref };
+  } catch(e) {
+    Logger.log('createTestOQCReject failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 // Inject a TEST AVAILABLE FG dispatch lot directly into FG_DISPATCH_LOTS so the
 // dispatch UI smoke can run end-to-end. Returns the generated FGL- lotId.
 function createTestFGLot(payload) {
