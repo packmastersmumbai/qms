@@ -232,7 +232,8 @@ function getKPIDrilldown(metricKey, periodOpts, subFilter) {
 function kpiCacheFlush() {
   try {
     var c = CacheService.getScriptCache();
-    // Standard preset keys (match the actual cacheKey format used in getKPIDashboard)
+
+    // Legacy kpi:v1 keys (getKPIDashboard, now deprecated but harmless to clear)
     var presets = ['THIS_MONTH','LAST_30','LAST_90','THIS_FY','CUSTOM'];
     var keys = presets.map(function(p) { return 'kpi:v1:' + p + '::'; });
     // P7 MED-3 — also clear every tracked CUSTOM cacheKey (fromISO/toISO populated).
@@ -244,6 +245,16 @@ function kpiCacheFlush() {
       }
     } catch(eIdx) { Logger.log('kpiCacheFlush index read: ' + eIdx.message); }
     keys.push('kpi:index');
+
+    // New getQmsKpis keys: 'pmqms_kpis_<persona>_<preset>' for every persona × cacheable preset.
+    // Uses _kpiCacheKeysForPersona_ (KpiConfig.js) so the key format is defined in one place.
+    var personas = ['Operator', 'Manager'];
+    personas.forEach(function(persona) {
+      _kpiCacheKeysForPersona_(persona).forEach(function(k) {
+        if (keys.indexOf(k) < 0) keys.push(k);
+      });
+    });
+
     c.removeAll(keys);
     Logger.log('KPI cache flushed: ' + keys.length + ' keys.');
   } catch(e) {

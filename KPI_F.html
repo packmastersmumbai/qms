@@ -122,7 +122,7 @@
   <div class="flex items-center">
     <button id="refreshBtn" aria-label="Refresh Data"
       class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-white/10 active:opacity-80 transition-opacity">
-      <span class="material-symbols-outlined text-white text-[22px]" id="refreshIcon">notifications</span>
+      <span class="material-symbols-outlined text-white text-[22px]" id="refreshIcon">refresh</span>
     </button>
   </div>
 </header>
@@ -555,35 +555,14 @@
   }
 
   function openOTDModal() {
+    // OTD tile now shows Dispatch TAT (median days). The old getKPIDrilldown('otd',...)
+    // used receipt-vs-PO-promise logic and returns empty/misleading data for this metric.
+    // Rather than call a stale server path, we show the explanatory message immediately.
     document.getElementById('otdModal').classList.add('open');
     document.getElementById('otdTabs').innerHTML = '';
-    document.getElementById('otdModalBody').innerHTML = '<p class="modal-empty">Loading…</p>';
-    google.script.run
-      .withSuccessHandler(function(result) {
-        var tabs = result.tabs || [];
-        var tabBar = document.getElementById('otdTabs');
-        tabBar.innerHTML = '';
-        tabs.forEach(function(tab, i) {
-          var btn = document.createElement('button');
-          btn.className = 'otd-tab' + (i === 0 ? ' active' : '');
-          btn.textContent = tab.label;
-          btn.addEventListener('click', function() {
-            document.querySelectorAll('.otd-tab').forEach(function(b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            document.getElementById('otdModalBody').innerHTML = buildSimpleTable(result.columns, tab.rows, 'No records.');
-          });
-          tabBar.appendChild(btn);
-        });
-        if (tabs.length > 0) {
-          document.getElementById('otdModalBody').innerHTML = buildSimpleTable(result.columns, tabs[0].rows, 'No records.');
-        } else {
-          document.getElementById('otdModalBody').innerHTML = '<p class="modal-empty">No OTD detail data. (OTD here = Dispatch TAT; PO promise-date drill requires CUSTOMER_ORDERS sheet.)</p>';
-        }
-      })
-      .withFailureHandler(function(e) {
-        document.getElementById('otdModalBody').innerHTML = '<p class="modal-empty" style="color:#c62828;">Error: ' + esc(e && e.message) + '</p>';
-      })
-      .getKPIDrilldown('otd', state.periodOpts, {});
+    document.getElementById('otdModalBody').innerHTML =
+      '<p class="modal-empty">OTD here = Dispatch TAT (median days from production to dispatch).' +
+      ' A PO promise-date drilldown requires a CUSTOMER_ORDERS sheet which is not yet configured.</p>';
   }
 
   function buildSimpleTable(columns, rows, emptyMsg) {

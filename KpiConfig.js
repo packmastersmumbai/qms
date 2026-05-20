@@ -4,6 +4,15 @@
 // ============================================================
 
 var PM_PERSONAS_ = ['Operator', 'Manager'];
+var PM_KPI_CACHED_PRESETS_ = ['THIS_MONTH', 'LAST_30', 'LAST_90', 'THIS_FY'];
+
+/** Shared helper — returns every script-cache key that getQmsKpis writes for a given persona.
+ *  Key format: 'pmqms_kpis_' + persona + '_' + preset  (matches getQmsKpis line ~194).
+ *  CUSTOM is never cached, so it is intentionally excluded here.
+ */
+function _kpiCacheKeysForPersona_(persona) {
+  return PM_KPI_CACHED_PRESETS_.map(function(p) { return 'pmqms_kpis_' + persona + '_' + p; });
+}
 var PM_TILE_MODULES_ = ['PO','GRN','IQC','IPQC','Production','OQC','Gatepass','Dispatch','NCR','CustomerReturn'];
 
 // Single source of truth for KPIs. To add KPI #13: append one entry + write _kpi_<key>_ helper.
@@ -125,12 +134,10 @@ function saveUISettings(persona, patch) {
     if (readback !== propVal) {
       return { ok:false, error:'readback mismatch', expected:propVal, got:readback };
     }
-    // Invalidate downstream caches
+    // Invalidate downstream caches — use shared helper so key format stays in one place
     try {
-      CacheService.getScriptCache().removeAll([
-        'pmqms_uisettings_' + persona,
-        'pmqms_kpis_' + persona
-      ]);
+      var keysToFlush = ['pmqms_uisettings_' + persona].concat(_kpiCacheKeysForPersona_(persona));
+      CacheService.getScriptCache().removeAll(keysToFlush);
     } catch (e) {}
     return { ok:true, applied: propVal, key: propKey };
   } catch (e) {
@@ -235,7 +242,11 @@ function getQmsKpis(persona, periodOpts) {
     results.push(entry);
   });
 
-  // Attach period metadata so callers can display it
+  // FRAGILE: named properties on a plain Array. JSON.stringify/parse silently drops them,
+  // so the cache-hit path (above) must re-attach _periodLabel/_computedAtISO after parsing —
+  // which it does. Callers (getLandingBundleV2, KPI_F.html) read these properties off the
+  // returned Array directly. Do NOT JSON.parse the return value of getQmsKpis without
+  // re-attaching, and do NOT change to a wrapper object without auditing all callers first.
   results._periodLabel    = periodLabel;
   results._computedAtISO  = new Date().toISOString();
 
