@@ -330,7 +330,104 @@ function saveRound(sessionId, roundData) {
       lock.releaseLock();
     }
 
-    return { ok: true, roundNo: roundNo };
+    // Auto-raise NCR for any out-of-spec (FAIL / REJECT) parameters in this round.
+    // Runs OUTSIDE the lock (lock was released in finally above) so it does not
+    // hold the script lock while doing NCR_LOG I/O.
+    var ncrWarnings = [];
+    var failedParams = params.filter(function(p) {
+      var r = String(p.result || '').trim().toUpperCase();
+      return r === 'FAIL' || r === 'REJECT' || r === 'REJECTED' || r === 'NG';
+    });
+    if (failedParams.length > 0) {
+      // Look up product/batch from session row (already read above)
+      var productCodeForNCR = roundData.productCode || '';
+      var batchForNCR = roundData.batch || '';
+      if (!productCodeForNCR || !batchForNCR) {
+        // Fallback: re-read session row
+        try {
+          var svLookup = sessWs.getDataRange().getValues();
+          for (var si = 1; si < svLookup.length; si++) {
+            if (String(svLookup[si][0]).trim() === String(sessionId).trim()) {
+              productCodeForNCR = productCodeForNCR || String(svLookup[si][1] || '');
+              batchForNCR = batchForNCR || String(svLookup[si][3] || '');
+              break;
+            }
+          }
+        } catch(e2) {}
+      }
+      // Resolve product description from MASTERS_Materials
+      var productDescForNCR = '';
+      try {
+        var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+        for (var mi2 = 0; mi2 < mats.length; mi2++) {
+          if (String(mats[mi2].code || mats[mi2].itemCode || '').trim() === productCodeForNCR) {
+            productDescForNCR = mats[mi2].name || mats[mi2].itemDescription || '';
+            break;
+          }
+        }
+      } catch(e3) {}
+
+      // Load NCR_LOG once for dedup lookups (avoids repeated sheet reads per param).
+      var ncrLogValues = [];
+      try {
+        var ncrLogWs = getSpreadsheet().getSheetByName('NCR_LOG');
+        if (ncrLogWs && ncrLogWs.getLastRow() > 1) {
+          ncrLogValues = ncrLogWs.getDataRange().getValues();
+        }
+      } catch(e4) { Logger.log('IPQC dedup: NCR_LOG read failed — ' + e4.message); }
+
+      failedParams.forEach(function(p) {
+        try {
+          // Idempotency guard: skip if an NCR for this exact session+round+param already exists.
+          var stableRef = sessionId + ' / round ' + roundNo + ' / ' + p.paramCode;
+          var alreadyRaised = false;
+          for (var di = 1; di < ncrLogValues.length; di++) {
+            if (String(ncrLogValues[di][2] || '').trim() === 'IPQC' &&
+                String(ncrLogValues[di][3] || '').trim() === stableRef) {
+              alreadyRaised = true;
+              break;
+            }
+          }
+          if (alreadyRaised) return;
+
+          var ncrNo = (typeof raiseNCR_ === 'function') ? raiseNCR_({
+            date:         new Date(),
+            source:       'IPQC',
+            sourceRef:    sessionId + ' / round ' + roundNo + ' / ' + p.paramCode,
+            materialCode: productCodeForNCR || '',
+            materialDesc: productDescForNCR,
+            batchNo:      batchForNCR || '',
+            qtyAffected:  0,
+            unit:         p.unit || '',
+            defectDesc:   'IPQC out-of-spec — ' + (p.paramName || p.paramCode) +
+                          ' actual=' + (p.actualValue || '') + ' std=' + (p.stdValue || '') +
+                          (p.remark ? ' — ' + p.remark : '')
+          }) : '';
+          if (ncrNo) {
+            // Back-stamp the IPQC_LOG remark column for this specific param row.
+            // Find the row we just appended for this param inside the lock.
+            var lv2 = logWs.getDataRange().getValues();
+            for (var li = lv2.length - 1; li >= 1; li--) {
+              if (String(lv2[li][0]).trim() === String(sessionId).trim() &&
+                  Number(lv2[li][3]) === roundNo &&
+                  String(lv2[li][5]).trim() === String(p.paramCode).trim()) {
+                var existRmk = lv2[li][11] || '';
+                var newRmk = 'NCR:' + ncrNo + (existRmk ? ' | ' + existRmk : '');
+                logWs.getRange(li + 1, 12).setValue(newRmk);
+                break;
+              }
+            }
+          } else {
+            ncrWarnings.push('NCR auto-raise FAILED for param ' + p.paramCode + ' round ' + roundNo + ' — raise manually.');
+          }
+        } catch(ncrErr) {
+          Logger.log('IPQC auto-NCR failed for ' + p.paramCode + ': ' + ncrErr.message);
+          ncrWarnings.push('NCR auto-raise FAILED for param ' + p.paramCode + ' — raise manually.');
+        }
+      });
+    }
+
+    return { ok: true, roundNo: roundNo, ncrWarnings: ncrWarnings };
   } catch(e) {
     Logger.log(e);
     return { ok: false, error: e.message };

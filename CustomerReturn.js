@@ -18,10 +18,17 @@ function getCustomerReturnFormInit() {
   try { customers = (typeof getCustomers === 'function') ? getCustomers() : []; } catch(e) {}
   var inspectors = [];
   try { inspectors = (typeof getInspectors === 'function') ? getInspectors() : []; } catch(e) {}
+  var products = [];
+  try {
+    products = ((typeof getFG === 'function') ? getFG() : []).map(function(m) {
+      return { code: m.code, desc: m.description || m.name || '', unit: m.uom || m.unit || '' };
+    });
+  } catch(e) {}
   return {
     docNumber:    peekNextDocNumber('rtn'),
     customers:    customers,
     inspectors:   inspectors,
+    products:     products,
     dispositions: RETURN_DISPOSITIONS.slice(),
     today:        Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
   };

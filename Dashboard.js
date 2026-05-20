@@ -234,31 +234,6 @@ function getIPQCRows_(ss, typeFilter, dateFilter) {
   return rows;
 }
 
-function getIPQCDefectRate() {
-  try {
-    var ss = getSpreadsheet();
-    if (!ss) return { total: 0, defects: 0, rate: '0.0%', period: 'Last 7 days' };
-    var ws = ss.getSheetByName('IPQC_LOG');
-    if (!ws) return { total: 0, defects: 0, rate: '0.0%', period: 'Last 7 days' };
-    var lastRow = ws.getLastRow();
-    if (lastRow < 2) return { total: 0, defects: 0, rate: '0.0%', period: 'Last 7 days' };
-    var data = ws.getRange(2, 1, lastRow - 1, 11).getValues();
-    var total = 0, defects = 0;
-    for (var i = 0; i < data.length; i++) {
-      var r = data[i];
-      if (!r[0]) continue;
-      if (!passesDateFilter_(r[4], 'WEEK')) continue;
-      total++;
-      var result = r[10] ? String(r[10]).toUpperCase().trim() : '';
-      if (result === 'FAIL' || result === 'REJECT' || result === 'DEFECT') defects++;
-    }
-    var rate = total > 0 ? (defects / total * 100).toFixed(1) + '%' : '0.0%';
-    return { total: total, defects: defects, rate: rate, period: 'Last 7 days' };
-  } catch(e) {
-    return { total: 0, defects: 0, rate: '0.0%', period: 'Last 7 days' };
-  }
-}
-
 function passesDateFilter_(dateVal, range) {
   if (range === 'ALL' || !dateVal) return true;
   var d = new Date(dateVal);
@@ -293,25 +268,3 @@ function buildCounts_(rows) {
   return c;
 }
 
-function getLandingStats() {
-  var ss = getSpreadsheet();
-  function countUnique_(sheetName) {
-    var ws = ss.getSheetByName(sheetName);
-    if (!ws || ws.getLastRow() < 2) return 0;
-    var vals = ws.getRange(2, 1, ws.getLastRow() - 1, 1).getValues();
-    var seen = {};
-    vals.forEach(function(r) { if (r[0]) seen[String(r[0]).trim()] = true; });
-    return Object.keys(seen).length;
-  }
-  function countRows_(sheetName) {
-    var ws = ss.getSheetByName(sheetName);
-    if (!ws) return 0;
-    var last = ws.getLastRow();
-    return last > 1 ? last - 1 : 0;
-  }
-  return {
-    grn: countUnique_('GRN_LOG'),
-    iqc: countRows_('IQC_LOG'),
-    oqc: countRows_('OQC_LOG')
-  };
-}

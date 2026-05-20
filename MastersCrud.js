@@ -130,6 +130,7 @@ function _mastersCellSafe_(v) {
 // Public: returns table data for one master sheet.
 function getMastersTable(name) {
   try {
+    _mastersRequireOwner_();
     var s = MASTERS_SCHEMA_[name];
     if (!s) return { ok:false, error:'unknown master: ' + name };
     var ws = getSpreadsheet().getSheetByName(s.sheet);

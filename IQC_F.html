@@ -563,9 +563,9 @@ function buildParamSection() {
   bulkRow.innerHTML =
     '<span style="font-size:12px;font-weight:600;color:#0B2A4A;">Set All:</span>' +
     '<div style="display:flex;gap:6px;">' +
-      '<button type="button" onclick="setAllParams(\'PASS\')" style="font-size:12px;font-weight:700;color:#16a34a;background:#fff;border:1.5px solid #16a34a;border-radius:6px;padding:5px 14px;cursor:pointer;">PASS</button>' +
-      '<button type="button" onclick="setAllParams(\'FAIL\')" style="font-size:12px;font-weight:700;color:#dc2626;background:#fff;border:1.5px solid #dc2626;border-radius:6px;padding:5px 14px;cursor:pointer;">FAIL</button>' +
-      '<button type="button" onclick="setAllParams(\'NA\')"   style="font-size:12px;font-weight:700;color:#64748b;background:#fff;border:1.5px solid #64748b;border-radius:6px;padding:5px 14px;cursor:pointer;">NA</button>' +
+      '<button type="button" onclick="setAllParams(\'PASS\')" style="font-size:13px;font-weight:700;color:#16a34a;background:#fff;border:1.5px solid #16a34a;border-radius:6px;padding:10px 16px;min-height:44px;cursor:pointer;">PASS</button>' +
+      '<button type="button" onclick="setAllParams(\'FAIL\')" style="font-size:13px;font-weight:700;color:#dc2626;background:#fff;border:1.5px solid #dc2626;border-radius:6px;padding:10px 16px;min-height:44px;cursor:pointer;">FAIL</button>' +
+      '<button type="button" onclick="setAllParams(\'NA\')"   style="font-size:13px;font-weight:700;color:#64748b;background:#fff;border:1.5px solid #64748b;border-radius:6px;padding:10px 16px;min-height:44px;cursor:pointer;">NA</button>' +
     '</div>';
   card.appendChild(bulkRow);
 
@@ -590,7 +590,7 @@ function buildParamSection() {
     ['PASS','FAIL','NA'].forEach(function(v) {
       var b = document.createElement('button');
       b.textContent = v;
-      b.className = 'px-2.5 py-1 rounded-md text-[12px] font-semibold border transition-all active:scale-95 ' +
+      b.className = 'min-w-[44px] min-h-[44px] px-3 py-2 rounded-md text-[13px] font-semibold border transition-all active:scale-95 ' +
         (val === v
           ? (v==='PASS' ? 'btn-pass-active' : v==='FAIL' ? 'btn-fail-active' : 'btn-na-active')
           : 'bg-slate-100 text-text-helper border-slate-200');
@@ -623,7 +623,7 @@ function setParam(paramId, val) {
     if (lbl) lbl.className = 'text-[14px] font-medium truncate pr-2' + (val==='FAIL' ? ' text-status-fail' : ' text-text-field');
     row.querySelectorAll('button').forEach(function(b) {
       var bv = b.textContent.trim();
-      b.className = 'px-2.5 py-1 rounded-md text-[12px] font-semibold border transition-all active:scale-95 ' +
+      b.className = 'min-w-[44px] min-h-[44px] px-3 py-2 rounded-md text-[13px] font-semibold border transition-all active:scale-95 ' +
         (bv === val
           ? (val==='PASS' ? 'btn-pass-active' : val==='FAIL' ? 'btn-fail-active' : 'btn-na-active')
           : 'bg-slate-100 text-text-helper border-slate-200');

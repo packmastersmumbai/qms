@@ -377,7 +377,7 @@ function _kpi_ncrMttr_(ss, from, to) {
   if (!t.rows.length) return { value:null };
   var ciStatus = _pmCol_(t.idx, ['status']);
   var ciOpen = _pmCol_(t.idx, ['opened','open date','date','created','timestamp']);
-  var ciClose = _pmCol_(t.idx, ['closed','close date','closed on','resolved']);
+  var ciClose = _pmCol_(t.idx, ['closed at','closed','close date','closed on','resolved']);
   if (ciOpen < 0 || ciClose < 0) return { value:null };
   var sumDays = 0, n = 0;
   t.rows.forEach(function(r){

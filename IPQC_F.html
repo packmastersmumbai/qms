@@ -1104,6 +1104,12 @@ function saveRound() {
         weights:    curWeights
       });
       showToast('Round ' + saved + ' saved · ' + roundElapsedHms, 'success');
+      // Surface any auto-NCR failures so the operator can raise them manually
+      if (res.ncrWarnings && res.ncrWarnings.length) {
+        res.ncrWarnings.forEach(function(msg) {
+          setTimeout(function() { showToast('⚠ ' + msg, 'warning'); }, 1200);
+        });
+      }
       // Wait for explicit "Start Next Round" — don't auto-advance
       enterAwaitingNextRound(saved, roundElapsedHms);
     })

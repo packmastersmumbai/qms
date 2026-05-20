@@ -154,6 +154,12 @@ function getStockByMaterial() {
 
 // Returns lots for a material across AVAILABLE locations (i.e., not quarantine),
 // ordered by GRN receipt date (FIFO). Lots in QUARANTINE / SCRAP / SAMPLE are excluded.
+// NOTE: This function provides a FIFO advisory only — it does NOT enforce pick order.
+// The Dispatch / Gatepass UI shows the advisory but currently allows any lot to be selected.
+// TODO (future task): enforce FIFO by blocking dispatch of a newer lot when an older lot
+// with positive balance exists at a non-quarantine location. Implement in Gatepass.js
+// issueForDispatch() by calling getFIFOLots() and comparing the operator-selected lotId
+// against fifoLots[0].batchOrLotNo before permitting the write.
 function getFIFOLots(materialCode) {
   var quarantineTypes = { 'QUARANTINE': 1, 'SCRAP': 1, 'SAMPLE': 1 };
   var locTypeById = {};

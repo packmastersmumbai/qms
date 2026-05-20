@@ -178,9 +178,9 @@ function saveIQC(data) {
     // Update GRN status once, after all rows are written
     if (data.grnNo) updateGRNIQCStatus(data.grnNo, disp || 'PENDING');
 
-    // Auto-raise NCR for rejected sessions, then back-stamp col 24 (NCR Ref) on every row of this batch.
+    // Auto-raise NCR for rejected OR held sessions, then back-stamp col 24 (NCR Ref) on every row of this batch.
     var ncrError = '';
-    if (disp === 'REJECTED' && !ncrNo && docNos.length > 0) {
+    if ((disp === 'REJECTED' || disp === 'HOLD') && !ncrNo && docNos.length > 0) {
       var firstItem = data.items[0] || {};
       ncrNo = raiseNCR_({
         date:         data.date,
@@ -189,9 +189,11 @@ function saveIQC(data) {
         materialCode: firstItem.materialCode || '',
         materialDesc: firstItem.materialDesc || '',
         batchNo:      firstItem.batchNo || '',
-        qtyAffected:  data.items.reduce(function(s, it) { return s + (Number(it.rejectedQty) || 0); }, 0),
+        qtyAffected:  disp === 'HOLD'
+          ? data.items.reduce(function(s, it) { return s + (Number(it.qtyReceived) || 0); }, 0)
+          : data.items.reduce(function(s, it) { return s + (Number(it.rejectedQty) || 0); }, 0),
         unit:         firstItem.unit || '',
-        defectDesc:   data.remarks || 'IQC rejection — see ' + docNos.join(', ')
+        defectDesc:   data.remarks || ('IQC ' + disp.toLowerCase() + ' — see ' + docNos.join(', '))
       });
       if (ncrNo) {
         // Use the pre-loop captured index — not a post-loop getLastRow() recompute —

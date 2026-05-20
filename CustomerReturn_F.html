@@ -79,19 +79,19 @@
           <div class="flex flex-col gap-1 flex-1">
             <label class="text-sm font-medium text-slate-600">Return No.</label>
             <input id="fDocNo" disabled
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm bg-slate-50 text-slate-500 cursor-not-allowed" />
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base bg-slate-50 text-slate-500 cursor-not-allowed" />
           </div>
           <div class="flex flex-col gap-1 flex-1">
             <label class="text-sm font-medium text-slate-600">Return Date</label>
             <input type="date" id="fDate"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
           </div>
         </div>
 
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-slate-600">Customer</label>
           <select id="fCustomer"
-            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
+            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
             <option value="">— select —</option>
           </select>
         </div>
@@ -100,54 +100,57 @@
           <div class="flex flex-col gap-1 flex-1">
             <label class="text-sm font-medium text-slate-600">Original Gatepass No.</label>
             <input id="fGatepass" placeholder="e.g. PM/GP/2026-014"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
           </div>
           <div class="flex flex-col gap-1 flex-1">
             <label class="text-sm font-medium text-slate-600">FG Batch No.</label>
             <input id="fBatch"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
           </div>
         </div>
 
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-slate-600">Product Code / Description</label>
-          <input id="fProductCode" placeholder="Product code"
-            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100 mb-2" />
-          <input id="fProductDesc" placeholder="Product description"
-            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+          <!-- Product dropdown populated from getCustomerReturnFormInit().products (FG masters). -->
+          <select id="fProductCode"
+            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100 mb-2">
+            <option value="">— select product —</option>
+          </select>
+          <input id="fProductDesc" placeholder="Product description (auto-filled or enter manually)"
+            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
         </div>
 
         <div class="flex gap-3">
           <div class="flex flex-col gap-1 flex-1">
             <label class="text-sm font-medium text-slate-600">Qty Returned</label>
             <input type="number" id="fQty" min="0" step="any"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
           </div>
           <div class="flex flex-col gap-1 w-28">
             <label class="text-sm font-medium text-slate-600">Unit</label>
             <input id="fUnit" placeholder="PC / KG / M"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
           </div>
         </div>
 
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-slate-600">Return Reason</label>
           <textarea id="fReason" placeholder="Why was this returned?" rows="3"
-            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm resize-vertical focus:border-sky-400 focus:ring-2 focus:ring-sky-100"></textarea>
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-base resize-vertical focus:border-sky-400 focus:ring-2 focus:ring-sky-100"></textarea>
         </div>
 
         <div class="flex gap-3">
           <div class="flex flex-col gap-1 flex-1">
             <label class="text-sm font-medium text-slate-600">Received By</label>
             <select id="fReceivedBy"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
               <option value="">— select —</option>
             </select>
           </div>
           <div class="flex flex-col gap-1 flex-1">
             <label class="text-sm font-medium text-slate-600">Remarks (optional)</label>
             <input id="fRemarks"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
           </div>
         </div>
 
@@ -268,6 +271,20 @@
               var n = i.name || i;
               return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>';
             }).join('');
+          // Populate product dropdown from getCustomerReturnFormInit().products (FG masters).
+          var prodSel = document.getElementById('fProductCode');
+          if (data.products && data.products.length) {
+            prodSel.innerHTML = '<option value="">— select product —</option>' +
+              data.products.map(function(p){
+                return '<option value="' + escapeHtml(p.code) + '" data-desc="' + escapeHtml(p.desc || '') + '" data-unit="' + escapeHtml(p.unit || '') + '">' +
+                       escapeHtml(p.code + (p.desc ? ' — ' + p.desc : '')) + '</option>';
+              }).join('');
+            prodSel.addEventListener('change', function(){
+              var opt = prodSel.options[prodSel.selectedIndex];
+              if (opt && opt.dataset.desc) document.getElementById('fProductDesc').value = opt.dataset.desc;
+              if (opt && opt.dataset.unit) document.getElementById('fUnit').value = opt.dataset.unit;
+            });
+          }
         })
         .withFailureHandler(function(e){ showToast('Init failed: ' + (e.message || e), 'error'); })
         .getCustomerReturnFormInit();

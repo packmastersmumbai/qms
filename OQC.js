@@ -170,23 +170,51 @@ function saveOQC(data) {
       docNos.push(docNo);
     });
 
-    // Auto-raise NCR for rejected OQC sessions.
+    // Auto-raise NCR for rejected OR held OQC sessions.
     var ncrNo = '';
     var ncrError = '';
-    if (dec === 'REJECTED' && docNos.length > 0) {
+    if ((dec === 'REJECTED' || dec === 'HOLD') && docNos.length > 0) {
       var firstItem = data.items[0] || {};
+      var totalRejQty = data.items.reduce(function(s, it) { return s + (Number(it.rejectedQty) || 0); }, 0);
       ncrNo = raiseNCR_({
         date:         data.date,
         source:       'OQC',
         sourceRef:    docNos.join(', '),
         materialDesc: firstItem.materialDesc || '',
         batchNo:      firstItem.batchPO || '',
-        qtyAffected:  data.items.reduce(function(s, it) { return s + (Number(it.rejectedQty) || 0); }, 0),
-        defectDesc:   data.remarks || 'OQC rejection — see ' + docNos.join(', ')
+        qtyAffected:  totalRejQty,
+        defectDesc:   data.remarks || ('OQC ' + dec.toLowerCase() + ' — see ' + docNos.join(', '))
       });
       if (!ncrNo) {
         ncrError = 'NCR auto-raise FAILED — raise the NCR manually and update the OQC record.';
         warnings.push(ncrError);
+      }
+
+      // Stock-out rejected qty to QUARANTINE when disposition is REJECTED.
+      // HOLD does not move stock — material stays in place pending disposition decision.
+      if (dec === 'REJECTED' && totalRejQty > 0 && typeof writeStockLedger_ === 'function') {
+        data.items.forEach(function(item, idx) {
+          var rejQty = Number(item.rejectedQty) || 0;
+          if (rejQty <= 0) return;
+          var productCode = _resolveProductCodeFromDesc_(item.materialDesc || '');
+          if (!productCode || !item.batchPO) return;
+          var fgLocForReject = String((item && item.fgLocation) || data.fgLocation || '').trim() || 'FG-HOLD';
+          var qLocs = (typeof getLocations === 'function') ? getLocations('QUARANTINE') : [];
+          var quarId = qLocs.length > 0 ? qLocs[0].id : 'QUARANTINE';
+          try {
+            writeStockLedger_('OQC_REJECT_OUT', productCode, String(item.batchPO).trim(),
+              fgLocForReject, 0, rejQty,
+              'OQC', docNos[idx] || docNos[0], data.inspector || '',
+              'OQC reject — moving to ' + quarId);
+            writeStockLedger_('OQC_REJECT_QUARANTINE', productCode, String(item.batchPO).trim(),
+              quarId, rejQty, 0,
+              'OQC', docNos[idx] || docNos[0], data.inspector || '',
+              'OQC reject — quarantined pending NCR disposition');
+          } catch(ledgerErr) {
+            Logger.log('OQC reject ledger write failed for ' + (docNos[idx] || '') + ': ' + ledgerErr.message);
+            warnings.push('OQC rejected but stock-ledger OUT write failed — contact admin to reconcile stock.');
+          }
+        });
       }
     }
 
