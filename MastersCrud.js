@@ -113,6 +113,20 @@ function _mastersOperator_() {
   try { return Session.getActiveUser().getEmail() || 'QA'; } catch(e) { return 'QA'; }
 }
 
+// Coerce a raw sheet cell value to a JSON-safe primitive.
+// google.script.run silently returns null to the client if the payload
+// contains a value it cannot serialise — Date objects nested inside row
+// objects are the classic trigger. Convert Dates to ISO strings and
+// everything else to a string/number so the response always serialises.
+function _mastersCellSafe_(v) {
+  if (v == null) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    return isNaN(v.getTime()) ? '' : v.toISOString();
+  }
+  if (typeof v === 'number' || typeof v === 'boolean') return v;
+  return String(v);
+}
+
 // Public: returns table data for one master sheet.
 function getMastersTable(name) {
   try {
@@ -128,9 +142,9 @@ function getMastersTable(name) {
     var auditByIdx = hdr.indexOf('ModifiedBy');
     var rows = data.slice(1).filter(function(r){ return r[s.codeCol]; }).map(function(r){
       var obj = {};
-      s.columns.forEach(function(c, i){ obj[c.key] = r[i] != null ? r[i] : ''; });
-      obj._lastModified = auditModIdx >= 0 ? r[auditModIdx] : '';
-      obj._modifiedBy = auditByIdx >= 0 ? r[auditByIdx] : '';
+      s.columns.forEach(function(c, i){ obj[c.key] = _mastersCellSafe_(r[i]); });
+      obj._lastModified = auditModIdx >= 0 ? _mastersCellSafe_(r[auditModIdx]) : '';
+      obj._modifiedBy = auditByIdx >= 0 ? _mastersCellSafe_(r[auditByIdx]) : '';
       return obj;
     });
     return { ok:true, name:name, columns:s.columns, rows:rows };

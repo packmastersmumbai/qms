@@ -5,5 +5,5 @@
 //
 // Set _TESTING_ENABLED = false for production deployments to lock out smoke/diag/backfill/test-helper functions.
 var CONFIG = {
-  _TESTING_ENABLED: false
+  _TESTING_ENABLED: true
 };
