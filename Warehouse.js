@@ -23,8 +23,10 @@ function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
   // SCOPED LOCK: balance-read + appendRow must be atomic to prevent two concurrent
   // calls reading the same stale balance and writing duplicate "Balance After" values.
   var lock = LockService.getScriptLock();
+  var lockAcquired = false;
   try {
-    if (!lock.tryLock(10000)) {
+    lockAcquired = lock.tryLock(10000);
+    if (!lockAcquired) {
       throw new Error('LOCK_TIMEOUT: writeStockLedger_ could not acquire script lock within 10 s');
     }
     var balance = getStockBalance_(materialCode, batchOrLotNo, locationId) + qIn - qOut;
@@ -46,7 +48,7 @@ function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
     var lr = ws.getLastRow();
     ws.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy HH:mm');
   } finally {
-    lock.releaseLock();
+    if (lockAcquired) lock.releaseLock();
   }
   return txnId;
 }

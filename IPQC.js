@@ -586,14 +586,17 @@ function diag_getSessionRounds(sessionId) {
   return JSON.stringify(r);
 }
 
-function diag_logSampleRows() {
+// Diagnostic: dump up to 5 IPQC_LOG rows. Optional sessionFilter substring
+// narrows to a specific session; omit it to sample any rows.
+function diag_logSampleRows(sessionFilter) {
   var ss = getSpreadsheet();
   var logWs = ss.getSheetByName('IPQC_LOG');
   var lv = logWs.getDataRange().getValues();
   var samples = [];
+  var filter = sessionFilter ? String(sessionFilter) : '';
   for (var i = 1; i < lv.length && samples.length < 5; i++) {
     var id = String(lv[i][0]);
-    if (id.indexOf('2967583_b88_hj') !== -1) {
+    if (!filter || id.indexOf(filter) !== -1) {
       samples.push({
         rowIdx: i,
         sessionId_raw: id,

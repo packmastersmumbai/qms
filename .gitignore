@@ -1,34 +1,29 @@
-# OS
-.DS_Store
-Thumbs.db
-*.url
 
-# Credentials / local config — never commit
-.env
-*.credentials.json
-creds.json
-client_secret*.json
-
-# Large media
-*.jpg
-*.jpeg
-*.png
-*.mp4
-*.avi
-
-# Docs / working files (not source code)
-docs/
-
-# clasp auth (global, not project-specific)
 # .clasp.json is intentionally included for CI/CD
-
+# Credentials / local config — never commit
+# Docs / working files (not source code)
 # Editor / tooling state — never commit
-.claude/
-.playwright-cli/
-
 # File backups (pre-edit snapshots)
-*.bak
-
+# Large media
+# OS
 # Playwright accessibility-tree dumps (not source)
-landing-post-deploy.yml
+# clasp auth (global, not project-specific)
 *-accessibility.yml
+*.avi
+*.bak
+*.credentials.json
+*.jpeg
+*.jpg
+*.mp4
+*.png
+*.url
+.DS_Store
+.claude/
+.env
+.playwright-cli/
+Thumbs.db
+client_secret*.json
+creds.json
+docs/
+landing-post-deploy.yml
+node_modules/
