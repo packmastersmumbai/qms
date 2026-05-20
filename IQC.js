@@ -67,6 +67,7 @@ function saveIQC(data) {
     var ncrNo = data.ncrRef || '';
 
     var docNos = [];
+    var ledgerWarning = '';
 
     // Capture the first data row we will write BEFORE the append loop.
     // This prevents the back-stamp (NCR ref in col 24) from landing on the
@@ -161,16 +162,24 @@ function saveIQC(data) {
           }
         } catch(ledgerErr) {
           Logger.log('IQC ledger mirror failed: ' + ledgerErr.message);
+          // IQC row is already written — partial-commit → save-with-warning.
+          if (!ledgerWarning) {
+            ledgerWarning = 'Document saved but stock ledger update failed — contact admin.';
+          }
         }
       }
 
       docNos.push(docNo);
     });
 
+    var warnings = [];
+    if (ledgerWarning) warnings.push(ledgerWarning);
+
     // Update GRN status once, after all rows are written
     if (data.grnNo) updateGRNIQCStatus(data.grnNo, disp || 'PENDING');
 
     // Auto-raise NCR for rejected sessions, then back-stamp col 24 (NCR Ref) on every row of this batch.
+    var ncrError = '';
     if (disp === 'REJECTED' && !ncrNo && docNos.length > 0) {
       var firstItem = data.items[0] || {};
       ncrNo = raiseNCR_({
@@ -188,10 +197,13 @@ function saveIQC(data) {
         // Use the pre-loop captured index — not a post-loop getLastRow() recompute —
         // so a concurrent insert cannot cause the back-stamp to hit the wrong rows.
         ws.getRange(firstAppendRow, 24, docNos.length, 1).setValue(ncrNo);
+      } else {
+        ncrError = 'NCR auto-raise FAILED — raise the NCR manually and update the IQC record.';
+        warnings.push(ncrError);
       }
     }
 
-    return { success: true, docNos: docNos, ncrNo: ncrNo };
+    return { success: true, docNos: docNos, ncrNo: ncrNo, ncrError: ncrError, warnings: warnings };
 
   } catch(e) {
     Logger.log(e);

@@ -1,316 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html class="light" lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OQC Inspection - Pack Masters QMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <style>
-    @keyframes pulse-amber {
-      0%   { border-color: var(--border); box-shadow: none; }
-      50%  { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,160,32,0.3); }
-      100% { border-color: var(--border); box-shadow: none; }
-    }
-    @keyframes confirm-pop {
-      0%   { transform: scale(0.5); opacity: 0; }
-      100% { transform: scale(1);   opacity: 1; }
-    }
-
-    /* ── Parameter rows ── */
-    .param-row-oqc {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s ease;
-    }
-    .param-row-oqc:last-child { border-bottom: none; }
-    .param-row-oqc.is-fail {
-      background: #FEF2F2;
-      border-left: 3px solid var(--danger);
-    }
-    .param-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-    .param-toggle {
-      display: flex;
-      gap: 6px;
-    }
-    .param-toggle button {
-      flex: 1;
-      min-height: 44px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      background: var(--white);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      color: var(--muted);
-      transition: all 0.15s ease;
-      touch-action: manipulation;
+    body {
+      background-color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       -webkit-tap-highlight-color: transparent;
-    }
-    .param-toggle button:active { transform: scale(0.97); }
-    .param-toggle button.is-pass {
-      background: #F0FDF4;
-      border-color: var(--success);
-      color: var(--success);
-    }
-    .param-toggle button.is-fail {
-      background: #FEF2F2;
-      border-color: var(--danger);
-      color: var(--danger);
-      animation: shake 0.3s ease;
-    }
-    .param-toggle button.is-na {
-      background: var(--navy-light);
-      border-color: var(--navy);
-      color: var(--navy);
+      min-height: max(884px, 100dvh);
     }
 
-    /* ── Section title check state ── */
-    .section-title.all-done {
-      background: #15803D;
-      transition: background 0.2s ease;
-    }
-
-    /* ── Disposition card ── */
-    .disp-card {
-      background: var(--white);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      margin: 10px;
-      overflow: hidden;
-      border: 1.5px solid var(--border);
-      transition: border-color 0.15s ease;
-    }
-    .disp-card.pulse-amber {
-      animation: pulse-amber 0.4s ease;
-    }
-    .disp-collapsed {
-      padding: 12px;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 500;
-    }
-    .disp-expanded {
-      padding: 10px 12px 12px;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.2s ease;
-    }
-    .disp-expanded.open {
-      max-height: 200px;
-    }
-    .disp-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-    .disp-grid-oqc {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
-    }
-    .disp-btn-oqc {
-      padding: 10px 6px 8px;
-      border: 2px solid var(--border);
+    .input-base {
+      height: 52px;
+      border: 1.5px solid #d1d5db;
       border-radius: 8px;
-      background: var(--white);
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      text-align: center;
-      color: var(--text);
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      transition: all 0.15s ease;
-      line-height: 1.2;
-    }
-    .disp-btn-oqc .disp-sub {
-      display: block;
-      font-size: 10px;
-      font-weight: 400;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-    .disp-btn-oqc:active { transform: scale(0.97); }
-    .disp-btn-oqc.sel-acc {
-      background: #E8F5E9;
-      border-color: var(--success);
-      color: var(--success);
-    }
-    .disp-btn-oqc.sel-acc .disp-sub { color: var(--success); opacity: 0.7; }
-    .disp-btn-oqc.sel-rej {
-      background: #FEF2F2;
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-    .disp-btn-oqc.sel-rej .disp-sub { color: var(--danger); opacity: 0.7; }
-    .disp-btn-oqc.sel-hld {
-      background: #FEF3C7;
-      border-color: var(--hold);
-      color: var(--hold);
-    }
-    .disp-btn-oqc.sel-hld .disp-sub { color: var(--hold); opacity: 0.7; }
-    .disp-btn-oqc.sel-awd {
-      background: #FFEDD5;
-      border-color: var(--deviation);
-      color: var(--deviation);
-    }
-    .disp-btn-oqc.sel-awd .disp-sub { color: var(--deviation); opacity: 0.7; }
-
-    /* ── Remarks area ── */
-    .remarks-wrap {
-      margin: 0 10px 10px;
-    }
-    .remarks-wrap label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .remarks-wrap textarea {
-      width: 100%;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 10px;
       font-size: 16px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--white);
-      resize: vertical;
-      min-height: 72px;
-      -webkit-appearance: none;
-      transition: border-color 0.15s;
+      padding: 0 12px;
+      width: 100%;
+      background-color: white;
+      color: #0f172a;
+      transition: all 0.2s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .remarks-wrap textarea:focus {
+    .input-base:focus {
       outline: none;
-      border-color: var(--navy);
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 4px rgba(14,165,233,0.15);
     }
-    .remarks-wrap .hint {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 3px;
+    select.input-base {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 40px;
+    }
+    .label-base {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .textarea-base {
+      min-height: 80px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 16px;
+      padding: 12px;
+      width: 100%;
+      background-color: white;
+      color: #0f172a;
+      resize: vertical;
+      transition: all 0.2s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .textarea-base:focus {
+      outline: none;
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 4px rgba(14,165,233,0.15);
     }
 
-    /* ── Sticky bottom bar ── */
-    .sticky-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--navy);
-      padding: 8px 14px;
-      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    /* Parameter toggle buttons */
+    .param-toggle-btn {
+      flex: 1;
+      height: 44px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      z-index: 50;
-      min-height: 56px;
+      justify-content: center;
+      transition: all 0.2s;
+      border: 1.5px solid #d1d5db;
+      background: white;
+      color: #64748b;
+      cursor: pointer;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      touch-action: manipulation;
     }
-    .bar-batch-info {
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.7);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .param-toggle-btn:active { transform: scale(0.97); }
+    .param-toggle-btn.is-pass {
+      border-color: #16a34a;
+      background: #16a34a;
+      color: white;
+    }
+    .param-toggle-btn.is-fail {
+      border-color: #dc2626;
+      background: #dc2626;
+      color: white;
+    }
+    .param-toggle-btn.is-na {
+      border-color: #1e3a5f;
+      background: #1e3a5f;
+      color: white;
+    }
+
+    /* Disposition buttons */
+    .decision-btn {
       flex: 1;
-    }
-    .bar-save-btn {
-      background: var(--amber);
-      color: var(--navy);
-      border: none;
+      height: 52px;
       border-radius: 8px;
-      padding: 10px 20px;
       font-size: 14px;
       font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      min-height: 44px;
-      white-space: nowrap;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.15s ease, opacity 0.15s ease;
-      flex-shrink: 0;
-    }
-    .bar-save-btn:disabled {
-      background: #9CA3AF;
-      color: var(--white);
-      cursor: not-allowed;
-      opacity: 1;
-    }
-
-    /* ── Item name hint ── */
-    .item-name-hint {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 3px;
-      min-height: 16px;
-      font-style: italic;
-    }
-
-    /* ── Confirmation screen ── */
-    .confirm-screen {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 32px 20px 100px;
-      text-align: center;
-      background: var(--bg);
+      transition: all 0.2s;
+      border: 1.5px solid #d1d5db;
+      background: white;
+      color: #64748b;
+      cursor: pointer;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      touch-action: manipulation;
     }
-    .confirm-icon-wrap {
-      width: 80px;
-      height: 80px;
-      background: var(--amber);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
+    .decision-btn:active { transform: scale(0.97); }
+    .decision-btn.sel-acc {
+      border-color: #16a34a;
+      background: #16a34a;
+      color: white;
+    }
+    .decision-btn.sel-rej {
+      border-color: #dc2626;
+      background: #dc2626;
+      color: #ffffff;
+    }
+    .decision-btn.sel-hld {
+      border-color: #ca8a04;
+      background: #FEF3C7;
+      color: #ca8a04;
+    }
+    .decision-btn.sel-awd {
+      border-color: #d97706;
+      background: #FFEDD5;
+      color: #d97706;
+    }
+    .decision-btn .disp-sub {
+      font-size: 10px;
+      font-weight: 400;
+      opacity: 0.75;
+      margin-top: 1px;
+    }
+
+    /* Section heading all-done state */
+    .section-heading-done {
+      color: #16a34a !important;
+    }
+
+    /* Field error highlight */
+    .field-error .input-base {
+      border-color: #d97706 !important;
+      box-shadow: 0 0 0 3px rgba(217,119,6,0.2);
+    }
+
+    /* Disposition collapse/expand */
+    .disp-collapsed-hint {
+      font-size: 14px;
+      color: #94a3b8;
+      font-style: italic;
+      padding: 12px 0;
+      text-align: center;
+    }
+    .disp-expanded-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+    }
+    .disp-expanded-panel.open {
+      max-height: 300px;
+    }
+
+    /* Pulse amber for disposition card */
+    @keyframes pulse-amber {
+      0%   { border-color: #e2e8f0; box-shadow: none; }
+      50%  { border-color: #d97706; box-shadow: 0 0 0 4px rgba(217,119,6,0.25); }
+      100% { border-color: #e2e8f0; box-shadow: none; }
+    }
+    .pulse-amber-card {
+      animation: pulse-amber 0.4s ease;
+    }
+
+    /* Confirmation screen animation */
+    @keyframes confirm-pop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+    .confirm-icon-anim {
       animation: confirm-pop 0.3s ease both;
     }
-    .confirm-icon-wrap svg {
-      width: 40px;
-      height: 40px;
-      stroke: var(--white);
-      fill: none;
-      stroke-width: 3;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    .confirm-heading {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-    .confirm-id {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-bottom: 20px;
-    }
-    .confirm-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 28px;
-    }
+
+    /* Chip styles */
     .chip {
       display: inline-block;
       padding: 5px 12px;
@@ -318,155 +204,222 @@
       font-size: 12px;
       font-weight: 600;
     }
-    .chip-navy  { background: var(--navy-light); color: var(--navy); }
-    .chip-muted { background: #F3F4F6;           color: var(--muted); }
-    .chip-acc   { background: #DCFCE7;           color: #15803D; }
-    .chip-rej   { background: #FEE2E2;           color: #B91C1C; }
-    .chip-hld   { background: #FEF3C7;           color: #B45309; }
-    .chip-awd   { background: #FFEDD5;           color: #C2410C; }
-    .confirm-home-btn {
-      width: 100%;
-      max-width: 320px;
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      touch-action: manipulation;
+    .chip-navy  { background: #EFF6FF; color: #1e3a5f; }
+    .chip-muted { background: #F3F4F6; color: #6b7280; }
+    .chip-acc   { background: #DCFCE7; color: #15803D; }
+    .chip-rej   { background: #FEE2E2; color: #B91C1C; }
+    .chip-hld   { background: #FEF3C7; color: #B45309; }
+    .chip-awd   { background: #FFEDD5; color: #C2410C; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
     }
 
-    /* ── Amber underline on unfilled required field ── */
-    .field-error input,
-    .field-error select {
-      border-color: var(--amber) !important;
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e3a5f;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.error {
+      background: #dc2626;
+    }
+    .toast.warning {
+      background: #d97706;
+    }
+
+    /* Item name hint */
+    .item-name-hint {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 4px;
+      font-style: italic;
+      min-height: 16px;
     }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
+<body class="bg-surface text-[#0f172a] pb-[100px] antialiased">
 
-<!-- ═══════════════════════════════════════════
+<!-- ══════════════════════════════════════
+     TOP APP BAR
+══════════════════════════════════════ -->
+<header class="fixed top-0 w-full z-50 h-[56px] bg-[#1e3a5f] text-white shadow-md flex items-center justify-between px-4">
+  <button id="backBtn" aria-label="Back" class="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors active:scale-95 duration-100 -ml-2">
+    <span class="material-symbols-outlined text-[24px]">chevron_left</span>
+  </button>
+  <h1 class="font-headline text-[20px] font-bold text-white tracking-tight text-center flex-1">New OQC</h1>
+  <div id="docBadge" class="text-[12px] font-bold bg-white/15 px-2 py-1 rounded-full text-white">OQC</div>
+</header>
+
+<!-- ══════════════════════════════════════
      SCREEN 1: CAPTURE FORM
-════════════════════════════════════════════ -->
+══════════════════════════════════════ -->
 <div id="screen1">
+  <main class="pt-[68px] px-4 space-y-[20px] max-w-md mx-auto">
 
-  <!-- Header -->
-  <div class="pm-header">
-    <button class="back-btn" id="backBtn">
-      <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
-    </button>
-    <span class="page-title">OQC Inspection</span>
-    <span class="doc-badge" id="docBadge">OQC</span>
-  </div>
-
-  <!-- Batch Info Section -->
-  <div class="section">
-    <div class="section-title" id="batchSectionTitle">BATCH INFO</div>
-    <div class="section-body">
-
-      <div class="field" id="fieldIPQC">
-        <label>From IPQC Session</label>
-        <select id="selIPQC" style="font-size:16px!important;">
-          <option value="">— Select closed IPQC session —</option>
-        </select>
-        <div class="item-name-hint" id="ipqcHint">Picking a session auto-fills item & batch.</div>
+    <!-- DOC ID CARD -->
+    <div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] px-4 py-3 flex justify-between items-center">
+      <div>
+        <p id="oqcDocNo" class="font-headline text-[16px] font-bold text-[#1e3a5f]">PM/OQC/—</p>
+        <p class="text-[12px] text-[#94a3b8]">Auto-generated</p>
       </div>
-
-      <div class="field" id="fieldMaterial">
-        <label>Item / Material</label>
-        <select id="selMaterial">
-          <option value="">— Select FG Material —</option>
-        </select>
-        <div class="item-name-hint" id="itemNameHint"></div>
-      </div>
-
-      <div class="field" id="fieldBatch">
-        <label>Batch No</label>
-        <input type="text" id="inpBatch" placeholder="e.g. B2026-001" autocomplete="off" style="font-size:16px!important;">
-      </div>
-
-      <div class="field" id="fieldCustomer">
-        <label>Customer</label>
-        <select id="selCustomer" style="font-size:16px!important;">
-          <option value="">— Select Customer —</option>
-        </select>
-      </div>
-
-      <div class="field" id="fieldQty">
-        <label>Qty Checked</label>
-        <input type="number" id="inpQty" inputmode="numeric" min="1" placeholder="0" style="font-size:16px!important;">
-      </div>
-
+      <span id="oqcDateLabel" class="text-[13px] text-[#64748b] font-medium"></span>
     </div>
-  </div>
 
-  <!-- Inspection Parameters Section -->
-  <div class="section">
-    <div class="section-title" id="inspSectionTitle">INSPECTION</div>
-    <div id="paramRows">
-      <!-- rows rendered by JS -->
-    </div>
-  </div>
+    <!-- BATCH INFO CARD -->
+    <div class="bg-card rounded-lg shadow-card border border-border overflow-hidden">
+      <div id="batchSectionTitle" class="bg-[#1e3a5f] text-white px-4 py-2.5 text-[12px] font-bold tracking-widest uppercase font-headline">
+        BATCH INFO
+      </div>
+      <div class="p-4 space-y-4">
 
-  <!-- Disposition Card -->
-  <div class="disp-card" id="dispCard">
-    <div class="disp-collapsed" id="dispCollapsed">Disposition — fill all parameters above</div>
-    <div class="disp-expanded" id="dispExpanded">
-      <div class="disp-label">Release Decision</div>
-      <div class="disp-grid-oqc">
-        <button class="disp-btn-oqc" id="btnAcc"  data-val="ACCEPTED">ACCEPT</button>
-        <button class="disp-btn-oqc" id="btnRej"  data-val="REJECTED">REJECT</button>
-        <button class="disp-btn-oqc" id="btnHld"  data-val="HOLD">HOLD</button>
-        <button class="disp-btn-oqc" id="btnAwd"  data-val="ACCEPTED WITH DEVIATION">AWD<span class="disp-sub">With deviation</span></button>
+        <div id="fieldIPQC">
+          <label class="label-base" for="selIPQC">From IPQC Session</label>
+          <select id="selIPQC" class="input-base">
+            <option value="">— Select closed IPQC session —</option>
+          </select>
+          <div class="item-name-hint" id="ipqcHint">Picking a session auto-fills item &amp; batch.</div>
+        </div>
+
+        <div id="fieldMaterial">
+          <label class="label-base" for="selMaterial">Item / Material</label>
+          <select id="selMaterial" class="input-base">
+            <option value="">— Select FG Material —</option>
+          </select>
+          <div class="item-name-hint" id="itemNameHint"></div>
+        </div>
+
+        <div id="fieldBatch">
+          <label class="label-base" for="inpBatch">Batch No</label>
+          <input type="text" id="inpBatch" class="input-base" placeholder="e.g. B2026-001" autocomplete="off">
+        </div>
+
+        <div id="fieldCustomer">
+          <label class="label-base" for="selCustomer">Customer</label>
+          <select id="selCustomer" class="input-base">
+            <option value="">— Select Customer —</option>
+          </select>
+        </div>
+
+        <div id="fieldQty">
+          <label class="label-base" for="inpQty">Qty Checked</label>
+          <input type="number" id="inpQty" class="input-base" inputmode="numeric" min="1" placeholder="0">
+        </div>
+
       </div>
     </div>
-  </div>
 
-  <!-- FG Location (P6 — required when decision is ACCEPTED / RELEASED / AWD) -->
-  <div class="remarks-wrap" id="fieldFGLocation" style="display:none;">
-    <label for="selFGLocation">FG Storage Location <span style="color:#B91C1C;">*</span></label>
-    <select id="selFGLocation" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:16px;font-family:inherit;background:var(--white);">
-      <option value="">— Select FG location —</option>
-    </select>
-    <div class="hint">Where this FG batch is being stored. Used for FIFO dispatch traceability.</div>
-  </div>
+    <!-- INSPECTION PARAMETERS CARD -->
+    <div class="bg-card rounded-lg shadow-card border border-border overflow-hidden">
+      <div id="inspSectionTitle" class="bg-[#1e3a5f] text-white px-4 py-2.5 text-[12px] font-bold tracking-widest uppercase font-headline flex items-center gap-2">
+        INSPECTION
+      </div>
+      <div id="paramRows" class="divide-y divide-border">
+        <!-- rows rendered by JS -->
+      </div>
+    </div>
 
-  <!-- Remarks -->
-  <div class="remarks-wrap">
-    <label for="inpRemarks">Remarks</label>
-    <textarea id="inpRemarks" rows="3" placeholder="Deviations, observations, or dispatch notes…"></textarea>
-    <div class="hint">Optional</div>
-  </div>
+    <!-- DISPOSITION CARD -->
+    <div class="bg-card rounded-lg shadow-card border border-border overflow-hidden" id="dispCard">
+      <div class="bg-[#1e3a5f] text-white px-4 py-2.5 text-[12px] font-bold tracking-widest uppercase font-headline">
+        DISPOSITION
+      </div>
+      <div class="p-4">
+        <div id="dispCollapsed" class="disp-collapsed-hint">Fill all inspection parameters above to unlock</div>
+        <div id="dispExpanded" class="disp-expanded-panel">
+          <p class="label-base mb-3">Release Decision</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="decision-btn" id="btnAcc" data-val="ACCEPTED">RELEASED</button>
+            <button class="decision-btn" id="btnRej" data-val="REJECTED">REJECT</button>
+            <button class="decision-btn" id="btnHld" data-val="HOLD">HOLD</button>
+            <button class="decision-btn" id="btnAwd" data-val="ACCEPTED WITH DEVIATION">
+              AWD<span class="disp-sub">With deviation</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <!-- Spacer for sticky bar -->
-  <div style="height: 72px;"></div>
+    <!-- FG LOCATION (shown when decision is ACCEPTED / AWD) -->
+    <div id="fieldFGLocation" class="bg-card rounded-lg shadow-card border border-border p-4" style="display:none;">
+      <label class="label-base flex items-center gap-1" for="selFGLocation">
+        <span class="material-symbols-outlined text-[16px] text-accent">location_on</span>
+        FG Storage Location <span class="text-red-600 ml-0.5">*</span>
+      </label>
+      <select id="selFGLocation" class="input-base border-accent" style="border-color:#0ea5e9;">
+        <option value="">— Select FG location —</option>
+      </select>
+      <p class="text-[11px] text-[#94a3b8] mt-2">Where this FG batch is being stored. Used for FIFO dispatch traceability.</p>
+    </div>
 
+    <!-- REMARKS -->
+    <div class="bg-card rounded-lg shadow-card border border-border p-4">
+      <label class="label-base" for="inpRemarks">Remarks</label>
+      <textarea id="inpRemarks" class="textarea-base" rows="3" placeholder="Deviations, observations, or dispatch notes…"></textarea>
+      <p class="text-[11px] text-[#94a3b8] mt-1">Optional</p>
+    </div>
+
+  </main>
 </div><!-- #screen1 -->
 
-<!-- ═══════════════════════════════════════════
+<!-- ══════════════════════════════════════
      SCREEN 2: CONFIRMATION
-════════════════════════════════════════════ -->
+══════════════════════════════════════ -->
 <div id="screen2" style="display:none;">
-  <div class="confirm-screen">
-    <div class="confirm-icon-wrap">
-      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <div class="flex flex-col items-center justify-center min-h-screen px-5 pb-24 text-center pt-[56px]">
+    <div class="confirm-icon-anim w-20 h-20 bg-[#1e3a5f] rounded-full flex items-center justify-center mb-5">
+      <span class="material-symbols-outlined text-white text-[40px]" style="font-variation-settings:'FILL' 1;">check_circle</span>
     </div>
-    <div class="confirm-heading">OQC Saved</div>
-    <div class="confirm-id" id="confirmId"></div>
-    <div class="confirm-chips" id="confirmChips"></div>
-    <button class="confirm-home-btn" id="btnHome">Back to Home</button>
+    <h2 class="font-headline text-[24px] font-bold text-[#0f172a] mb-1">OQC Saved</h2>
+    <p class="text-[14px] text-[#64748b] mb-5" id="confirmId"></p>
+    <div class="flex flex-wrap gap-2 justify-center mb-7" id="confirmChips"></div>
+    <button id="btnHome" class="w-full max-w-xs h-[52px] bg-[#1e3a5f] text-white font-headline font-bold text-[16px] rounded-lg active:scale-[0.98] transition-transform shadow-md">
+      Back to Home
+    </button>
   </div>
 </div>
 
-<!-- Sticky Bottom Bar -->
-<div class="sticky-bar" id="stickyBar">
-  <div class="bar-batch-info" id="barBatchInfo">Batch —</div>
-  <button class="bar-save-btn" id="btnSave" disabled>Save OQC →</button>
+<!-- ══════════════════════════════════════
+     STICKY BOTTOM BAR
+══════════════════════════════════════ -->
+<div id="stickyBar" class="fixed bottom-0 w-full z-40 bg-white border-t border-[#e2e8f0] px-4 py-3 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
+  <button id="btnSave" disabled
+    class="w-full h-[52px] bg-[#1e3a5f] text-white font-headline font-bold text-[15px] rounded-[10px] active:scale-[0.98] transition-transform disabled:bg-[#9CA3AF] disabled:text-white disabled:cursor-not-allowed">
+    Save OQC
+  </button>
 </div>
 
+<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -522,7 +475,6 @@ function loadInit() {
       // Populate FG location dropdown
       var fgSel = document.getElementById('selFGLocation');
       if (fgSel) {
-        // keep first placeholder option
         while (fgSel.options.length > 1) fgSel.remove(1);
         gFGLocations.forEach(function(loc) {
           var o = document.createElement('option');
@@ -535,6 +487,13 @@ function loadInit() {
       }
 
       document.getElementById('docBadge').textContent = d.docNumber || 'OQC';
+      var cardDocEl = document.getElementById('oqcDocNo');
+      if (cardDocEl) cardDocEl.textContent = d.docNumber || 'PM/OQC/—';
+      var cardDateEl = document.getElementById('oqcDateLabel');
+      if (cardDateEl) {
+        var now = new Date();
+        cardDateEl.textContent = now.toLocaleDateString('en-IN', { day:'2-digit', month:'2-digit', year:'numeric' });
+      }
 
       var matSel = document.getElementById('selMaterial');
       gMaterials.forEach(function(m) {
@@ -583,20 +542,21 @@ function renderParamRows() {
   container.innerHTML = '';
   OQC_CHECKS.forEach(function(chk) {
     var row = document.createElement('div');
-    row.className = 'param-row-oqc';
+    row.className = 'px-4 py-3';
     row.id = 'prow_' + chk.id;
 
     var nameEl = document.createElement('div');
-    nameEl.className = 'param-name';
+    nameEl.className = 'text-[13px] font-semibold text-[#374151] mb-2';
     nameEl.textContent = chk.label;
     row.appendChild(nameEl);
 
     var tog = document.createElement('div');
-    tog.className = 'param-toggle';
+    tog.className = 'flex gap-2';
 
     ['PASS', 'FAIL', 'NA'].forEach(function(v) {
       var btn = document.createElement('button');
       btn.textContent = v;
+      btn.className = 'param-toggle-btn';
       btn.id = 'ptog_' + chk.id + '_' + v;
       btn.addEventListener('click', (function(cid, val) {
         return function() { setCheck(cid, val); };
@@ -671,7 +631,6 @@ function bindEvents() {
   document.getElementById('btnHome').addEventListener('click', function() {
     goHome();
   });
-
 }
 
 // ══════════════════════════════════════════════════════════
@@ -684,16 +643,16 @@ function setCheck(checkId, val) {
   ['PASS', 'FAIL', 'NA'].forEach(function(v) {
     var btn = document.getElementById('ptog_' + checkId + '_' + v);
     if (!btn) return;
-    btn.className = (v === val) ? ('is-' + v.toLowerCase()) : '';
+    btn.className = 'param-toggle-btn' + (v === val ? ' is-' + v.toLowerCase() : '');
   });
 
   // Row background for FAIL
   var row = document.getElementById('prow_' + checkId);
   if (row) {
     if (val === 'FAIL') {
-      row.className = 'param-row-oqc is-fail';
+      row.className = 'px-4 py-3 bg-red-50 border-l-4 border-l-red-500';
     } else {
-      row.className = 'param-row-oqc';
+      row.className = 'px-4 py-3';
     }
   }
 
@@ -713,13 +672,15 @@ function checkParamsDone() {
   var titleEl = document.getElementById('inspSectionTitle');
 
   if (done) {
-    titleEl.className = 'section-title all-done';
-    titleEl.textContent = '✓ INSPECTION';
+    titleEl.innerHTML = '<span class="material-symbols-outlined text-[16px]" style="font-variation-settings:\'FILL\' 1;">check_circle</span> ✓ INSPECTION';
+    titleEl.classList.add('bg-green-700');
+    titleEl.classList.remove('bg-[#1e3a5f]');
     expandDisposition();
     autoSelectDisposition();
   } else {
-    titleEl.className = 'section-title';
-    titleEl.textContent = 'INSPECTION';
+    titleEl.innerHTML = 'INSPECTION';
+    titleEl.classList.remove('bg-green-700');
+    titleEl.classList.add('bg-[#1e3a5f]');
     collapseDisposition();
   }
 }
@@ -730,16 +691,16 @@ function checkParamsDone() {
 function expandDisposition() {
   document.getElementById('dispCollapsed').style.display = 'none';
   var exp = document.getElementById('dispExpanded');
-  exp.className = 'disp-expanded open';
+  exp.classList.add('open');
 }
 
 function collapseDisposition() {
   document.getElementById('dispCollapsed').style.display = '';
   var exp = document.getElementById('dispExpanded');
-  exp.className = 'disp-expanded';
+  exp.classList.remove('open');
   gDisposition = '';
   DISP_BTNS.forEach(function(db) {
-    document.getElementById(db.id).className = 'disp-btn-oqc';
+    document.getElementById(db.id).className = 'decision-btn';
   });
 }
 
@@ -764,8 +725,13 @@ function setDisposition(val) {
   gDisposition = val;
   DISP_BTNS.forEach(function(db) {
     var btn = document.getElementById(db.id);
-    btn.className = 'disp-btn-oqc' + (db.val === val ? ' ' + db.cls : '');
+    btn.className = 'decision-btn' + (db.val === val ? ' ' + db.cls : '');
   });
+  // fix #107: auto-fill remarks on RELEASED/ACCEPTED when empty
+  if (val === 'ACCEPTED' || val === 'RELEASED') {
+    var r = document.getElementById('inpRemarks');
+    if (r && !r.value.trim()) r.value = 'All parameters within spec.';
+  }
   // P6 — show FG Location when decision is released-equivalent
   var fgField = document.getElementById('fieldFGLocation');
   if (fgField) {
@@ -799,7 +765,8 @@ function hasAnyInput() {
 
 function updateBarBatch() {
   var batch = document.getElementById('inpBatch').value.trim();
-  document.getElementById('barBatchInfo').textContent = batch ? 'Batch ' + batch : 'Batch —';
+  var bbi = document.getElementById('barBatchInfo');
+  if (bbi) bbi.textContent = batch ? 'Batch ' + batch : 'Batch —';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -833,8 +800,8 @@ function onSaveTap() {
 
   if (!gDisposition) {
     var card = document.getElementById('dispCard');
-    card.classList.add('pulse-amber');
-    setTimeout(function() { card.classList.remove('pulse-amber'); }, 500);
+    card.classList.add('pulse-amber-card');
+    setTimeout(function() { card.classList.remove('pulse-amber-card'); }, 500);
     showToast('Select a disposition', 'error');
     return;
   }
@@ -904,6 +871,11 @@ function doSave() {
         gSaved = true;
         var docNo = (res.docNos && res.docNos[0]) ? res.docNos[0] : '';
         showConfirm(docNo, matDesc, batchNo, custName, gDisposition);
+        var hasWarnings = (res.warnings && res.warnings.length) || res.ncrError;
+        if (hasWarnings) {
+          var msgs = (res.warnings && res.warnings.length) ? res.warnings : [res.ncrError];
+          setTimeout(function(){ showToast('⚠ ' + msgs.join(' | '), 'warning'); }, 600);
+        }
       } else {
         var msg = (res && res.error) ? res.error : 'Save failed';
         showToast(msg, 'error');
@@ -977,5 +949,6 @@ function showToast(msg, type) {
   setTimeout(function() { t.className = 'toast'; }, 3500);
 }
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

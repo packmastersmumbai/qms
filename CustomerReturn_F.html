@@ -1,209 +1,204 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Returns - Pack Masters QMS</title>
+  <!-- Tailwind CSS -->
+  <!-- Google Fonts & Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <style>
-    body { background: var(--bg); }
-
-    .rtn-wrap { max-width: 720px; margin: 0 auto; padding-bottom: 40px; }
-
-    .rtn-header {
-      background: var(--navy);
-      color: var(--white);
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      position: sticky; top: 0; z-index: 100;
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
-    .rtn-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
-    .rtn-count {
-      background: var(--amber); color: var(--navy);
-      padding: 2px 8px; border-radius: 10px;
-      font-size: 11px; font-weight: 700;
+    body {
+      background-color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      color: #0f172a;
+      min-height: 100dvh;
     }
-
-    .rtn-tabs { display: flex; background: #f7f7f9; border-bottom: 1px solid #e0e0e0; position: sticky; top: 39px; z-index: 99; }
-    .rtn-tab {
-      flex: 1; padding: 10px; cursor: pointer; text-align: center;
-      font-size: 12px; font-weight: 600; color: #777;
-      border-bottom: 2px solid transparent;
+    h1, h2, h3, h4, h5, h6, .font-headline {
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .rtn-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: var(--white); }
-
-    .rtn-body { padding: 14px; }
-
-    .rtn-empty { text-align: center; padding: 60px 20px; color: #888; font-size: 13px; }
-    .rtn-empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
-
-    .rtn-card {
-      background: var(--white);
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #222; color: #fff; padding: 8px 18px; border-radius: 20px;
+      font-size: 13px; opacity: 0; transition: opacity 0.2s; z-index: 1000;
+      white-space: nowrap;
     }
-    .rtn-card-head {
-      padding: 10px 12px; background: #FFF3CD;
-      border-bottom: 1px solid #f0e0a0;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .rtn-docno { font-weight: 700; color: var(--navy); font-size: 13px; flex: 1; }
-    .rtn-chip {
-      background: var(--navy); color: var(--white);
-      padding: 2px 8px; border-radius: 10px;
-      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-    }
-
-    .rtn-card-body { padding: 10px 12px; font-size: 12px; line-height: 1.5; }
-    .rtn-row { display: flex; gap: 8px; margin-bottom: 4px; }
-    .rtn-label { color: #888; min-width: 90px; font-size: 11px; }
-    .rtn-value { color: #222; flex: 1; }
-    .rtn-reason {
-      background: #fafafa; border-left: 3px solid var(--amber);
-      padding: 6px 10px; margin-top: 6px; font-style: italic;
-      color: #555; font-size: 12px;
-    }
-
-    .rtn-actions {
-      padding: 10px 12px; background: #fafafa;
-      border-top: 1px solid #eee;
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-    }
-    .rtn-btn {
-      background: var(--white); border: 1px solid #ccc;
-      border-radius: 5px; padding: 8px 4px;
-      font-size: 11px; font-weight: 600;
-      cursor: pointer; font-family: inherit;
-      transition: all 0.15s; color: #444;
-    }
-    .rtn-btn:hover:not(:disabled) { background: var(--navy); color: var(--white); border-color: var(--navy); }
-    .rtn-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .rtn-btn.danger:hover:not(:disabled) { background: #b71c1c; border-color: #b71c1c; }
-    .rtn-btn.ok:hover:not(:disabled) { background: #2e7d32; border-color: #2e7d32; }
-
-    /* Form */
-    .rtn-form { background: var(--white); border: 1px solid #e0e0e0; border-radius: 8px; padding: 14px; }
-    .rtn-field { margin-bottom: 12px; }
-    .rtn-field label { display: block; font-size: 11px; color: #555; margin-bottom: 4px; font-weight: 600; }
-    .rtn-field input, .rtn-field select, .rtn-field textarea {
-      width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px;
-      font-size: 13px; font-family: inherit; box-sizing: border-box;
-    }
-    .rtn-field textarea { min-height: 70px; resize: vertical; }
-    .rtn-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .rtn-save {
-      width: 100%; padding: 11px; background: var(--navy); color: var(--white);
-      border: 0; border-radius: 5px; font-weight: 700; font-size: 13px;
-      cursor: pointer; margin-top: 6px;
-    }
-    .rtn-save:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .rtn-toast {
-      position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
-      background: #222; color: #fff; padding: 8px 16px; border-radius: 18px;
-      font-size: 12px; opacity: 0; transition: opacity 0.2s; z-index: 1000;
-    }
-    .rtn-toast.show { opacity: 1; }
-    .rtn-toast.error { background: #b71c1c; }
+    #toast.show    { opacity: 1; }
+    #toast.error   { background: #dc2626; }
+    #toast.warning { background: #d97706; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
-  <div class="rtn-wrap">
-    <div class="rtn-header">
-      <div class="rtn-title">📦 Customer Returns</div>
-      <span class="rtn-count" id="openCount">0 open</span>
-    </div>
+<body class="pb-20">
 
-    <div class="rtn-tabs">
-      <div class="rtn-tab active" data-tab="triage" onclick="switchTab('triage')">Triage</div>
-      <div class="rtn-tab" data-tab="new" onclick="switchTab('new')">New Return</div>
+  <!-- TopAppBar -->
+  <header class="bg-[#1e3a5f] text-white font-headline sticky top-0 w-full h-14 shadow flex items-center justify-between px-4 z-40">
+    <div class="flex items-center gap-2">
+      <button onclick="history.back()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10">
+        <span class="material-symbols-outlined text-2xl">arrow_back</span>
+      </button>
+      <span class="text-lg font-bold">Returns Management</span>
     </div>
+    <span class="bg-[#d97706] text-white text-xs font-bold px-3 py-1 rounded-full" id="openCount">0 open</span>
+  </header>
 
-    <div class="rtn-body">
-      <div id="paneTriage">
-        <div id="triageList" class="rtn-empty">
-          <div class="rtn-empty-icon">⏳</div>
-          Loading…
-        </div>
-      </div>
-      <div id="paneNew" style="display:none;">
-        <div class="rtn-form" id="formBox">
-          <div class="rtn-grid2">
-            <div class="rtn-field">
-              <label>Return No.</label>
-              <input id="fDocNo" disabled />
-            </div>
-            <div class="rtn-field">
-              <label>Return Date</label>
-              <input type="date" id="fDate" />
-            </div>
-          </div>
-          <div class="rtn-field">
-            <label>Customer</label>
-            <select id="fCustomer"></select>
-          </div>
-          <div class="rtn-grid2">
-            <div class="rtn-field">
-              <label>Original Gatepass No.</label>
-              <input id="fGatepass" placeholder="e.g. PM/GP/2026-014" />
-            </div>
-            <div class="rtn-field">
-              <label>FG Batch No.</label>
-              <input id="fBatch" />
-            </div>
-          </div>
-          <div class="rtn-field">
-            <label>Product Code / Description</label>
-            <input id="fProductCode" placeholder="Product code" style="margin-bottom:6px;" />
-            <input id="fProductDesc" placeholder="Product description" />
-          </div>
-          <div class="rtn-grid2">
-            <div class="rtn-field">
-              <label>Qty Returned</label>
-              <input type="number" id="fQty" min="0" step="any" />
-            </div>
-            <div class="rtn-field">
-              <label>Unit</label>
-              <input id="fUnit" placeholder="PC / KG / M" />
-            </div>
-          </div>
-          <div class="rtn-field">
-            <label>Return Reason</label>
-            <textarea id="fReason" placeholder="Why was this returned?"></textarea>
-          </div>
-          <div class="rtn-grid2">
-            <div class="rtn-field">
-              <label>Received By</label>
-              <select id="fReceivedBy"></select>
-            </div>
-            <div class="rtn-field">
-              <label>Remarks (optional)</label>
-              <input id="fRemarks" />
-            </div>
-          </div>
-          <button class="rtn-save" id="btnSave" onclick="saveReturn()">Save Return — Send to Triage</button>
-        </div>
-      </div>
-    </div>
+  <!-- Tabs (pill chips) -->
+  <div class="flex gap-2 bg-white px-4 py-3 sticky top-14 z-30 border-b border-slate-200">
+    <button class="cr-tab flex-1 h-9 px-4 text-[12px] font-semibold uppercase tracking-wider rounded-full transition-colors"
+            id="tab-triage" onclick="switchTab('triage')">
+      Triage
+    </button>
+    <button class="cr-tab flex-1 h-9 px-4 text-[12px] font-semibold uppercase tracking-wider rounded-full transition-colors"
+            id="tab-new" onclick="switchTab('new')">
+      New Return
+    </button>
   </div>
 
-  <div class="rtn-toast" id="toast"></div>
+  <!-- Main Content -->
+  <main class="p-4 flex flex-col gap-4 max-w-2xl mx-auto">
+
+    <!-- TRIAGE PANE -->
+    <div id="paneTriage">
+      <div id="triageList" class="text-center py-16 text-slate-400">
+        <span class="material-symbols-outlined text-5xl mb-3 opacity-40">hourglass_empty</span>
+        <p class="text-sm">Loading…</p>
+      </div>
+    </div>
+
+    <!-- NEW RETURN PANE -->
+    <div id="paneNew" style="display:none;">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col gap-4">
+
+        <div class="flex gap-3">
+          <div class="flex flex-col gap-1 flex-1">
+            <label class="text-sm font-medium text-slate-600">Return No.</label>
+            <input id="fDocNo" disabled
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm bg-slate-50 text-slate-500 cursor-not-allowed" />
+          </div>
+          <div class="flex flex-col gap-1 flex-1">
+            <label class="text-sm font-medium text-slate-600">Return Date</label>
+            <input type="date" id="fDate"
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-slate-600">Customer</label>
+          <select id="fCustomer"
+            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
+            <option value="">— select —</option>
+          </select>
+        </div>
+
+        <div class="flex gap-3">
+          <div class="flex flex-col gap-1 flex-1">
+            <label class="text-sm font-medium text-slate-600">Original Gatepass No.</label>
+            <input id="fGatepass" placeholder="e.g. PM/GP/2026-014"
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+          </div>
+          <div class="flex flex-col gap-1 flex-1">
+            <label class="text-sm font-medium text-slate-600">FG Batch No.</label>
+            <input id="fBatch"
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-slate-600">Product Code / Description</label>
+          <input id="fProductCode" placeholder="Product code"
+            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100 mb-2" />
+          <input id="fProductDesc" placeholder="Product description"
+            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+        </div>
+
+        <div class="flex gap-3">
+          <div class="flex flex-col gap-1 flex-1">
+            <label class="text-sm font-medium text-slate-600">Qty Returned</label>
+            <input type="number" id="fQty" min="0" step="any"
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+          </div>
+          <div class="flex flex-col gap-1 w-28">
+            <label class="text-sm font-medium text-slate-600">Unit</label>
+            <input id="fUnit" placeholder="PC / KG / M"
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-slate-600">Return Reason</label>
+          <textarea id="fReason" placeholder="Why was this returned?" rows="3"
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm resize-vertical focus:border-sky-400 focus:ring-2 focus:ring-sky-100"></textarea>
+        </div>
+
+        <div class="flex gap-3">
+          <div class="flex flex-col gap-1 flex-1">
+            <label class="text-sm font-medium text-slate-600">Received By</label>
+            <select id="fReceivedBy"
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100">
+              <option value="">— select —</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1 flex-1">
+            <label class="text-sm font-medium text-slate-600">Remarks (optional)</label>
+            <input id="fRemarks"
+              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-sm focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+          </div>
+        </div>
+
+        <!-- Defect category chips (fix #22) -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-slate-600">Defect Category</label>
+          <div class="flex gap-2 flex-wrap" id="defectChips">
+            <button type="button" data-defect="DAMAGED" class="defect-chip h-8 px-3 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold uppercase tracking-wider">Damaged</button>
+            <button type="button" data-defect="SHORT_SHIPMENT" class="defect-chip h-8 px-3 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold uppercase tracking-wider">Short Shipment</button>
+            <button type="button" data-defect="WRONG_PRODUCT" class="defect-chip h-8 px-3 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold uppercase tracking-wider">Wrong Product</button>
+            <button type="button" data-defect="QUALITY" class="defect-chip h-8 px-3 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold uppercase tracking-wider">Quality</button>
+            <button type="button" data-defect="LABELING" class="defect-chip h-8 px-3 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold uppercase tracking-wider">Labeling</button>
+            <button type="button" data-defect="OTHER" class="defect-chip h-8 px-3 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold uppercase tracking-wider">Other</button>
+          </div>
+        </div>
+
+        <!-- Photo upload (fix #23) -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-slate-600">Evidence Photos</label>
+          <label class="w-full h-24 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-sky-400 hover:bg-sky-50 transition-colors">
+            <input type="file" accept="image/*" multiple class="hidden" id="fPhotos">
+            <span class="material-symbols-outlined text-slate-400 text-[32px]">photo_camera</span>
+            <span class="text-[12px] text-slate-500 mt-1">Tap to capture or attach</span>
+          </label>
+          <div id="fPhotosPreview" class="flex gap-2 flex-wrap"></div>
+        </div>
+
+        <button id="btnSave" onclick="saveReturn()"
+          class="w-full h-14 bg-[#1e3a5f] hover:bg-[#162d4a] text-white rounded-xl text-base font-semibold transition-colors shadow-sm mt-1 disabled:opacity-50 disabled:cursor-not-allowed">
+          Save Return
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="toast"></div>
 
   <script>
+    /* ── state ── */
     var INIT = null;
     var OPEN_RETURNS = [];
     var DISPOSITIONS = [];
 
+    /* ── utils ── */
     function showToast(msg, kind) {
       var t = document.getElementById('toast');
       t.textContent = msg;
-      t.className = 'rtn-toast show' + (kind === 'error' ? ' error' : '');
-      setTimeout(function(){ t.className = 'rtn-toast'; }, 2400);
+      t.className = 'show' + (kind === 'error' ? ' error' : '');
+      setTimeout(function(){ t.className = ''; }, 2400);
     }
 
     function escapeHtml(s) {
@@ -212,14 +207,47 @@
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    /* ── tabs ── */
     function switchTab(name) {
-      document.querySelectorAll('.rtn-tab').forEach(function(t){
-        t.classList.toggle('active', t.dataset.tab === name);
-      });
-      document.getElementById('paneTriage').style.display = name === 'triage' ? '' : 'none';
-      document.getElementById('paneNew').style.display    = name === 'new'    ? '' : 'none';
+      var isT = name === 'triage';
+      var tabT = document.getElementById('tab-triage');
+      var tabN = document.getElementById('tab-new');
+      var base = 'cr-tab flex-1 h-9 px-4 text-[12px] font-semibold uppercase tracking-wider rounded-full transition-colors ';
+      tabT.className = base + (isT ? 'bg-[#1e3a5f] text-white' : 'bg-slate-100 text-slate-500');
+      tabN.className = base + (!isT ? 'bg-[#1e3a5f] text-white' : 'bg-slate-100 text-slate-500');
+      document.getElementById('paneTriage').style.display = isT ? '' : 'none';
+      document.getElementById('paneNew').style.display    = isT ? 'none' : '';
     }
 
+    /* ── defect chip selector ── */
+    var _selectedDefect = '';
+    document.addEventListener('click', function(e){
+      var btn = e.target.closest('.defect-chip');
+      if (!btn) return;
+      document.querySelectorAll('.defect-chip').forEach(function(b){
+        b.className = 'defect-chip h-8 px-3 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold uppercase tracking-wider';
+      });
+      btn.className = 'defect-chip h-8 px-3 rounded-full bg-[#1e3a5f] text-white text-[12px] font-semibold uppercase tracking-wider';
+      _selectedDefect = btn.dataset.defect || '';
+    });
+
+    /* ── photo preview ── */
+    document.addEventListener('change', function(e){
+      if (e.target && e.target.id === 'fPhotos') {
+        var prev = document.getElementById('fPhotosPreview');
+        prev.innerHTML = '';
+        var files = e.target.files || [];
+        for (var i = 0; i < files.length; i++) {
+          var url = URL.createObjectURL(files[i]);
+          var img = document.createElement('img');
+          img.src = url;
+          img.className = 'w-16 h-16 rounded-lg object-cover border border-slate-200';
+          prev.appendChild(img);
+        }
+      }
+    });
+
+    /* ── init ── */
     function loadInit() {
       google.script.run
         .withSuccessHandler(function(data){
@@ -254,8 +282,9 @@
 
     function reloadTriage() {
       var box = document.getElementById('triageList');
-      box.className = 'rtn-empty';
-      box.innerHTML = '<div class="rtn-empty-icon">⏳</div>Loading…';
+      box.innerHTML = '<div class="text-center py-16 text-slate-400">' +
+        '<span class="material-symbols-outlined text-5xl mb-3 opacity-40">hourglass_empty</span>' +
+        '<p class="text-sm">Loading…</p></div>';
       google.script.run
         .withSuccessHandler(function(list){
           OPEN_RETURNS = list || [];
@@ -263,7 +292,9 @@
           renderTriage();
         })
         .withFailureHandler(function(e){
-          box.innerHTML = '<div class="rtn-empty-icon">⚠️</div>Load failed: ' + escapeHtml(e.message || e);
+          box.innerHTML = '<div class="text-center py-16 text-slate-400">' +
+            '<span class="material-symbols-outlined text-5xl mb-3">warning</span>' +
+            '<p class="text-sm">Load failed: ' + escapeHtml(e.message || e) + '</p></div>';
         })
         .getOpenCustomerReturns();
     }
@@ -271,39 +302,80 @@
     function renderTriage() {
       var box = document.getElementById('triageList');
       if (!OPEN_RETURNS.length) {
-        box.className = 'rtn-empty';
-        box.innerHTML = '<div class="rtn-empty-icon">✅</div>No open returns. All triaged.';
+        box.innerHTML = '<div class="text-center py-16 text-slate-400">' +
+          '<span class="material-symbols-outlined text-5xl mb-3 opacity-40">check_circle</span>' +
+          '<p class="text-sm">No open returns. All triaged.</p></div>';
         return;
       }
-      box.className = '';
-      box.innerHTML = OPEN_RETURNS.map(function(r){
-        var btns = ['RESTOCK', 'REWORK', 'SCRAP'].map(function(d){
-          var cls = d === 'RESTOCK' ? 'ok' : (d === 'SCRAP' ? 'danger' : '');
-          return '<button class="rtn-btn ' + cls + '" onclick="dispose(\'' + escapeHtml(r.rtnNo) + '\',\'' + d + '\')">' + d + '</button>';
-        }).join('');
-        return [
-          '<div class="rtn-card" data-rtn="' + escapeHtml(r.rtnNo) + '">',
-            '<div class="rtn-card-head">',
-              '<div class="rtn-docno">' + escapeHtml(r.rtnNo) + '</div>',
-              '<span class="rtn-chip">' + escapeHtml(r.returnDate) + '</span>',
-            '</div>',
-            '<div class="rtn-card-body">',
-              '<div class="rtn-row"><div class="rtn-label">Customer</div><div class="rtn-value">' + escapeHtml(r.customerName || r.customerCode) + '</div></div>',
-              '<div class="rtn-row"><div class="rtn-label">Product</div><div class="rtn-value">' + escapeHtml(r.productDesc || r.productCode) + '</div></div>',
-              '<div class="rtn-row"><div class="rtn-label">FG Batch</div><div class="rtn-value">' + escapeHtml(r.fgBatchNo) + '</div></div>',
-              '<div class="rtn-row"><div class="rtn-label">Qty</div><div class="rtn-value">' + escapeHtml(r.qtyReturned) + ' ' + escapeHtml(r.unit || '') + '</div></div>',
-              '<div class="rtn-row"><div class="rtn-label">Gatepass</div><div class="rtn-value">' + escapeHtml(r.originalGatepass || '—') + '</div></div>',
-              '<div class="rtn-row"><div class="rtn-label">Received By</div><div class="rtn-value">' + escapeHtml(r.receivedBy) + '</div></div>',
-              r.returnReason ? '<div class="rtn-reason">' + escapeHtml(r.returnReason) + '</div>' : '',
-            '</div>',
-            '<div class="rtn-actions">' + btns + '</div>',
-          '</div>'
-        ].join('');
-      }).join('');
+      box.innerHTML = '<div class="flex flex-col gap-3">' +
+        OPEN_RETURNS.map(function(r){
+          return [
+            '<div class="bg-white rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-[#ca8a04] overflow-hidden" data-rtn="' + escapeHtml(r.rtnNo) + '">',
+              /* card header */
+              '<div class="flex justify-between items-center px-4 py-3 bg-amber-50 border-b border-amber-100">',
+                '<span class="text-sm font-bold text-[#1e3a5f]">' + escapeHtml(r.rtnNo) + '</span>',
+                '<span class="bg-[#d97706] text-white text-xs font-semibold px-3 py-1 rounded-full">' + escapeHtml(r.returnDate) + '</span>',
+              '</div>',
+              /* card body */
+              '<div class="px-4 py-3 flex flex-col gap-1 text-sm">',
+                '<div class="flex gap-2"><span class="text-slate-400 w-24 shrink-0 text-xs">Customer</span><span class="text-slate-700">' + escapeHtml(r.customerName || r.customerCode) + '</span></div>',
+                '<div class="flex gap-2"><span class="text-slate-400 w-24 shrink-0 text-xs">Product</span><span class="text-slate-700">' + escapeHtml(r.productDesc || r.productCode) + '</span></div>',
+                '<div class="flex gap-2"><span class="text-slate-400 w-24 shrink-0 text-xs">FG Batch</span><span class="text-slate-700">' + escapeHtml(r.fgBatchNo) + '</span></div>',
+                '<div class="flex gap-2"><span class="text-slate-400 w-24 shrink-0 text-xs">Qty</span><span class="text-slate-700">' + escapeHtml(r.qtyReturned) + ' ' + escapeHtml(r.unit || '') + '</span></div>',
+                '<div class="flex gap-2"><span class="text-slate-400 w-24 shrink-0 text-xs">Gatepass</span><span class="text-slate-700">' + escapeHtml(r.originalGatepass || '—') + '</span></div>',
+                '<div class="flex gap-2"><span class="text-slate-400 w-24 shrink-0 text-xs">Received By</span><span class="text-slate-700">' + escapeHtml(r.receivedBy) + '</span></div>',
+                r.returnReason ? '<div class="mt-2 bg-slate-50 rounded-lg px-3 py-2 border-l-4 border-[#d97706] text-slate-500 italic text-xs">' + escapeHtml(r.returnReason) + '</div>' : '',
+              '</div>',
+              /* stacked disposition options (fix #21) */
+              '<div class="flex flex-col gap-2 px-4 pb-2 pt-1" data-disp-group="' + escapeHtml(r.rtnNo) + '">',
+                '<button class="disp-opt h-12 w-full border-2 border-slate-200 bg-white text-slate-700 rounded-lg flex items-center gap-3 px-4 text-left font-semibold transition-all" data-disp="RESTOCK">',
+                  '<span class="material-symbols-outlined text-[#16a34a]">recycling</span>',
+                  '<span class="text-sm">Restock to FG warehouse</span>',
+                '</button>',
+                '<button class="disp-opt h-12 w-full border-2 border-slate-200 bg-white text-slate-700 rounded-lg flex items-center gap-3 px-4 text-left font-semibold transition-all" data-disp="REWORK">',
+                  '<span class="material-symbols-outlined text-[#2563eb]">build</span>',
+                  '<span class="text-sm">Rework / Repair</span>',
+                '</button>',
+                '<button class="disp-opt h-12 w-full border-2 border-slate-200 bg-white text-slate-700 rounded-lg flex items-center gap-3 px-4 text-left font-semibold transition-all" data-disp="SCRAP">',
+                  '<span class="material-symbols-outlined text-[#dc2626]">delete</span>',
+                  '<span class="text-sm">Scrap (raises NCR)</span>',
+                '</button>',
+              '</div>',
+              '<div class="px-4 pb-4">',
+                '<button class="apply-disp h-12 w-full bg-[#1e3a5f] hover:bg-[#162d4a] text-white rounded-lg text-sm font-semibold uppercase tracking-wider disabled:opacity-40" disabled onclick="applyDispFromCard(\'' + escapeHtml(r.rtnNo) + '\')">',
+                  'Apply Disposition',
+                '</button>',
+              '</div>',
+            '</div>'
+          ].join('');
+        }).join('') + '</div>';
     }
 
+    /* ── stacked disposition: select option then Apply ── */
+    document.addEventListener('click', function(e){
+      var btn = e.target.closest('.disp-opt');
+      if (!btn) return;
+      var card = btn.closest('[data-rtn]');
+      if (!card) return;
+      card.querySelectorAll('.disp-opt').forEach(function(b){
+        b.className = 'disp-opt h-12 w-full border-2 border-slate-200 bg-white text-slate-700 rounded-lg flex items-center gap-3 px-4 text-left font-semibold transition-all';
+      });
+      btn.className = 'disp-opt h-12 w-full border-2 border-[#1e3a5f] bg-[#eff6ff] text-[#1e3a5f] rounded-lg flex items-center gap-3 px-4 text-left font-semibold transition-all';
+      card.dataset.pickedDisp = btn.dataset.disp || '';
+      var apply = card.querySelector('.apply-disp');
+      if (apply) apply.disabled = !card.dataset.pickedDisp;
+    });
+
+    function applyDispFromCard(rtnNo) {
+      var card = document.querySelector('[data-rtn="' + rtnNo + '"]');
+      var d = card && card.dataset.pickedDisp;
+      if (!d) return;
+      dispose(rtnNo, d);
+    }
+    window.applyDispFromCard = applyDispFromCard;
+
     function dispose(rtnNo, disposition) {
-      var card = document.querySelector('.rtn-card[data-rtn="' + rtnNo + '"]');
+      var card = document.querySelector('[data-rtn="' + rtnNo + '"]');
       if (card) card.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
       var remarks = '';
       if (disposition !== 'RESTOCK') {
@@ -325,6 +397,11 @@
           document.getElementById('openCount').textContent = OPEN_RETURNS.length + ' open';
           if (!OPEN_RETURNS.length) renderTriage();
           showToast(disposition + ' recorded' + (res.ncrNo ? ' — NCR ' + res.ncrNo : ''));
+          var hasWarnings = (res.warnings && res.warnings.length) || res.ncrError;
+          if (hasWarnings) {
+            var msgs = (res.warnings && res.warnings.length) ? res.warnings : [res.ncrError];
+            setTimeout(function(){ showToast('⚠ ' + msgs.join(' | '), 'warning'); }, 600);
+          }
         })
         .withFailureHandler(function(e){
           showToast('Error: ' + (e.message || e), 'error');
@@ -351,13 +428,14 @@
         unit:             document.getElementById('fUnit').value.trim(),
         returnReason:     document.getElementById('fReason').value.trim(),
         receivedBy:       document.getElementById('fReceivedBy').value,
-        remarks:          document.getElementById('fRemarks').value.trim()
+        remarks:          document.getElementById('fRemarks').value.trim(),
+        defectCategory:   _selectedDefect || ''
       };
-      if (!data.customerCode) { showToast('Customer is required', 'error'); return; }
-      if (!data.productCode && !data.productDesc) { showToast('Product code or description required', 'error'); return; }
-      if (!data.fgBatchNo) { showToast('FG batch is required', 'error'); return; }
-      if (!data.qtyReturned) { showToast('Qty must be > 0', 'error'); return; }
-      if (!data.receivedBy) { showToast('Received By required', 'error'); return; }
+      if (!data.customerCode)                         { showToast('Customer is required', 'error'); return; }
+      if (!data.productCode && !data.productDesc)     { showToast('Product code or description required', 'error'); return; }
+      if (!data.fgBatchNo)                            { showToast('FG batch is required', 'error'); return; }
+      if (!data.qtyReturned)                          { showToast('Qty must be > 0', 'error'); return; }
+      if (!data.receivedBy)                           { showToast('Received By required', 'error'); return; }
 
       var btn = document.getElementById('btnSave');
       btn.disabled = true;
@@ -365,33 +443,65 @@
       google.script.run
         .withSuccessHandler(function(res){
           btn.disabled = false;
-          btn.textContent = 'Save Return — Send to Triage';
+          btn.textContent = 'Save Return';
           if (!res || !res.success) {
             showToast('Save failed: ' + (res && res.error || 'unknown'), 'error');
             return;
           }
           showToast('Return ' + res.rtnNo + ' saved');
+          if (res.warnings && res.warnings.length) {
+            setTimeout(function(){ showToast('⚠ ' + res.warnings.join(' | '), 'warning'); }, 600);
+          }
+          // Upload any selected photos
+          var photoInput = document.getElementById('fPhotos');
+          var files = (photoInput && photoInput.files) ? photoInput.files : [];
+          if (files.length) {
+            showToast('Uploading ' + files.length + ' photo(s)…');
+            Array.prototype.forEach.call(files, function(f){
+              var reader = new FileReader();
+              reader.onload = function(ev){
+                var b64 = (ev.target.result || '').split(',')[1] || '';
+                if (!b64) return;
+                google.script.run
+                  .withSuccessHandler(function(){})
+                  .withFailureHandler(function(err){ showToast('Photo upload failed: ' + err.message, 'error'); })
+                  .uploadCustomerReturnPhoto({ rtnNo: res.rtnNo, base64: b64, filename: f.name, mimeType: f.type || 'image/jpeg' });
+              };
+              reader.readAsDataURL(f);
+            });
+          }
           // Reset form
-          document.getElementById('fGatepass').value = '';
-          document.getElementById('fBatch').value = '';
+          document.getElementById('fGatepass').value   = '';
+          document.getElementById('fBatch').value      = '';
           document.getElementById('fProductCode').value = '';
           document.getElementById('fProductDesc').value = '';
-          document.getElementById('fQty').value = '';
-          document.getElementById('fUnit').value = '';
-          document.getElementById('fReason').value = '';
-          document.getElementById('fRemarks').value = '';
+          document.getElementById('fQty').value        = '';
+          document.getElementById('fUnit').value       = '';
+          document.getElementById('fReason').value     = '';
+          document.getElementById('fRemarks').value    = '';
+          if (photoInput) photoInput.value = '';
+          document.getElementById('fPhotosPreview').innerHTML = '';
+          document.querySelectorAll('.defect-chip').forEach(function(b){
+            b.className = 'defect-chip h-8 px-3 rounded-full bg-slate-100 text-slate-600 text-[12px] font-semibold uppercase tracking-wider';
+          });
+          _selectedDefect = '';
           loadInit();
           switchTab('triage');
         })
         .withFailureHandler(function(e){
           btn.disabled = false;
-          btn.textContent = 'Save Return — Send to Triage';
+          btn.textContent = 'Save Return';
           showToast('Save error: ' + (e.message || e), 'error');
         })
         .saveCustomerReturn(data);
     }
 
-    window.addEventListener('load', loadInit);
+    /* ── boot ── */
+    window.addEventListener('load', function(){
+      switchTab('triage');
+      loadInit();
+    });
   </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

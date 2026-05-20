@@ -32,6 +32,7 @@ function saveCustomerReturn(data) {
     var ss = getSpreadsheet();
     var ws = ss.getSheetByName('CUSTOMER_RETURN_LOG');
     if (!ws) throw new Error('CUSTOMER_RETURN_LOG sheet not found. Run Setup first.');
+    ensureReturnExtraColumns_(ws);
 
     var rtnNo = getNextDocNumber('rtn');
     var now   = new Date();
@@ -62,27 +63,103 @@ function saveCustomerReturn(data) {
     ws.getRange(lr, 18).setNumberFormat('dd-MMM-yyyy HH:mm');
     ws.getRange(lr, 14).setBackground('#FFF3CD');  // amber — pending triage
 
-    // STOCK_LEDGER: returned FG enters QUARANTINE pending triage
-    if (typeof writeStockLedger_ === 'function' && data.productCode && data.fgBatchNo && qty > 0) {
-      writeStockLedger_(
-        'CUSTOMER_RETURN_IN',
-        data.productCode,
-        data.fgBatchNo,
-        'QUARANTINE',
-        qty,
-        0,
-        'CUSTOMER_RETURN',
-        rtnNo,
-        data.receivedBy || '',
-        'Returned by ' + (data.customerName || data.customerCode || 'customer') + ' — pending QA triage'
-      );
+    // Dynamic extras: defect category + photos (JSON-encoded URL list)
+    var hdrs = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+    var iDefect = hdrs.indexOf('Defect Category') + 1;
+    var iPhotos = hdrs.indexOf('Photos') + 1;
+    if (iDefect && data.defectCategory) ws.getRange(lr, iDefect).setValue(data.defectCategory);
+    if (iPhotos && Array.isArray(data.photos) && data.photos.length) {
+      ws.getRange(lr, iPhotos).setValue(JSON.stringify(data.photos));
     }
 
-    return { success: true, rtnNo: rtnNo };
+    // STOCK_LEDGER: returned FG enters QUARANTINE pending triage.
+    // Return document is already written — ledger failure is partial-commit → save-with-warning.
+    var receiveWarnings = [];
+    if (typeof writeStockLedger_ === 'function' && data.productCode && data.fgBatchNo && qty > 0) {
+      try {
+        writeStockLedger_(
+          'CUSTOMER_RETURN_IN',
+          data.productCode,
+          data.fgBatchNo,
+          'QUARANTINE',
+          qty,
+          0,
+          'CUSTOMER_RETURN',
+          rtnNo,
+          data.receivedBy || '',
+          'Returned by ' + (data.customerName || data.customerCode || 'customer') + ' — pending QA triage'
+        );
+      } catch (ledgerErr) {
+        Logger.log('CustomerReturn receiveCustomerReturn ledger failed: ' + ledgerErr.message);
+        receiveWarnings.push('Document saved but stock ledger update failed — contact admin.');
+      }
+    }
+
+    return { success: true, rtnNo: rtnNo, warnings: receiveWarnings };
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };
   }
+}
+
+function ensureReturnExtraColumns_(ws) {
+  var headers = ws.getRange(1, 1, 1, Math.max(ws.getLastColumn(), 18)).getValues()[0];
+  var wanted = ['Defect Category', 'Photos'];
+  var lastCol = ws.getLastColumn();
+  wanted.forEach(function(name){
+    if (headers.indexOf(name) < 0) {
+      lastCol++;
+      ws.getRange(1, lastCol).setValue(name).setFontWeight('bold');
+    }
+  });
+}
+
+// Upload a base64 image and attach to a customer return row.
+// data: { rtnNo, base64, filename, mimeType }
+function uploadCustomerReturnPhoto(data) {
+  try {
+    data = data || {};
+    if (!data.rtnNo || !data.base64) return { success: false, error: 'rtnNo and base64 required' };
+    var bytes = Utilities.base64Decode(data.base64);
+    var blob  = Utilities.newBlob(bytes, data.mimeType || 'image/jpeg', data.filename || ('rtn-' + Date.now() + '.jpg'));
+    var folder = getOrCreateReturnPhotoFolder_();
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var url = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('CUSTOMER_RETURN_LOG');
+    if (!ws) return { success: false, error: 'CUSTOMER_RETURN_LOG sheet not found.' };
+    ensureReturnExtraColumns_(ws);
+    var headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+    var iPhotos = headers.indexOf('Photos');
+    if (iPhotos < 0) return { success: false, error: 'Photos column missing' };
+    var rows = ws.getDataRange().getValues();
+    var ref = String(data.rtnNo).trim();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() !== ref) continue;
+      var arr = [];
+      var existing = rows[i][iPhotos];
+      if (existing) {
+        try { arr = JSON.parse(existing); }
+        catch(e) { arr = String(existing).split('|').filter(Boolean); }
+      }
+      arr.push(url);
+      ws.getRange(i + 1, iPhotos + 1).setValue(JSON.stringify(arr));
+      return { success: true, photos: arr };
+    }
+    return { success: false, error: 'Return ' + ref + ' not found.' };
+  } catch(e) {
+    Logger.log('uploadCustomerReturnPhoto error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+function getOrCreateReturnPhotoFolder_() {
+  var folderName = 'PM-QMS — Customer Return Photos';
+  var it = DriveApp.getFoldersByName(folderName);
+  if (it.hasNext()) return it.next();
+  return DriveApp.createFolder(folderName);
 }
 
 // Returns OPEN returns awaiting triage.
@@ -149,14 +226,22 @@ function disposeCustomerReturn(data) {
       }
 
       var ncrNo = '';
+      var ncrError = '';
+      var disposeWarnings = [];
 
       if (data.disposition === 'RESTOCK') {
-        // Pull from QUARANTINE, push back to FG-STORE
+        // Pull from QUARANTINE, push back to FG-STORE.
+        // Disposition is already stamped — ledger failure is partial-commit → save-with-warning.
         if (typeof writeStockLedger_ === 'function' && productCode && fgBatchNo && qty > 0) {
-          writeStockLedger_('CUSTOMER_RETURN_RESTOCK_OUT', productCode, fgBatchNo, 'QUARANTINE',
-            0, qty, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Restocked after triage');
-          writeStockLedger_('CUSTOMER_RETURN_RESTOCK_IN', productCode, fgBatchNo, 'FG-STORE',
-            qty, 0, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Restocked from return ' + ref);
+          try {
+            writeStockLedger_('CUSTOMER_RETURN_RESTOCK_OUT', productCode, fgBatchNo, 'QUARANTINE',
+              0, qty, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Restocked after triage');
+            writeStockLedger_('CUSTOMER_RETURN_RESTOCK_IN', productCode, fgBatchNo, 'FG-STORE',
+              qty, 0, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Restocked from return ' + ref);
+          } catch (ledgerErr) {
+            Logger.log('CustomerReturn RESTOCK ledger failed: ' + ledgerErr.message);
+            disposeWarnings.push('Document saved but stock ledger update failed — contact admin.');
+          }
         }
       } else if (data.disposition === 'SCRAP') {
         if (typeof recordScrap === 'function') {
@@ -182,14 +267,24 @@ function disposeCustomerReturn(data) {
             unit:         unit || '',
             defectDesc:   'Customer return — scrap. ' + (data.remarks || reason || '')
           });
+          if (!ncrNo) {
+            ncrError = 'NCR auto-raise FAILED — raise the NCR manually.';
+            disposeWarnings.push(ncrError);
+          }
         }
       } else if (data.disposition === 'REWORK') {
         // Move out of QUARANTINE; rework area is FG_HOLD until re-released by OQC.
+        // Disposition is already stamped — ledger failure is partial-commit → save-with-warning.
         if (typeof writeStockLedger_ === 'function' && productCode && fgBatchNo && qty > 0) {
-          writeStockLedger_('CUSTOMER_RETURN_REWORK_OUT', productCode, fgBatchNo, 'QUARANTINE',
-            0, qty, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Sent to rework');
-          writeStockLedger_('CUSTOMER_RETURN_REWORK_IN', productCode, fgBatchNo, 'FG-HOLD',
-            qty, 0, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'In rework pending re-inspection');
+          try {
+            writeStockLedger_('CUSTOMER_RETURN_REWORK_OUT', productCode, fgBatchNo, 'QUARANTINE',
+              0, qty, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Sent to rework');
+            writeStockLedger_('CUSTOMER_RETURN_REWORK_IN', productCode, fgBatchNo, 'FG-HOLD',
+              qty, 0, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'In rework pending re-inspection');
+          } catch (ledgerErr) {
+            Logger.log('CustomerReturn REWORK ledger failed: ' + ledgerErr.message);
+            disposeWarnings.push('Document saved but stock ledger update failed — contact admin.');
+          }
         }
         if (typeof raiseNCR_ === 'function') {
           ncrNo = raiseNCR_({
@@ -203,11 +298,15 @@ function disposeCustomerReturn(data) {
             unit:         unit || '',
             defectDesc:   'Customer return — rework required. ' + (data.remarks || reason || '')
           });
+          if (!ncrNo) {
+            ncrError = 'NCR auto-raise FAILED — raise the NCR manually.';
+            disposeWarnings.push(ncrError);
+          }
         }
       }
 
       if (ncrNo) ws.getRange(row, 15).setValue(ncrNo);
-      return { success: true, ncrNo: ncrNo };
+      return { success: true, ncrNo: ncrNo, ncrError: ncrError, warnings: disposeWarnings };
     }
     return { success: false, error: 'Return ' + ref + ' not found.' };
   } catch(e) {

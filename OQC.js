@@ -68,6 +68,7 @@ function saveOQC(data) {
     var dec    = data.releaseDecision || 'PENDING';
     var docNos = [];
     var operatorId = data.operatorName || '';
+    var warnings = [];
 
     var releasedThis = _isOQCReleasedDecision_(dec);
 
@@ -161,6 +162,8 @@ function saveOQC(data) {
           }
         } catch (eMirror) {
           Logger.log('FG_DISPATCH_LOTS mirror failed for ' + docNo + ': ' + eMirror.message);
+          // OQC decision IS recorded — partial-commit → save-with-warning.
+          warnings.push('OQC released but FG dispatch lot creation failed — the released FG may not appear in Dispatch. Contact admin.');
         }
       }
 
@@ -169,6 +172,7 @@ function saveOQC(data) {
 
     // Auto-raise NCR for rejected OQC sessions.
     var ncrNo = '';
+    var ncrError = '';
     if (dec === 'REJECTED' && docNos.length > 0) {
       var firstItem = data.items[0] || {};
       ncrNo = raiseNCR_({
@@ -180,9 +184,13 @@ function saveOQC(data) {
         qtyAffected:  data.items.reduce(function(s, it) { return s + (Number(it.rejectedQty) || 0); }, 0),
         defectDesc:   data.remarks || 'OQC rejection — see ' + docNos.join(', ')
       });
+      if (!ncrNo) {
+        ncrError = 'NCR auto-raise FAILED — raise the NCR manually and update the OQC record.';
+        warnings.push(ncrError);
+      }
     }
 
-    return { success: true, docNos: docNos, ncrNo: ncrNo };
+    return { success: true, docNos: docNos, ncrNo: ncrNo, ncrError: ncrError, warnings: warnings };
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };

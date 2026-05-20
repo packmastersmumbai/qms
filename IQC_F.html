@@ -1,599 +1,340 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IQC Inspection — Pack Masters QMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
-    /* ── IQC-specific styles ── */
+    body { min-height: max(884px,100dvh); font-family:'Inter',sans-serif; background:#f8fafc; }
+    h1,h2,h3,.font-headline { font-family:'Plus Jakarta Sans',sans-serif; }
+    input,select,textarea { font-size:16px !important; }
+    button { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+
+    /* Param row states */
+    .param-row-pass { background:#f0fdf4; border-color:#86efac !important; }
+    .param-row-fail { background:#fef2f2; border-color:#fca5a5 !important; }
+    .param-row-na   { background:#f1f5f9; }
+
+    /* Param button states */
+    .btn-pass-active { background:#16a34a !important; color:#fff !important; border-color:#16a34a !important; }
+    .btn-fail-active { background:#dc2626 !important; color:#fff !important; border-color:#dc2626 !important; }
+    .btn-na-active   { background:#64748b !important; color:#fff !important; border-color:#64748b !important; }
+
+    /* Disp buttons */
+    .disp-acc-active { background:#16a34a !important; color:#fff !important; border-color:#16a34a !important; }
+    .disp-rej-active { background:#dc2626 !important; color:#fff !important; border-color:#dc2626 !important; }
+    .disp-hld-active { background:#ca8a04 !important; color:#fff !important; border-color:#ca8a04 !important; }
+    .disp-awd-active { background:#d97706 !important; color:#fff !important; border-color:#d97706 !important; }
+
+    /* Disp badges */
+    .badge-acc  { background:#dcfce7; color:#15803d; }
+    .badge-rej  { background:#fee2e2; color:#b91c1c; }
+    .badge-hld  { background:#fef3c7; color:#b45309; }
+    .badge-awd  { background:#ffedd5; color:#c2410c; }
+    .badge-none { background:#f3f4f6; color:#6b7280; }
+
+    /* Spinner */
+    .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; margin-right:6px; vertical-align:middle; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Toast */
+    .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#1e3a5f; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600; opacity:0; transition:all 0.25s ease; z-index:9999; pointer-events:none; white-space:nowrap; max-width:90vw; }
+    .toast.show    { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast.error   { background:#dc2626; }
+    .toast.success { background:#16a34a; }
+    .toast.warning { background:#d97706; }
+
     @keyframes pulseAmber {
-      0%   { box-shadow: 0 0 0 0 rgba(232,160,32,0.6); }
-      50%  { box-shadow: 0 0 0 6px rgba(232,160,32,0.15); }
-      100% { box-shadow: 0 0 0 0 rgba(232,160,32,0); }
+      0%   { box-shadow:0 0 0 0 rgba(232,160,32,0.6); }
+      50%  { box-shadow:0 0 0 6px rgba(232,160,32,0.15); }
+      100% { box-shadow:0 0 0 0 rgba(232,160,32,0); }
     }
-
-    /* Prefill strip */
-    .prefill-strip {
-      background: var(--navy-light);
-      border-left: 3px solid var(--amber);
-      border-radius: var(--radius);
-      padding: 10px 12px;
-      margin: 10px;
-    }
-    .prefill-strip .pf-item-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
-    }
-    .prefill-strip .pf-meta {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-top: 3px;
-    }
-
-    /* Item progress (top bar below header) */
-    .item-progress-wrap {
-      background: var(--white);
-      padding: 8px 12px 10px;
-      border-bottom: 1px solid var(--border);
-    }
-    .item-progress-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 5px;
-    }
-    .item-prog-track {
-      background: var(--border);
-      border-radius: 6px;
-      height: 8px;
-      overflow: hidden;
-    }
-    .item-prog-fill {
-      height: 100%;
-      background: var(--navy);
-      border-radius: 6px;
-      transition: width 0.3s ease;
-    }
-
-    /* Parameters section */
-    .params-section {
-      background: var(--white);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      margin: 10px;
-      overflow: hidden;
-    }
-    .params-section-title {
-      background: var(--navy);
-      color: var(--white);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 7px 12px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      transition: background 0.2s;
-    }
-    .params-section-title.all-done {
-      background: #15803D;
-    }
-
-    /* Parameter row */
-    .param-row-iqc {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s, border-left 0.15s;
-    }
-    .param-row-iqc:last-child {
-      border-bottom: none;
-    }
-    .param-row-iqc.row-fail {
-      background: #FEF2F2;
-      border-left: 3px solid var(--danger);
-    }
-    .param-row-iqc.row-pass {
-      background: #F0FDF4;
-    }
-    .param-row-iqc.row-na {
-      background: var(--navy-light);
-    }
-    .param-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
-    }
-    .param-spec {
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--muted);
-      margin-top: 2px;
-      margin-bottom: 7px;
-    }
-    .param-toggle {
-      display: flex;
-      gap: 6px;
-    }
-    .param-toggle button {
-      flex: 1;
-      min-height: 44px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      background: var(--white);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      color: var(--muted);
-      transition: all 0.15s ease;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .param-toggle button:active {
-      transform: scale(0.97);
-      transition: transform 0.08s ease;
-    }
-    .param-toggle button.sel-pass {
-      background: #F0FDF4;
-      border-color: var(--success);
-      color: var(--success);
-    }
-    .param-toggle button.sel-fail {
-      background: #FEF2F2;
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-    .param-toggle button.sel-na {
-      background: var(--navy-light);
-      border-color: var(--navy);
-      color: var(--navy);
-    }
-
-    /* Disposition card */
-    .disp-card {
-      background: var(--white);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      margin: 10px;
-      overflow: hidden;
-    }
-    .disp-card-locked {
-      padding: 10px 12px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 500;
-    }
-    .disp-card-body {
-      padding: 10px 12px 12px;
-    }
-    .disp-card-title {
-      background: var(--navy);
-      color: var(--white);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 7px 12px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .disp-card.pulse-amber {
-      animation: pulseAmber 0.4s ease;
-    }
-
-    /* Quantities row inside disposition */
-    .qty-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .qty-item label {
-      display: block;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-bottom: 3px;
-    }
-    .qty-item input {
-      width: 100%;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 7px 8px;
-      font-size: 16px;
-      font-family: inherit;
-      text-align: center;
-      color: var(--text);
-      background: var(--white);
-      -webkit-appearance: none;
-    }
-    .qty-item input:focus {
-      outline: none;
-      border-color: var(--navy);
-    }
-
-    /* Sticky bottom bar */
-    .sticky-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--navy);
-      padding: 10px 14px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      z-index: 50;
-      box-shadow: 0 -2px 12px rgba(0,0,0,0.18);
-    }
-    .sticky-bar-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.7);
-    }
-    .sticky-bar-btn {
-      background: var(--amber);
-      color: var(--navy);
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      min-height: 44px;
-      transition: background 0.15s, opacity 0.15s;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .sticky-bar-btn:disabled {
-      background: #9CA3AF;
-      color: var(--white);
-      cursor: not-allowed;
-    }
-
-    /* Summary screen */
-    .item-row-summary {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      min-height: 44px;
-      cursor: pointer;
-      transition: background 0.1s;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .item-row-summary:last-child {
-      border-bottom: none;
-    }
-    .item-row-summary:active {
-      background: var(--navy-light);
-    }
-    .sum-item-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      flex-shrink: 0;
-      width: 56px;
-    }
-    .sum-item-bar-wrap {
-      flex: 1;
-      background: var(--border);
-      border-radius: 4px;
-      height: 4px;
-      overflow: hidden;
-    }
-    .sum-item-bar-fill {
-      height: 100%;
-      background: var(--success);
-      border-radius: 4px;
-    }
-    .sum-item-right {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-    .sum-edit-icon {
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    /* Batch info strip */
-    .batch-info-strip {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .batch-info-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .batch-info-meta {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    /* Disp badges for summary */
-    .disp-badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 10px;
-    }
-    .disp-badge-acc  { background: #DCFCE7; color: #15803D; }
-    .disp-badge-rej  { background: #FEE2E2; color: #B91C1C; }
-    .disp-badge-hld  { background: #FEF3C7; color: #B45309; }
-    .disp-badge-awd  { background: #FFEDD5; color: #C2410C; }
-    .disp-badge-none { background: #F3F4F6; color: #6B7280; }
+    .pulse-amber { animation:pulseAmber 0.4s ease; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+  <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
+<body class="bg-surface text-text-value antialiased min-h-screen pb-[88px]">
 
-<!-- ══════════════════════════════════════════════════
-     SCREEN 1: PARAMETER CAPTURE
-══════════════════════════════════════════════════ -->
+<!-- ══ TOP APP BAR ══ -->
+<header class="fixed top-0 w-full h-[56px] bg-primary shadow-md flex items-center justify-between px-4 z-50">
+  <button id="s1BackBtn" aria-label="Go Back" class="text-white active:scale-95 transition-transform p-2 -ml-2">
+    <span class="material-symbols-outlined">arrow_back</span>
+  </button>
+  <h1 class="font-headline text-[20px] font-bold text-white text-center flex-1">IQC Inspection</h1>
+  <span id="docBadge" class="text-[13px] font-semibold text-white/90 bg-white/20 px-3 py-1 rounded-full">IQC</span>
+</header>
+
+<!-- ══════════════════════ SCREEN 1: INSPECTION ══════════════════════ -->
 <div id="screen1">
+<main class="pt-[68px] px-4 space-y-3 max-w-md mx-auto">
 
-  <div class="pm-header">
-    <button class="back-btn" id="s1BackBtn">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 4l-6 6 6 6"/>
-      </svg>
-    </button>
-    <span class="page-title">IQC Inspection</span>
-    <span class="doc-badge" id="docBadge">IQC</span>
-  </div>
-
-  <!-- Item progress bar (shown after GRN loaded) -->
-  <div class="item-progress-wrap" id="itemProgressWrap" style="display:none;">
-    <div class="item-progress-label" id="itemProgressLabel">Item 1 of 1</div>
-    <div class="item-prog-track">
-      <div class="item-prog-fill" id="itemProgFill" style="width:0%"></div>
+  <!-- GRN Selector Card -->
+  <section id="manualSection" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
+    <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Select GRN to Inspect</label>
+    <div class="relative mb-3">
+      <select id="grnNo" class="w-full h-[52px] border-[1.5px] border-accent rounded-lg text-[16px] text-text-value px-3 appearance-none focus:outline-none bg-white">
+        <option value="">— Select GRN —</option>
+      </select>
+      <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
     </div>
-  </div>
+    <!-- Material chips (populated on GRN select) -->
+    <div id="materialChips" class="flex flex-wrap gap-2"></div>
 
-  <!-- Prefill strip (shown if sessionStorage.grnPrefill) -->
-  <div class="prefill-strip" id="prefillStrip" style="display:none;">
-    <div class="prefill-strip pf-item-name" id="pfItemName"></div>
-    <div class="prefill-strip pf-meta" id="pfMeta"></div>
-  </div>
-
-  <!-- Manual entry fields (shown if no prefill) -->
-  <div class="section" id="manualSection">
-    <div class="section-title">Inspection Details</div>
-    <div class="section-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="field">
-          <label>Date</label>
-          <input type="date" id="dateField">
+    <!-- Inspector + AQL row -->
+    <div class="grid grid-cols-2 gap-3 mt-3">
+      <div>
+        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Inspector</label>
+        <div class="relative">
+          <select id="inspector" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+            <option value="">— Select —</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
         </div>
-        <div class="field">
-          <label>AQL Level</label>
-          <select id="aqlLevel">
+      </div>
+      <div>
+        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">AQL Level</label>
+        <div class="relative">
+          <select id="aqlLevel" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
             <option value="AQL 2.5">AQL 2.5</option>
             <option value="AQL 0.65">AQL 0.65</option>
             <option value="AQL 1.0">AQL 1.0</option>
             <option value="AQL 4.0">AQL 4.0</option>
             <option value="AQL 6.5">AQL 6.5</option>
           </select>
-        </div>
-      </div>
-      <div class="field">
-        <label>Inspector</label>
-        <select id="inspector">
-          <option value="">— Select Inspector —</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>GRN Number</label>
-        <select id="grnNo">
-          <option value="">— Select GRN —</option>
-        </select>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="field">
-          <label>Supplier</label>
-          <input type="text" id="supplierField" readonly placeholder="Auto-filled">
-        </div>
-        <div class="field">
-          <label>Sample ID</label>
-          <input type="text" id="sampleId" placeholder="Optional">
+          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
         </div>
       </div>
     </div>
+
+    <!-- Hidden fields -->
+    <input type="hidden" id="supplierField">
+    <input type="date" id="dateField" class="hidden">
+    <input type="text" id="sampleId" class="hidden">
+  </section>
+
+  <!-- Prefill strip (shown when coming from GRN) -->
+  <div id="prefillStrip" style="display:none" class="bg-blue-50 border-l-4 border-accent rounded-lg p-3">
+    <div id="pfItemName" class="text-[14px] font-semibold text-primary"></div>
+    <div id="pfMeta" class="text-[12px] text-text-helper mt-1"></div>
   </div>
 
-  <!-- Parameters section (built dynamically) -->
+  <!-- IQC doc number -->
+  <p id="iqcDocNo" class="text-[14px] text-text-helper text-right font-medium hidden"></p>
+
+  <!-- Item progress bar -->
+  <div id="itemProgressWrap" style="display:none" class="bg-card rounded-xl p-3 border border-border shadow-sm">
+    <div class="flex justify-between items-center mb-2">
+      <span id="itemProgressLabel" class="text-[13px] font-semibold text-primary"></span>
+    </div>
+    <div class="bg-slate-200 rounded-full h-1.5 overflow-hidden">
+      <div id="itemProgFill" class="h-full bg-primary rounded-full transition-all duration-300" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Material tab strip (multi-item) -->
+  <nav id="materialTabs" aria-label="Material Tabs" class="hidden flex border-b border-border"></nav>
+
+  <!-- Inspection card (parameters) -->
   <div id="paramSectionWrap"></div>
 
   <!-- Disposition card -->
-  <div class="disp-card" id="dispCard" style="display:none;">
-    <div class="disp-card-title">Disposition</div>
-    <div class="disp-card-body">
-      <!-- Locked placeholder -->
-      <div id="dispLocked" class="disp-card-locked">
-        Disposition — complete all parameters above
+  <section id="dispCard" style="display:none" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-5">
+    <h3 class="font-headline text-[16px] font-semibold text-text-heading">Final Disposition</h3>
+
+    <!-- Locked placeholder -->
+    <div id="dispLocked" class="text-[14px] text-text-helper text-center py-2">
+      Complete all parameters above to set disposition
+    </div>
+
+    <!-- Active grid -->
+    <div id="dispGrid" style="display:none">
+      <div class="grid grid-cols-3 gap-2 mb-4">
+        <button id="dAcc" onclick="setItemDisp('ACCEPTED')"
+          class="h-[56px] rounded-[10px] bg-white border-[1.5px] border-status-pass text-status-pass font-semibold text-[13px] flex flex-col items-center justify-center active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-[20px] mb-0.5">check_circle</span>ACCEPTED
+        </button>
+        <button id="dRej" onclick="setItemDisp('REJECTED')"
+          class="h-[56px] rounded-[10px] bg-white border-[1.5px] border-status-fail text-status-fail font-semibold text-[13px] flex flex-col items-center justify-center active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-[20px] mb-0.5">cancel</span>REJECTED
+        </button>
+        <button id="dHld" onclick="setItemDisp('HOLD')"
+          class="h-[56px] rounded-[10px] bg-white border-[1.5px] border-status-hold text-status-hold font-semibold text-[13px] flex flex-col items-center justify-center active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-[20px] mb-0.5">pause_circle</span>HOLD
+        </button>
       </div>
-      <!-- Expanded grid -->
-      <div id="dispGrid" style="display:none;">
-        <div class="qty-row" style="margin-bottom:10px;">
-          <div class="qty-item">
-            <label>Sample Size</label>
-            <input type="number" id="sampleSize" min="0" placeholder="0" inputmode="numeric">
-          </div>
-          <div class="qty-item">
-            <label>Accepted Qty</label>
-            <input type="number" id="acceptedQty" min="0" placeholder="0" inputmode="numeric">
-          </div>
-          <div class="qty-item">
-            <label>Rejected Qty</label>
-            <input type="number" id="rejectedQty" min="0" placeholder="0" inputmode="numeric">
-          </div>
+      <button id="dAwd" onclick="setItemDisp('AWD')"
+        class="w-full h-[44px] rounded-[10px] bg-white border-[1.5px] border-status-pending text-status-pending font-semibold text-[14px] flex items-center justify-center gap-2 active:scale-95 transition-transform mb-4">
+        WITH DEVIATION
+      </button>
+
+      <!-- Qty inputs -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty Accepted</label>
+          <input id="acceptedQty" type="number" min="0" placeholder="0"
+            class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
         </div>
-        <div class="disp-grid" style="margin-bottom:0;">
-          <button class="disp-btn" id="dAcc" onclick="setItemDisp('ACCEPTED')">ACCEPT</button>
-          <button class="disp-btn" id="dRej" onclick="setItemDisp('REJECTED')">REJECT</button>
-          <button class="disp-btn" id="dHld" onclick="setItemDisp('HOLD')">HOLD</button>
-          <button class="disp-btn" id="dAwd" onclick="setItemDisp('AWD')">WITH DEVIATION</button>
+        <div>
+          <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty Rejected</label>
+          <input id="rejectedQty" type="number" min="0" placeholder="0"
+            class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
         </div>
+      </div>
+      <div>
+        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Sample Size</label>
+        <input id="sampleSize" type="number" min="0" placeholder="0"
+          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
       </div>
     </div>
+  </section>
+
+</main>
+
+<!-- Sticky bottom bar — screen 1 -->
+<div class="fixed bottom-0 left-0 w-full bg-white border-t border-border p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+  <div class="max-w-md mx-auto flex items-center justify-between gap-3">
+    <span id="stickyLabel" class="text-[13px] font-medium text-text-helper">—</span>
+    <button id="stickyBtn" disabled onclick="onStickyTap()"
+      class="h-[52px] px-6 bg-primary text-white rounded-[10px] font-headline font-semibold text-[15px] flex items-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-40">
+      Next Item <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+    </button>
   </div>
-
-  <div style="height:80px;"></div>
-
-  <!-- Sticky bottom bar -->
-  <div class="sticky-bar">
-    <span class="sticky-bar-label" id="stickyLabel">—</span>
-    <button class="sticky-bar-btn" id="stickyBtn" disabled onclick="onStickyTap()">Next Item →</button>
-  </div>
-
+</div>
 </div><!-- /screen1 -->
 
-<!-- ══════════════════════════════════════════════════
-     SCREEN 2: SUMMARY
-══════════════════════════════════════════════════ -->
-<div id="screen2" style="display:none;">
 
-  <div class="pm-header">
-    <button class="back-btn" id="s2BackBtn">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 4l-6 6 6 6"/>
-      </svg>
-    </button>
-    <span class="page-title">IQC Summary</span>
-    <span class="doc-badge">IQC</span>
-  </div>
+<!-- ══════════════════════ SCREEN 2: SUMMARY ══════════════════════ -->
+<div id="screen2" style="display:none">
 
-  <!-- Batch info strip -->
-  <div class="section" style="margin:10px;">
-    <div class="batch-info-strip">
-      <div class="batch-info-name" id="sumBatchName"></div>
-      <div class="batch-info-meta" id="sumBatchMeta"></div>
-    </div>
-  </div>
+<header class="fixed top-0 w-full h-[56px] bg-primary shadow-md flex items-center justify-between px-4 z-50">
+  <button id="s2BackBtn" class="text-white active:scale-95 transition-transform p-2 -ml-2">
+    <span class="material-symbols-outlined">arrow_back</span>
+  </button>
+  <h1 class="font-headline text-[20px] font-bold text-white text-center flex-1">IQC Summary</h1>
+  <span class="w-10"></span>
+</header>
+
+<main class="pt-[68px] px-4 space-y-3 max-w-md mx-auto pb-[100px]">
+
+  <!-- Batch info -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
+    <div id="sumBatchName" class="text-[15px] font-semibold text-primary font-headline"></div>
+    <div id="sumBatchMeta" class="text-[13px] text-text-helper mt-1"></div>
+  </section>
 
   <!-- Items inspected -->
-  <div class="section" style="margin:10px;">
-    <div class="section-title">Items Inspected</div>
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
+    <div class="bg-primary px-4 py-2">
+      <h2 class="font-headline text-[14px] font-semibold text-white tracking-wide uppercase">Items Inspected</h2>
+    </div>
     <div id="sumItemsList"></div>
-  </div>
+  </section>
 
   <!-- Overall disposition -->
-  <div class="section" style="margin:10px;">
-    <div class="section-title">Overall Disposition</div>
-    <div class="section-body">
-      <div class="disp-grid">
-        <button class="disp-btn" id="odAcc" onclick="setOverallDisp('ACCEPTED')">ACCEPT</button>
-        <button class="disp-btn" id="odRej" onclick="setOverallDisp('REJECTED')">REJECT</button>
-        <button class="disp-btn" id="odHld" onclick="setOverallDisp('HOLD')">HOLD</button>
-        <button class="disp-btn" id="odAwd" onclick="setOverallDisp('AWD')">WITH DEVIATION</button>
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+    <h3 class="font-headline text-[16px] font-semibold text-text-heading">Overall Disposition</h3>
+    <div class="grid grid-cols-3 gap-2">
+      <button id="odAcc" onclick="setOverallDisp('ACCEPTED')"
+        class="h-[56px] rounded-[10px] bg-white border-[1.5px] border-status-pass text-status-pass font-semibold text-[13px] flex flex-col items-center justify-center active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">check_circle</span>ACCEPTED
+      </button>
+      <button id="odRej" onclick="setOverallDisp('REJECTED')"
+        class="h-[56px] rounded-[10px] bg-white border-[1.5px] border-status-fail text-status-fail font-semibold text-[13px] flex flex-col items-center justify-center active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">cancel</span>REJECTED
+      </button>
+      <button id="odHld" onclick="setOverallDisp('HOLD')"
+        class="h-[56px] rounded-[10px] bg-white border-[1.5px] border-status-hold text-status-hold font-semibold text-[13px] flex flex-col items-center justify-center active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-[20px] mb-0.5">pause_circle</span>HOLD
+      </button>
+    </div>
+    <button id="odAwd" onclick="setOverallDisp('AWD')"
+      class="w-full h-[44px] rounded-[10px] bg-white border-[1.5px] border-status-pending text-status-pending font-semibold text-[14px] active:scale-95 transition-transform">
+      WITH DEVIATION
+    </button>
+  </section>
+
+  <!-- Remarks + NCR/Deviation refs -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+    <div>
+      <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Remarks</label>
+      <textarea id="remarks" rows="3" placeholder="Any deviations, observations, or notes"
+        class="w-full border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value p-3 focus:border-accent focus:outline-none bg-white resize-none"></textarea>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">NCR Ref <span class="font-normal text-text-helper">(if reject)</span></label>
+        <input id="ncrRef" type="text" placeholder="Leave blank to auto-generate"
+          class="w-full h-[48px] border-[1.5px] border-gray-300 rounded-lg text-[15px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+      </div>
+      <div>
+        <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">Deviation Ref <span class="font-normal text-text-helper">(if AWD)</span></label>
+        <input id="deviationRef" type="text" placeholder="Deviation ref no."
+          class="w-full h-[48px] border-[1.5px] border-gray-300 rounded-lg text-[15px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Remarks -->
-  <div class="section" style="margin:10px;">
-    <div class="section-title">Remarks</div>
-    <div class="section-body">
-      <textarea id="remarks" rows="3" placeholder="Any deviations, observations, or notes" style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:16px !important;font-family:inherit;color:var(--text);background:var(--white);resize:vertical;-webkit-appearance:none;"></textarea>
-      <div class="hint" style="font-size:10px;color:var(--muted);margin-top:3px;">Optional</div>
-    </div>
-  </div>
+</main>
 
-  <div style="padding:0 10px 10px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div class="field">
-        <label>NCR Ref <span style="font-size:10px;font-weight:400;">(if reject)</span></label>
-        <input type="text" id="ncrRef" placeholder="Leave blank to auto-generate">
-      </div>
-      <div class="field">
-        <label>Deviation Ref <span style="font-size:10px;font-weight:400;">(if AWD)</span></label>
-        <input type="text" id="deviationRef" placeholder="Deviation ref no.">
-      </div>
-    </div>
+<!-- Sticky footer — screen 2 -->
+<footer class="fixed bottom-0 w-full bg-white border-t border-border p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+  <div class="max-w-md mx-auto">
+    <button id="saveBtn" disabled onclick="saveIQC()"
+      class="w-full h-[56px] bg-primary text-white rounded-[10px] font-semibold text-[16px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40">
+      <span class="material-symbols-outlined">save</span>Save IQC Result
+    </button>
   </div>
-
-  <div style="padding:0 10px 16px;">
-    <button class="btn-submit" id="saveBtn" disabled onclick="saveIQC()">SAVE IQC RECORD</button>
-  </div>
-
-  <div style="height:20px;"></div>
+</footer>
 
 </div><!-- /screen2 -->
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* ────────────────────────────────────────────────
-   CONSTANTS
-──────────────────────────────────────────────── */
+/* ── Constants ── */
 var IQC_PARAMS = [
-  {id:'qty',   label:'Quantity',             spec:'As per PO'},
-  {id:'pkg',   label:'Packaging Condition',  spec:'Intact / Undamaged'},
-  {id:'colour',label:'Colour',               spec:'Per approved sample'},
-  {id:'shape', label:'Shape / Form',         spec:'Per specification'},
-  {id:'dims',  label:'Size / Dimensions',    spec:'Per spec sheet'},
-  {id:'weight',label:'Net Weight',           spec:'Per spec (calibrated balance)'},
-  {id:'clean', label:'Cleanliness',          spec:'No contamination'},
-  {id:'odour', label:'Odour',                spec:'Normal / None'},
-  {id:'label', label:'Label Accuracy',       spec:'Matches PO / Spec'},
-  {id:'msds',  label:'MSDS / SDS Available', spec:'Received'},
-  {id:'shelf', label:'Shelf Life / Expiry',  spec:'Min 75% remaining'},
-  {id:'coa',   label:'COA / Test Report',    spec:'Received & Verified'}
+  {id:'qty',    label:'Quantity',             spec:'As per PO'},
+  {id:'pkg',    label:'Packaging Condition',  spec:'Intact / Undamaged'},
+  {id:'colour', label:'Colour',               spec:'Per approved sample'},
+  {id:'shape',  label:'Shape / Form',         spec:'Per specification'},
+  {id:'dims',   label:'Size / Dimensions',    spec:'Per spec sheet'},
+  {id:'weight', label:'Net Weight',           spec:'Per spec (calibrated balance)'},
+  {id:'clean',  label:'Cleanliness',          spec:'No contamination'},
+  {id:'odour',  label:'Odour',                spec:'Normal / None'},
+  {id:'label',  label:'Label Accuracy',       spec:'Matches PO / Spec'},
+  {id:'msds',   label:'MSDS / SDS Available', spec:'Received'},
+  {id:'shelf',  label:'Shelf Life / Expiry',  spec:'Min 75% remaining'},
+  {id:'coa',    label:'COA / Test Report',    spec:'Received & Verified'}
 ];
 
-/* ────────────────────────────────────────────────
-   STATE
-──────────────────────────────────────────────── */
+/* ── State ── */
 var formSaved    = false;
-
-/* Prefill data (from sessionStorage.grnPrefill) */
-var prefill      = null;   /* { supplierId, supplierName, itemCode, itemName, batchNo, grnId } */
-
-/* Form init data */
-var initData     = null;   /* { docNumber, recentGRNs, inspectors, aqlLevels, defaultAql, today } */
+var prefill      = null;
+var initData     = null;
 var GRN_MAP      = {};
-
-/* Item state */
-var currentItems = [];     /* [{materialDesc, batchNo, qtyReceived, unit}] */
-var currentIdx   = 0;      /* index of item being inspected */
-var itemData     = [];     /* per-item: {params:{}, sampleSize, acceptedQty, rejectedQty, disp} */
-
-/* Summary */
+var currentItems = [];
+var currentIdx   = 0;
+var itemData     = [];
 var overallDisp  = '';
 
-/* ────────────────────────────────────────────────
-   INIT
-──────────────────────────────────────────────── */
+/* ── Init ── */
 document.addEventListener('DOMContentLoaded', function() {
-  /* Read and clear prefill immediately */
   var pfRaw = sessionStorage.getItem('grnPrefill');
   if (pfRaw) {
     sessionStorage.removeItem('grnPrefill');
     try { prefill = JSON.parse(pfRaw); } catch(e) { prefill = null; }
   }
 
-  /* Set today's date */
   var today = new Date();
-  var yyyy  = today.getFullYear();
-  var mm    = ('0' + (today.getMonth() + 1)).slice(-2);
-  var dd    = ('0' + today.getDate()).slice(-2);
-  var todayStr = yyyy + '-' + mm + '-' + dd;
-  document.getElementById('dateField').value = todayStr;
+  document.getElementById('dateField').value =
+    today.getFullYear() + '-' +
+    ('0'+(today.getMonth()+1)).slice(-2) + '-' +
+    ('0'+today.getDate()).slice(-2);
 
-  /* Wire static events */
   document.getElementById('s1BackBtn').addEventListener('click', onScreen1Back);
   document.getElementById('s2BackBtn').addEventListener('click', onScreen2Back);
   document.getElementById('grnNo').addEventListener('change', onGRNChange);
@@ -601,245 +342,269 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('acceptedQty').addEventListener('input', saveQtyState);
   document.getElementById('rejectedQty').addEventListener('input', saveQtyState);
 
-  /* Load init data */
   google.script.run
     .withSuccessHandler(onInitLoaded)
     .withFailureHandler(function(e) { showToast(e.message || 'Load error', 'error'); })
     .getIQCFormInit();
 });
 
-window.addEventListener('beforeunload', function() {});
-
-/* ────────────────────────────────────────────────
-   INIT LOADED
-──────────────────────────────────────────────── */
+/* ── Init loaded ── */
 function onInitLoaded(d) {
   initData = d;
-  document.getElementById('docBadge').textContent = d.docNumber || 'IQC';
+  if (d.docNumber) {
+    document.getElementById('docBadge').textContent = d.docNumber;
+    var dn = document.getElementById('iqcDocNo');
+    dn.textContent = 'IQC No. ' + d.docNumber;
+    dn.classList.remove('hidden');
+  }
 
-  /* Populate inspector select */
   var iSel = document.getElementById('inspector');
-  var inspectors = d.inspectors || [];
-  for (var i = 0; i < inspectors.length; i++) {
-    var ins = inspectors[i];
+  (d.inspectors || []).forEach(function(ins) {
     var o = document.createElement('option');
     o.value = ins.name || ins;
     o.textContent = ins.name ? (ins.name + (ins.role ? ' — ' + ins.role : '')) : ins;
     iSel.appendChild(o);
-  }
-  /* Pre-select if QMS operator name matches an option */
+  });
   var opName = window.QMS ? window.QMS.getOperatorName() : '';
   if (opName) iSel.value = opName;
 
-  /* Populate AQL select */
   var aqlSel = document.getElementById('aqlLevel');
-  var aqlLevels = d.aqlLevels || [];
-  if (aqlLevels.length) {
+  if ((d.aqlLevels || []).length) {
     aqlSel.innerHTML = '';
-    for (var j = 0; j < aqlLevels.length; j++) {
+    d.aqlLevels.forEach(function(a) {
       var ao = document.createElement('option');
-      ao.value = aqlLevels[j];
-      ao.textContent = aqlLevels[j];
-      if (aqlLevels[j] === d.defaultAql) ao.selected = true;
+      ao.value = a; ao.textContent = a;
+      if (a === d.defaultAql) ao.selected = true;
       aqlSel.appendChild(ao);
-    }
+    });
   }
 
-  /* Build GRN map */
-  var grns = d.recentGRNs || [];
   var gSel = document.getElementById('grnNo');
-  for (var k = 0; k < grns.length; k++) {
-    var g = grns[k];
+  (d.recentGRNs || []).forEach(function(g) {
     GRN_MAP[g.grnNo] = g;
     var go = document.createElement('option');
     go.value = g.grnNo;
-    go.textContent = g.grnNo + ' | ' + (g.supplierName || '').substring(0, 24) +
-      (g.date ? ' (' + g.date + ')' : '');
+    go.textContent = g.grnNo + ' — ' + (g.supplierName || '').substring(0,24) + (g.date ? ' (' + g.date + ')' : '');
     gSel.appendChild(go);
-  }
+  });
 
-  /* Set today date from server if provided */
-  if (d.today) {
-    document.getElementById('dateField').value = d.today;
-  }
+  if (d.today) document.getElementById('dateField').value = d.today;
 
-  /* Handle prefill vs manual */
-  if (prefill && prefill.grnId) {
-    renderPrefill();
-  } else {
-    /* manual mode - show form fields, nothing more until GRN selected */
-  }
-
+  if (prefill && prefill.grnId) renderPrefill();
 }
 
-/* ────────────────────────────────────────────────
-   PREFILL MODE
-──────────────────────────────────────────────── */
+/* ── Prefill mode ── */
 function renderPrefill() {
   document.getElementById('prefillStrip').style.display = '';
   document.getElementById('manualSection').style.display = 'none';
-
-  var pf = prefill;
-  document.getElementById('pfItemName').textContent = pf.itemName || pf.itemCode || 'Item';
+  document.getElementById('pfItemName').textContent = prefill.itemName || prefill.itemCode || 'Item';
   document.getElementById('pfMeta').textContent =
-    (pf.supplierName || '') +
-    (pf.batchNo ? '  ·  Batch: ' + pf.batchNo : '') +
-    (pf.grnId   ? '  ·  GRN #' + pf.grnId : '');
+    (prefill.supplierName || '') +
+    (prefill.batchNo ? ' · Batch: ' + prefill.batchNo : '') +
+    (prefill.grnId   ? ' · GRN #' + prefill.grnId    : '');
 
-  /* Build single synthetic item */
-  var item = {
-    materialDesc: pf.itemName || pf.itemCode || 'Item',
-    batchNo:      pf.batchNo  || '',
-    qtyReceived:  '',
-    unit:         ''
-  };
-  currentItems = [item];
-  itemData = [makeBlankItemData()];
-  currentIdx = 0;
+  // Fetch full GRN items list — handles multi-item GRNs from the prefill path
+  if (prefill.grnId) {
+    google.script.run
+      .withSuccessHandler(function(items){
+        if (!items || !items.length) {
+          // Fallback: single-item synthesis from prefill payload
+          currentItems = [{
+            materialCode: prefill.itemCode || '',
+            materialDesc: prefill.itemName || prefill.itemCode || 'Item',
+            batchNo:      prefill.batchNo  || '',
+            qtyReceived:  '', unit: ''
+          }];
+        } else {
+          currentItems = items;
+        }
+        itemData   = currentItems.map(function(){ return makeBlankItemData(); });
+        currentIdx = 0;
+        document.getElementById('pfMeta').textContent =
+          (prefill.supplierName || '') +
+          ' · GRN #' + (prefill.grnId || '') +
+          ' · ' + currentItems.length + ' item' + (currentItems.length > 1 ? 's' : '');
+        renderMaterialChips();
+        renderCurrentItem();
+      })
+      .withFailureHandler(function(){
+        currentItems = [{
+          materialCode: prefill.itemCode || '',
+          materialDesc: prefill.itemName || prefill.itemCode || 'Item',
+          batchNo:      prefill.batchNo  || '', qtyReceived: '', unit: ''
+        }];
+        itemData = [makeBlankItemData()];
+        currentIdx = 0;
+        renderCurrentItem();
+      })
+      .getGRNItems(prefill.grnId);
+    return;
+  }
+
+  currentItems = [{
+    materialCode: prefill.itemCode || '',
+    materialDesc: prefill.itemName || prefill.itemCode || 'Item',
+    batchNo:      prefill.batchNo  || '',
+    qtyReceived:  '', unit: ''
+  }];
+  itemData    = [makeBlankItemData()];
+  currentIdx  = 0;
   renderCurrentItem();
 }
 
-/* ────────────────────────────────────────────────
-   GRN CHANGE
-──────────────────────────────────────────────── */
+function renderMaterialChips() {
+  var chips = document.getElementById('materialChips');
+  if (!chips) return;
+  chips.innerHTML = '';
+  currentItems.forEach(function(it, idx) {
+    var c = document.createElement('span');
+    c.className = 'inline-flex items-center px-3 py-1.5 rounded-md bg-slate-100 text-text-field text-[13px] font-medium cursor-pointer';
+    c.style.cssText = 'gap:6px;border:1px solid #cbd5e1;';
+    c.title = 'Click to inspect this item';
+    c.onclick = function(){ currentIdx = idx; renderCurrentItem(); };
+    var qty = (it.qtyReceived || 0) + ' ' + (it.unit || '');
+    c.innerHTML =
+      '<span class="material-symbols-outlined" style="font-size:16px;color:#64748b;">category</span>' +
+      '<span><b>' + (it.materialCode || '') + '</b> ' + (it.materialDesc || '') +
+      ' &nbsp;<span style="color:#64748b;">· ' + (it.batchNo || '—') + ' · ' + qty + '</span></span>';
+    chips.appendChild(c);
+  });
+}
+
+/* ── GRN change ── */
 function onGRNChange() {
   var grnNo = document.getElementById('grnNo').value;
-  var g     = GRN_MAP[grnNo];
+  var g = GRN_MAP[grnNo];
   document.getElementById('supplierField').value = g ? (g.supplierName || '') : '';
-
-  currentItems = [];
-  currentIdx   = 0;
-  itemData     = [];
+  document.getElementById('materialChips').innerHTML = '';
+  currentItems = []; currentIdx = 0; itemData = [];
   document.getElementById('paramSectionWrap').innerHTML = '';
   document.getElementById('dispCard').style.display = 'none';
   document.getElementById('itemProgressWrap').style.display = 'none';
   document.getElementById('stickyBtn').disabled = true;
   document.getElementById('stickyLabel').textContent = '—';
-
   if (!grnNo) return;
 
   google.script.run
     .withSuccessHandler(function(items) {
-      if (!items || items.length === 0) {
-        showToast('No items found for this GRN.', 'error');
-        return;
-      }
+      if (!items || !items.length) { showToast('No items found for this GRN.', 'error'); return; }
       currentItems = items;
-      for (var i = 0; i < items.length; i++) {
-        itemData.push(makeBlankItemData());
-      }
+      itemData = items.map(function() { return makeBlankItemData(); });
       currentIdx = 0;
+      renderMaterialChips();
       renderCurrentItem();
     })
     .withFailureHandler(function(e) { showToast(e.message || 'Error loading GRN items', 'error'); })
     .getGRNItems(grnNo);
 }
 
-/* ────────────────────────────────────────────────
-   ITEM RENDERING
-──────────────────────────────────────────────── */
+/* ── Item rendering ── */
 function makeBlankItemData() {
-  return {params: {}, sampleSize: 0, acceptedQty: 0, rejectedQty: 0, disp: ''};
+  return {params:{}, sampleSize:0, acceptedQty:0, rejectedQty:0, disp:''};
 }
 
 function renderCurrentItem() {
   var item  = currentItems[currentIdx];
   var total = currentItems.length;
 
-  /* Item progress bar */
+  // Progress bar
   var wrap = document.getElementById('itemProgressWrap');
   wrap.style.display = '';
-  var pct = Math.round((currentIdx + 1) / total * 100);
   document.getElementById('itemProgressLabel').textContent =
-    'Item ' + (currentIdx + 1) + ' of ' + total +
-    (item.materialDesc ? '  ·  ' + item.materialDesc : '') +
-    (item.batchNo ? '  (Batch: ' + item.batchNo + ')' : '');
-  document.getElementById('itemProgFill').style.width = pct + '%';
+    'Item ' + (currentIdx+1) + ' of ' + total +
+    (item.materialDesc ? ' · ' + item.materialDesc : '') +
+    (item.batchNo ? ' (Batch: ' + item.batchNo + ')' : '') +
+    (item.qtyReceived ? ' · GRN qty ' + item.qtyReceived + ' ' + (item.unit || '') : '');
+  document.getElementById('itemProgFill').style.width =
+    Math.round((currentIdx+1)/total*100) + '%';
 
-  /* Restore qty fields */
+  // Restore qty fields
   var d = itemData[currentIdx];
   document.getElementById('sampleSize').value  = d.sampleSize  || '';
   document.getElementById('acceptedQty').value = d.acceptedQty || '';
   document.getElementById('rejectedQty').value = d.rejectedQty || '';
 
-  /* Build param cards */
   buildParamSection();
-
-  /* Update disposition card */
   updateDispCard();
-
-  /* Sticky bar */
   updateStickyBar();
 }
 
 function buildParamSection() {
   var wrap = document.getElementById('paramSectionWrap');
   wrap.innerHTML = '';
-
-  var sec = document.createElement('div');
-  sec.className = 'params-section';
-
-  var titleBar = document.createElement('div');
-  titleBar.className = 'params-section-title';
-  titleBar.id = 'paramSectionTitle';
-  titleBar.textContent = 'INSPECTION PARAMETERS';
-  sec.appendChild(titleBar);
-
   var d = itemData[currentIdx];
 
-  for (var i = 0; i < IQC_PARAMS.length; i++) {
-    var p    = IQC_PARAMS[i];
-    var val  = d.params[p.id] || '';
+  var card = document.createElement('section');
+  card.className = 'bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border border-l-4 border-l-accent flex flex-col gap-3 p-4';
 
+  // Material info chips
+  var item = currentItems[currentIdx];
+  var infoRow = document.createElement('div');
+  infoRow.className = 'flex flex-wrap gap-2';
+  [item.materialCode, item.materialDesc, item.batchNo ? 'Batch: '+item.batchNo : null, item.qtyReceived ? item.qtyReceived+' '+(item.unit||'') : null]
+    .filter(Boolean).forEach(function(t) {
+      var s = document.createElement('span');
+      s.className = 'bg-slate-100 text-text-field px-2.5 py-1 rounded text-[13px] font-medium';
+      s.textContent = t;
+      infoRow.appendChild(s);
+    });
+  card.appendChild(infoRow);
+
+  // Parameters heading
+  var h = document.createElement('h3');
+  h.id = 'paramSectionTitle';
+  h.className = 'font-headline text-[16px] font-semibold text-text-heading';
+  h.textContent = 'Inspection Parameters';
+  card.appendChild(h);
+
+  // Bulk-set bar: Set ALL PASS / FAIL / NA
+  var bulkRow = document.createElement('div');
+  bulkRow.setAttribute('style', 'display:flex;align-items:center;justify-content:space-between;background:#f0f6ff;border:1px dashed #94a3b8;border-radius:8px;padding:8px 12px;margin-bottom:4px;');
+  bulkRow.innerHTML =
+    '<span style="font-size:12px;font-weight:600;color:#0B2A4A;">Set All:</span>' +
+    '<div style="display:flex;gap:6px;">' +
+      '<button type="button" onclick="setAllParams(\'PASS\')" style="font-size:12px;font-weight:700;color:#16a34a;background:#fff;border:1.5px solid #16a34a;border-radius:6px;padding:5px 14px;cursor:pointer;">PASS</button>' +
+      '<button type="button" onclick="setAllParams(\'FAIL\')" style="font-size:12px;font-weight:700;color:#dc2626;background:#fff;border:1.5px solid #dc2626;border-radius:6px;padding:5px 14px;cursor:pointer;">FAIL</button>' +
+      '<button type="button" onclick="setAllParams(\'NA\')"   style="font-size:12px;font-weight:700;color:#64748b;background:#fff;border:1.5px solid #64748b;border-radius:6px;padding:5px 14px;cursor:pointer;">NA</button>' +
+    '</div>';
+  card.appendChild(bulkRow);
+
+  // Parameter rows
+  var grid = document.createElement('div');
+  grid.className = 'grid grid-cols-1 gap-3';
+
+  IQC_PARAMS.forEach(function(p, i) {
+    var val = d.params[p.id] || '';
     var row = document.createElement('div');
-    row.className = 'param-row-iqc' + getRowClass(val);
     row.id = 'paramRow_' + p.id;
+    row.className = 'flex items-center justify-between h-[48px] bg-white border border-slate-200 rounded-lg px-3' +
+      (val === 'PASS' ? ' param-row-pass' : val === 'FAIL' ? ' param-row-fail' : val === 'NA' ? ' param-row-na' : '');
 
-    var nameDiv = document.createElement('div');
-    nameDiv.className = 'param-name';
-    nameDiv.textContent = p.label;
+    var lbl = document.createElement('span');
+    lbl.className = 'text-[14px] font-medium text-text-field truncate pr-2' + (val === 'FAIL' ? ' text-status-fail' : '');
+    lbl.textContent = (i+1) + '. ' + p.label;
 
-    var specDiv = document.createElement('div');
-    specDiv.className = 'param-spec';
-    specDiv.textContent = p.spec;
+    var btns = document.createElement('div');
+    btns.className = 'flex gap-1 shrink-0';
 
-    var toggleDiv = document.createElement('div');
-    toggleDiv.className = 'param-toggle';
+    ['PASS','FAIL','NA'].forEach(function(v) {
+      var b = document.createElement('button');
+      b.textContent = v;
+      b.className = 'px-2.5 py-1 rounded-md text-[12px] font-semibold border transition-all active:scale-95 ' +
+        (val === v
+          ? (v==='PASS' ? 'btn-pass-active' : v==='FAIL' ? 'btn-fail-active' : 'btn-na-active')
+          : 'bg-slate-100 text-text-helper border-slate-200');
+      b.onclick = makeParamHandler(p.id, v);
+      btns.appendChild(b);
+    });
 
-    var passBtn = document.createElement('button');
-    passBtn.textContent = 'PASS';
-    passBtn.className = val === 'PASS' ? 'sel-pass' : '';
-    passBtn.setAttribute('data-param', p.id);
-    passBtn.setAttribute('data-val', 'PASS');
-    passBtn.onclick = makeParamHandler(p.id, 'PASS');
+    row.appendChild(lbl);
+    row.appendChild(btns);
+    grid.appendChild(row);
+  });
 
-    var failBtn = document.createElement('button');
-    failBtn.textContent = 'FAIL';
-    failBtn.className = val === 'FAIL' ? 'sel-fail' : '';
-    failBtn.setAttribute('data-param', p.id);
-    failBtn.setAttribute('data-val', 'FAIL');
-    failBtn.onclick = makeParamHandler(p.id, 'FAIL');
-
-    var naBtn = document.createElement('button');
-    naBtn.textContent = 'NA';
-    naBtn.className = val === 'NA' ? 'sel-na' : '';
-    naBtn.setAttribute('data-param', p.id);
-    naBtn.setAttribute('data-val', 'NA');
-    naBtn.onclick = makeParamHandler(p.id, 'NA');
-
-    toggleDiv.appendChild(passBtn);
-    toggleDiv.appendChild(failBtn);
-    toggleDiv.appendChild(naBtn);
-
-    row.appendChild(nameDiv);
-    row.appendChild(specDiv);
-    row.appendChild(toggleDiv);
-
-    sec.appendChild(row);
-  }
-
-  wrap.appendChild(sec);
-
+  card.appendChild(grid);
+  wrap.appendChild(card);
   document.getElementById('dispCard').style.display = '';
   updateParamSectionTitle();
 }
@@ -849,106 +614,54 @@ function makeParamHandler(paramId, val) {
 }
 
 function setParam(paramId, val) {
-  var d = itemData[currentIdx];
-  d.params[paramId] = val;
-
-  /* Update row class */
+  itemData[currentIdx].params[paramId] = val;
   var row = document.getElementById('paramRow_' + paramId);
   if (row) {
-    row.className = 'param-row-iqc' + getRowClass(val);
-    if (val === 'FAIL') {
-      /* Trigger shake by toggling a class */
-      row.style.animation = 'none';
-      /* Force reflow */
-      void row.offsetHeight;
-      row.style.animation = 'shake 0.3s ease';
-    }
+    row.className = 'flex items-center justify-between h-[48px] bg-white border border-slate-200 rounded-lg px-3' +
+      (val==='PASS' ? ' param-row-pass' : val==='FAIL' ? ' param-row-fail' : val==='NA' ? ' param-row-na' : '');
+    var lbl = row.querySelector('span');
+    if (lbl) lbl.className = 'text-[14px] font-medium truncate pr-2' + (val==='FAIL' ? ' text-status-fail' : ' text-text-field');
+    row.querySelectorAll('button').forEach(function(b) {
+      var bv = b.textContent.trim();
+      b.className = 'px-2.5 py-1 rounded-md text-[12px] font-semibold border transition-all active:scale-95 ' +
+        (bv === val
+          ? (val==='PASS' ? 'btn-pass-active' : val==='FAIL' ? 'btn-fail-active' : 'btn-na-active')
+          : 'bg-slate-100 text-text-helper border-slate-200');
+    });
   }
-
-  /* Update button states */
-  var btns = row ? row.querySelectorAll('.param-toggle button') : [];
-  for (var i = 0; i < btns.length; i++) {
-    var bv = btns[i].getAttribute('data-val');
-    btns[i].className = bv === val ? getSelClass(val) : '';
-  }
-
   updateParamSectionTitle();
   updateDispCard();
   updateStickyBar();
 }
 
-function getRowClass(val) {
-  if (val === 'PASS') return ' row-pass';
-  if (val === 'FAIL') return ' row-fail';
-  if (val === 'NA')   return ' row-na';
-  return '';
-}
-
-function getSelClass(val) {
-  if (val === 'PASS') return 'sel-pass';
-  if (val === 'FAIL') return 'sel-fail';
-  if (val === 'NA')   return 'sel-na';
-  return '';
+function setAllParams(val) {
+  IQC_PARAMS.forEach(function(p){ setParam(p.id, val); });
 }
 
 function allParamsFilled() {
   var d = itemData[currentIdx];
-  for (var i = 0; i < IQC_PARAMS.length; i++) {
-    if (!d.params[IQC_PARAMS[i].id]) return false;
-  }
-  return true;
+  return IQC_PARAMS.every(function(p) { return !!d.params[p.id]; });
 }
 
 function updateParamSectionTitle() {
-  var titleBar = document.getElementById('paramSectionTitle');
-  if (!titleBar) return;
-  if (allParamsFilled()) {
-    titleBar.className = 'params-section-title all-done';
-    titleBar.textContent = 'INSPECTION PARAMETERS';
-  } else {
-    titleBar.className = 'params-section-title';
-    titleBar.textContent = 'INSPECTION PARAMETERS';
-  }
+  var t = document.getElementById('paramSectionTitle');
+  if (!t) return;
+  var filled = IQC_PARAMS.filter(function(p) { return !!itemData[currentIdx].params[p.id]; }).length;
+  t.textContent = 'Inspection Parameters (' + filled + '/' + IQC_PARAMS.length + ')';
+  t.style.color = allParamsFilled() ? '#16a34a' : '';
 }
 
-function countFilled() {
-  var d = itemData[currentIdx];
-  var n = 0;
-  for (var i = 0; i < IQC_PARAMS.length; i++) {
-    if (d.params[IQC_PARAMS[i].id]) n++;
-  }
-  return n;
-}
-
-/* ────────────────────────────────────────────────
-   DISPOSITION CARD (per item)
-──────────────────────────────────────────────── */
+/* ── Disposition card ── */
 function updateDispCard() {
   var locked   = document.getElementById('dispLocked');
   var grid     = document.getElementById('dispGrid');
-  var allFilled = allParamsFilled();
-
-  if (!allFilled) {
-    locked.style.display = '';
-    grid.style.display   = 'none';
-    return;
-  }
-
-  locked.style.display = 'none';
-  grid.style.display   = '';
-
-  /* Auto-select if not already chosen for this item */
+  if (!allParamsFilled()) { locked.style.display=''; grid.style.display='none'; return; }
+  locked.style.display = 'none'; grid.style.display = '';
   var d = itemData[currentIdx];
   if (!d.disp) {
-    var anyFail = false;
-    var anyPass = false;
-    for (var i = 0; i < IQC_PARAMS.length; i++) {
-      var v = d.params[IQC_PARAMS[i].id];
-      if (v === 'FAIL') { anyFail = true; break; }
-      if (v === 'PASS') anyPass = true;
-    }
-    var autoDisp = anyFail ? 'REJECTED' : (anyPass ? 'ACCEPTED' : 'HOLD');
-    d.disp = autoDisp;
+    var anyFail = IQC_PARAMS.some(function(p) { return d.params[p.id]==='FAIL'; });
+    var anyPass = IQC_PARAMS.some(function(p) { return d.params[p.id]==='PASS'; });
+    d.disp = anyFail ? 'REJECTED' : (anyPass ? 'ACCEPTED' : 'HOLD');
   }
   renderItemDispButtons(d.disp);
 }
@@ -961,11 +674,13 @@ function setItemDisp(val) {
 
 function renderItemDispButtons(val) {
   var map = {dAcc:'ACCEPTED', dRej:'REJECTED', dHld:'HOLD', dAwd:'AWD'};
-  var activeMap = {ACCEPTED:'active-acc', REJECTED:'active-rej', HOLD:'active-hld', AWD:'active-awd'};
-  for (var id in map) {
+  var cls = {ACCEPTED:'disp-acc-active', REJECTED:'disp-rej-active', HOLD:'disp-hld-active', AWD:'disp-awd-active'};
+  Object.keys(map).forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.className = 'disp-btn' + (map[id] === val ? ' ' + (activeMap[val] || '') : '');
-  }
+    if (!el) return;
+    var base = el.className.replace(/disp-\w+-active/g,'').trim();
+    el.className = base + (map[id]===val ? ' ' + (cls[val]||'') : '');
+  });
 }
 
 function saveQtyState() {
@@ -976,165 +691,102 @@ function saveQtyState() {
   d.rejectedQty = parseFloat(document.getElementById('rejectedQty').value) || 0;
 }
 
-/* ────────────────────────────────────────────────
-   STICKY BAR
-──────────────────────────────────────────────── */
+/* ── Sticky bar ── */
 function updateStickyBar() {
-  var total   = currentItems.length;
-  var label   = document.getElementById('stickyLabel');
-  var btn     = document.getElementById('stickyBtn');
-
-  label.textContent = 'Item ' + (currentIdx + 1) + ' of ' + total;
-
-  var isLast  = currentIdx >= total - 1;
-  btn.textContent = isLast ? 'Review Summary →' : 'Next Item →';
-
+  var total  = currentItems.length;
+  var label  = document.getElementById('stickyLabel');
+  var btn    = document.getElementById('stickyBtn');
+  label.textContent = 'Item ' + (currentIdx+1) + ' of ' + total;
+  var isLast = currentIdx >= total - 1;
+  btn.innerHTML = isLast
+    ? 'Review Summary <span class="material-symbols-outlined text-[18px]">arrow_forward</span>'
+    : 'Next Item <span class="material-symbols-outlined text-[18px]">arrow_forward</span>';
   var d = itemData[currentIdx];
-  var dispSet = allParamsFilled() && d.disp;
-  btn.disabled = !dispSet;
+  btn.disabled = !(allParamsFilled() && d.disp);
 }
 
 function onStickyTap() {
   saveQtyState();
-
   var d = itemData[currentIdx];
   if (!d.disp) {
-    /* Pulse amber on disp card */
     var card = document.getElementById('dispCard');
-    if (card) {
-      card.classList.remove('pulse-amber');
-      void card.offsetHeight;
-      card.classList.add('pulse-amber');
-      setTimeout(function() { card.classList.remove('pulse-amber'); }, 500);
-    }
+    if (card) { card.classList.remove('pulse-amber'); void card.offsetHeight; card.classList.add('pulse-amber'); setTimeout(function(){card.classList.remove('pulse-amber');},500); }
     return;
   }
-
-  var total  = currentItems.length;
-  var isLast = currentIdx >= total - 1;
-
-  if (isLast) {
-    showSummary();
-  } else {
-    currentIdx++;
-    renderCurrentItem();
-    window.scrollTo(0, 0);
-  }
+  if (currentIdx >= currentItems.length - 1) { showSummary(); }
+  else { currentIdx++; renderCurrentItem(); window.scrollTo(0,0); }
 }
 
-/* ────────────────────────────────────────────────
-   BACK NAVIGATION
-──────────────────────────────────────────────── */
+/* ── Back navigation ── */
 function onScreen1Back() {
   if (!formSaved && currentItems.length > 0) {
     if (!confirm('Leave IQC? Unsaved data will be lost.')) return;
   }
   goHome();
 }
-
 function onScreen2Back() {
-  /* Return to last item */
   currentIdx = currentItems.length - 1;
   document.getElementById('screen2').style.display = 'none';
   document.getElementById('screen1').style.display = '';
   renderCurrentItem();
-  window.scrollTo(0, 0);
+  window.scrollTo(0,0);
 }
 
-/* ────────────────────────────────────────────────
-   SUMMARY SCREEN
-──────────────────────────────────────────────── */
+/* ── Summary ── */
 function showSummary() {
-  /* Batch info */
   var firstItem = currentItems[0] || {};
-  var sup = prefill ? (prefill.supplierName || '') :
-    (document.getElementById('supplierField').value || '');
-  var batchNo = prefill ? (prefill.batchNo || '') : (firstItem.batchNo || '');
-  var itemName = prefill ? (prefill.itemName || firstItem.materialDesc || '') : (firstItem.materialDesc || '');
-
-  document.getElementById('sumBatchName').textContent =
-    itemName + (sup ? ' — ' + sup : '');
-
-  var today = document.getElementById('dateField').value || '';
+  var sup = prefill ? (prefill.supplierName||'') : document.getElementById('supplierField').value;
+  var batchNo  = prefill ? (prefill.batchNo||'') : (firstItem.batchNo||'');
+  var itemName = prefill ? (prefill.itemName||firstItem.materialDesc||'') : (firstItem.materialDesc||'');
+  document.getElementById('sumBatchName').textContent = itemName + (sup ? ' — '+sup : '');
   document.getElementById('sumBatchMeta').textContent =
-    'Batch ' + (batchNo || '—') +
-    ' · ' + currentItems.length + ' item' + (currentItems.length !== 1 ? 's' : '') +
-    ' · ' + today;
+    'Batch '+(batchNo||'—')+' · '+currentItems.length+' item'+(currentItems.length!==1?'s':'')+' · '+(document.getElementById('dateField').value||'');
 
-  /* Items list */
   var listEl = document.getElementById('sumItemsList');
   listEl.innerHTML = '';
-  for (var i = 0; i < currentItems.length; i++) {
-    listEl.appendChild(makeSummaryItemRow(i));
-  }
+  currentItems.forEach(function(_, i) { listEl.appendChild(makeSummaryItemRow(i)); });
 
-  /* Auto-select overall disposition (worst-case) */
-  var hasReject = false;
-  var hasHold   = false;
-  var hasAwd    = false;
-  for (var j = 0; j < itemData.length; j++) {
-    var dv = itemData[j].disp;
-    if (dv === 'REJECTED') { hasReject = true; break; }
-    if (dv === 'HOLD')     hasHold = true;
-    if (dv === 'AWD')      hasAwd  = true;
-  }
-  var autoOD = hasReject ? 'REJECTED' :
-               hasHold   ? 'HOLD' :
-               hasAwd    ? 'AWD' : 'ACCEPTED';
-  setOverallDisp(autoOD);
+  var hasReject = itemData.some(function(d){ return d.disp==='REJECTED'; });
+  var hasHold   = itemData.some(function(d){ return d.disp==='HOLD'; });
+  var hasAwd    = itemData.some(function(d){ return d.disp==='AWD'; });
+  setOverallDisp(hasReject?'REJECTED':hasHold?'HOLD':hasAwd?'AWD':'ACCEPTED');
 
   document.getElementById('screen1').style.display = 'none';
   document.getElementById('screen2').style.display = '';
-  window.scrollTo(0, 0);
+  window.scrollTo(0,0);
 }
 
 function makeSummaryItemRow(idx) {
-  var item = currentItems[idx];
-  var d    = itemData[idx];
-
-  /* Count pass percentage */
-  var passCount = 0;
-  var total     = IQC_PARAMS.length;
-  for (var i = 0; i < total; i++) {
-    if (d.params[IQC_PARAMS[i].id] === 'PASS') passCount++;
-  }
-  var passPct = total > 0 ? Math.round(passCount / total * 100) : 0;
+  var d = itemData[idx];
+  var passCount = IQC_PARAMS.filter(function(p){ return d.params[p.id]==='PASS'; }).length;
+  var passPct   = Math.round(passCount/IQC_PARAMS.length*100);
 
   var row = document.createElement('div');
-  row.className = 'item-row-summary';
-  (function(capturedIdx) {
-    row.onclick = function() { goToItem(capturedIdx); };
-  })(idx);
+  row.className = 'flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-slate-50 active:bg-slate-100';
+  row.onclick = (function(i){ return function(){ goToItem(i); }; })(idx);
 
-  var labelEl = document.createElement('div');
-  labelEl.className = 'sum-item-label';
-  labelEl.textContent = 'Item ' + (idx + 1);
+  var lbl = document.createElement('div');
+  lbl.className = 'text-[13px] font-semibold text-text-field w-14 shrink-0';
+  lbl.textContent = 'Item '+(idx+1);
 
   var barWrap = document.createElement('div');
-  barWrap.className = 'sum-item-bar-wrap';
+  barWrap.className = 'flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden';
   var barFill = document.createElement('div');
-  barFill.className = 'sum-item-bar-fill';
-  barFill.style.width = passPct + '%';
+  barFill.className = 'h-full bg-status-pass rounded-full';
+  barFill.style.width = passPct+'%';
   barWrap.appendChild(barFill);
 
   var right = document.createElement('div');
-  right.className = 'sum-item-right';
-
+  right.className = 'flex items-center gap-2 shrink-0';
   var badge = document.createElement('span');
-  badge.className = 'disp-badge ' + getDispBadgeClass(d.disp);
+  badge.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full ' + getDispBadgeClass(d.disp);
   badge.textContent = dispLabel(d.disp);
+  var editIco = document.createElement('span');
+  editIco.className = 'material-symbols-outlined text-[16px] text-text-helper';
+  editIco.textContent = 'edit';
+  right.appendChild(badge); right.appendChild(editIco);
 
-  var editIcon = document.createElement('span');
-  editIcon.className = 'sum-edit-icon';
-  editIcon.textContent = '✎';
-
-  right.appendChild(badge);
-  right.appendChild(editIcon);
-
-  row.appendChild(labelEl);
-  row.appendChild(barWrap);
-  row.appendChild(right);
-
+  row.appendChild(lbl); row.appendChild(barWrap); row.appendChild(right);
   return row;
 }
 
@@ -1142,100 +794,70 @@ function goToItem(idx) {
   currentIdx = idx;
   document.getElementById('screen2').style.display = 'none';
   document.getElementById('screen1').style.display = '';
-  renderCurrentItem();
-  window.scrollTo(0, 0);
+  renderCurrentItem(); window.scrollTo(0,0);
 }
 
 function getDispBadgeClass(disp) {
-  if (disp === 'ACCEPTED') return 'disp-badge-acc';
-  if (disp === 'REJECTED') return 'disp-badge-rej';
-  if (disp === 'HOLD')     return 'disp-badge-hld';
-  if (disp === 'AWD')      return 'disp-badge-awd';
-  return 'disp-badge-none';
+  return disp==='ACCEPTED'?'badge-acc':disp==='REJECTED'?'badge-rej':disp==='HOLD'?'badge-hld':disp==='AWD'?'badge-awd':'badge-none';
 }
-
 function dispLabel(disp) {
-  if (disp === 'ACCEPTED') return 'ACCEPT';
-  if (disp === 'REJECTED') return 'REJECT';
-  if (disp === 'HOLD')     return 'HOLD';
-  if (disp === 'AWD')      return 'AWD';
-  return '—';
+  return disp==='ACCEPTED'?'ACCEPT':disp==='REJECTED'?'REJECT':disp==='HOLD'?'HOLD':disp==='AWD'?'AWD':'—';
 }
 
-/* ────────────────────────────────────────────────
-   OVERALL DISPOSITION
-──────────────────────────────────────────────── */
+/* ── Overall disposition ── */
 function setOverallDisp(val) {
   overallDisp = val;
   var map = {odAcc:'ACCEPTED', odRej:'REJECTED', odHld:'HOLD', odAwd:'AWD'};
-  var activeMap = {ACCEPTED:'active-acc', REJECTED:'active-rej', HOLD:'active-hld', AWD:'active-awd'};
-  for (var id in map) {
+  var cls = {ACCEPTED:'disp-acc-active', REJECTED:'disp-rej-active', HOLD:'disp-hld-active', AWD:'disp-awd-active'};
+  Object.keys(map).forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.className = 'disp-btn' + (map[id] === val ? ' ' + (activeMap[val] || '') : '');
-  }
+    if (!el) return;
+    var base = el.className.replace(/disp-\w+-active/g,'').trim();
+    el.className = base + (map[id]===val ? ' '+(cls[val]||'') : '');
+  });
   document.getElementById('saveBtn').disabled = false;
 }
 
-/* ────────────────────────────────────────────────
-   SAVE
-──────────────────────────────────────────────── */
+/* ── Save ── */
 function saveIQC() {
   if (!overallDisp) { showToast('Please select overall disposition.', 'error'); return; }
-
-  /* Ensure operator is identified before saving */
   if (window.QMS && !window.QMS.getOperatorName()) {
-    var inspList = (initData && initData.inspectors)
-      ? initData.inspectors.map(function(i) { return i.name || i; })
-      : [];
-    window.QMS.requireOperator(inspList, function() { doSaveIQC(); });
+    var inspList = (initData && initData.inspectors) ? initData.inspectors.map(function(i){ return i.name||i; }) : [];
+    window.QMS.requireOperator(inspList, function(){ doSaveIQC(); });
     return;
   }
   doSaveIQC();
 }
 
 function doSaveIQC() {
-
   var btn = document.getElementById('saveBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
-  /* Build items array */
-  var items = [];
-  for (var i = 0; i < currentItems.length; i++) {
-    var ci   = currentItems[i];
-    var d    = itemData[i] || {};
+  var items = currentItems.map(function(ci, i) {
+    var d = itemData[i] || {};
     var pmap = d.params || {};
-    items.push({
-      materialDesc: ci.materialDesc || '',
-      batchNo:      ci.batchNo      || '',
-      sampleSize:   d.sampleSize    || 0,
-      acceptedQty:  d.acceptedQty   || 0,
-      rejectedQty:  d.rejectedQty   || 0,
+    return {
+      materialDesc: ci.materialDesc||'',
+      batchNo:      ci.batchNo||'',
+      sampleSize:   d.sampleSize||0,
+      acceptedQty:  d.acceptedQty||0,
+      rejectedQty:  d.rejectedQty||0,
       params: {
-        qty:    pmap.qty    || 'NA',
-        pkg:    pmap.pkg    || 'NA',
-        colour: pmap.colour || 'NA',
-        shape:  pmap.shape  || 'NA',
-        dims:   pmap.dims   || 'NA',
-        weight: pmap.weight || 'NA',
-        clean:  pmap.clean  || 'NA',
-        odour:  pmap.odour  || 'NA',
-        label:  pmap.label  || 'NA',
-        msds:   pmap.msds   || 'NA',
-        shelf:  pmap.shelf  || 'NA',
-        coa:    pmap.coa    || 'NA'
+        qty:    pmap.qty    ||'NA', pkg:    pmap.pkg    ||'NA',
+        colour: pmap.colour ||'NA', shape:  pmap.shape  ||'NA',
+        dims:   pmap.dims   ||'NA', weight: pmap.weight ||'NA',
+        clean:  pmap.clean  ||'NA', odour:  pmap.odour  ||'NA',
+        label:  pmap.label  ||'NA', msds:   pmap.msds   ||'NA',
+        shelf:  pmap.shelf  ||'NA', coa:    pmap.coa    ||'NA'
       }
-    });
-  }
-
-  var firstItem = currentItems[0] || {};
-  var grnNoVal  = prefill ? (prefill.grnId || '') : document.getElementById('grnNo').value;
-  var supVal    = prefill ? (prefill.supplierName || '') : document.getElementById('supplierField').value;
+    };
+  });
 
   var data = {
     date:         document.getElementById('dateField').value,
-    grnNo:        grnNoVal,
-    supplierName: supVal,
+    grnNo:        prefill ? (prefill.grnId||'') : document.getElementById('grnNo').value,
+    supplierName: prefill ? (prefill.supplierName||'') : document.getElementById('supplierField').value,
     inspector:    document.getElementById('inspector').value,
     aqlLevel:     document.getElementById('aqlLevel').value,
     sampleId:     document.getElementById('sampleId').value,
@@ -1252,30 +874,43 @@ function doSaveIQC() {
       if (res && res.success) {
         formSaved = true;
         showToast('IQC record saved', 'success');
-        setTimeout(function() { goHome(); }, 1500);
+        var hasWarnings = (res.warnings && res.warnings.length) || res.ncrError;
+        if (hasWarnings) {
+          var msgs = (res.warnings && res.warnings.length) ? res.warnings : [res.ncrError];
+          setTimeout(function(){ showToast('⚠ ' + msgs.join(' | '), 'warning'); }, 600);
+          setTimeout(function(){ goHome(); }, 5000);
+        } else {
+          setTimeout(function(){ goHome(); }, 1500);
+        }
       } else {
-        showToast('Error: ' + ((res && res.error) || 'Unknown error'), 'error');
+        showToast('Error: '+((res&&res.error)||'Unknown error'), 'error');
         btn.disabled = false;
-        btn.textContent = 'SAVE IQC RECORD';
+        btn.innerHTML = '<span class="material-symbols-outlined">save</span>Save IQC Result';
       }
     })
     .withFailureHandler(function(e) {
-      showToast(e.message || 'Save failed', 'error');
+      showToast(e.message||'Save failed', 'error');
       btn.disabled = false;
-      btn.textContent = 'SAVE IQC RECORD';
+      btn.innerHTML = '<span class="material-symbols-outlined">save</span>Save IQC Result';
     })
     .saveIQC(data);
 }
 
-/* ────────────────────────────────────────────────
-   UTILITIES
-──────────────────────────────────────────────── */
+/* ── Utilities ── */
+function goHome() {
+  google.script.run
+    .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+    .withFailureHandler(function(){})
+    .getFormHtml('Landing');
+}
+
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  setTimeout(function() { t.className = 'toast'; }, 3500);
+  t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(function(){ t.className = 'toast'; }, 3500);
 }
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

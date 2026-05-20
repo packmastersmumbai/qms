@@ -1,19 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <!-- Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Material Symbols Outlined -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+  <!-- Tailwind CSS with Forms plugin -->
   <style>
-    body { max-width: 480px; margin: 0 auto; }
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "Plus Jakarta Sans", sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+    }
 
     /* ── Loading overlay ── */
     #loading {
       position: fixed; inset: 0;
-      background: rgba(13,27,110,0.88);
+      background: rgba(30,58,95,0.92);
       display: flex; align-items: center; justify-content: center;
       flex-direction: column; gap: 14px; z-index: 99999;
       transition: opacity 0.3s;
@@ -22,398 +41,326 @@
     .load-spinner {
       width: 36px; height: 36px;
       border: 3px solid rgba(255,255,255,0.25);
-      border-top-color: var(--amber);
+      border-top-color: #f59e0b;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-    #loading p { color: rgba(255,255,255,0.8); font-size: 13px; margin: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: rgba(255,255,255,0.85); font-size: 13px; margin: 0; }
 
-    /* ── Screen A: Home ── */
-    .home-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-
-    .home-hero {
-      background: var(--navy);
-      border-radius: 12px;
-      padding: 22px 18px 20px;
-      color: var(--white);
-      text-align: center;
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1e3a5f; color: #fff;
+      padding: 10px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 99998; white-space: nowrap;
+      max-width: calc(100vw - 32px);
     }
-    .home-hero .hero-icon { font-size: 32px; display: block; margin-bottom: 8px; }
-    .home-hero h2 { font-size: 20px; font-weight: 700; margin: 0; }
-    .home-hero p  { font-size: 12px; color: rgba(255,255,255,0.6); margin: 4px 0 0; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: #16a34a; }
+    .toast.error   { background: #dc2626; }
+    .toast.warning { background: #d97706; }
 
-    .btn-play {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      height: 56px;
-      background: var(--amber);
-      color: var(--navy);
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      transition: opacity 0.15s;
-    }
-    .btn-play:active { opacity: 0.82; }
-    .play-icon {
-      width: 28px; height: 28px;
-      background: var(--navy);
+    /* ── Spinner inside button ── */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
       border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+      animation: spin 0.7s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
     }
-    .play-icon svg { width: 14px; height: 14px; fill: var(--amber); margin-left: 2px; }
 
-    .sessions-card {
-      background: var(--white);
-      border-radius: 10px;
-      box-shadow: var(--shadow-1);
-      overflow: hidden;
-    }
-    .sessions-card-hdr {
-      background: var(--navy-light);
-      padding: 8px 14px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--navy);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .session-item {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.12s;
-      touch-action: manipulation;
-    }
-    .session-item:last-child { border-bottom: none; }
-    .session-item:active { background: var(--navy-light); }
-    .si-top { display: flex; align-items: center; justify-content: space-between; }
-    .si-name { font-size: 13px; font-weight: 600; color: var(--text); }
-    .si-badge {
-      font-size: 10px; font-weight: 700;
-      background: var(--amber); color: var(--navy);
-      padding: 2px 7px; border-radius: 4px;
-    }
-    .si-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .sessions-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
-
-    /* ── Screen B: Setup ── */
-    .setup-body { padding-bottom: 24px; }
-
-    /* ── Screen C: Check matrix ── */
-    .check-sub-hdr {
-      background: var(--navy);
-      padding: 8px 12px;
-      position: sticky;
-      top: 56px;
-      z-index: 90;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .check-sub-title {
-      flex: 1;
-      font-size: 12px; font-weight: 600; color: var(--white);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .round-pill {
-      background: var(--amber); color: var(--navy);
-      font-size: 11px; font-weight: 700;
-      padding: 3px 9px; border-radius: 99px;
-      white-space: nowrap; flex-shrink: 0;
-    }
-    .timer-pill {
-      background: rgba(255,255,255,0.12); color: var(--white);
-      font-size: 11px; font-weight: 600;
-      padding: 3px 8px; border-radius: 99px;
-      font-variant-numeric: tabular-nums;
-      flex-shrink: 0;
-    }
-    .btn-close-sess {
-      background: none;
-      border: 1.5px solid rgba(220,38,38,0.6);
-      color: #FCA5A5;
-      border-radius: 5px;
-      padding: 3px 8px;
-      font-size: 11px; font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      flex-shrink: 0;
-      touch-action: manipulation;
-    }
-    .btn-close-sess:active { background: rgba(220,38,38,0.15); }
-
-    .check-body { padding-bottom: 80px; }
-
-    /* ── Matrix param row ── */
+    /* ── Screen C: Check matrix param rows ── */
     .ipqc-row {
-      padding: 9px 12px;
-      border-bottom: 1px solid var(--border);
-      background: var(--white);
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #fff;
     }
     .ipqc-row:last-child { border-bottom: none; }
     .ipqc-row-top {
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
     .ipqc-row-label-wrap { flex: 1; min-width: 0; }
     .ipqc-row-label {
-      font-size: 12px; font-weight: 600; color: var(--text);
+      font-size: 13px; font-weight: 600; color: #0f172a;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .ipqc-row-std {
-      font-size: 10px; color: var(--muted); margin-top: 1px;
-    }
+    .ipqc-row-std { font-size: 11px; color: #64748b; margin-top: 2px; }
 
     /* Numeric input */
     .ipqc-input {
       width: 72px;
-      padding: 5px 6px;
-      border: 1.5px solid var(--border);
-      border-radius: 5px;
-      font-size: 13px;
-      text-align: center;
+      padding: 6px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 13px; text-align: center;
       font-family: inherit;
-      color: var(--text);
-      background: var(--white);
+      color: #0f172a;
+      background: #fff;
       flex-shrink: 0;
       -webkit-appearance: none;
+      min-height: 36px;
     }
-    .ipqc-input:focus { outline: none; border-color: var(--navy); }
+    .ipqc-input:focus { outline: none; border-color: #1e3a5f; }
 
-    /* Visual toggle buttons */
-    .vis-btns { display: flex; gap: 4px; flex-shrink: 0; }
+    /* Visual toggle buttons — stacked, full-width row */
+    .vis-btns { display: flex; gap: 6px; flex-shrink: 0; width: 100%; margin-top: 8px; }
     .vis-btn {
-      padding: 5px 8px;
-      border: 1.5px solid var(--border);
-      border-radius: 5px;
-      background: var(--white);
-      font-size: 11px; font-weight: 700;
+      flex: 1;
+      padding: 8px 0;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 12px; font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      color: var(--muted);
+      color: #64748b;
       transition: all 0.12s;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
-    .vis-btn:active { transform: scale(0.95); }
-    .vis-btn.sel-pass { background: #F0FDF4; border-color: var(--success); color: var(--success); }
-    .vis-btn.sel-fail { background: #FEF2F2; border-color: var(--danger); color: var(--danger); }
-    .vis-btn.sel-na   { background: var(--navy-light); border-color: var(--navy); color: var(--navy); }
+    .vis-btn:active { transform: scale(0.97); }
+    .vis-btn.sel-pass { background: #16a34a; border-color: #16a34a; color: #fff; }
+    .vis-btn.sel-fail { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .vis-btn.sel-na   { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
 
     /* Result badge */
     .res-badge {
       display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
+      padding: 2px 8px;
+      border-radius: 5px;
       font-size: 10px; font-weight: 700;
-      min-width: 38px;
-      text-align: center;
+      min-width: 38px; text-align: center;
       flex-shrink: 0;
     }
-    .res-na   { background: #F3F4F6; color: #6B7280; }
-    .res-pass { background: #DCFCE7; color: #15803D; }
-    .res-fail { background: #FEE2E2; color: #B91C1C; }
+    .res-na   { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+    .res-pass { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .res-fail { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
 
-    /* Remark row (shown on fail) */
+    /* Remark row */
     .ipqc-remark-wrap { margin-top: 6px; display: none; }
     .ipqc-remark {
       width: 100%;
       min-height: 44px;
-      border: 1.5px solid var(--border);
-      border-radius: 5px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 6px;
       padding: 6px 8px;
       font-size: 13px;
       font-family: inherit;
-      color: var(--text);
-      background: var(--white);
+      color: #0f172a;
+      background: #fff;
       resize: vertical;
       box-sizing: border-box;
       -webkit-appearance: none;
     }
-    .ipqc-remark:focus { outline: none; border-color: var(--navy); }
-    .remark-req {
-      font-size: 10px; color: var(--danger); margin-top: 2px; display: none;
-    }
+    .ipqc-remark:focus { outline: none; border-color: #1e3a5f; }
+    .remark-req { font-size: 10px; color: #dc2626; margin-top: 2px; display: none; }
     .remark-req.show { display: block; }
 
     /* No CP banner */
     .no-cp-banner {
-      background: #FEF3C7;
-      border-left: 4px solid var(--hold);
+      background: #fef3c7;
+      border-left: 4px solid #d97706;
       padding: 10px 14px;
       margin: 10px;
       border-radius: 6px;
       font-size: 12px;
-      color: #92400E;
+      color: #92400e;
     }
 
-    /* Sticky footer */
-    .check-footer {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      max-width: 480px; margin: 0 auto;
-      background: var(--white);
-      padding: 10px 12px;
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
-      border-top: 1px solid var(--border);
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.07);
-      display: flex; gap: 8px;
-    }
-    .btn-save-round {
-      flex: 2;
-      height: 48px;
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 8px;
-      font-size: 14px; font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      touch-action: manipulation;
-      transition: opacity 0.15s;
-    }
-    .btn-save-round:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-save-round:not(:disabled):active { opacity: 0.82; }
-    .btn-view-report {
-      flex: 1;
-      height: 48px;
-      background: var(--white);
-      color: var(--navy);
-      border: 1.5px solid var(--navy);
-      border-radius: 8px;
-      font-size: 13px; font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      touch-action: manipulation;
-    }
-    .btn-view-report:active { background: var(--navy-light); }
-
-    /* ── Screen D: Report overlay ── */
+    /* Report overlay */
     .report-overlay {
       position: fixed; inset: 0;
-      background: var(--bg);
+      background: #f8fafc;
       z-index: 9999;
       display: flex; flex-direction: column;
       overflow: hidden;
     }
-    .report-hdr {
-      background: var(--navy); color: var(--white);
-      padding: 12px 16px;
-      display: flex; align-items: center; gap: 10px;
-      flex-shrink: 0; min-height: 56px;
-    }
-    .report-hdr-title { flex: 1; font-size: 13px; font-weight: 700; }
-    .btn-close-report {
-      background: none; border: none; color: var(--white);
-      font-size: 22px; cursor: pointer; line-height: 1; padding: 4px 6px;
-    }
     .report-body { flex: 1; overflow: auto; padding: 10px; }
     .report-table-wrap { overflow-x: auto; }
-    .report-table {
-      border-collapse: collapse; width: 100%; font-size: 12px;
-    }
+    .report-table { border-collapse: collapse; width: 100%; font-size: 12px; }
     .report-table th {
-      background: var(--navy); color: var(--white);
+      background: #1e3a5f; color: #fff;
       padding: 7px 10px; font-size: 11px; font-weight: 600;
       text-align: center; white-space: nowrap;
-      border: 1px solid #1A2D9E;
+      border: 1px solid #2d4e7a;
     }
     .rt-param-hdr {
       position: sticky; left: 0; z-index: 2;
       text-align: left !important; min-width: 140px;
-      background: var(--navy) !important;
+      background: #1e3a5f !important;
     }
     .report-table td {
-      border: 1px solid var(--border);
+      border: 1px solid #e2e8f0;
       padding: 6px 8px; vertical-align: middle; text-align: center;
     }
     .rt-param-cell {
       position: sticky; left: 0;
-      background: var(--white); z-index: 1;
+      background: #fff; z-index: 1;
       text-align: left !important;
-      font-weight: 500; color: var(--text);
+      font-weight: 500; color: #0f172a;
       white-space: nowrap;
     }
-    .rt-cell-val { font-size: 10px; color: var(--muted); display: block; }
-    .summary-row td { background: var(--navy-light); font-weight: 700; font-size: 11px; }
-    .summary-row .rt-param-cell { background: var(--navy-light); color: var(--navy); }
+    .rt-cell-val { font-size: 10px; color: #64748b; display: block; }
+    .summary-row td { background: #eff6ff; font-weight: 700; font-size: 11px; }
+    .summary-row .rt-param-cell { background: #eff6ff; color: #1e3a5f; }
+
+    /* Printable report */
+    .rpt-doc { background:#fff; padding:18px; max-width:880px; margin:0 auto; box-shadow:0 1px 6px rgba(0,0,0,0.06); }
+    .rpt-h1 { font-size:18px; font-weight:800; color:#0f172a; margin:0 0 4px; letter-spacing:0.2px; }
+    .rpt-sub { font-size:11px; color:#64748b; margin-bottom:14px; }
+    .rpt-meta-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 18px; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:14px; }
+    .rpt-meta-grid .k { font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+    .rpt-meta-grid .v { font-size:12px; color:#0f172a; font-weight:600; }
+    .rpt-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-bottom:14px; }
+    .rpt-stat { padding:10px; border:1px solid #e2e8f0; border-radius:6px; text-align:center; background:#fff; }
+    .rpt-stat .lbl { font-size:10px; color:#64748b; font-weight:600; text-transform:uppercase; }
+    .rpt-stat .val { font-size:18px; font-weight:800; margin-top:2px; }
+    .rpt-section-h { font-size:11px; font-weight:700; color:#1e3a5f; text-transform:uppercase; letter-spacing:0.6px; margin:16px 0 6px; padding-bottom:4px; border-bottom:2px solid #1e3a5f; }
+    .rpt-tbl { width:100%; border-collapse:collapse; font-size:11px; }
+    .rpt-tbl th { background:#1e3a5f; color:#fff; padding:6px 8px; text-align:center; font-weight:600; border:1px solid #2d4e7a; }
+    .rpt-tbl td { padding:5px 8px; border:1px solid #e2e8f0; text-align:center; vertical-align:middle; }
+    .rpt-tbl td.lbl { text-align:left; font-weight:600; color:#0f172a; background:#f8fafc; white-space:nowrap; }
+    .rpt-empty { padding:24px; text-align:center; color:#64748b; font-size:13px; }
+    .rpt-footer { margin-top:18px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:10px; color:#94a3b8; display:flex; justify-content:space-between; }
+    .res-pass { background:#dcfce7; color:#15803d; }
+    .res-fail { background:#fee2e2; color:#b91c1c; }
+    .res-na   { background:#f1f5f9; color:#64748b; }
+
+    @media print {
+      body * { visibility:hidden !important; }
+      #screenD, #screenD * { visibility:visible !important; }
+      #screenD { position:static !important; inset:auto !important; background:#fff !important; }
+      .no-print { display:none !important; }
+      .rpt-doc { box-shadow:none; max-width:none; padding:0; }
+      .report-body { overflow:visible !important; padding:0 !important; }
+    }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
 <body>
 
-<!-- Loading overlay -->
+<!-- ── Loading overlay ── -->
 <div id="loading">
   <div class="load-spinner"></div>
   <p id="loadingMsg">Loading…</p>
 </div>
 
-<!-- ══ Shared header ══ -->
-<header class="pm-header">
-  <button class="back-btn" id="headerBackBtn" style="display:none;" onclick="handleBack()">
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
+<!-- ══ Shared header (navy topbar) ══ -->
+<header class="sticky top-0 w-full z-50 h-[56px] flex items-center gap-2 px-3 bg-[#1e3a5f] shadow-md">
+  <button id="headerBackBtn"
+    onclick="handleBack()"
+    style="display:none;"
+    class="text-white/80 hover:bg-white/10 active:scale-95 transition-transform p-2 rounded-full flex items-center justify-center">
+    <span class="material-symbols-outlined text-[22px]">arrow_back</span>
   </button>
-  <span class="page-title" id="headerTitle" style="flex:1;">IPQC</span>
-  <span class="doc-badge" id="headerBadge">IPQC</span>
+  <span class="font-headline text-[17px] font-bold text-white flex-1 truncate" id="headerTitle">IPQC</span>
+  <span id="headerBadge"
+    class="bg-[#f59e0b] text-[#1e3a5f] text-[11px] font-bold px-2 py-0.5 rounded-full">IPQC</span>
 </header>
+
+<!-- ════════════ BOTTOM NAV (shown on Screen A) ════════════ -->
+<nav id="ipqcBottomNav" class="fixed bottom-0 left-0 w-full h-[56px] bg-white border-t border-[#e2e8f0] z-40 flex items-stretch" style="max-width:480px;left:50%;transform:translateX(-50%);">
+  <button onclick="ipqcGoto('Landing')" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
+    <span class="material-symbols-outlined text-[20px]">home</span>
+    <span class="text-[10px] font-semibold mt-0.5">Home</span>
+  </button>
+  <button onclick="ipqcGoto('Records')" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
+    <span class="material-symbols-outlined text-[20px]">description</span>
+    <span class="text-[10px] font-semibold mt-0.5">Records</span>
+  </button>
+  <button class="flex-1 flex flex-col items-center justify-center text-[#0ea5e9] active:bg-slate-50">
+    <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;">settings</span>
+    <span class="text-[10px] font-bold mt-0.5">IPQC</span>
+  </button>
+  <button onclick="ipqcGoto('KPI')" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
+    <span class="material-symbols-outlined text-[20px]">leaderboard</span>
+    <span class="text-[10px] font-semibold mt-0.5">KPIs</span>
+  </button>
+  <button onclick="ipqcShowMore()" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
+    <span class="material-symbols-outlined text-[20px]">more_horiz</span>
+    <span class="text-[10px] font-semibold mt-0.5">More</span>
+  </button>
+</nav>
 
 <!-- ════════════ SCREEN A — HOME ════════════ -->
 <div id="screenA">
-  <div class="home-body">
-    <div class="home-hero">
-      <span class="hero-icon">⚙</span>
-      <h2>IPQC</h2>
-      <p>In-Process Quality Check</p>
+  <div class="p-4 pb-[80px] flex flex-col gap-3">
+
+    <!-- Hero card -->
+    <div class="bg-[#1e3a5f] rounded-xl p-5 text-center text-white flex flex-col items-center gap-2 shadow-md">
+      <span class="material-symbols-outlined text-[36px] text-[#f59e0b]" style="font-variation-settings:'FILL' 1;">settings</span>
+      <h2 class="font-headline text-[20px] font-bold m-0">IPQC</h2>
+      <p class="text-white/60 text-[12px] m-0">In-Process Quality Check</p>
     </div>
 
-    <button class="btn-play" onclick="goToSetup()">
-      <span class="play-icon">
-        <svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
+    <!-- New Check button -->
+    <button onclick="goToSetup()"
+      class="flex items-center justify-center gap-3 w-full h-[56px] bg-[#f59e0b] text-[#1e3a5f] rounded-[10px] font-headline font-bold text-[15px] active:opacity-80 transition-opacity shadow-md touch-manipulation">
+      <span class="w-7 h-7 bg-[#1e3a5f] rounded-full flex items-center justify-center flex-shrink-0">
+        <svg viewBox="0 0 10 12" class="w-3.5 h-3.5 fill-[#f59e0b] ml-0.5"><polygon points="0,0 10,6 0,12"/></svg>
       </span>
       New Check
     </button>
 
-    <div class="sessions-card" id="openSessionsCard" style="display:none;">
-      <div class="sessions-card-hdr">Resume Open Session</div>
+    <!-- Open sessions card -->
+    <div class="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden" id="openSessionsCard" style="display:none;">
+      <div class="bg-[#eff6ff] px-4 py-2 text-[11px] font-bold text-[#1e3a5f] uppercase tracking-wide">
+        Resume Open Session
+      </div>
       <div id="openSessionsList">
-        <div class="sessions-empty" id="sessionsEmpty">No open sessions.</div>
+        <div class="p-5 text-center text-[#64748b] text-[13px]" id="sessionsEmpty">No open sessions.</div>
       </div>
     </div>
+
   </div>
 </div>
 
 <!-- ════════════ SCREEN B — SETUP ════════════ -->
 <div id="screenB" style="display:none;">
-  <div class="setup-body">
-    <div class="section">
-      <div class="section-title">Check Setup</div>
-      <div class="section-body">
-        <div class="field">
-          <label>Product</label>
-          <select id="setupProduct">
+  <div class="p-4 pb-6">
+    <div class="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden">
+      <div class="bg-[#eff6ff] px-4 py-2.5 text-[12px] font-bold text-[#1e3a5f] uppercase tracking-wide flex items-center gap-2">
+        <span class="material-symbols-outlined text-[16px]">tune</span>
+        Check Setup
+      </div>
+      <div class="p-4 flex flex-col gap-4">
+
+        <div class="flex flex-col gap-1">
+          <label class="text-[13px] font-semibold text-[#374151]">Product</label>
+          <select id="setupProduct"
+            class="w-full h-[48px] px-3 border-[1.5px] border-[#e2e8f0] rounded-lg text-[14px] font-body text-[#0f172a] bg-white focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/10 outline-none">
             <option value="">— Select Product —</option>
           </select>
         </div>
-        <div class="field">
-          <label>Batch No.</label>
-          <input type="text" id="setupBatch" placeholder="e.g. B2605001" autocomplete="off">
+
+        <div class="flex flex-col gap-1">
+          <label class="text-[13px] font-semibold text-[#374151]">Batch No.</label>
+          <input type="text" id="setupBatch" placeholder="e.g. B2605001" autocomplete="off"
+            class="w-full h-[48px] px-3 border-[1.5px] border-[#e2e8f0] rounded-lg text-[14px] font-body text-[#0f172a] bg-white focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/10 outline-none">
         </div>
-        <div class="field">
-          <label>Inspector</label>
-          <input type="text" id="setupInspector" placeholder="Your name" autocomplete="off">
+
+        <div class="flex flex-col gap-1">
+          <label class="text-[13px] font-semibold text-[#374151]">Inspector</label>
+          <input type="text" id="setupInspector" placeholder="Your name" autocomplete="off"
+            class="w-full h-[48px] px-3 border-[1.5px] border-[#e2e8f0] rounded-lg text-[14px] font-body text-[#0f172a] bg-white focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/10 outline-none">
         </div>
-        <button class="btn-submit" id="btnStartCheck" onclick="startCheck()">START INSPECTION →</button>
+
+        <button id="btnStartCheck" onclick="startCheck()"
+          class="w-full h-[52px] bg-[#1e3a5f] text-white rounded-[10px] font-headline font-bold text-[15px] flex items-center justify-center gap-2 active:opacity-80 transition-opacity shadow-md mt-1">
+          <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+          START INSPECTION →
+        </button>
       </div>
     </div>
   </div>
@@ -422,43 +369,133 @@
 <!-- ════════════ SCREEN C — CHECK MATRIX ════════════ -->
 <div id="screenC" style="display:none;">
 
-  <div class="check-sub-hdr">
-    <span class="check-sub-title" id="checkSubTitle">Product · Batch</span>
-    <span class="round-pill" id="roundPill">Round 1</span>
-    <span class="timer-pill" id="timerDisplay">00:00</span>
-    <button class="btn-close-sess" onclick="confirmCloseSession()">✕ Close</button>
+  <!-- Sub-header: product · batch · round · timer · close -->
+  <div class="bg-[#1e3a5f] px-3 py-2 flex items-center gap-2 sticky top-[56px] z-40">
+    <span class="flex-1 text-[12px] font-semibold text-white truncate" id="checkSubTitle">Product · Batch</span>
+    <span class="bg-[#f59e0b] text-[#1e3a5f] text-[11px] font-bold px-3 py-0.5 rounded-full whitespace-nowrap flex-shrink-0" id="roundPill">Round 1</span>
+    <span class="bg-white/10 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 tabular-nums" id="timerDisplay">00:00</span>
   </div>
 
-  <div class="check-body" id="checkBody">
+  <div class="pb-[140px]" id="checkBody">
     <div class="no-cp-banner" id="noCpBanner" style="display:none;">
       ⚠ No control plan configured for this product. Contact your QA manager.
     </div>
-    <div class="section" id="paramsSection" style="margin:10px;">
-      <div class="section-title" id="paramsSectionTitle">Quality Parameters</div>
-      <div style="padding:0;" id="paramsBody"></div>
+
+    <div class="mx-2.5 my-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.07)] overflow-hidden">
+      <div class="bg-[#eff6ff] px-4 py-2 text-[11px] font-bold text-[#1e3a5f] uppercase tracking-wide flex items-center gap-2">
+        <span class="material-symbols-outlined text-[16px]">fact_check</span>
+        <span id="paramsSectionTitle">Quality Parameters</span>
+      </div>
+      <div id="paramsBody"></div>
     </div>
+
+    <!-- Average Weight Check (5 samples × 3 readings) -->
+    <div class="mx-2.5 my-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.07)] overflow-hidden" id="avgWeightCard">
+      <div class="bg-[#eff6ff] px-4 py-2 text-[11px] font-bold text-[#1e3a5f] uppercase tracking-wide flex items-center gap-2">
+        <span class="material-symbols-outlined text-[16px]">scale</span>
+        <span>Average Weight Check</span>
+      </div>
+      <div class="p-3">
+        <div id="awHeader" class="grid gap-2 mb-2 text-[10px] font-bold text-[#64748b] uppercase tracking-wider"></div>
+        <div id="awGrid" class="flex flex-col gap-2"></div>
+        <div class="mt-3 pt-2 border-t border-[#e2e8f0] flex items-center justify-between">
+          <span class="text-[12px] font-semibold text-[#64748b]">Current Round Avg</span>
+          <span class="text-[14px] font-bold text-[#1e3a5f] tabular-nums" id="awAverage">—</span>
+        </div>
+        <div id="awRecap" class="mt-2 pt-2 border-t border-[#e2e8f0] flex flex-wrap gap-1.5" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Leak Test (pass/fail/NA) -->
+    <div class="mx-2.5 my-3 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.07)] overflow-hidden" id="leakTestCard">
+      <div class="bg-[#eff6ff] px-4 py-2 text-[11px] font-bold text-[#1e3a5f] uppercase tracking-wide flex items-center gap-2">
+        <span class="material-symbols-outlined text-[16px]">water_drop</span>
+        <span>Leak Test</span>
+      </div>
+      <div class="p-3">
+        <div class="text-[12px] text-[#64748b] mb-2">Select the outcome for this round:</div>
+        <div class="grid grid-cols-3 gap-2" id="leakBtns">
+          <button type="button" data-val="PASS" class="leak-btn h-[40px] rounded-md border-[1.5px] border-[#e2e8f0] bg-white text-[#64748b] text-[12px] font-bold active:scale-95">PASS</button>
+          <button type="button" data-val="FAIL" class="leak-btn h-[40px] rounded-md border-[1.5px] border-[#e2e8f0] bg-white text-[#64748b] text-[12px] font-bold active:scale-95">FAIL</button>
+          <button type="button" data-val="NA"   class="leak-btn h-[40px] rounded-md border-[1.5px] border-[#e2e8f0] bg-white text-[#64748b] text-[12px] font-bold active:scale-95">NA</button>
+        </div>
+        <div id="leakRemarkWrap" class="mt-2" style="display:none;">
+          <textarea id="leakRemark" rows="2" placeholder="Describe the leak…"
+            class="w-full border-[1.5px] border-[#e2e8f0] rounded-md p-2 text-[13px] font-body resize-vertical focus:border-[#1e3a5f] outline-none"></textarea>
+          <div class="text-[10px] text-[#dc2626] mt-1 hidden" id="leakRemarkReq">Remark required for FAIL.</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <div class="check-footer">
-    <button class="btn-save-round" id="btnSaveRound" onclick="saveRound()">💾 Save Round</button>
-    <button class="btn-view-report" onclick="viewReport()">📋 Report</button>
+  <!-- Sticky footer: stacked Save Round + Close Session, with Report inline -->
+  <div class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.07)] flex flex-col gap-2 px-3 py-2.5"
+    style="padding-bottom: max(10px, env(safe-area-inset-bottom)); z-index: 50;">
+    <div class="flex gap-2">
+      <button id="btnSaveRound"
+        class="flex-[2] h-12 bg-[#1e3a5f] text-white rounded-lg font-headline font-bold text-[14px] flex items-center justify-center gap-2 active:opacity-80 transition-opacity disabled:opacity-50">
+        <span class="material-symbols-outlined text-[18px]">save</span>
+        Save Round
+      </button>
+      <button onclick="viewReport()"
+        class="flex-1 h-12 bg-white text-[#1e3a5f] border-[1.5px] border-[#1e3a5f] rounded-lg font-headline font-bold text-[13px] flex items-center justify-center gap-1.5 active:bg-[#eff6ff] transition-colors">
+        <span class="material-symbols-outlined text-[16px]">bar_chart</span>
+        Report
+      </button>
+    </div>
+    <button onclick="confirmCloseSession()"
+      class="w-full h-12 bg-white text-[#dc2626] border-[1.5px] border-[#dc2626] rounded-lg font-headline font-bold text-[14px] flex items-center justify-center gap-2 active:bg-red-50 transition-colors">
+      <span class="material-symbols-outlined text-[18px]">close</span>
+      Close Session
+    </button>
   </div>
 </div>
 
 <!-- ════════════ SCREEN D — REPORT OVERLAY ════════════ -->
 <div id="screenD" class="report-overlay" style="display:none;">
-  <div class="report-hdr">
-    <div class="report-hdr-title" id="reportTitle">IPQC Report</div>
-    <button class="btn-close-report" onclick="closeReport()">✕</button>
+  <div class="bg-[#1e3a5f] text-white px-4 py-3 flex items-center gap-2 flex-shrink-0 min-h-[56px] no-print">
+    <div class="flex-1 text-[13px] font-bold font-headline" id="reportTitle">IPQC Report</div>
+    <button onclick="printReport()" title="Print report"
+      class="bg-white text-[#1e3a5f] text-[12px] font-bold rounded-md px-3 py-1.5 flex items-center gap-1 active:opacity-80">
+      <span class="material-symbols-outlined text-[14px]">print</span>
+      Print
+    </button>
+    <button id="btnShareWA" onclick="shareReport()"
+      class="bg-[#16a34a] text-white text-[12px] font-bold rounded-md px-3 py-1.5 flex items-center gap-1 active:opacity-80">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M20.5 3.5A11.9 11.9 0 0 0 12 0a12 12 0 0 0-10.3 18.2L0 24l5.9-1.6A12 12 0 0 0 12 24a12 12 0 0 0 8.5-20.5zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.5 1 .9-3.4-.2-.4A9.8 9.8 0 1 1 21.8 12 9.8 9.8 0 0 1 12 21.8zm5.4-7.4c-.3-.1-1.7-.9-2-1s-.5-.1-.7.1l-1 1.2c-.2.2-.4.3-.7.1a8 8 0 0 1-2.3-1.5 9 9 0 0 1-1.7-2c-.2-.3 0-.5.1-.6l.5-.6.3-.5c.1-.2 0-.4 0-.5l-.9-2.2c-.2-.5-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.3 3.1a11 11 0 0 0 4.3 3.8c.6.3 1 .4 1.4.5.6.2 1.1.2 1.5.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.3z"/>
+      </svg>
+      Share
+    </button>
+    <button onclick="closeReport()" class="bg-transparent border-none text-white text-[20px] cursor-pointer leading-none p-1 ml-1">✕</button>
   </div>
-  <div class="report-body">
-    <div class="report-table-wrap">
-      <table class="report-table" id="reportTable"></table>
-    </div>
-  </div>
+  <div class="report-body" id="reportBody"></div>
 </div>
 
+<!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Session item styles (injected via JS but defined here) -->
+<style>
+  .session-item {
+    padding: 11px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: background 0.12s;
+    touch-action: manipulation;
+  }
+  .session-item:last-child { border-bottom: none; }
+  .session-item:active { background: #eff6ff; }
+  .si-top { display: flex; align-items: center; justify-content: space-between; }
+  .si-name { font-size: 13px; font-weight: 600; color: #0f172a; }
+  .si-badge {
+    font-size: 10px; font-weight: 700;
+    background: #f59e0b; color: #1e3a5f;
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .si-meta { font-size: 11px; color: #64748b; margin-top: 3px; }
+</style>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────
@@ -469,7 +506,11 @@ var SESSION_BATCH = '';
 var SESSION_INSPECTOR = '';
 var ROUND_NO = 1;
 var SESSION_START_TS = null;
+var ROUND_START_TS = null;            // resets per round
+var _LEAK_RESULT = '';                // PASS / FAIL / NA / ''
+var _AWAITING_NEXT_ROUND = false;     // true after save, until user starts next round
 var PARAMS = [];   // [{paramCode, paramName, methodType, stdValue, unit, tolMin, tolMax, checkBrief}]
+var SAVED_ROUNDS = [];  // [{roundNo, avgWeight, elapsedHms, weights: {1:'0.45',2:'0.46',...}}]
 var timerInterval = null;
 
 // ── Boot ───────────────────────────────────────────────────────────
@@ -481,6 +522,9 @@ document.addEventListener('DOMContentLoaded', function() {
       populateProductSelect(d.fgList || []);
       prefillInspector(d.inspectors || []);
       renderOpenSessions(d.openSessions || []);
+      if (d.loadWarnings && d.loadWarnings.length) {
+        showToast('⚠ ' + d.loadWarnings.join(' | '), 'warning');
+      }
     })
     .withFailureHandler(function(e) {
       hideLoading();
@@ -554,7 +598,8 @@ function startCheck() {
   showLoading('Starting session…');
   google.script.run
     .withSuccessHandler(function(res) {
-      btn.disabled = false; btn.textContent = 'START INSPECTION →';
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">play_arrow</span> START INSPECTION →';
       if (!res.ok) {
         hideLoading();
         showToast(res.error || 'Could not start session.', 'error');
@@ -570,7 +615,8 @@ function startCheck() {
       loadParamsAndEnterCheck();
     })
     .withFailureHandler(function(e) {
-      btn.disabled = false; btn.textContent = 'START INSPECTION →';
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">play_arrow</span> START INSPECTION →';
       hideLoading();
       showToast('Error: ' + e.message, 'error');
     })
@@ -623,11 +669,173 @@ function enterCheckScreen() {
   document.getElementById('checkSubTitle').textContent = title;
   document.getElementById('roundPill').textContent = 'Round ' + ROUND_NO;
   document.getElementById('headerTitle').textContent = 'IPQC — Round ' + ROUND_NO;
+  bindLeakTest();
+  ROUND_START_TS = new Date();
   showScreen('C');
   startTimer();
+  // Hydrate SAVED_ROUNDS from backend (covers resumed sessions and page reloads mid-session)
+  hydrateSavedRoundsThenBuildGrid();
+}
+
+function hydrateSavedRoundsThenBuildGrid() {
+  SAVED_ROUNDS = [];
+  if (!SESSION_ID) { buildAvgWeightGrid(); return; }
+  // Pull both per-round meta (avg + elapsed) and per-sample weights
+  google.script.run
+    .withSuccessHandler(function(rRes) {
+      var rounds = (rRes && rRes.rounds) || [];
+      google.script.run
+        .withSuccessHandler(function(weightMap) {
+          rounds.forEach(function(rnd) {
+            var w = (weightMap && weightMap[rnd.roundNo]) || {};
+            SAVED_ROUNDS.push({
+              roundNo:    rnd.roundNo,
+              avgWeight:  rnd.avgWeight || '',
+              elapsedHms: rnd.elapsedHms || '',
+              weights:    w
+            });
+          });
+          buildAvgWeightGrid();
+        })
+        .withFailureHandler(function() { buildAvgWeightGrid(); })
+        .getSessionWeightData(SESSION_ID);
+    })
+    .withFailureHandler(function() { buildAvgWeightGrid(); })
+    .getSessionRounds(SESSION_ID);
+}
+
+/* ── Leak test selection ── */
+function bindLeakTest() {
+  var grid = document.getElementById('leakBtns');
+  if (!grid || grid._bound) return;
+  grid._bound = true;
+  grid.addEventListener('click', function(e) {
+    var b = e.target.closest('.leak-btn');
+    if (!b) return;
+    var val = b.getAttribute('data-val');
+    setLeakResult(val);
+  });
+}
+function setLeakResult(val) {
+  _LEAK_RESULT = val;
+  ['PASS','FAIL','NA'].forEach(function(v){
+    var b = document.querySelector('.leak-btn[data-val="' + v + '"]');
+    if (!b) return;
+    if (v === val) {
+      if (v === 'PASS')      b.style.cssText = 'background:#16a34a;border-color:#16a34a;color:#fff;';
+      else if (v === 'FAIL') b.style.cssText = 'background:#dc2626;border-color:#dc2626;color:#fff;';
+      else                   b.style.cssText = 'background:#64748b;border-color:#64748b;color:#fff;';
+    } else {
+      b.style.cssText = '';
+    }
+  });
+  var rw = document.getElementById('leakRemarkWrap');
+  if (rw) rw.style.display = val === 'FAIL' ? '' : 'none';
+}
+function getLeakResult() { return _LEAK_RESULT || ''; }
+function getLeakRemark() {
+  var r = document.getElementById('leakRemark');
+  return r ? r.value.trim() : '';
+}
+
+/* Avg Weight grid — columns are ROUNDS, rows are S1..S5.
+   Past rounds (in SAVED_ROUNDS) are read-only; the current round column is editable. */
+function buildAvgWeightGrid() {
+  var grid = document.getElementById('awGrid');
+  var hdr  = document.getElementById('awHeader');
+  if (!grid || !hdr) return;
+
+  var totalCols = SAVED_ROUNDS.length + 1;  // saved rounds + 1 editable
+  // grid-template-columns: 1 label + N round columns
+  var gtc = '64px repeat(' + totalCols + ', minmax(0,1fr))';
+  hdr.style.gridTemplateColumns = gtc;
+  hdr.innerHTML = '';
+  var sampleHdr = document.createElement('span');
+  sampleHdr.textContent = 'Sample';
+  hdr.appendChild(sampleHdr);
+  SAVED_ROUNDS.forEach(function(rnd) {
+    var c = document.createElement('span');
+    c.className = 'text-center';
+    c.textContent = 'R' + rnd.roundNo;
+    hdr.appendChild(c);
+  });
+  var curHdr = document.createElement('span');
+  curHdr.className = 'text-center text-[#1e3a5f]';
+  curHdr.textContent = 'R' + ROUND_NO;
+  hdr.appendChild(curHdr);
+
+  grid.innerHTML = '';
+  for (var s = 1; s <= 5; s++) {
+    var row = document.createElement('div');
+    row.className = 'grid gap-2 items-center';
+    row.style.gridTemplateColumns = gtc;
+    var lbl = document.createElement('span');
+    lbl.className = 'text-[12px] font-semibold text-[#374151]';
+    lbl.textContent = 'S' + s;
+    row.appendChild(lbl);
+    // Past round columns — read-only, prefilled from SAVED_ROUNDS
+    SAVED_ROUNDS.forEach(function(rnd) {
+      var ro = document.createElement('div');
+      ro.className = 'text-[12px] text-center text-[#64748b] py-1.5 bg-[#f8fafc] rounded border border-[#e2e8f0] tabular-nums';
+      var v = rnd.weights && rnd.weights[s];
+      ro.textContent = (v !== undefined && v !== '' && v !== null) ? v : '—';
+      row.appendChild(ro);
+    });
+    // Current round column — editable
+    var inp = document.createElement('input');
+    inp.type = 'number'; inp.step = '0.01';
+    inp.className = 'aw-input ipqc-input';
+    inp.style.width = '100%';
+    inp.dataset.sample = s;
+    inp.placeholder = '—';
+    inp.oninput = recomputeAvgWeight;
+    row.appendChild(inp);
+    grid.appendChild(row);
+  }
+
+  renderAwRecap();
+}
+
+function renderAwRecap() {
+  var box = document.getElementById('awRecap');
+  if (!box) return;
+  if (!SAVED_ROUNDS.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+  box.innerHTML = '';
+  SAVED_ROUNDS.forEach(function(rnd) {
+    var chip = document.createElement('span');
+    chip.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#ecfdf5] border border-[#a7f3d0] text-[10px] font-semibold text-[#065f46] tabular-nums';
+    var avg = (rnd.avgWeight !== '' && rnd.avgWeight != null) ? rnd.avgWeight + 'g' : '—';
+    var dur = rnd.elapsedHms || '';
+    chip.textContent = 'R' + rnd.roundNo + ' · ' + avg + (dur ? ' · ' + dur : '') + ' ✓';
+    box.appendChild(chip);
+  });
+}
+
+function recomputeAvgWeight() {
+  // Only the editable (current round) inputs contribute
+  var inputs = document.querySelectorAll('.aw-input');
+  var sum = 0, n = 0;
+  inputs.forEach(function(i) {
+    var v = parseFloat(i.value);
+    if (!isNaN(v)) { sum += v; n++; }
+  });
+  var el = document.getElementById('awAverage');
+  if (el) el.textContent = n > 0 ? (sum / n).toFixed(2) : '—';
+}
+
+function getAvgWeightValue() {
+  var el = document.getElementById('awAverage');
+  return el && el.textContent !== '—' ? el.textContent : '';
 }
 
 // ── Matrix builder ─────────────────────────────────────────────────
+// Match any Leak Test variant from the Control Plan so we don't render it twice
+function isLeakParam(p) {
+  var hay = ((p.paramName || '') + ' ' + (p.paramCode || '')).toLowerCase();
+  return hay.indexOf('leak') !== -1;
+}
+
 function buildMatrix() {
   var body = document.getElementById('paramsBody');
   body.innerHTML = '';
@@ -638,6 +846,7 @@ function buildMatrix() {
   }
 
   PARAMS.forEach(function(p) {
+    if (isLeakParam(p)) return;  // dedicated Leak Test card below the matrix handles this
     var isVisual = !p.methodType || p.methodType === 'Visual' || p.methodType === 'visual';
     body.appendChild(buildParamRow(p, isVisual));
   });
@@ -799,6 +1008,7 @@ function saveRound() {
   var params = [];
 
   PARAMS.forEach(function(p) {
+    if (isLeakParam(p)) return;  // leak handled by dedicated card
     var isVisual = !p.methodType || p.methodType === 'Visual' || p.methodType === 'visual';
     var result = getBadgeResult(p.paramCode);
     var actual = '';
@@ -811,7 +1021,7 @@ function saveRound() {
 
     if (result === 'FAIL' && !remark) {
       valid = false;
-      if (remTa) remTa.style.borderColor = 'var(--danger)';
+      if (remTa) remTa.style.borderColor = '#dc2626';
       var remReq = document.getElementById('remreq_' + p.paramCode);
       if (remReq) remReq.className = 'remark-req show';
       var remWrap = document.getElementById('remwrap_' + p.paramCode);
@@ -829,25 +1039,77 @@ function saveRound() {
     });
   });
 
+  // Leak-test validation
+  var leakResult = getLeakResult();
+  var leakRemark = getLeakRemark();
+  if (leakResult === 'FAIL' && !leakRemark) {
+    var lrr = document.getElementById('leakRemarkReq');
+    if (lrr) lrr.classList.remove('hidden');
+    showToast('Add a remark for the leak failure.', 'error');
+    return;
+  }
   if (!valid) { showToast('Add remarks for all failed checks.', 'error'); return; }
 
   var btn = document.getElementById('btnSaveRound');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
+  // Push per-sample weights as W01..W05 rows so they persist and can be re-read on resume
+  var curWeights = {};
+  for (var s = 1; s <= 5; s++) {
+    var winp = document.querySelector('.aw-input[data-sample="' + s + '"]');
+    var wv = winp ? winp.value.trim() : '';
+    curWeights[s] = wv;
+    if (wv) {
+      params.push({
+        paramCode:   'W0' + s,
+        paramName:   'Sample ' + s + ' weight',
+        stdValue:    '',
+        unit:        'g',
+        actualValue: wv,
+        result:      'NA',
+        remark:      ''
+      });
+    }
+  }
+
+  // Push leak as an implicit parameter so it shows in the report column
+  if (leakResult) {
+    params.push({
+      paramCode:   '_LEAK',
+      paramName:   'Leak Test',
+      stdValue:    '',
+      unit:        '',
+      actualValue: '',
+      result:      leakResult,
+      remark:      leakRemark
+    });
+  }
+
+  var roundElapsedSec = ROUND_START_TS ? Math.max(0, Math.floor((new Date() - ROUND_START_TS) / 1000)) : 0;
+  var roundElapsedHms = secsToHms(roundElapsedSec);
+
   google.script.run
     .withSuccessHandler(function(res) {
-      btn.disabled = false; btn.innerHTML = '💾 Save Round';
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">save</span> Save Round';
       if (!res.ok) { showToast(res.error || 'Save failed.', 'error'); return; }
       var saved = ROUND_NO;
-      ROUND_NO++;
-      document.getElementById('roundPill').textContent = 'Round ' + ROUND_NO;
-      document.getElementById('headerTitle').textContent = 'IPQC — Round ' + ROUND_NO;
-      resetMatrix();
-      showToast('Round ' + saved + ' saved.', 'success');
+      var savedAvg = getAvgWeightValue();
+      // Persist this round in the in-memory cache so the matrix shows it as a past column
+      SAVED_ROUNDS.push({
+        roundNo:    saved,
+        avgWeight:  savedAvg,
+        elapsedHms: roundElapsedHms,
+        weights:    curWeights
+      });
+      showToast('Round ' + saved + ' saved · ' + roundElapsedHms, 'success');
+      // Wait for explicit "Start Next Round" — don't auto-advance
+      enterAwaitingNextRound(saved, roundElapsedHms);
     })
     .withFailureHandler(function(e) {
-      btn.disabled = false; btn.innerHTML = '💾 Save Round';
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">save</span> Save Round';
       showToast('Error: ' + e.message, 'error');
     })
     .saveRound(SESSION_ID, {
@@ -856,15 +1118,90 @@ function saveRound() {
       inspector:   SESSION_INSPECTOR,
       roundNo:     ROUND_NO,
       params:      params,
-      elapsedHms:  getElapsed(),
-      periodStartTime: '',
-      periodEndTime:   '',
-      avgWeight: ''
+      elapsedHms:  roundElapsedHms,          // round duration, not session
+      sessionElapsedHms: getElapsed(),        // total session duration
+      periodStartTime: ROUND_START_TS ? ROUND_START_TS.toISOString() : '',
+      periodEndTime:   new Date().toISOString(),
+      avgWeight: getAvgWeightValue(),
+      leakResult: leakResult,
+      leakRemark: leakRemark
     });
 }
 
+function secsToHms(s) {
+  var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return (h > 0 ? pad2(h) + ':' : '') + pad2(m) + ':' + pad2(sec);
+}
+
+/* After save: swap the Save Round button for "Start Next Round" so the
+   inspector can review what was captured before clearing the form. */
+var _NEXT_ROUND_NO = 0;
+function enterAwaitingNextRound(savedRoundNo, elapsedHms) {
+  _AWAITING_NEXT_ROUND = true;
+  _NEXT_ROUND_NO = savedRoundNo + 1;
+  stopTimer();
+  var btn = document.getElementById('btnSaveRound');
+  if (!btn) return;
+  // Wipe inline onclick so router below decides
+  btn.removeAttribute('onclick');
+  btn.classList.remove('bg-[#1e3a5f]');
+  btn.classList.add('bg-[#16a34a]');
+  btn.style.background = '#16a34a';
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">play_arrow</span> Start Round ' + _NEXT_ROUND_NO;
+
+  // Pill shows the saved round with its elapsed time
+  var pill = document.getElementById('roundPill');
+  if (pill) pill.textContent = 'R' + savedRoundNo + ' · ' + elapsedHms + ' ✓';
+
+  // Header preview: next round number (pending start)
+  var ht = document.getElementById('headerTitle');
+  if (ht) ht.textContent = 'IPQC — Round ' + _NEXT_ROUND_NO + ' (start)';
+
+  // Re-tag the current ROUND_NO so the next grid build labels columns correctly
+  ROUND_NO = _NEXT_ROUND_NO;
+  // Rebuild matrix: just-saved round becomes a read-only column; new editable column added
+  buildAvgWeightGrid();
+}
+
+function startNextRound(nextNo) {
+  ROUND_NO = nextNo;
+  _AWAITING_NEXT_ROUND = false;
+  _NEXT_ROUND_NO = 0;
+  ROUND_START_TS = new Date();
+  document.getElementById('roundPill').textContent = 'Round ' + ROUND_NO;
+  document.getElementById('headerTitle').textContent = 'IPQC — Round ' + ROUND_NO;
+  resetMatrix();
+  buildAvgWeightGrid();  // rebuild so current column header reflects new ROUND_NO
+  var btn = document.getElementById('btnSaveRound');
+  if (btn) {
+    btn.classList.remove('bg-[#16a34a]');
+    btn.classList.add('bg-[#1e3a5f]');
+    btn.style.background = '';
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">save</span> Save Round';
+  }
+  startTimer();
+}
+
+/* Single click router for btnSaveRound — picks Save vs Start-Next based on state.
+   Bound once on DOM ready; survives innerHTML rewrites. */
+document.addEventListener('DOMContentLoaded', function () {
+  var btn = document.getElementById('btnSaveRound');
+  if (!btn) return;
+  btn.removeAttribute('onclick');  // strip the inline handler
+  btn.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (_AWAITING_NEXT_ROUND) {
+      startNextRound(_NEXT_ROUND_NO);
+    } else {
+      saveRound();
+    }
+  });
+});
+
 function resetMatrix() {
   PARAMS.forEach(function(p) {
+    if (isLeakParam(p)) return;  // leak reset below
     var isVisual = !p.methodType || p.methodType === 'Visual' || p.methodType === 'visual';
     var badge = document.getElementById('badge_' + p.paramCode);
     if (badge) { badge.className = 'res-badge res-na'; badge.textContent = 'NA'; }
@@ -886,6 +1223,19 @@ function resetMatrix() {
     var remReq = document.getElementById('remreq_' + p.paramCode);
     if (remReq) remReq.className = 'remark-req';
   });
+  // Reset avg weight grid for next round
+  document.querySelectorAll('.aw-input').forEach(function(i){ i.value = ''; });
+  var awEl = document.getElementById('awAverage');
+  if (awEl) awEl.textContent = '—';
+  // Reset leak test
+  _LEAK_RESULT = '';
+  document.querySelectorAll('.leak-btn').forEach(function(b){ b.style.cssText = ''; });
+  var leakRem = document.getElementById('leakRemark');
+  if (leakRem) leakRem.value = '';
+  var lrw = document.getElementById('leakRemarkWrap');
+  if (lrw) lrw.style.display = 'none';
+  var lrr = document.getElementById('leakRemarkReq');
+  if (lrr) lrr.classList.add('hidden');
 }
 
 // ── Close Session ──────────────────────────────────────────────────
@@ -916,104 +1266,380 @@ function navigateHome() {
 
 // ── Report overlay ─────────────────────────────────────────────────
 function viewReport() {
+  console.log('[viewReport] SESSION_ID=', JSON.stringify(SESSION_ID), 'len=', (SESSION_ID||'').length, 'SAVED_ROUNDS.length=', SAVED_ROUNDS.length);
+  if (!SESSION_ID) {
+    // No backend session yet — show what we have client-side
+    try {
+      buildReport([]);
+      document.getElementById('screenD').style.display = 'flex';
+    } catch (err) { showToast('Report error: ' + err.message, 'error'); }
+    return;
+  }
   showLoading('Loading report…');
   google.script.run
     .withSuccessHandler(function(d) {
       hideLoading();
-      buildReport(d.rounds || []);
-      document.getElementById('screenD').style.display = 'flex';
+      console.log('[viewReport] backend returned rounds.length=', (d && d.rounds || []).length, 'data=', JSON.stringify(d).slice(0, 500));
+      try {
+        buildReport((d && d.rounds) || []);
+        document.getElementById('screenD').style.display = 'flex';
+      } catch (err) {
+        showToast('Report render error: ' + err.message, 'error');
+      }
     })
     .withFailureHandler(function(e) {
       hideLoading();
-      showToast('Report error: ' + e.message, 'error');
+      // Fall back to client-side SAVED_ROUNDS so the user still sees something
+      try {
+        buildReport([]);
+        document.getElementById('screenD').style.display = 'flex';
+        showToast('Showing client cache — backend: ' + (e && e.message || 'error'), 'warning');
+      } catch (err) {
+        showToast('Report error: ' + (e && e.message || err.message), 'error');
+      }
     })
     .getSessionRounds(SESSION_ID);
 }
+window.viewReport = viewReport;
 
 function closeReport() {
   document.getElementById('screenD').style.display = 'none';
 }
 
+// ── Share IPQC report to WhatsApp ──
+function shareReport() {
+  var rounds = _LAST_REPORT_ROUNDS || [];
+  if (!rounds.length) { showToast('No rounds saved yet to share.', 'error'); return; }
+
+  // Per-round breakdown + overall totals + fails list
+  var pass = 0, fail = 0, na = 0;
+  var fails = [];
+  var roundStats = rounds.map(function(rnd) {
+    var p = 0, f = 0, n = 0, leak = '';
+    (rnd.params || []).forEach(function(prm) {
+      var rr = String(prm.result || 'NA').toUpperCase();
+      if (prm.paramCode === '_LEAK') { leak = rr; return; }
+      if (rr === 'PASS') p++;
+      else if (rr === 'FAIL') {
+        f++;
+        fails.push({
+          roundNo:     rnd.roundNo,
+          paramName:   prm.paramName || prm.paramCode,
+          actualValue: prm.actualValue || '',
+          remark:      prm.remark || ''
+        });
+      } else n++;
+    });
+    pass += p; fail += f; na += n;
+    return {
+      roundNo:    rnd.roundNo,
+      elapsedHms: rnd.elapsedHms || '',
+      avgWeight:  rnd.avgWeight  || '',
+      pass: p, fail: f, leak: leak
+    };
+  });
+
+  var btn = document.getElementById('btnShareWA');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+
+  // Need the deploy URL to embed a record-deep-link
+  google.script.run
+    .withSuccessHandler(function(scriptUrl) {
+      // Encode the session reference; landing reads `?ipqcSession=…` to auto-resume
+      var recordUrl = scriptUrl + '?page=IPQC&session=' + encodeURIComponent(SESSION_ID || '');
+      google.script.run
+        .withSuccessHandler(function(url) {
+          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+          if (!url) { showToast('Could not build WhatsApp link.', 'error'); return; }
+          try { window.open(url, '_blank'); }
+          catch (e) { showToast('Pop-up blocked — allow pop-ups to share.', 'error'); }
+        })
+        .withFailureHandler(function(e) {
+          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+          showToast('Share failed: ' + e.message, 'error');
+        })
+        .getWhatsAppURLForRecord({
+          type:        'IPQC',
+          sessionId:   SESSION_ID,
+          product:     SESSION_NAME,
+          batch:       SESSION_BATCH,
+          inspector:   SESSION_INSPECTOR,
+          rounds:      roundStats,
+          summary:     { pass: pass, fail: fail, na: na },
+          fails:       fails,
+          recordUrl:   recordUrl
+        });
+    })
+    .withFailureHandler(function() {
+      // Fallback: build without scriptUrl
+      google.script.run
+        .withSuccessHandler(function(url) {
+          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+          if (url) { try { window.open(url, '_blank'); } catch (e) {} }
+        })
+        .withFailureHandler(function(e) {
+          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+          showToast('Share failed: ' + e.message, 'error');
+        })
+        .getWhatsAppURLForRecord({
+          type: 'IPQC', sessionId: SESSION_ID, product: SESSION_NAME, batch: SESSION_BATCH,
+          inspector: SESSION_INSPECTOR, rounds: roundStats,
+          summary: { pass: pass, fail: fail, na: na }, fails: fails
+        });
+    })
+    .getScriptUrl();
+}
+
+var _LAST_REPORT_ROUNDS = [];
+function isWeightCode(code) { return /^W\d{2}$/.test(String(code || '')); }
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function printReport() { try { window.print(); } catch(e) { showToast('Print not available', 'error'); } }
+window.printReport = printReport;
+
 function buildReport(rounds) {
+  // Merge backend rounds with client SAVED_ROUNDS (client wins on missing avg/elapsed)
+  if ((!rounds || !rounds.length) && SAVED_ROUNDS.length) {
+    rounds = SAVED_ROUNDS.map(function(r) {
+      // Synthesize W-rows so the per-sample table still renders something
+      var synth = [];
+      if (r.weights) {
+        Object.keys(r.weights).forEach(function(s) {
+          if (r.weights[s] !== '' && r.weights[s] != null) {
+            synth.push({ paramCode: 'W0' + s, paramName: 'Sample ' + s, actualValue: r.weights[s], result: 'NA' });
+          }
+        });
+      }
+      return { roundNo: r.roundNo, avgWeight: r.avgWeight || '', elapsedHms: r.elapsedHms || '', params: synth };
+    });
+  }
+  _LAST_REPORT_ROUNDS = rounds || [];
+
   document.getElementById('reportTitle').textContent =
     'IPQC — ' + truncate(SESSION_NAME, 20) + ' · ' + SESSION_BATCH;
 
-  var table = document.getElementById('reportTable');
-  table.innerHTML = '';
+  var body = document.getElementById('reportBody');
+  body.innerHTML = '';
+
+  // Doc wrapper
+  var doc = document.createElement('div');
+  doc.className = 'rpt-doc';
+
+  // Title block
+  var nowStr = new Date().toLocaleString('en-IN', { hour12: false });
+  var titleH = document.createElement('div');
+  titleH.innerHTML =
+    '<div class="rpt-h1">In-Process Quality Control Report</div>' +
+    '<div class="rpt-sub">Pack Masters QMS · Generated ' + escHtml(nowStr) + '</div>';
+  doc.appendChild(titleH);
+
+  // Meta grid (session details)
+  var meta = document.createElement('div');
+  meta.className = 'rpt-meta-grid';
+  meta.innerHTML =
+    '<div><div class="k">Product</div><div class="v">' + escHtml(SESSION_NAME || SESSION_CODE || '—') + '</div></div>' +
+    '<div><div class="k">Batch</div><div class="v">' + escHtml(SESSION_BATCH || '—') + '</div></div>' +
+    '<div><div class="k">Product Code</div><div class="v">' + escHtml(SESSION_CODE || '—') + '</div></div>' +
+    '<div><div class="k">Inspector</div><div class="v">' + escHtml(SESSION_INSPECTOR || '—') + '</div></div>' +
+    '<div><div class="k">Session ID</div><div class="v" style="font-size:10px;word-break:break-all;">' + escHtml(SESSION_ID || '—') + '</div></div>' +
+    '<div><div class="k">Rounds Logged</div><div class="v">' + (rounds.length) + '</div></div>';
+  doc.appendChild(meta);
+
   if (!rounds.length) {
-    table.innerHTML = '<tr><td style="padding:20px;color:var(--muted);text-align:center;">No rounds saved yet.</td></tr>';
+    var empty = document.createElement('div');
+    empty.className = 'rpt-empty';
+    empty.textContent = 'No rounds saved yet. Save at least one round and try again.';
+    doc.appendChild(empty);
+    body.appendChild(doc);
     return;
   }
 
+  // Param collection (exclude weight rows from param table — they get their own section)
   var paramOrder = [], nameMap = {};
-  if (rounds[0] && rounds[0].params) {
-    rounds[0].params.forEach(function(p) { paramOrder.push(p.paramCode); nameMap[p.paramCode] = p.paramName; });
-  }
-  var roundData = rounds.map(function(rnd) {
+  rounds.forEach(function(rnd) {
+    (rnd.params || []).forEach(function(p) {
+      if (isWeightCode(p.paramCode)) return;
+      if (paramOrder.indexOf(p.paramCode) === -1) paramOrder.push(p.paramCode);
+      if (!nameMap[p.paramCode]) nameMap[p.paramCode] = p.paramName;
+    });
+  });
+  var roundParams = rounds.map(function(rnd) {
     var map = {};
     (rnd.params || []).forEach(function(p) {
-      map[p.paramCode] = { actualValue: p.actualValue, result: p.result };
-      if (!nameMap[p.paramCode]) nameMap[p.paramCode] = p.paramName;
-      if (paramOrder.indexOf(p.paramCode) === -1) paramOrder.push(p.paramCode);
+      if (isWeightCode(p.paramCode)) return;
+      map[p.paramCode] = { actualValue: p.actualValue, result: p.result, remark: p.remark };
     });
     return map;
   });
-
-  /* Header */
-  var thead = document.createElement('thead');
-  var hRow = document.createElement('tr');
-  var thP = document.createElement('th');
-  thP.className = 'rt-param-hdr'; thP.textContent = 'Parameter';
-  hRow.appendChild(thP);
-  rounds.forEach(function(rnd, i) {
-    var th = document.createElement('th');
-    th.textContent = 'Rnd ' + (rnd.roundNo || (i + 1));
-    hRow.appendChild(th);
-  });
-  thead.appendChild(hRow);
-  table.appendChild(thead);
-
-  /* Body */
-  var tbody = document.createElement('tbody');
-  paramOrder.forEach(function(code) {
-    var tr = document.createElement('tr');
-    var tdL = document.createElement('td');
-    tdL.className = 'rt-param-cell'; tdL.textContent = nameMap[code] || code;
-    tr.appendChild(tdL);
-    roundData.forEach(function(rMap) {
-      var td = document.createElement('td');
-      var entry = rMap[code];
-      var res = entry ? (entry.result || 'NA') : 'NA';
-      var badge = document.createElement('span');
-      badge.className = 'res-badge res-' + res.toLowerCase();
-      badge.textContent = res;
-      td.appendChild(badge);
-      if (entry && entry.actualValue !== '' && entry.actualValue !== null && entry.actualValue !== undefined) {
-        var vs = document.createElement('span');
-        vs.className = 'rt-cell-val'; vs.textContent = entry.actualValue;
-        td.appendChild(vs);
-      }
-      tr.appendChild(td);
+  // Per-sample weights map: roundIdx -> sampleNo -> value
+  var roundWeights = rounds.map(function(rnd) {
+    var w = {};
+    (rnd.params || []).forEach(function(p) {
+      if (!isWeightCode(p.paramCode)) return;
+      var s = parseInt(String(p.paramCode).substring(1), 10);
+      w[s] = p.actualValue;
     });
-    tbody.appendChild(tr);
+    return w;
   });
 
-  /* Summary row */
-  var sumTr = document.createElement('tr');
-  sumTr.className = 'summary-row';
-  var sumL = document.createElement('td');
-  sumL.className = 'rt-param-cell'; sumL.textContent = 'Summary';
-  sumTr.appendChild(sumL);
-  roundData.forEach(function(rMap) {
-    var p = 0, f = 0, na = 0;
-    paramOrder.forEach(function(code) { var r = (rMap[code] || {}).result || 'NA'; if (r === 'PASS') p++; else if (r === 'FAIL') f++; else na++; });
-    var td = document.createElement('td');
-    td.innerHTML = '<span style="color:var(--success);font-weight:700;">P:' + p + '</span> ' +
-      (f ? '<span style="color:var(--danger);font-weight:700;">F:' + f + '</span>' : '');
-    sumTr.appendChild(td);
+  // Totals
+  var pTot = 0, fTot = 0, nTot = 0;
+  roundParams.forEach(function(rMap) {
+    paramOrder.forEach(function(code) {
+      if (code === '_LEAK') return;
+      var r = (rMap[code] || {}).result || 'NA';
+      if (r === 'PASS') pTot++; else if (r === 'FAIL') fTot++; else nTot++;
+    });
   });
-  tbody.appendChild(sumTr);
-  table.appendChild(tbody);
+
+  // Summary stats
+  var stats = document.createElement('div');
+  stats.className = 'rpt-stats';
+  stats.innerHTML =
+    '<div class="rpt-stat"><div class="lbl">Rounds</div><div class="val" style="color:#1e3a5f;">' + rounds.length + '</div></div>' +
+    '<div class="rpt-stat"><div class="lbl">Pass</div><div class="val" style="color:#15803d;">' + pTot + '</div></div>' +
+    '<div class="rpt-stat"><div class="lbl">Fail</div><div class="val" style="color:#b91c1c;">' + fTot + '</div></div>' +
+    '<div class="rpt-stat"><div class="lbl">NA</div><div class="val" style="color:#64748b;">' + nTot + '</div></div>';
+  doc.appendChild(stats);
+
+  // ── Section 1: Parameters per round ──
+  var s1h = document.createElement('div');
+  s1h.className = 'rpt-section-h';
+  s1h.textContent = 'Quality Parameters per Round';
+  doc.appendChild(s1h);
+
+  if (paramOrder.length === 0) {
+    var noParams = document.createElement('div');
+    noParams.className = 'rpt-empty';
+    noParams.style.padding = '10px';
+    noParams.textContent = 'No control plan parameters recorded for these rounds.';
+    doc.appendChild(noParams);
+  } else {
+    var t1 = document.createElement('table');
+    t1.className = 'rpt-tbl';
+    var hdr1 = '<tr><th style="text-align:left;">Parameter</th>';
+    rounds.forEach(function(rnd, i) {
+      var no = rnd.roundNo || (i + 1);
+      var dur = rnd.elapsedHms ? '<div style="font-size:9px;font-weight:400;color:#cbd5e1;">⏱ ' + escHtml(rnd.elapsedHms) + '</div>' : '';
+      hdr1 += '<th>R' + escHtml(no) + dur + '</th>';
+    });
+    hdr1 += '</tr>';
+    var rows1 = '';
+    paramOrder.forEach(function(code) {
+      if (code === '_LEAK') return;
+      rows1 += '<tr><td class="lbl">' + escHtml(nameMap[code] || code) + '</td>';
+      roundParams.forEach(function(rMap) {
+        var e = rMap[code];
+        var res = e ? (e.result || 'NA') : 'NA';
+        var actual = e && e.actualValue !== '' && e.actualValue != null ? e.actualValue : '';
+        rows1 += '<td><span class="res-badge res-' + res.toLowerCase() + '" style="padding:2px 6px;border-radius:3px;font-weight:700;font-size:10px;">' + escHtml(res) + '</span>' +
+          (actual ? '<div style="font-size:10px;color:#64748b;margin-top:2px;">' + escHtml(actual) + '</div>' : '') + '</td>';
+      });
+      rows1 += '</tr>';
+    });
+    // Leak Test row
+    if (paramOrder.indexOf('_LEAK') >= 0) {
+      rows1 += '<tr><td class="lbl">Leak Test</td>';
+      roundParams.forEach(function(rMap) {
+        var e = rMap['_LEAK'];
+        var res = e ? (e.result || 'NA') : 'NA';
+        rows1 += '<td><span class="res-badge res-' + res.toLowerCase() + '" style="padding:2px 6px;border-radius:3px;font-weight:700;font-size:10px;">' + escHtml(res) + '</span></td>';
+      });
+      rows1 += '</tr>';
+    }
+    // Per-round Pass/Fail summary
+    rows1 += '<tr style="background:#eff6ff;"><td class="lbl" style="background:#eff6ff;color:#1e3a5f;">Pass / Fail</td>';
+    roundParams.forEach(function(rMap) {
+      var p = 0, f = 0;
+      paramOrder.forEach(function(code) {
+        if (code === '_LEAK') return;
+        var r = (rMap[code] || {}).result || 'NA';
+        if (r === 'PASS') p++; else if (r === 'FAIL') f++;
+      });
+      rows1 += '<td style="font-weight:700;font-size:11px;"><span style="color:#15803d;">P:' + p + '</span>' +
+        (f ? ' <span style="color:#b91c1c;">F:' + f + '</span>' : '') + '</td>';
+    });
+    rows1 += '</tr>';
+    t1.innerHTML = '<thead>' + hdr1 + '</thead><tbody>' + rows1 + '</tbody>';
+    doc.appendChild(t1);
+  }
+
+  // ── Section 2: Average Weight Check ──
+  var s2h = document.createElement('div');
+  s2h.className = 'rpt-section-h';
+  s2h.textContent = 'Average Weight Check (5 samples per round)';
+  doc.appendChild(s2h);
+  var t2 = document.createElement('table');
+  t2.className = 'rpt-tbl';
+  var hdr2 = '<tr><th style="text-align:left;">Sample</th>';
+  rounds.forEach(function(rnd, i) {
+    hdr2 += '<th>R' + escHtml(rnd.roundNo || (i + 1)) + '</th>';
+  });
+  hdr2 += '</tr>';
+  var rows2 = '';
+  for (var s = 1; s <= 5; s++) {
+    rows2 += '<tr><td class="lbl">S' + s + '</td>';
+    roundWeights.forEach(function(wMap) {
+      var v = wMap[s];
+      rows2 += '<td>' + (v !== '' && v != null ? escHtml(v) : '—') + '</td>';
+    });
+    rows2 += '</tr>';
+  }
+  // Avg row
+  rows2 += '<tr style="background:#ecfdf5;"><td class="lbl" style="background:#ecfdf5;color:#065f46;">Average</td>';
+  rounds.forEach(function(rnd) {
+    rows2 += '<td style="font-weight:700;color:#065f46;">' + (rnd.avgWeight ? escHtml(rnd.avgWeight) + ' g' : '—') + '</td>';
+  });
+  rows2 += '</tr>';
+  t2.innerHTML = '<thead>' + hdr2 + '</thead><tbody>' + rows2 + '</tbody>';
+  doc.appendChild(t2);
+
+  // ── Section 3: Failed Checks (if any) ──
+  var fails = [];
+  rounds.forEach(function(rnd) {
+    (rnd.params || []).forEach(function(p) {
+      if (isWeightCode(p.paramCode)) return;
+      if (String(p.result || '').toUpperCase() === 'FAIL') {
+        fails.push({
+          roundNo: rnd.roundNo, paramName: p.paramName || p.paramCode,
+          actualValue: p.actualValue, remark: p.remark
+        });
+      }
+    });
+  });
+  if (fails.length) {
+    var s3h = document.createElement('div');
+    s3h.className = 'rpt-section-h';
+    s3h.style.color = '#b91c1c';
+    s3h.style.borderBottomColor = '#b91c1c';
+    s3h.textContent = 'Failed Checks (' + fails.length + ')';
+    doc.appendChild(s3h);
+    var t3 = document.createElement('table');
+    t3.className = 'rpt-tbl';
+    var rows3 = '<thead><tr><th>Round</th><th>Parameter</th><th>Reading</th><th style="text-align:left;">Remark</th></tr></thead><tbody>';
+    fails.forEach(function(f) {
+      rows3 += '<tr><td>R' + escHtml(f.roundNo) + '</td>' +
+        '<td>' + escHtml(f.paramName) + '</td>' +
+        '<td>' + escHtml(f.actualValue || '—') + '</td>' +
+        '<td style="text-align:left;">' + escHtml(f.remark || '—') + '</td></tr>';
+    });
+    rows3 += '</tbody>';
+    t3.innerHTML = rows3;
+    doc.appendChild(t3);
+  }
+
+  // Footer (signatures + meta)
+  var footer = document.createElement('div');
+  footer.className = 'rpt-footer';
+  footer.innerHTML =
+    '<div>Inspector: <strong>' + escHtml(SESSION_INSPECTOR || '—') + '</strong></div>' +
+    '<div>Report ID: ' + escHtml(SESSION_ID || '—') + '</div>';
+  doc.appendChild(footer);
+
+  body.appendChild(doc);
 }
 
 // ── Navigation ─────────────────────────────────────────────────────
@@ -1024,21 +1650,60 @@ function showScreen(name) {
   });
   var back  = document.getElementById('headerBackBtn');
   var badge = document.getElementById('headerBadge');
+  var nav   = document.getElementById('ipqcBottomNav');
   if (name === 'A') {
     back.style.display = 'none';
     badge.style.display = '';
     document.getElementById('headerTitle').textContent = 'IPQC';
+    if (nav) nav.style.display = '';
     stopTimer();
   } else if (name === 'B') {
     back.style.display = 'flex';
     badge.style.display = '';
     document.getElementById('headerTitle').textContent = 'New Check';
+    if (nav) nav.style.display = 'none';
   } else if (name === 'C') {
     back.style.display = 'none';
     badge.style.display = 'none';
+    if (nav) nav.style.display = 'none';
   }
   window.scrollTo(0, 0);
 }
+
+/* Bottom-nav routing (Screen A) */
+function ipqcGoto(formName) {
+  google.script.run
+    .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+    .withFailureHandler(function(){ showToast('Could not open ' + formName, 'error'); })
+    .getFormHtml(formName);
+}
+function ipqcShowMore() {
+  var existing = document.getElementById('ipqcMoreSheet');
+  if (existing) { existing.remove(); return; }
+  var items = [
+    { label: 'Masters',         form: 'Masters' },
+    { label: 'Warehouse',       form: 'Warehouse' },
+    { label: 'Customer Return', form: 'CustomerReturn' },
+    { label: 'Dispatch',        form: 'Dispatch' }
+  ];
+  var html = items.map(function(i){
+    return '<button data-form="' + i.form + '" class="moreItem" style="width:100%;display:block;padding:14px 16px;font-size:14px;font-weight:600;color:#0f172a;background:transparent;border:0;border-bottom:1px solid #e2e8f0;text-align:left;cursor:pointer;font-family:inherit;">' + i.label + '</button>';
+  }).join('');
+  var sheet = document.createElement('div');
+  sheet.id = 'ipqcMoreSheet';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(30,58,95,0.55);';
+  sheet.innerHTML = '<div style="background:#fff;width:100%;max-width:480px;border-radius:14px 14px 0 0;overflow:hidden;">' +
+    '<div style="padding:12px 14px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.4px;border-bottom:1px solid #e2e8f0;">More modules</div>' +
+    html + '</div>';
+  sheet.addEventListener('click', function(e){
+    if (e.target === sheet) { sheet.remove(); return; }
+    var b = e.target.closest('.moreItem');
+    if (b) { var f = b.getAttribute('data-form'); sheet.remove(); ipqcGoto(f); }
+  });
+  document.body.appendChild(sheet);
+}
+window.ipqcGoto = ipqcGoto;
+window.ipqcShowMore = ipqcShowMore;
 
 function handleBack() {
   var vis = ['C','B','A'].find(function(n) {
@@ -1091,5 +1756,6 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

@@ -1,382 +1,299 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <title>GRN Receipt — Pack Masters QMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
-    /* ── GRN_F — file-local styles only ── */
+    body { min-height: max(884px, 100dvh); }
+    input, select, textarea { font-size: 16px !important; }
+    button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button:active { transform: scale(0.97); transition: transform 0.08s ease; }
 
-    /* iOS zoom prevention — override Theme base for all inputs here */
-    input, select, textarea {
-      font-size: 16px !important;
-    }
-
-    button {
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      transition: all 0.15s ease;
-    }
-    button:active {
-      transform: scale(0.97);
-    }
-
-    /* ── Disposition grid ── */
-    .disp-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 4px;
-    }
+    /* Disposition buttons */
     .disp-btn {
-      min-height: 72px;
-      padding: 12px 6px;
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      background: var(--white);
+      min-height: 64px;
+      border: 2px solid #e2e8f0;
+      border-radius: 0.75rem;
+      background: #fff;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
       font-family: inherit;
-      color: var(--text);
-      letter-spacing: 0.3px;
+      color: #0f172a;
+      letter-spacing: 0.4px;
       transition: all 0.15s ease;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+      width: 100%;
+      padding: 10px 6px;
     }
-    .disp-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-1);
-    }
-    .disp-btn:active {
-      transform: scale(0.97);
-      transition: transform 0.08s ease;
-    }
-    .disp-btn.sel-acc {
-      background: #16A34A;
-      border-color: #16A34A;
-      color: #FFFFFF;
-    }
-    .disp-btn.sel-rej {
-      background: #DC2626;
-      border-color: #DC2626;
-      color: #FFFFFF;
-    }
-    .disp-btn.sel-hld {
-      background: #D97706;
-      border-color: #D97706;
-      color: #FFFFFF;
-    }
-    .disp-btn.sel-awd {
-      background: #EA580C;
-      border-color: #EA580C;
-      color: #FFFFFF;
-    }
+    .disp-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .disp-btn.sel-acc { background: #16A34A; border-color: #16A34A; color: #fff; }
+    .disp-btn.sel-rej { background: #DC2626; border-color: #DC2626; color: #fff; }
+    .disp-btn.sel-hld { background: #D97706; border-color: #D97706; color: #fff; }
+    .disp-btn.sel-awd { background: #EA580C; border-color: #EA580C; color: #fff; }
 
-    /* ── 2-col quantity grid ── */
-    .qty-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
+    /* Field error */
+    .field-error-msg { font-size: 11px; font-weight: 500; color: #dc2626; margin-top: 3px; display: none; }
+    .field-err input, .field-err select, .field-err textarea { border-color: #dc2626 !important; }
+    .field-err .field-error-msg { display: block; }
 
-    /* ── Inline field error ── */
-    .field-error {
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--danger);
-      margin-top: 3px;
-      display: none;
-    }
-    .field-err input,
-    .field-err select,
-    .field-err textarea {
-      border-color: var(--danger) !important;
-    }
-    .field-err .field-error {
-      display: block;
-    }
+    /* Spinner */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 6px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Sticky footer ── */
-    .sticky-footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--white);
-      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-      border-top: 1px solid var(--border);
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
-      z-index: 200;
-    }
+    /* Toast */
+    .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1e3a5f; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s ease; z-index: 9999; pointer-events: none; white-space: nowrap; max-width: 90vw; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #dc2626; }
+    .toast.success { background: #16a34a; }
+    .toast.warning { background: #d97706; }
 
-    /* ── Loading overlay ── */
-    .loading-row {
-      text-align: center;
-      padding: 16px 0;
-      color: var(--muted);
-      font-size: 12px;
-    }
+    /* Hidden */
+    .hidden { display: none !important; }
 
-    /* ── Confirmation screen ── */
-    #confirmScreen {
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      padding: 32px 16px 100px;
-      text-align: center;
-    }
-    #confirmScreen.visible {
-      display: block;
-    }
-    #confirmScreen.fade-in {
-      opacity: 1;
-    }
-    .confirm-icon {
-      display: block;
-      margin: 0 auto 16px;
-      color: var(--success);
-    }
-    .confirm-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .confirm-grn-id {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-    .confirm-item {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .confirm-batch {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-    .confirm-badge {
-      display: inline-block;
-      padding: 4px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      margin-bottom: 28px;
-    }
+    /* PO multi table */
+    #po-multi-section { border: 1px solid #e0c080; background: #fffbeb; border-radius: 0.75rem; padding: 12px; margin-top: 8px; }
+    #po-multi-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    #po-multi-table th { padding: 4px 6px; background: #fef3c7; text-align: left; }
+    #po-multi-table td { padding: 4px 6px; }
+    .po-multi-qty, .po-multi-batch { padding: 3px 5px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px; }
+    .po-multi-qty { width: 70px; text-align: right; }
+    .po-multi-batch { width: 95px; }
+
+    /* Confirm screen */
+    #confirmScreen { display: none; opacity: 0; transition: opacity 0.3s ease; text-align: center; padding: 40px 20px 120px; }
+    #confirmScreen.visible { display: block; }
+    #confirmScreen.fade-in { opacity: 1; }
+    .confirm-badge { display: inline-block; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 28px; }
     .confirm-badge.ACCEPT { background: #DCFCE7; color: #15803D; }
     .confirm-badge.REJECT { background: #FEE2E2; color: #B91C1C; }
     .confirm-badge.HOLD   { background: #FEF3C7; color: #B45309; }
     .confirm-badge.AWD    { background: #FFEDD5; color: #C2410C; }
-
-    /* amber IQC button */
-    .btn-iqc {
-      width: 100%;
-      background: var(--amber);
-      color: var(--navy);
-      border: none;
-      border-radius: 8px;
-      padding: 13px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-iqc:hover  { background: #D4911C; }
-    .btn-iqc:active { transform: scale(0.97); }
-
-    .btn-home {
-      width: 100%;
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 8px;
-      padding: 13px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
-      margin-top: 8px;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-home:hover  { background: #1A2D9E; }
-    .btn-home:active { transform: scale(0.97); }
-
-    .hidden { display: none !important; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+  <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
+<body class="bg-surface font-body text-[#0f172a] antialiased flex flex-col min-h-screen">
 
-<!-- ── Header ── -->
-<div class="pm-header">
-  <button class="back-btn" id="backBtn" aria-label="Back">
-    <svg viewBox="0 0 20 20">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
+<!-- ── Top App Bar ── -->
+<header class="fixed top-0 left-0 w-full z-50 h-[56px] bg-primary flex items-center justify-between px-4 shadow-md">
+  <button id="backBtn" class="text-white hover:bg-white/10 active:opacity-80 transition-all p-2 rounded-full flex items-center justify-center" aria-label="Back">
+    <span class="material-symbols-outlined">arrow_back</span>
   </button>
-  <span class="page-title">GRN Receipt</span>
-  <span class="doc-badge" id="docBadge">GRN</span>
-</div>
+  <h1 class="font-headline text-[18px] font-bold text-white">New GRN</h1>
+  <span id="docBadge" class="text-[13px] font-semibold text-white/70 bg-white/10 px-3 py-1 rounded-full">GRN</span>
+</header>
 
-<!-- ── Form ── -->
-<div id="formWrap">
+<!-- ── Main ── -->
+<main id="formWrap" class="flex-1 mt-[56px] pb-[88px] p-4 flex flex-col gap-4 max-w-lg mx-auto w-full">
 
-  <!-- Section 1: Supplier -->
-  <div class="section">
-    <div class="section-title">SUPPLIER</div>
-    <div class="section-body">
+  <!-- Section 1: Header / Supplier -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
 
-      <!-- P2: PO Reference (optional) -->
-      <div class="field" id="f-poRef" style="border:1px solid #e0c080;background:#fffbeb;border-radius:6px;padding:8px 10px;margin-bottom:10px;">
-        <label style="color:#92400E;">PO Reference <span style="font-size:10px;color:#b45309;font-weight:400;">(optional — pick to auto-fill)</span></label>
-        <select id="poRefSelect" onchange="onPORefChange()">
+    <!-- Supplier -->
+    <div id="f-supplier" class="flex flex-col gap-[6px]">
+      <label class="font-label text-[14px] font-medium text-[#374151]" for="supplier">Supplier <span class="text-status-danger">*</span></label>
+      <div class="relative">
+        <select id="supplier" onchange="onSupplierChange()" class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+          <option value="">Select Supplier</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+      </div>
+      <div class="field-error-msg" id="err-supplier">Supplier is required</div>
+    </div>
+
+    <!-- PO Reference (optional) -->
+    <div class="flex flex-col gap-[6px]">
+      <label class="font-label text-[14px] font-medium text-[#374151]">Purchase Order <span class="text-[12px] font-normal text-[#64748b]">(Optional)</span></label>
+      <div class="relative">
+        <select id="poRefSelect" onchange="onPORefChange()" class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
           <option value="">— no PO — (free GRN)</option>
         </select>
-        <div id="clearPOLink" style="display:none;font-size:11px;color:var(--navy);cursor:pointer;margin-top:4px;text-decoration:underline;" onclick="clearPORef()">✕ Clear PO reference (unlock fields)</div>
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
       </div>
-
-      <div class="field" id="f-supplier">
-        <label>Supplier <span style="color:var(--danger);font-size:10px;">•</span></label>
-        <select id="supplier">
-          <option value="">Select supplier...</option>
-        </select>
-        <div class="field-error" id="err-supplier">Supplier is required</div>
-      </div>
-
-      <div class="field" id="f-item">
-        <label>Item / Material <span style="color:var(--danger);font-size:10px;">•</span></label>
-        <select id="item" disabled>
-          <option value="">Select supplier first...</option>
-        </select>
-        <div class="field-error" id="err-item">Item is required</div>
-      </div>
-
-      <!-- P2: PO multi-line table — shown only when a PO with >1 line is selected -->
-      <div id="po-multi-section" style="display:none;border:1px solid #e0c080;background:#fffbeb;border-radius:6px;padding:10px;margin-top:6px;">
-        <div style="font-size:11px;color:#92400E;font-weight:700;margin-bottom:6px;letter-spacing:0.4px;">PO LINES — enter qty received per line</div>
-        <table id="po-multi-table" style="width:100%;border-collapse:collapse;font-size:11px;">
-          <thead>
-            <tr style="background:#fef3c7;">
-              <th style="padding:4px 6px;text-align:left;">Material</th>
-              <th style="padding:4px 6px;text-align:right;width:60px;">Ordered</th>
-              <th style="padding:4px 6px;text-align:right;width:60px;">Pending</th>
-              <th style="padding:4px 6px;text-align:right;width:80px;">Receive</th>
-              <th style="padding:4px 6px;text-align:left;width:100px;">Batch</th>
-            </tr>
-          </thead>
-          <tbody id="po-multi-body"></tbody>
-        </table>
-        <div style="font-size:10px;color:#92400E;margin-top:6px;">All receipts share supplier, disposition, vehicle no, and date. Leave Receive blank to skip a line.</div>
-      </div>
-
-      <div class="field" id="f-storage-loc">
-        <label>Storage Location <span style="font-size:10px;color:var(--muted);">(from material master)</span></label>
-        <input type="text" id="storageLocation" disabled placeholder="Pick a material…">
-        <div class="hint" id="hint-storage-loc">Auto-assigned from the material's default location.</div>
-      </div>
-
+      <div id="clearPOLink" style="display:none" class="text-[11px] text-primary cursor-pointer underline" onclick="clearPORef()">✕ Clear PO reference (unlock fields)</div>
     </div>
-  </div>
 
-  <!-- Section 2: Receipt Details -->
-  <div class="section">
-    <div class="section-title">RECEIPT DETAILS</div>
-    <div class="section-body">
-
-      <div class="field" id="f-batchNo">
-        <label>Batch / Lot No <span style="color:var(--danger);font-size:10px;">•</span></label>
-        <input type="text" id="batchNo" placeholder="As printed on the label" autocomplete="off">
-        <div class="hint">As printed on the label</div>
-        <div class="field-error" id="err-batchNo">Batch / Lot No is required</div>
-      </div>
-
-      <div class="field">
-        <label>Vehicle No <span style="font-size:10px;color:var(--muted);">(optional)</span></label>
-        <input type="text" id="vehicleNo" placeholder="e.g. MH-04-AB-1234" autocomplete="off">
-        <div class="hint">e.g. MH-04-AB-1234</div>
-      </div>
-
+    <!-- Invoice Number -->
+    <div class="flex flex-col gap-[6px]">
+      <label class="font-label text-[14px] font-medium text-[#374151]" for="invoiceNo">Invoice Number</label>
+      <input id="invoiceNo" type="text" placeholder="e.g. INV-2026-001" autocomplete="off"
+        class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
     </div>
-  </div>
+
+  </section>
+
+  <!-- Material Items heading -->
+  <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase mt-1">Material Items</h2>
+
+  <!-- Section 1b: Material card -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4 relative">
+    <!-- Item -->
+    <div id="f-item" class="flex flex-col gap-[6px] mt-1">
+      <label class="font-label text-[14px] font-medium text-[#374151]" for="item">Material Code <span class="text-status-danger">*</span></label>
+      <div class="relative">
+        <select id="item" disabled onchange="onItemChange()" class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+          <option value="">Select Material</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+      </div>
+      <div class="field-error-msg" id="err-item">Item is required</div>
+    </div>
+
+    <!-- PO Multi-line table -->
+    <div id="po-multi-section" style="display:none">
+      <div style="font-size:11px;color:#92400E;font-weight:700;margin-bottom:6px;letter-spacing:0.4px;">PO LINES — enter qty received per line</div>
+      <table id="po-multi-table">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th style="text-align:right;width:60px">Ordered</th>
+            <th style="text-align:right;width:60px;color:#b45309">Pending</th>
+            <th style="text-align:right;width:80px">Receive</th>
+            <th style="width:100px">Batch</th>
+          </tr>
+        </thead>
+        <tbody id="po-multi-body"></tbody>
+      </table>
+      <div style="font-size:10px;color:#92400E;margin-top:6px">All receipts share supplier, disposition, vehicle no, and date. Leave Receive blank to skip a line.</div>
+    </div>
+
+    <!-- Batch + Expiry grid -->
+    <div class="grid grid-cols-2 gap-3">
+      <div id="f-batchNo" class="flex flex-col gap-[6px]">
+        <label class="font-label text-[14px] font-medium text-[#374151]">Batch Number <span class="text-status-danger">*</span></label>
+        <input id="batchNo" type="text" placeholder="B-" autocomplete="off"
+          class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+        <div class="field-error-msg" id="err-batchNo">Batch / Lot No is required</div>
+      </div>
+      <div class="flex flex-col gap-[6px]">
+        <label class="font-label text-[14px] font-medium text-[#374151]">Expiry</label>
+        <input id="expiryDate" type="month" placeholder="MM/YYYY"
+          class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+      </div>
+    </div>
+
+    <!-- COA Received toggle (iOS style) -->
+    <div class="flex items-center justify-between py-2">
+      <span class="font-label text-[14px] font-medium text-[#374151]">COA Received</span>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="coaReceived" class="sr-only peer">
+        <div class="w-12 h-7 bg-slate-300 rounded-full peer peer-checked:bg-[#0ea5e9] transition-colors"></div>
+        <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></div>
+      </label>
+    </div>
+
+    <!-- Storage Location -->
+    <div id="f-storage-loc" class="flex flex-col gap-[6px]">
+      <label class="font-label text-[14px] font-medium text-[#374151]">Storage Location</label>
+      <input id="storageLocation" type="text" disabled placeholder="Pick a material…"
+        class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 bg-surface outline-none">
+      <span id="hint-storage-loc" class="text-[11px] text-[#64748b]">Auto-assigned from the material's default location.</span>
+    </div>
+
+  </section>
 
   <!-- Section 3: Quantity -->
-  <div class="section">
-    <div class="section-title">QUANTITY</div>
-    <div class="section-body">
-      <div class="qty-grid">
+  <section id="qty-section" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Quantity</h2>
+    <div class="grid grid-cols-2 gap-3">
 
-        <div class="field" id="f-qtyReceived">
-          <label>Qty Received <span style="color:var(--danger);font-size:10px;">•</span></label>
-          <input type="number" id="qtyReceived" min="0" step="1" placeholder="0">
-          <div class="field-error" id="err-qtyReceived">Must be &gt; 0</div>
-        </div>
-
-        <div class="field">
-          <label>Qty Accepted</label>
-          <input type="number" id="qtyAccepted" min="0" step="1" placeholder="0">
-          <div class="hint">Reduce if partial reject</div>
-        </div>
-
+      <div id="f-qtyReceived" class="flex flex-col gap-[6px]">
+        <label class="font-label text-[14px] font-medium text-[#374151]">Qty Received <span class="text-status-danger">*</span></label>
+        <input id="qtyReceived" type="number" min="0" step="1" placeholder="0"
+          class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+        <div class="field-error-msg" id="err-qtyReceived">Must be &gt; 0</div>
       </div>
+
+      <div class="flex flex-col gap-[6px]">
+        <label class="font-label text-[14px] font-medium text-[#374151]">Qty Accepted</label>
+        <input id="qtyAccepted" type="number" min="0" step="1" placeholder="0"
+          class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+        <span class="text-[11px] text-[#64748b]">Reduce if partial reject</span>
+      </div>
+
     </div>
-  </div>
+  </section>
+
+  <!-- Section 3b: Additional Items (manual mode only) -->
+  <section id="extra-items-section" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase" style="margin:0;">Additional Items</h2>
+    <button type="button" id="btnAddItem" onclick="addExtraItem()"
+      style="font-size:14px;font-weight:700;color:#fff;background:#0B2A4A;padding:12px;border:none;border-radius:8px;cursor:pointer;width:100%;">
+      + Add Item
+    </button>
+    <div id="extra-items-list" class="flex flex-col gap-3"></div>
+    <div id="extra-items-empty" class="text-[11px] text-[#64748b]">Same supplier, invoice, disposition. Different material/batch.</div>
+
+  </section>
 
   <!-- Section 4: Disposition -->
-  <div class="section">
-    <div class="section-title" id="dispTitle">DISPOSITION <span style="color:var(--danger);font-size:10px;">•</span></div>
-    <div class="section-body">
-      <div class="disp-grid">
-        <button type="button" class="disp-btn" id="d-ACCEPT" data-disp="ACCEPT">ACCEPT</button>
-        <button type="button" class="disp-btn" id="d-REJECT" data-disp="REJECT">REJECT</button>
-        <button type="button" class="disp-btn" id="d-HOLD"   data-disp="HOLD">HOLD</button>
-        <button type="button" class="disp-btn" id="d-AWD"    data-disp="AWD">AWD</button>
-      </div>
-      <div class="field-error" id="err-disp" style="display:none;margin-top:6px;">Please select a disposition</div>
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Disposition <span class="text-status-danger">*</span></h2>
+    <div class="grid grid-cols-2 gap-3">
+      <button type="button" class="disp-btn" id="d-ACCEPT" data-disp="ACCEPT">ACCEPT</button>
+      <button type="button" class="disp-btn" id="d-REJECT" data-disp="REJECT">REJECT</button>
+      <button type="button" class="disp-btn" id="d-HOLD"   data-disp="HOLD">HOLD</button>
+      <button type="button" class="disp-btn" id="d-AWD"    data-disp="AWD">AWD</button>
     </div>
-  </div>
+    <div class="field-error-msg" id="err-disp" style="display:none">Please select a disposition</div>
+  </section>
 
   <!-- Section 5: Remarks -->
-  <div class="section">
-    <div class="section-title">REMARKS</div>
-    <div class="section-body">
-      <div class="field">
-        <textarea id="remarks" rows="3" placeholder="Deviations, observations, or notes"></textarea>
-        <div class="hint">Deviations, observations, or notes</div>
-      </div>
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Remarks</h2>
+    <textarea id="remarks" rows="3" placeholder="Deviations, observations, or notes"
+      class="w-full border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 py-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all resize-none"></textarea>
+  </section>
+
+  <!-- WhatsApp notification toggle -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[#16a34a]" style="font-variation-settings:'FILL' 1">chat</span>
+      <span class="font-label text-[14px] font-medium text-[#374151]">Notify supplier on WhatsApp</span>
     </div>
-  </div>
+    <label class="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" id="notifyWhatsapp" class="sr-only peer">
+      <div class="w-12 h-7 bg-slate-300 rounded-full peer peer-checked:bg-[#0ea5e9] transition-colors"></div>
+      <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></div>
+    </label>
+  </section>
 
-</div><!-- /#formWrap -->
+</main><!-- /#formWrap -->
 
-<!-- ── Confirmation screen (inline replace) ── -->
+<!-- ── Confirmation screen ── -->
 <div id="confirmScreen">
-  <svg class="confirm-icon" width="64" height="64" viewBox="0 0 64 64" fill="none">
-    <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="3" fill="none"/>
-    <path d="M20 33l8 8 16-18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <svg class="mx-auto mb-5 text-status-success" width="72" height="72" viewBox="0 0 72 72" fill="none">
+    <circle cx="36" cy="36" r="33" stroke="currentColor" stroke-width="3" fill="none"/>
+    <path d="M22 37l10 10 18-20" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
-  <div class="confirm-title">GRN Saved</div>
-  <div class="confirm-grn-id" id="confGrnId"></div>
-  <div class="confirm-item"   id="confItem"></div>
-  <div class="confirm-batch"  id="confBatch"></div>
-  <div id="confBadge" class="confirm-badge"></div>
-  <button class="btn-iqc"  id="btnIqc">PROCEED TO IQC &#8594;</button>
-  <button class="btn-home" id="btnHome">BACK TO HOME</button>
+  <div class="text-[22px] font-bold font-headline text-[#0f172a] mb-1">GRN Saved</div>
+  <div class="text-[13px] font-medium text-[#64748b] mb-1" id="confGrnId"></div>
+  <div class="text-[14px] font-semibold text-[#0f172a] mb-1" id="confItem"></div>
+  <div class="text-[13px] text-[#64748b] mb-3" id="confBatch"></div>
+  <div id="confItemsTable" style="display:none;max-width:520px;margin:0 auto 16px;text-align:left;font-size:11px;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;"></div>
+  <div id="confBadge" class="confirm-badge mb-8"></div>
+  <button id="btnIqc"
+    class="w-full max-w-sm mx-auto block h-[52px] bg-amber-400 text-[#1e3a5f] rounded-[10px] font-headline text-[15px] font-bold mb-3 transition-colors hover:bg-amber-300">
+    PROCEED TO IQC &#8594;
+  </button>
+  <button id="btnHome"
+    class="w-full max-w-sm mx-auto block h-[52px] bg-primary text-white rounded-[10px] font-headline text-[15px] font-bold transition-colors hover:bg-primary/90">
+    BACK TO HOME
+  </button>
 </div>
 
 <!-- ── Sticky footer ── -->
-<div class="sticky-footer" id="stickyFooter">
-  <button class="btn-submit" id="btnSubmit" disabled>SAVE GRN RECORD</button>
+<div id="stickyFooter" class="fixed bottom-0 left-0 w-full bg-white border-t border-border p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40">
+  <button id="btnSubmit" disabled
+    class="w-full max-w-lg mx-auto flex items-center justify-center h-[56px] bg-accent text-white rounded-[10px] font-headline text-[16px] font-semibold transition-colors disabled:opacity-40 shadow-sm">
+    Save GRN
+  </button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -385,15 +302,15 @@
 // ── State ──────────────────────────────────────────────────────────
 var SUPPLIERS        = [];
 var ALL_MATS         = [];
-var LOCATIONS        = [];   // [{ id, type, label, ... }] — from getGRNFormInit
+var LOCATIONS        = [];
 
 var _inspectorNames  = [];
 var formSaved    = false;
 var disposition  = '';
-var supplierObj  = {};   // { code, name }
-var itemObj      = {};   // { code, desc, unit, category }
-var savedGrn     = {};   // filled on success
-var qtyManuallyEdited = false;  // track if qtyAccepted was manually changed
+var supplierObj  = {};
+var itemObj      = {};
+var savedGrn     = {};
+var qtyManuallyEdited = false;
 
 // ── Toast ──────────────────────────────────────────────────────────
 function showToast(msg, type) {
@@ -403,30 +320,19 @@ function showToast(msg, type) {
   clearTimeout(t._timer);
   t._timer = setTimeout(function() { t.className = 'toast'; }, 3500);
 }
-
 function showErr(msg) { showToast(msg, 'error'); }
 
-// ── beforeunload guard ─────────────────────────────────────────────
-window.addEventListener('beforeunload', function() {
-});
-
-// ── Inline error helpers ───────────────────────────────────────────
+// ── Field error helpers ────────────────────────────────────────────
 function setFieldErr(fieldId, errId, show) {
   var f = document.getElementById(fieldId);
   var e = document.getElementById(errId);
   if (!f || !e) return;
-  if (show) {
-    f.classList.add('field-err');
-    e.style.display = 'block';
-  } else {
-    f.classList.remove('field-err');
-    e.style.display = 'none';
-  }
+  if (show) { f.classList.add('field-err'); e.style.display = 'block'; }
+  else       { f.classList.remove('field-err'); e.style.display = 'none'; }
 }
 
 function clearAllErrors() {
-  var errIds = ['f-supplier','f-item','f-batchNo','f-qtyReceived'];
-  errIds.forEach(function(id) {
+  ['f-supplier','f-item','f-batchNo','f-qtyReceived'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.classList.remove('field-err');
   });
@@ -438,23 +344,36 @@ function clearAllErrors() {
 
 // ── Save button enable/disable ─────────────────────────────────────
 function refreshSaveBtn() {
-  // Multi-PO mode: require supplier + disposition + at least one row with qty>0
-  var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display === 'block');
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section') &&
+                   document.getElementById('po-multi-section').style.display !== 'none');
   if (isMulti) {
     var anyQty = false;
     document.querySelectorAll('#po-multi-body .po-multi-qty').forEach(function(inp) {
       if ((parseFloat(inp.value) || 0) > 0) anyQty = true;
     });
-    var okM = document.getElementById('supplier').value && disposition && anyQty;
-    document.getElementById('btnSubmit').disabled = !okM;
+    document.getElementById('btnSubmit').disabled = !(document.getElementById('supplier').value && disposition && anyQty);
     return;
   }
+  var topValid = document.getElementById('item').value &&
+                 document.getElementById('batchNo').value.trim() &&
+                 parseFloat(document.getElementById('qtyReceived').value) > 0;
+  var extraValid = hasValidExtraItem();
   var ok = document.getElementById('supplier').value &&
-           document.getElementById('item').value &&
-           document.getElementById('batchNo').value.trim() &&
-           parseFloat(document.getElementById('qtyReceived').value) > 0 &&
-           disposition;
+           disposition &&
+           (topValid || extraValid);
   document.getElementById('btnSubmit').disabled = !ok;
+}
+
+function hasValidExtraItem() {
+  var cards = document.querySelectorAll('#extra-items-list > div');
+  for (var i = 0; i < cards.length; i++) {
+    var c = cards[i];
+    var mat   = c.querySelector('.xi-mat') && c.querySelector('.xi-mat').value;
+    var batch = c.querySelector('.xi-batch') && c.querySelector('.xi-batch').value.trim();
+    var qty   = parseFloat((c.querySelector('.xi-qty') || {}).value) || 0;
+    if (mat && batch && qty > 0) return true;
+  }
+  return false;
 }
 
 // ── Disposition ────────────────────────────────────────────────────
@@ -483,10 +402,10 @@ function buildItemSelect(mats) {
     sel.disabled = true;
     return;
   }
-  var placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = 'Select item...';
-  sel.appendChild(placeholder);
+  var ph = document.createElement('option');
+  ph.value = '';
+  ph.textContent = 'Select item...';
+  sel.appendChild(ph);
   mats.forEach(function(m) {
     var opt = document.createElement('option');
     opt.value = m.code;
@@ -497,13 +416,11 @@ function buildItemSelect(mats) {
   sel.disabled = false;
 }
 
-// ── On supplier change ─────────────────────────────────────────────
+// ── Supplier change ────────────────────────────────────────────────
 function onSupplierChange() {
-  var sel = document.getElementById('supplier');
-  var code = sel.value;
+  var code = document.getElementById('supplier').value;
   itemObj = {};
   qtyManuallyEdited = false;
-
   if (!code) {
     supplierObj = {};
     document.getElementById('item').innerHTML = '<option value="">Select supplier first...</option>';
@@ -511,28 +428,20 @@ function onSupplierChange() {
     refreshSaveBtn();
     return;
   }
-
-  // find supplier obj
   for (var i = 0; i < SUPPLIERS.length; i++) {
     if (SUPPLIERS[i].code === code) { supplierObj = SUPPLIERS[i]; break; }
   }
-
   setFieldErr('f-supplier', 'err-supplier', false);
-
-  // Client-side filter: show all materials (no supplier-material link in current data)
-  // Use category search or just show all. Per task: show all, operator can scroll.
   buildItemSelect(ALL_MATS);
   refreshSaveBtn();
 }
 
-// ── On item change ─────────────────────────────────────────────────
+// ── Item change ────────────────────────────────────────────────────
 function onItemChange() {
   var sel = document.getElementById('item');
   var opt = sel.options[sel.selectedIndex];
   itemObj = (opt && opt.dataset.obj) ? JSON.parse(opt.dataset.obj) : {};
   setFieldErr('f-item', 'err-item', false);
-
-  // Populate Storage Location from the material's defaultLocation (master).
   var locInput = document.getElementById('storageLocation');
   var hint = document.getElementById('hint-storage-loc');
   if (locInput) {
@@ -545,11 +454,10 @@ function onItemChange() {
       if (hint) hint.textContent = 'No default location in master — fallback (first RM bay) will be used.';
     }
   }
-
   refreshSaveBtn();
 }
 
-// ── Qty Received ───────────────────────────────────────────────────
+// ── Qty inputs ─────────────────────────────────────────────────────
 function onQtyReceivedInput() {
   var r = parseFloat(document.getElementById('qtyReceived').value) || 0;
   if (!qtyManuallyEdited) {
@@ -563,66 +471,45 @@ function onQtyAcceptedInput() {
   qtyManuallyEdited = true;
   var r = parseFloat(document.getElementById('qtyReceived').value) || 0;
   var a = parseFloat(document.getElementById('qtyAccepted').value) || 0;
-  if (a < 0) { document.getElementById('qtyAccepted').value = 0; }
-  if (a > r)  { document.getElementById('qtyAccepted').value = r; }
+  if (a < 0) document.getElementById('qtyAccepted').value = 0;
+  if (a > r)  document.getElementById('qtyAccepted').value = r;
 }
 
 // ── Validate ───────────────────────────────────────────────────────
 function validate() {
   var ok = true;
-
-  if (!document.getElementById('supplier').value) {
-    setFieldErr('f-supplier', 'err-supplier', true);
-    ok = false;
+  if (!document.getElementById('supplier').value) { setFieldErr('f-supplier', 'err-supplier', true); ok = false; }
+  // If extras are filled, top item is optional (extras-only GRN is allowed)
+  var extrasOk = (typeof hasValidExtraItem === 'function') && hasValidExtraItem();
+  if (!extrasOk) {
+    if (!document.getElementById('item').value)     { setFieldErr('f-item',     'err-item',     true); ok = false; }
+    if (!document.getElementById('batchNo').value.trim()) { setFieldErr('f-batchNo', 'err-batchNo', true); ok = false; }
+    if ((parseFloat(document.getElementById('qtyReceived').value) || 0) <= 0) {
+      setFieldErr('f-qtyReceived', 'err-qtyReceived', true); ok = false;
+    }
   }
-  if (!document.getElementById('item').value) {
-    setFieldErr('f-item', 'err-item', true);
-    ok = false;
-  }
-  if (!document.getElementById('batchNo').value.trim()) {
-    setFieldErr('f-batchNo', 'err-batchNo', true);
-    ok = false;
-  }
-  var qtyR = parseFloat(document.getElementById('qtyReceived').value) || 0;
-  if (qtyR <= 0) {
-    setFieldErr('f-qtyReceived', 'err-qtyReceived', true);
-    ok = false;
-  }
-  if (!disposition) {
-    document.getElementById('err-disp').style.display = 'block';
-    ok = false;
-  }
-
+  if (!disposition) { document.getElementById('err-disp').style.display = 'block'; ok = false; }
   return ok;
 }
 
 // ── Navigate ───────────────────────────────────────────────────────
 function navigate(page) {
   google.script.run
-    .withSuccessHandler(function(html) {
-      document.open(); document.write(html); document.close();
-    })
+    .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
     .withFailureHandler(function() {})
     .getFormHtml(page);
 }
 
-// ── goHome ─────────────────────────────────────────────────────────
 function goHome() {
   if (!formSaved) {
-    var hasData = document.getElementById('supplier').value ||
-                  document.getElementById('batchNo').value ||
-                  disposition;
-    if (hasData) {
-      if (!confirm('Unsaved changes. Leave?')) return;
-    }
+    var hasData = document.getElementById('supplier').value || document.getElementById('batchNo').value || disposition;
+    if (hasData && !confirm('Unsaved changes. Leave?')) return;
   }
   navigate('Landing');
 }
 
-// ── Save ───────────────────────────────────────────────────────────
-// ── P2: PO Reference logic ────────────────────────────────────────────
-
-var _activePO = null; // holds selected PO object or null
+// ── PO Reference logic ─────────────────────────────────────────────
+var _activePO = null;
 
 function loadPODropdown() {
   google.script.run
@@ -636,7 +523,7 @@ function loadPODropdown() {
         sel.appendChild(o);
       });
     })
-    .withFailureHandler(function() { /* non-critical — proceed without PO */ })
+    .withFailureHandler(function() {})
     .getOpenPOsForSupplier(null);
 }
 
@@ -650,32 +537,24 @@ function onPORefChange() {
   if (!poData) { clearPORef(); return; }
   _activePO = poData;
 
-  // Lock supplier
   var suppSel = document.getElementById('supplier');
   for (var i = 0; i < suppSel.options.length; i++) {
-    if (suppSel.options[i].value === poData.supplierCode) {
-      suppSel.selectedIndex = i;
-      break;
-    }
+    if (suppSel.options[i].value === poData.supplierCode) { suppSel.selectedIndex = i; break; }
   }
   suppSel.disabled = true;
   suppSel.dispatchEvent(new Event('change'));
-
-  // Show clear link
   document.getElementById('clearPOLink').style.display = 'block';
 
-  // Multi-line PO: render table + hide single-item sections
   var lines = (poData.lines || []).filter(function(l) { return Number(l.qtyPending) > 0; });
   if (lines.length > 1) {
     renderPOMultiTable(lines);
     setMultiMode(true);
   } else {
     setMultiMode(false);
-    // Single-line PO: auto-pick the material in the legacy single-item dropdown
     if (lines.length === 1) {
-      var sel = document.getElementById('item');
-      for (var j = 0; j < sel.options.length; j++) {
-        if (sel.options[j].value === lines[0].materialCode) { sel.selectedIndex = j; sel.dispatchEvent(new Event('change')); break; }
+      var iSel = document.getElementById('item');
+      for (var j = 0; j < iSel.options.length; j++) {
+        if (iSel.options[j].value === lines[0].materialCode) { iSel.selectedIndex = j; iSel.dispatchEvent(new Event('change')); break; }
       }
     }
   }
@@ -684,33 +563,29 @@ function onPORefChange() {
 function renderPOMultiTable(lines) {
   var tbody = document.getElementById('po-multi-body');
   tbody.innerHTML = lines.map(function(l) {
-    var matDisplay = l.materialCode + (l.materialDesc ? ' — ' + l.materialDesc : '');
+    var mat = l.materialCode + (l.materialDesc ? ' — ' + l.materialDesc : '');
     return '<tr data-line="' + l.lineNo + '" data-mat="' + l.materialCode + '">' +
-      '<td style="padding:4px 6px;">' + matDisplay + '</td>' +
-      '<td style="padding:4px 6px;text-align:right;">' + l.qtyOrdered + '</td>' +
-      '<td style="padding:4px 6px;text-align:right;color:#b45309;font-weight:600;">' + l.qtyPending + '</td>' +
-      '<td style="padding:4px 6px;"><input type="number" class="po-multi-qty" min="0" step="any" placeholder="0" style="width:70px;padding:3px 5px;font-size:11px;text-align:right;" oninput="refreshSaveBtn()"></td>' +
-      '<td style="padding:4px 6px;"><input type="text" class="po-multi-batch" placeholder="batch" style="width:95px;padding:3px 5px;font-size:11px;"></td>' +
+      '<td>' + mat + '</td>' +
+      '<td style="text-align:right">' + l.qtyOrdered + '</td>' +
+      '<td style="text-align:right;color:#b45309;font-weight:600">' + l.qtyPending + '</td>' +
+      '<td><input type="number" class="po-multi-qty" min="0" step="any" placeholder="0" oninput="refreshSaveBtn()"></td>' +
+      '<td><input type="text" class="po-multi-batch" placeholder="batch"></td>' +
       '</tr>';
   }).join('');
 }
 
 function setMultiMode(on) {
   document.getElementById('po-multi-section').style.display = on ? 'block' : 'none';
-  // Hide single-item sections in multi mode
+  var ex = document.getElementById('extra-items-section');
+  if (ex) ex.style.display = on ? 'none' : '';
   ['f-item','f-storage-loc'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = on ? 'none' : '';
   });
-  // Hide Receipt Details (batch, vehicle) section's batch field; keep vehicle for whole GRN
   var batchField = document.getElementById('f-batchNo');
   if (batchField) batchField.style.display = on ? 'none' : '';
-  // Hide qty section
-  var qtyR = document.getElementById('f-qtyReceived');
-  if (qtyR) {
-    var qtySection = qtyR.closest('.section');
-    if (qtySection) qtySection.style.display = on ? 'none' : '';
-  }
+  var qtySection = document.getElementById('qty-section');
+  if (qtySection) qtySection.style.display = on ? 'none' : '';
   refreshSaveBtn();
 }
 
@@ -728,9 +603,7 @@ function getPendingQtyForCurrentItem() {
   if (!itemCode) return null;
   var match = null;
   _activePO.lines.forEach(function(l) {
-    if (l.materialCode === itemCode && (match === null || l.qtyPending > match)) {
-      match = l.qtyPending;
-    }
+    if (l.materialCode === itemCode && (match === null || l.qtyPending > match)) match = l.qtyPending;
   });
   return match;
 }
@@ -746,129 +619,108 @@ function checkOverReceiptWarning() {
     warn.style.cssText = 'font-size:11px;color:#c65c00;font-weight:600;margin-top:4px;';
     document.getElementById('qtyReceived').parentNode.appendChild(warn);
   }
-  if (qtyR > pending) {
-    warn.textContent = 'Warning: qty received (' + qtyR + ') > PO pending (' + pending + ')';
-  } else {
-    warn.textContent = pending !== null ? 'PO pending: ' + pending : '';
-  }
+  warn.textContent = qtyR > pending
+    ? 'Warning: qty received (' + qtyR + ') > PO pending (' + pending + ')'
+    : (pending !== null ? 'PO pending: ' + pending : '');
 }
 
+// ── Save ───────────────────────────────────────────────────────────
 function doSave() {
-  var isMulti = !!(_activePO && document.getElementById('po-multi-section').style.display === 'block');
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section').style.display !== 'none');
 
   if (!isMulti) {
     clearAllErrors();
     if (!validate()) { showErr('Please fill all required fields.'); return; }
   } else {
-    // Multi-mode validation: at least one row with qty > 0; warn on over-receipt
     var rows = document.querySelectorAll('#po-multi-body tr');
     var anyFilled = false;
     for (var k = 0; k < rows.length; k++) {
-      var q0 = parseFloat(rows[k].querySelector('.po-multi-qty').value) || 0;
-      if (q0 > 0) { anyFilled = true; break; }
+      if ((parseFloat(rows[k].querySelector('.po-multi-qty').value) || 0) > 0) { anyFilled = true; break; }
     }
     if (!anyFilled) { showErr('Enter a qty for at least one PO line.'); return; }
     if (!disposition) { showErr('Pick a disposition.'); return; }
 
-    // P2 MED-3 — re-fetch PO from server at confirm time so the over-receipt
-    // check uses live qty_pending (not a stale _activePO snapshot captured when
-    // the user opened the form). Skip-refresh on RPC failure: fall back to snapshot.
-    var btnEl = document.getElementById('btnSubmit');
-    var origLabel = btnEl.textContent;
-    btnEl.disabled = true;
-    btnEl.textContent = 'Checking PO…';
+    var btn0 = document.getElementById('btnSubmit');
+    var origLabel = btn0.innerHTML;
+    btn0.disabled = true;
+    btn0.innerHTML = '<span class="spinner"></span>Checking PO…';
+
     google.script.run
       .withSuccessHandler(function(freshPO) {
-        btnEl.disabled = false;
-        btnEl.textContent = origLabel;
-        var linesSrc = (freshPO && freshPO.lines && freshPO.lines.length)
-          ? freshPO.lines
-          : ((_activePO && _activePO.lines) || []);
-        if (freshPO && freshPO.lines) _activePO.lines = freshPO.lines; // refresh local
+        btn0.disabled = false;
+        btn0.innerHTML = origLabel;
+        var linesSrc = (freshPO && freshPO.lines && freshPO.lines.length) ? freshPO.lines : ((_activePO && _activePO.lines) || []);
+        if (freshPO && freshPO.lines) _activePO.lines = freshPO.lines;
         var overRcpt = [];
-        var rows2 = document.querySelectorAll('#po-multi-body tr');
-        for (var kk = 0; kk < rows2.length; kk++) {
-          var qq = parseFloat(rows2[kk].querySelector('.po-multi-qty').value) || 0;
-          var matCC = rows2[kk].getAttribute('data-mat');
-          var lnInfo2 = linesSrc.filter(function(l){ return l.materialCode === matCC; })[0] || {};
-          var pending2 = Number(lnInfo2.qtyPending) || 0;
-          if (qq > pending2) overRcpt.push(matCC + ': receiving ' + qq + ' but only ' + pending2 + ' pending');
-        }
-        if (overRcpt.length) {
-          if (!confirm('Over-receipt detected (live PO data):\n\n' + overRcpt.join('\n') + '\n\nProceed anyway? (PO line will close even if over-received.)')) return;
-        }
+        document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
+          var qq = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
+          var matCC = tr.getAttribute('data-mat');
+          var ln = linesSrc.filter(function(l){ return l.materialCode === matCC; })[0] || {};
+          if (qq > (Number(ln.qtyPending) || 0)) overRcpt.push(matCC + ': receiving ' + qq + ' but only ' + ln.qtyPending + ' pending');
+        });
+        if (overRcpt.length && !confirm('Over-receipt detected:\n\n' + overRcpt.join('\n') + '\n\nProceed anyway?')) return;
         _doSaveProceed();
       })
       .withFailureHandler(function() {
-        // RPC failure: fall back to snapshot-based check
-        btnEl.disabled = false;
-        btnEl.textContent = origLabel;
+        btn0.disabled = false;
+        btn0.innerHTML = origLabel;
         var overRcpt = [];
-        var rows3 = document.querySelectorAll('#po-multi-body tr');
-        for (var kk2 = 0; kk2 < rows3.length; kk2++) {
-          var qq2 = parseFloat(rows3[kk2].querySelector('.po-multi-qty').value) || 0;
-          var matCC2 = rows3[kk2].getAttribute('data-mat');
-          var lnInfo3 = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCC2; })[0] || {};
-          var pending3 = Number(lnInfo3.qtyPending) || 0;
-          if (qq2 > pending3) overRcpt.push(matCC2 + ': receiving ' + qq2 + ' but only ' + pending3 + ' pending');
-        }
-        if (overRcpt.length) {
-          if (!confirm('Over-receipt detected (cached PO snapshot):\n\n' + overRcpt.join('\n') + '\n\nProceed anyway?')) return;
-        }
+        document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
+          var qq = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
+          var matCC = tr.getAttribute('data-mat');
+          var ln = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCC; })[0] || {};
+          if (qq > (Number(ln.qtyPending) || 0)) overRcpt.push(matCC + ': receiving ' + qq + ' but only ' + ln.qtyPending + ' pending');
+        });
+        if (overRcpt.length && !confirm('Over-receipt (cached):\n\n' + overRcpt.join('\n') + '\n\nProceed anyway?')) return;
         _doSaveProceed();
       })
       .getPOById(_activePO ? _activePO.poNo : '');
-    return; // async continuation in _doSaveProceed
+    return;
   }
   _doSaveProceed();
 }
 
 function _doSaveProceed() {
-  var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display === 'block');
-
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display !== 'none');
   var btn = document.getElementById('btnSubmit');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving&hellip;';
 
   var qtyR = parseFloat(document.getElementById('qtyReceived').value) || 0;
   var qtyA = parseFloat(document.getElementById('qtyAccepted').value);
-  if (isNaN(qtyA) || qtyA > qtyR) { qtyA = qtyR; }
-  if (qtyA < 0) { qtyA = 0; }
+  if (isNaN(qtyA) || qtyA > qtyR) qtyA = qtyR;
+  if (qtyA < 0) qtyA = 0;
 
   var data = {
-    date:         new Date().toISOString().split('T')[0],
+    date:        new Date().toISOString().split('T')[0],
     supplierCode: supplierObj.code || document.getElementById('supplier').value,
     supplierName: supplierObj.name || '',
     poRef:        _activePO ? _activePO.poNo : '',
     poNo:         _activePO ? _activePO.poNo : '',
-    invoiceNo:    '',
-    coaReceived:  'N/A',
+    invoiceNo:    (document.getElementById('invoiceNo') && document.getElementById('invoiceNo').value.trim()) || '',
+    coaReceived:  (document.getElementById('coaReceived') && document.getElementById('coaReceived').checked) ? 'Y' : 'N',
+    notifyWhatsapp: (document.getElementById('notifyWhatsapp') && document.getElementById('notifyWhatsapp').checked) ? 'Y' : 'N',
     remarks:      document.getElementById('remarks').value,
     storageZone:  disposition === 'ACCEPT' ? 'Approved Zone' :
-                  disposition === 'REJECT' ? 'Rejected Zone' :
-                  disposition === 'HOLD'   ? 'Quarantine Zone' : 'Quarantine Zone',
-    locationId:   (function(){
-                    // HOLD/REJECT always overrides to first QUARANTINE bay at receipt.
-                    // ACCEPT uses material's defaultLocation; server picks fallback if blank.
-                    if (disposition !== 'ACCEPT') {
-                      for (var i = 0; i < LOCATIONS.length; i++) {
-                        if (String(LOCATIONS[i].type || '').toUpperCase() === 'QUARANTINE') return LOCATIONS[i].id;
-                      }
-                    }
-                    return (itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '';
-                  })(),
+                  disposition === 'REJECT' ? 'Rejected Zone' : 'Quarantine Zone',
+    locationId:   (function() {
+      if (disposition !== 'ACCEPT') {
+        for (var i = 0; i < LOCATIONS.length; i++) {
+          if (String(LOCATIONS[i].type || '').toUpperCase() === 'QUARANTINE') return LOCATIONS[i].id;
+        }
+      }
+      return (itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '';
+    })(),
     items: isMulti ? (function() {
       var arr = [];
-      var rows = document.querySelectorAll('#po-multi-body tr');
-      rows.forEach(function(tr) {
+      document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
         var q = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
         if (q <= 0) return;
         var matCode = tr.getAttribute('data-mat');
         var lineNo  = Number(tr.getAttribute('data-line')) || null;
         var batch   = (tr.querySelector('.po-multi-batch').value || '').trim();
-        var matInfo = (_activePO && _activePO.lines || []).filter(function(l){ return l.materialCode === matCode; })[0] || {};
+        var matInfo = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCode; })[0] || {};
         var matMaster = (ALL_MATS || []).filter(function(m){ return m.code === matCode; })[0] || {};
-        var locId = (disposition === 'ACCEPT' && matMaster.defaultLocation) ? matMaster.defaultLocation : '';
         arr.push({
           materialCode: matCode,
           materialDesc: matInfo.materialDesc || matMaster.desc || '',
@@ -876,34 +728,56 @@ function _doSaveProceed() {
           qtyOrdered:   q,
           qtyReceived:  q,
           batchNo:      batch || ('PO-' + (_activePO.poNo || '').split('/').pop() + '-L' + lineNo),
-          expiryDate:   '',
-          vehicleNo:    document.getElementById('vehicleNo').value.trim(),
+          expiryDate:   (document.getElementById('expiryDate') && document.getElementById('expiryDate').value) || '',
+          vehicleNo:    '',
           qtyAccepted:  q,
           disposition:  disposition,
-          locationId:   locId,
+          locationId:   (disposition === 'ACCEPT' && matMaster.defaultLocation) ? matMaster.defaultLocation : '',
           poLineNo:     lineNo
         });
       });
       return arr;
-    })() : [{
-      materialCode: itemObj.code || document.getElementById('item').value,
-      materialDesc: itemObj.desc || '',
-      unit:         itemObj.unit || '',
-      qtyOrdered:   qtyR,
-      qtyReceived:  qtyR,
-      batchNo:      document.getElementById('batchNo').value.trim(),
-      expiryDate:   '',
-      vehicleNo:    document.getElementById('vehicleNo').value.trim(),
-      qtyAccepted:  qtyA,
-      disposition:  disposition,
-      locationId:   (disposition === 'ACCEPT' && itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '',
-      poLineNo:     (function() {
-        if (!_activePO || !_activePO.lines) return null;
-        var code = itemObj.code || document.getElementById('item').value;
-        var match = _activePO.lines.filter(function(l) { return l.materialCode === code; });
-        return match.length === 1 ? match[0].lineNo : null;
-      })()
-    }]
+    })() : (function() {
+      var topSel    = document.getElementById('item');
+      var topCode   = topSel.value;
+      var topOpt    = topSel.options[topSel.selectedIndex];
+      var topBatch  = document.getElementById('batchNo').value.trim();
+      // Resolve desc/unit/loc from the dropdown <option> attrs OR ALL_MATS lookup,
+      // so we don't depend on the stale itemObj cache.
+      var topDesc = itemObj.desc || '';
+      var topUnit = itemObj.unit || '';
+      var topLoc  = itemObj.defaultLocation || '';
+      if (!topDesc && topCode) {
+        var m = (ALL_MATS || []).filter(function(x){ return x.code === topCode; })[0];
+        if (m) { topDesc = m.desc || ''; topUnit = m.unit || ''; topLoc = m.defaultLocation || ''; }
+      }
+      var hasTop = topCode && qtyR > 0;     // batch optional — auto-generate
+      var rows = [];
+      if (hasTop) {
+        if (!topBatch) topBatch = 'B-AUTO-' + Date.now() + '-1';
+        rows.push({
+          materialCode: topCode,
+          materialDesc: topDesc,
+          unit:         topUnit,
+          qtyOrdered:   qtyR,
+          qtyReceived:  qtyR,
+          batchNo:      topBatch,
+          expiryDate:   (document.getElementById('expiryDate') && document.getElementById('expiryDate').value) || '',
+          vehicleNo:    '',
+          qtyAccepted:  qtyA,
+          disposition:  disposition,
+          locationId:   (disposition === 'ACCEPT' && topLoc) ? topLoc : '',
+          poLineNo:     (function() {
+            if (!_activePO || !_activePO.lines) return null;
+            var match = _activePO.lines.filter(function(l){ return l.materialCode === topCode; });
+            return match.length === 1 ? match[0].lineNo : null;
+          })()
+        });
+      } else if (topCode && qtyR <= 0) {
+        showErr('Top item is selected but qty is 0 — fix or clear the top fields before saving.');
+      }
+      return rows.concat(collectExtraItems(disposition));
+    })()
   };
 
   function afterStop(operatorName) {
@@ -912,63 +786,99 @@ function _doSaveProceed() {
       .withSuccessHandler(function(res) {
         if (res && res.success) {
           formSaved = true;
+          var nItems = (data.items || []).length;
+          var multi = nItems > 1;
+          var totalRcv = (data.items || []).reduce(function(s,i){return s+(Number(i.qtyReceived)||0);},0);
+          var totalAcc = (data.items || []).reduce(function(s,i){return s+(Number(i.qtyAccepted)||0);},0);
           savedGrn = {
-            grnId:        res.docNo,
+            grnId:       res.docNo,
             supplierCode: supplierObj.code || '',
             supplierName: supplierObj.name || '',
-            itemCode:     isMulti ? '' : (itemObj.code || ''),
-            itemName:     isMulti ? (data.items.length + ' lines from ' + (_activePO ? _activePO.poNo : 'PO')) : (itemObj.desc || ''),
-            batchNo:      isMulti ? ('multi: ' + data.items.map(function(i){return i.batchNo;}).join(', ')) : data.items[0].batchNo,
-            qtyReceived:  isMulti ? data.items.reduce(function(s,i){return s + i.qtyReceived;}, 0) : qtyR,
-            qtyAccepted:  isMulti ? data.items.reduce(function(s,i){return s + i.qtyAccepted;}, 0) : qtyA,
-            disposition:  disposition
+            itemCode:     multi ? '' : ((data.items[0] && data.items[0].materialCode) || ''),
+            itemName:     multi ? (nItems + ' items') : ((data.items[0] && data.items[0].materialDesc) || ''),
+            batchNo:      multi ? '' : ((data.items[0] && data.items[0].batchNo) || ''),
+            qtyReceived:  multi ? totalRcv : ((data.items[0] && data.items[0].qtyReceived) || 0),
+            qtyAccepted:  multi ? totalAcc : ((data.items[0] && data.items[0].qtyAccepted) || 0),
+            disposition:  disposition,
+            itemsList:    data.items || []
           };
           showConfirm(savedGrn);
           if (res.warnings && res.warnings.length) {
-            setTimeout(function(){ showErr('Saved with warnings: ' + res.warnings.join('; ')); }, 600);
+            setTimeout(function(){
+              showToast('⚠ ' + res.warnings.join(' | '), 'warning');
+            }, 600);
           }
         } else {
-          var msg = (res && res.error) ? res.error : 'Unknown error';
-          showErr('Save failed: ' + msg);
+          showErr('Save failed: ' + ((res && res.error) ? res.error : 'Unknown error'));
           btn.disabled = false;
-          btn.textContent = 'SAVE GRN RECORD';
+          btn.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
         }
       })
       .withFailureHandler(function(e) {
         showErr('Save failed: ' + (e.message || String(e)));
         btn.disabled = false;
-        btn.textContent = 'SAVE GRN RECORD';
+        btn.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
       })
       .saveGRN(data);
   }
 
-  if (window.QMS) {
-    window.QMS.requireOperator(_inspectorNames, afterStop);
+  function onCancel() {
+    var btnCancel = document.getElementById('btnSubmit');
+    if (btnCancel) {
+      btnCancel.disabled = false;
+      btnCancel.innerHTML = 'Save GRN';
+    }
+  }
+
+  if (window.QMS && window.QMS.requireOperator) {
+    window.QMS.requireOperator(_inspectorNames, afterStop, onCancel);
   } else {
+    // Fallback: save without operator name
     afterStop('');
   }
 }
 
-// ── Confirmation screen ────────────────────────────────────────────
+// ── Confirm screen ─────────────────────────────────────────────────
 function showConfirm(g) {
-  // Hide form and footer
   document.getElementById('formWrap').classList.add('hidden');
   document.getElementById('stickyFooter').classList.add('hidden');
 
-  // Populate
-  document.getElementById('confGrnId').textContent  = '#' + g.grnId;
-  document.getElementById('confItem').textContent   = g.itemName + ' — ' + g.supplierName;
-  document.getElementById('confBatch').textContent  = 'Batch ' + g.batchNo + ' · ' + g.qtyReceived + ' units';
+  document.getElementById('confGrnId').textContent = '#' + g.grnId;
+  document.getElementById('confItem').textContent  = g.itemName + ' — ' + g.supplierName;
+
+  var items = g.itemsList || [];
+  var tbl = document.getElementById('confItemsTable');
+  if (items.length > 1) {
+    document.getElementById('confBatch').textContent = items.length + ' items · ' + g.qtyReceived + ' total units';
+    var rows = items.map(function(it, i){
+      return '<tr style="border-bottom:1px solid #f0f0f0;">' +
+        '<td style="padding:6px 8px;color:#64748b;">' + (i+1) + '</td>' +
+        '<td style="padding:6px 8px;"><b>' + (it.materialCode || '') + '</b><div style="font-size:10px;color:#64748b;">' + (it.materialDesc || '') + '</div></td>' +
+        '<td style="padding:6px 8px;">' + (it.batchNo || '') + '</td>' +
+        '<td style="padding:6px 8px;text-align:right;font-weight:600;">' + (it.qtyReceived || 0) + ' ' + (it.unit || '') + '</td>' +
+        '</tr>';
+    }).join('');
+    tbl.innerHTML =
+      '<table style="width:100%;border-collapse:collapse;">' +
+        '<thead style="background:#0B2A4A;color:#fff;font-size:10px;letter-spacing:0.3px;"><tr>' +
+          '<th style="padding:6px 8px;text-align:left;">#</th>' +
+          '<th style="padding:6px 8px;text-align:left;">Material</th>' +
+          '<th style="padding:6px 8px;text-align:left;">Batch</th>' +
+          '<th style="padding:6px 8px;text-align:right;">Qty</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>';
+    tbl.style.display = '';
+  } else {
+    document.getElementById('confBatch').textContent = 'Batch ' + (g.batchNo || '—') + ' · ' + g.qtyReceived + ' units';
+    tbl.style.display = 'none';
+  }
 
   var badge = document.getElementById('confBadge');
   badge.textContent = g.disposition;
   badge.className = 'confirm-badge ' + g.disposition;
 
-  // Show with fade-in
   var cs = document.getElementById('confirmScreen');
   cs.style.display = 'block';
-  // force reflow
-  cs.offsetHeight; // jshint ignore:line
+  cs.offsetHeight;
   cs.classList.add('visible');
   setTimeout(function() { cs.classList.add('fade-in'); }, 10);
 }
@@ -991,20 +901,20 @@ function goToIqc() {
 // ── Init ───────────────────────────────────────────────────────────
 function init() {
   google.script.run
-    .withSuccessHandler(function(data) {
-      SUPPLIERS       = data.suppliers  || [];
-      ALL_MATS        = data.materials  || [];
-      LOCATIONS       = data.locations  || [];
-      _inspectorNames = (data.inspectors || []).map(function(i) {
+    .withSuccessHandler(function(d) {
+      SUPPLIERS       = d.suppliers  || [];
+      ALL_MATS        = d.materials  || [];
+      LOCATIONS       = d.locations  || [];
+      _inspectorNames = (d.inspectors || []).map(function(i) {
         return typeof i === 'string' ? i : (i.name || '');
       }).filter(Boolean);
 
-      // Populate doc badge
-      if (data.docNumber) {
-        document.getElementById('docBadge').textContent = data.docNumber;
+      if (d.docNumber) {
+        document.getElementById('docBadge').textContent = d.docNumber;
+        var il = document.getElementById('docBadgeInline');
+        if (il) il.textContent = d.docNumber;
       }
 
-      // Populate supplier dropdown
       var sSel = document.getElementById('supplier');
       SUPPLIERS.forEach(function(s) {
         var opt = document.createElement('option');
@@ -1017,11 +927,16 @@ function init() {
       showErr('Failed to load form data: ' + (e.message || String(e)));
     })
     .getGRNFormInit();
-
 }
 
 // ── Event wiring ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
+  // Set today's date in header card
+  var td = document.getElementById('todayDate');
+  if (td) {
+    var d = new Date();
+    td.textContent = d.toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
+  }
   document.getElementById('backBtn').addEventListener('click', goHome);
   document.getElementById('supplier').addEventListener('change', onSupplierChange);
   document.getElementById('item').addEventListener('change', onItemChange);
@@ -1032,19 +947,116 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('btnIqc').addEventListener('click', goToIqc);
   document.getElementById('btnHome').addEventListener('click', function() { navigate('Landing'); });
 
-  // Disposition buttons
-  var dispBtns = document.querySelectorAll('.disp-btn');
-  for (var i = 0; i < dispBtns.length; i++) {
-    (function(btn) {
-      btn.addEventListener('click', function() {
-        selectDisp(btn.getAttribute('data-disp'));
-      });
-    })(dispBtns[i]);
-  }
+  document.querySelectorAll('.disp-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { selectDisp(btn.getAttribute('data-disp')); });
+  });
 
   init();
   loadPODropdown();
 });
+
+// ===== Multi-item manual mode (+ Add Item) =====
+var EXTRA_ITEMS_SEQ = 0;
+
+function addExtraItem() {
+  if (_activePO) { showErr('Additional items are for manual GRN only. PO mode already supports multi-line.'); return; }
+  EXTRA_ITEMS_SEQ++;
+  var id = 'xi-' + EXTRA_ITEMS_SEQ;
+  var list = document.getElementById('extra-items-list');
+  var card = document.createElement('div');
+  card.id = id;
+  card.setAttribute('style','border:1.5px solid #d1d5db;border-radius:10px;padding:12px;background:#f8fafc;display:flex;flex-direction:column;gap:8px;position:relative;');
+  card.dataset.idx = EXTRA_ITEMS_SEQ;
+
+  var matOpts = '<option value="">Select material</option>' +
+    (ALL_MATS || []).map(function(m){
+      return '<option value="' + (m.code || '') + '" data-desc="' + (m.desc || '').replace(/"/g,'&quot;') +
+             '" data-unit="' + (m.unit || '') + '" data-loc="' + (m.defaultLocation || '') + '">' +
+             (m.code || '') + ' — ' + (m.desc || '') + '</option>';
+    }).join('');
+
+  var idxNum = document.querySelectorAll("#extra-items-list > div").length + 2;
+  var inputStyle = 'height:42px;border:1.5px solid #d1d5db;border-radius:6px;padding:0 10px;font-size:14px;width:100%;box-sizing:border-box;background:#fff;';
+  card.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+      '<span style="font-size:11px;font-weight:700;color:#0B2A4A;letter-spacing:0.4px;">ITEM #' + idxNum + '</span>' +
+      '<button type="button" onclick="removeExtraItem(\'' + id + '\')" style="color:#b32a2a;font-size:22px;line-height:1;background:none;border:none;cursor:pointer;padding:2px 8px;">&times;</button>' +
+    '</div>' +
+    '<select class="xi-mat" style="' + inputStyle + '">' + matOpts + '</select>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+      '<input type="text"  class="xi-batch"  placeholder="Batch No *"     style="' + inputStyle + '">' +
+      '<input type="month" class="xi-expiry" placeholder="Expiry"          style="' + inputStyle + '">' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+      '<input type="number" min="0" step="any" class="xi-qty" placeholder="Qty Received *" style="' + inputStyle + '">' +
+      '<input type="number" min="0" step="any" class="xi-acc" placeholder="Qty Accepted"   style="' + inputStyle + '">' +
+    '</div>';
+
+  list.appendChild(card);
+  document.getElementById('extra-items-empty').style.display = 'none';
+  renumberExtraItems();
+  card.querySelectorAll('input, select').forEach(function(inp){
+    inp.addEventListener('input',  refreshSaveBtn);
+    inp.addEventListener('change', refreshSaveBtn);
+  });
+  refreshSaveBtn();
+}
+
+function removeExtraItem(id) {
+  var el = document.getElementById(id);
+  if (el) el.remove();
+  renumberExtraItems();
+  if (!document.querySelectorAll('#extra-items-list > div').length) {
+    document.getElementById('extra-items-empty').style.display = '';
+  }
+  refreshSaveBtn();
+}
+
+function renumberExtraItems() {
+  var cards = document.querySelectorAll('#extra-items-list > div');
+  cards.forEach(function(c, i){
+    var lbl = c.querySelector('span');
+    if (lbl) lbl.textContent = 'ITEM #' + (i + 2);
+  });
+}
+
+function collectExtraItems(disposition) {
+  var rows = [];
+  var skipped = [];
+  document.querySelectorAll('#extra-items-list > div').forEach(function(card, i){
+    var matSel = card.querySelector('.xi-mat');
+    var mat    = matSel.value;
+    var batch  = card.querySelector('.xi-batch').value.trim();
+    var qtyR   = parseFloat(card.querySelector('.xi-qty').value) || 0;
+    if (!mat && !batch && qtyR <= 0) return;        // entirely empty card — silently skip
+    if (!mat)    { skipped.push('Item #' + (i+2) + ': missing material'); return; }
+    if (qtyR <= 0) { skipped.push('Item #' + (i+2) + ': qty must be > 0'); return; }
+    var opt    = matSel.options[matSel.selectedIndex];
+    if (!batch) batch = 'B-AUTO-' + Date.now() + '-' + (i+2);   // auto-batch if blank
+    var qtyA   = parseFloat(card.querySelector('.xi-acc').value);
+    if (isNaN(qtyA) || qtyA > qtyR) qtyA = qtyR;
+    if (qtyA < 0) qtyA = 0;
+    rows.push({
+      materialCode: mat,
+      materialDesc: opt.dataset.desc || '',
+      unit:         opt.dataset.unit || '',
+      qtyOrdered:   qtyR,
+      qtyReceived:  qtyR,
+      batchNo:      batch,
+      expiryDate:   card.querySelector('.xi-expiry').value || '',
+      vehicleNo:    '',
+      qtyAccepted:  qtyA,
+      disposition:  disposition,
+      locationId:   (disposition === 'ACCEPT' && opt.dataset.loc) ? opt.dataset.loc : '',
+      poLineNo:     null
+    });
+  });
+  if (skipped.length) {
+    showErr('Some extra items were skipped:\n' + skipped.join('\n'));
+  }
+  return rows;
+}
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

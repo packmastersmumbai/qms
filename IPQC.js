@@ -109,15 +109,20 @@ function getIPQCParams(productCode) {
 
 function getIPQCFormInit() {
   var sessions = [];
+  var loadWarnings = [];
   try {
     var r = getOpenSessions();
     sessions = r.sessions || [];
-  } catch(e) {}
+  } catch(e) {
+    Logger.log('getIPQCFormInit: getOpenSessions failed — ' + e.message);
+    loadWarnings.push('Open sessions failed to load — refresh or contact admin.');
+  }
   return {
     fgList:       getFG(),
     inspectors:   getInspectors(),
     openSessions: sessions,
-    today:        Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
+    today:        Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd'),
+    loadWarnings: loadWarnings
   };
 }
 

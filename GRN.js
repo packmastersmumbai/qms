@@ -123,19 +123,26 @@ function saveGRN(data) {
       ]);
 
       // Mirror receipt into STOCK_LEDGER. Status PENDING IQC = not yet issuable.
+      // GRN row is already written — a ledger failure is a partial-commit → save-with-warning.
       if (typeof writeStockLedger_ === 'function' && item.materialCode && item.batchNo && itemLocation) {
-        writeStockLedger_(
-          'GRN_RECEIPT',
-          item.materialCode,
-          item.batchNo,
-          itemLocation,
-          Number(item.qtyReceived) || 0,
-          0,
-          'GRN',
-          docNo,
-          operatorId || user,
-          'GRN receipt — pending IQC'
-        );
+        try {
+          writeStockLedger_(
+            'GRN_RECEIPT',
+            item.materialCode,
+            item.batchNo,
+            itemLocation,
+            Number(item.qtyReceived) || 0,
+            0,
+            'GRN',
+            docNo,
+            operatorId || user,
+            'GRN receipt — pending IQC'
+          );
+        } catch (ledgerErr) {
+          Logger.log('GRN stock-ledger write failed for ' + item.materialCode + ': ' + ledgerErr.message);
+          warnings.push('Stock ledger update failed for ' + (item.materialCode || 'item') +
+            ' — GRN document saved but ledger is out of sync. Contact admin.');
+        }
       }
     });
 
