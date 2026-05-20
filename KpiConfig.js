@@ -19,7 +19,7 @@ function _kpiFnMap_() {
 var KPI_REGISTRY = [
   { key:'IQC_PASS',      label:'IQC Pass %',       target:97, format:'pct',  unit:'%',    sparkline:true,  group:'hero' },
   { key:'FPY',           label:'First-Pass Yield', target:92, format:'pct',  unit:'%',    sparkline:true,  group:'hero' },
-  { key:'OTD',           label:'On-Time Delivery', target:95, format:'pct',  unit:'%',    sparkline:true,  group:'hero' },
+  { key:'OTD',           label:'Dispatch TAT',     target:2,  format:'num',  unit:'d',    sparkline:true,  group:'hero' },
   { key:'NCR_MTTR',      label:'NCR Resolve Days', target:3,  format:'num',  unit:'d',    sparkline:true,  group:'hero' },
   { key:'SUPPLIER_OTIF', label:'Supplier OTIF',    target:90, format:'pct',  unit:'%',    sparkline:false, group:'drill' },
   { key:'TOP_DEFECT',    label:'Top Defect',       target:null,format:'text',unit:'',     sparkline:false, group:'drill' },
@@ -147,21 +147,68 @@ function verifyOwnerPin(pin) {
 
 // ── KPI runner ──────────────────────────────────────────────────
 // Returns array of KPI result objects, filtered by persona's kpi.show toggles.
-function getQmsKpis(persona) {
+// periodOpts (optional): { preset:'THIS_MONTH'|'LAST_30'|'LAST_90'|'THIS_FY'|'CUSTOM',
+//                          fromISO?, toISO? }
+// When periodOpts is omitted or null, defaults to last-30d (original Landing v2 behaviour).
+function getQmsKpis(persona, periodOpts) {
   persona = _pmNormPersona_(persona);
-  var cacheKey = 'pmqms_kpis_' + persona;
-  try {
-    var hit = CacheService.getScriptCache().get(cacheKey);
-    if (hit) {
-      var parsed = JSON.parse(hit);
-      if (parsed.fp === _pmSheetFingerprint_()) return parsed.data;
+  // Resolve period window
+  var now = new Date();
+  var from, periodLabel;
+  if (periodOpts && periodOpts.preset) {
+    var tz = 'Asia/Kolkata';
+    if (periodOpts.preset === 'CUSTOM' && periodOpts.fromISO && periodOpts.toISO) {
+      from = new Date(periodOpts.fromISO);
+      now  = new Date(periodOpts.toISO);
+      now.setHours(23, 59, 59, 999);
+      periodLabel = periodOpts.fromISO + ' to ' + periodOpts.toISO;
+    } else if (periodOpts.preset === 'LAST_90') {
+      from = new Date(now.getTime() - 90*24*60*60*1000);
+      periodLabel = 'Last 90 Days';
+    } else if (periodOpts.preset === 'THIS_FY') {
+      var mm = parseInt(Utilities.formatDate(now, tz, 'MM'), 10);
+      var yyyy = parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
+      var fyStartYear = (mm >= 4) ? yyyy : yyyy - 1;
+      from = new Date(fyStartYear + '-04-01');
+      now  = new Date((fyStartYear + 1) + '-03-31');
+      now.setHours(23, 59, 59, 999);
+      periodLabel = 'FY ' + fyStartYear + '-' + String(fyStartYear + 1).slice(2);
+    } else if (periodOpts.preset === 'THIS_MONTH') {
+      var mStr = Utilities.formatDate(now, tz, 'MM');
+      var yStr = Utilities.formatDate(now, tz, 'yyyy');
+      from = new Date(yStr + '-' + mStr + '-01');
+      periodLabel = Utilities.formatDate(now, tz, 'MMMM yyyy');
+    } else {
+      // LAST_30 default
+      from = new Date(now.getTime() - 30*24*60*60*1000);
+      periodLabel = 'Last 30 Days';
     }
-  } catch (e) {}
+  } else {
+    from = new Date(now.getTime() - 30*24*60*60*1000);
+    periodLabel = 'Last 30 Days';
+  }
+
+  // Cache key includes period so different periods cache independently.
+  // Skip cache for CUSTOM ranges (too many possible keys).
+  var preset = (periodOpts && periodOpts.preset) || 'LAST_30';
+  var cacheKey = preset === 'CUSTOM' ? null : ('pmqms_kpis_' + persona + '_' + preset);
+  if (cacheKey) {
+    try {
+      var hit = CacheService.getScriptCache().get(cacheKey);
+      if (hit) {
+        var parsed = JSON.parse(hit);
+        if (parsed.fp === _pmSheetFingerprint_()) {
+          var cachedResult = parsed.data;
+          cachedResult._periodLabel = periodLabel;
+          cachedResult._computedAtISO = parsed.ts || '';
+          return cachedResult;
+        }
+      }
+    } catch (e) {}
+  }
 
   var settings = getUISettings(persona);
   var ss = getSpreadsheet();
-  var now = new Date();
-  var from = new Date(now.getTime() - 30*24*60*60*1000);
 
   var fnMap = _kpiFnMap_();
   var results = [];
@@ -188,11 +235,17 @@ function getQmsKpis(persona) {
     results.push(entry);
   });
 
-  try {
-    CacheService.getScriptCache().put(cacheKey, JSON.stringify({
-      fp: _pmSheetFingerprint_(), data: results
-    }), 60);
-  } catch (e) {}
+  // Attach period metadata so callers can display it
+  results._periodLabel    = periodLabel;
+  results._computedAtISO  = new Date().toISOString();
+
+  if (cacheKey) {
+    try {
+      CacheService.getScriptCache().put(cacheKey, JSON.stringify({
+        fp: _pmSheetFingerprint_(), data: results, ts: results._computedAtISO
+      }), 60);
+    } catch (e) {}
+  }
 
   return results;
 }
@@ -278,56 +331,34 @@ function _kpi_fpy_(ss, from, to) {
   return { value: total ? Math.round((pass/total)*1000)/10 : null };
 }
 
-// On-Time Delivery — % of PO lines received on/before promised date, last 30d.
-// There is no customer-order/promise-date sheet in the QMS, so OTD measures the
-// only auditable promise vs actual: PO_LINES.promised_date (fallback PO_HEADER.due_date)
-// against GRN_LOG receipt date for that PO. Counted by line that received goods in window.
+// OTD — defined here as Dispatch TAT: median days from OQC Date to First Dispatched At.
+// Uses FG_DISPATCH_LOTS only. No CUSTOMER_ORDERS sheet exists in the QMS, so a true
+// promise-date OTD (% of orders shipped by committed date) cannot be computed.
+// To add real OTD: create a CUSTOMER_ORDERS sheet with columns [order_no, promised_date,
+// shipped_date] and replace this function body. The KPI key and label will stay 'OTD'.
+// NOTE: KPI.js kpiOTD_() computed a different OTD (GRN receipt vs PO promised date).
+// That definition is also superseded here — see KPI.js deprecation header for history.
 function _kpi_otd_(ss, from, to) {
-  var lines = _pmGetRows_(ss, 'PO_LINES');
-  var po    = _pmGetRows_(ss, 'PO_HEADER');
-  var grn   = _pmGetRows_(ss, 'GRN_LOG');
-  if (!lines.rows.length || !grn.rows.length) return { value:null };
-
-  // Header due_date fallback, keyed by po_no
-  var headerDue = {};
-  if (po.rows.length) {
-    var ciHpo = _pmCol_(po.idx, ['po_no','po no.','po no']);
-    var ciHdue = _pmCol_(po.idx, ['due_date','due date','promise date']);
-    if (ciHpo >= 0 && ciHdue >= 0) {
-      po.rows.forEach(function(r){
-        var k = String(r[ciHpo]||'').trim();
-        if (k) headerDue[k] = r[ciHdue];
-      });
-    }
-  }
-
-  // Promised date per po_no — line promised_date wins, header due_date fills gaps
-  var ciLpo  = _pmCol_(lines.idx, ['po_no','po no.','po no']);
-  var ciLpd  = _pmCol_(lines.idx, ['promised_date','promised date','promise date']);
-  if (ciLpo < 0) return { value:null };
-  var promiseByPo = {};
-  lines.rows.forEach(function(r){
-    var k = String(r[ciLpo]||'').trim(); if (!k) return;
-    var pd = (ciLpd >= 0) ? r[ciLpd] : null;
-    if (!pd) pd = headerDue[k];
-    if (pd && !promiseByPo[k]) promiseByPo[k] = pd;
+  var fg = _pmGetRows_(ss, 'FG_DISPATCH_LOTS');
+  if (!fg.rows.length) return { value:null };
+  var ciOqcDate  = _pmCol_(fg.idx, ['oqc date']);
+  var ciDispAt   = _pmCol_(fg.idx, ['first dispatched at','last dispatched at','dispatch date']);
+  if (ciOqcDate < 0 || ciDispAt < 0) return { value:null };
+  var diffs = [];
+  fg.rows.forEach(function(r){
+    var dd = r[ciDispAt]; if (!dd) return;
+    if (!_pmInRange_(dd, from, to)) return;
+    var oqc = r[ciOqcDate]; if (!oqc) return;
+    var oqcD = new Date(oqc), dispD = new Date(dd);
+    if (isNaN(oqcD.getTime()) || isNaN(dispD.getTime())) return;
+    var days = (dispD - oqcD) / (24*60*60*1000);
+    if (days < 0) return; // data anomaly
+    diffs.push(days);
   });
-
-  // GRN receipts in window joined to a PO with a known promised date
-  var ciGdate = _pmCol_(grn.idx, ['date','timestamp']);
-  var ciGpo   = _pmCol_(grn.idx, ['po reference','po ref','po_ref','po no.']);
-  if (ciGdate < 0 || ciGpo < 0) return { value:null };
-  var onTime = 0, total = 0;
-  grn.rows.forEach(function(r){
-    var rd = r[ciGdate]; if (!rd || !_pmInRange_(rd, from, to)) return;
-    var poRef = String(r[ciGpo]||'').trim(); if (!poRef) return;
-    var promised = promiseByPo[poRef]; if (!promised) return;
-    var pd = new Date(promised), rdt = new Date(rd);
-    if (isNaN(pd.getTime()) || isNaN(rdt.getTime())) return;
-    total++;
-    if (rdt <= pd) onTime++;
-  });
-  return { value: total ? Math.round((onTime/total)*1000)/10 : null };
+  if (!diffs.length) return { value:null };
+  diffs.sort(function(a,b){ return a-b; });
+  var med = diffs[Math.floor(diffs.length/2)];
+  return { value: Math.round(med*10)/10 };
 }
 
 function _kpi_ncrMttr_(ss, from, to) {

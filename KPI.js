@@ -1,14 +1,44 @@
 // ============================================================
-// KPI.js — P7 KPI Engine: server endpoints, compute fns,
-//           cache, period resolver, 2-hop join helpers
+// KPI.js — P7 KPI Engine (LEGACY — PARTIALLY DEPRECATED)
 // Pack Masters QMS | Google Apps Script V8
 // Read-only. No LockService. No sheet writes.
+//
+// DEPRECATION NOTICE (2026-05-20):
+//   getKPIDashboard() and its private helpers (kpiFPY_, kpiNCR_,
+//   kpiSupplierDefect_, kpiCustReturn_, kpiOTD_, kpiPeriodResolve_,
+//   kpiLoadContext_, kpiGetThresholds_) are superseded by getQmsKpis()
+//   in KpiConfig.js.
+//
+//   KPI_F.html now calls getQmsKpis() directly.  getKPIDashboard() is
+//   no longer called by any frontend page.
+//
+//   WHY KEPT (do not delete):
+//   • getKPIDrilldown() — still called by KPI_F.html drill-down modals
+//     (FPY failures, Supplier Defect table, OTD detail tabs).
+//     It has no equivalent in KpiConfig.js.
+//   • kpiCacheFlush() — still called by KPI_F.html refresh button.
+//   • All private helpers are needed by getKPIDrilldown().
+//
+//   THRESHOLD NOTE: getKPIDashboard used kpiGetThresholds_() which reads
+//   CONFIG sheet keys: KPI_FPY_GREEN, KPI_FPY_AMBER, KPI_DEFECT_AMBER,
+//   KPI_DEFECT_RED, KPI_OTD_GREEN, KPI_OTD_AMBER, KPI_RETURN_WINDOW_DAYS,
+//   KPI_RETURN_AMBER, KPI_RETURN_RED, KPI_NCR_OPEN_RED.
+//   These CONFIG sheet keys are now ORPHANED — the live engine (KpiConfig.js)
+//   reads targets from PropertiesService via saveUISettings/getUISettings.
+//   The CONFIG sheet threshold keys can be left in place or removed; they no
+//   longer affect any displayed KPI value.
+//
+//   OTD NOTE: kpiOTD_() measured receipt vs PO promised date (PO_LINES).
+//   The surviving OTD definition (KpiConfig.js _kpi_otd_) measures
+//   Dispatch TAT (OQC→dispatch, FG_DISPATCH_LOTS). They answer different
+//   business questions. The KPI page now shows Dispatch TAT only.
 // ============================================================
 
-// ── Public endpoints ──────────────────────────────────────────
+// ── DEPRECATED public endpoint (no frontend calls this) ──────
 
 /**
- * Main dashboard endpoint.
+ * @deprecated Use getQmsKpis() in KpiConfig.js instead.
+ *             No frontend page calls this function as of 2026-05-20.
  * periodOpts: { preset:'THIS_MONTH'|'LAST_30'|'LAST_90'|'THIS_FY'|'CUSTOM', fromISO?, toISO? }
  */
 function getKPIDashboard(periodOpts) {
