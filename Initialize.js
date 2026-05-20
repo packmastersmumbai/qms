@@ -174,6 +174,44 @@ var FG_OVERRIDE_HEADERS = [
   'Reason', 'Operator', 'Resulting Gatepass No', 'Status'
 ];
 
+// IPQC — session-based in-process inspection
+var IPQC_SESSIONS_HEADERS = [
+  'session_id', 'product_code', 'product_name', 'batch', 'inspector', 'line',
+  'date', 'start_time', 'end_time', 'status', 'rounds'
+];
+
+var IPQC_LOG_HEADERS = [
+  'session_id', 'product_code', 'batch', 'round_no', 'timestamp',
+  'param_code', 'param_name', 'std_value', 'unit', 'actual_value',
+  'result', 'remark', 'elapsed_hms', 'period_start', 'period_end', 'avg_weight'
+];
+
+// Production — job tracking and component booking
+var PROD_JOBS_HEADERS = [
+  'Job ID', 'Timestamp', 'Client', 'FG Code', 'FG Description',
+  'FG Qty Issued', 'UoM', 'Issue IDs', 'Status', 'IPQC ID', 'Booking ID', 'Closed At'
+];
+
+var PROD_BOOKING_HEADERS = [
+  'Booking ID', 'Timestamp', 'Job ID', 'IPQC ID', 'FG Code', 'FG Description',
+  'FG Produced', 'FG UoM',
+  'Component Code', 'Component Name', 'Batch/Lot', 'Location',
+  'Booked Qty', 'Consumed', 'Returned', 'Scrap', 'Wastage', 'Loss', 'UoM',
+  'Booked By', 'Remarks'
+];
+
+// Control plan — FG parameter assignments per item
+var CONTROL_FG_HEADERS = [
+  'item_code', 'param_code', 'enabled', 'std_value_override',
+  'tol_min_override', 'tol_max_override'
+];
+
+// Masters — inspection parameters library
+var MASTERS_PARAMETERS_HEADERS = [
+  'code', 'name', 'unit', 'std_value', 'tol_min', 'tol_max',
+  'method_type', 'check_brief', 'tools', 'doc_ref', 'doc_number'
+];
+
 var NCR_HEADERS = [
   'NCR No.', 'Date', 'Source', 'Source Ref', 'Material Code', 'Material Desc',
   'Batch No.', 'Qty Affected', 'Unit', 'Defect Description',
@@ -224,6 +262,14 @@ function initializeProject() {
     createLogSheet_(ss, 'REVISIONS_LOG', ['TYPE', 'DOC_NO', 'TIMESTAMP', 'REVISED_BY', 'FIELD', 'OLD_VALUE', 'NEW_VALUE']);
     createLogSheet_(ss, 'PO_HEADER', PO_HEADER_HEADERS);
     createLogSheet_(ss, 'PO_LINES',  PO_LINE_HEADERS);
+    createLogSheet_(ss, 'IPQC_Sessions',      IPQC_SESSIONS_HEADERS);
+    createLogSheet_(ss, 'IPQC_LOG',           IPQC_LOG_HEADERS);
+    createLogSheet_(ss, 'PROD_JOBS',          PROD_JOBS_HEADERS);
+    createLogSheet_(ss, 'PROD_BOOKING_LOG',   PROD_BOOKING_HEADERS);
+    createLogSheet_(ss, 'FG_DISPATCH_LOTS',   FG_DISPATCH_HEADERS);
+    createLogSheet_(ss, 'FG_FIFO_OVERRIDE_LOG', FG_OVERRIDE_HEADERS);
+    createLogSheet_(ss, 'CONTROL_FG',         CONTROL_FG_HEADERS);
+    createMasterSheet_(ss, 'MASTERS_Parameters', MASTERS_PARAMETERS_HEADERS, []);
     createDashboardSheet_(ss);
     createReadmeSheet_(ss);
 
@@ -468,7 +514,13 @@ function verifyAndRepairSheets_core() {
     'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
     'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS,
     'PO_HEADER':            PO_HEADER_HEADERS,
-    'PO_LINES':             PO_LINE_HEADERS
+    'PO_LINES':             PO_LINE_HEADERS,
+    'IPQC_Sessions':        IPQC_SESSIONS_HEADERS,
+    'IPQC_LOG':             IPQC_LOG_HEADERS,
+    'PROD_JOBS':            PROD_JOBS_HEADERS,
+    'PROD_BOOKING_LOG':     PROD_BOOKING_HEADERS,
+    'CONTROL_FG':           CONTROL_FG_HEADERS,
+    'MASTERS_Parameters':   MASTERS_PARAMETERS_HEADERS
   };
 
   // Ensure MASTERS_Suppliers has state_code column
