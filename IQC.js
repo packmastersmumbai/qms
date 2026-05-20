@@ -68,6 +68,12 @@ function saveIQC(data) {
 
     var docNos = [];
 
+    // Capture the first data row we will write BEFORE the append loop.
+    // This prevents the back-stamp (NCR ref in col 24) from landing on the
+    // wrong rows when a concurrent insert happens between appendRow and
+    // the post-loop getLastRow() recompute (Race 3 fix).
+    var firstAppendRow = ws.getLastRow() + 1;
+
     data.items.forEach(function(item) {
       var docNo  = getNextDocNumber('iqc');
       var params = item.params || {};
@@ -179,8 +185,9 @@ function saveIQC(data) {
         defectDesc:   data.remarks || 'IQC rejection — see ' + docNos.join(', ')
       });
       if (ncrNo) {
-        var startRow = ws.getLastRow() - docNos.length + 1;
-        ws.getRange(startRow, 24, docNos.length, 1).setValue(ncrNo);
+        // Use the pre-loop captured index — not a post-loop getLastRow() recompute —
+        // so a concurrent insert cannot cause the back-stamp to hit the wrong rows.
+        ws.getRange(firstAppendRow, 24, docNos.length, 1).setValue(ncrNo);
       }
     }
 
@@ -221,10 +228,12 @@ function getGRNItems(grnNo) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][0]).trim() === String(grnNo).trim()) {
       items.push({
-        materialDesc: data[i][7]  || '',   // col 8
-        batchNo:      data[i][8]  || '',   // col 9
-        qtyReceived:  data[i][10] || 0,    // col 11 (display reference only)
-        unit:         data[i][11] || ''    // col 12
+        materialCode: String(data[i][6] || ''),   // col 7
+        materialDesc: String(data[i][7] || ''),   // col 8
+        batchNo:      String(data[i][8] || ''),   // col 9
+        qtyOrdered:   Number(data[i][9])  || 0,   // col 10
+        qtyReceived:  Number(data[i][10]) || 0,   // col 11
+        unit:         String(data[i][11] || '')   // col 12
       });
     }
   }

@@ -198,36 +198,53 @@ function getOpenSessions() {
 
 function getSessionRounds(sessionId) {
   try {
+    Logger.log('getSessionRounds called with sessionId=' + JSON.stringify(sessionId));
     var ws = _ensureIPQCLog();
     var values = ws.getDataRange().getValues();
-    // IPQC_LOG columns: session_id[0], product_code[1], batch[2], round_no[3], timestamp[4], param_code[5], param_name[6], std_value[7], unit[8], actual_value[9], result[10], remark[11]
+    Logger.log('IPQC_LOG total rows: ' + (values.length - 1));
+    // IPQC_LOG cols: session_id[0] · product_code[1] · batch[2] · round_no[3] · timestamp[4]
+    //   · param_code[5] · param_name[6] · std_value[7] · unit[8] · actual_value[9]
+    //   · result[10] · remark[11] · elapsed_hms[12] · period_start[13] · period_end[14] · avg_weight[15]
+    var sid = String(sessionId || '').trim();
     var roundMap = {};
+    var matchCount = 0;
     for (var i = 1; i < values.length; i++) {
-      if (String(values[i][0]).trim() !== String(sessionId).trim()) continue;
-      var rNo = values[i][3];
-      if (!roundMap[rNo]) {
-        roundMap[rNo] = { roundNo: rNo, timestamp: values[i][4], params: [] };
+      if (String(values[i][0]).trim() !== sid) continue;
+      matchCount++;
+      var rNo = Number(values[i][3]);     // force numeric — avoid string/number key drift
+      if (isNaN(rNo)) continue;
+      var key = 'r' + rNo;                // prefixed string key — defensive
+      if (!roundMap[key]) {
+        roundMap[key] = {
+          roundNo:    rNo,
+          timestamp:  values[i][4] instanceof Date ? values[i][4].toISOString() : String(values[i][4] || ''),
+          elapsedHms: values[i][12] instanceof Date
+            ? Utilities.formatDate(values[i][12], 'Asia/Kolkata', 'HH:mm:ss')
+            : String(values[i][12] || ''),
+          avgWeight:  values[i][15] != null ? String(values[i][15]) : '',
+          params: []
+        };
       }
-      roundMap[rNo].params.push({
-        paramCode:   values[i][5],
-        paramName:   values[i][6],
-        stdValue:    values[i][7],
-        unit:        values[i][8],
-        actualValue: values[i][9],
-        result:      values[i][10],
-        remark:      values[i][11]
+      roundMap[key].params.push({
+        paramCode:   String(values[i][5] || ''),
+        paramName:   String(values[i][6] || ''),
+        stdValue:    values[i][7] != null ? String(values[i][7]) : '',
+        unit:        String(values[i][8] || ''),
+        actualValue: values[i][9] != null ? String(values[i][9]) : '',
+        result:      String(values[i][10] || ''),
+        remark:      String(values[i][11] || '')
       });
     }
+    Logger.log('getSessionRounds matched ' + matchCount + ' rows for sid=' + sid);
 
     var rounds = [];
-    for (var key in roundMap) {
-      rounds.push(roundMap[key]);
-    }
+    for (var k in roundMap) { rounds.push(roundMap[k]); }
     rounds.sort(function(a, b) { return a.roundNo - b.roundNo; });
+    Logger.log('getSessionRounds returning ' + rounds.length + ' rounds: ' + rounds.map(function(r){return 'R'+r.roundNo+'('+r.params.length+'p)';}).join(','));
     return { rounds: rounds };
   } catch(e) {
-    Logger.log(e);
-    return { rounds: [] };
+    Logger.log('getSessionRounds ERROR: ' + e);
+    return { rounds: [], error: String(e) };
   }
 }
 
@@ -252,14 +269,30 @@ function saveRound(sessionId, roundData) {
       return { ok: false, error: 'Session not found: ' + sessionId };
     }
 
-    var roundNo = currentRounds + 1;
-    var now = new Date();
-    var tsStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
-
     var params = roundData.params || [];
     var lock = LockService.getScriptLock();
-    lock.waitLock(10000);
+    // SCOPED LOCK: round-number derivation, log append, and counter write must all be
+    // atomic — two concurrent round submissions otherwise produce duplicate round numbers.
+    if (!lock.tryLock(10000)) {
+      throw new Error('LOCK_TIMEOUT: saveRound could not acquire script lock within 10 s');
+    }
+    var roundNo;
     try {
+      // Re-read the session row INSIDE the lock so we see any counter increment
+      // from a concurrent call that beat us to the lock.
+      var freshValues = sessWs.getDataRange().getValues();
+      var freshRounds = 0;
+      for (var k = 1; k < freshValues.length; k++) {
+        if (String(freshValues[k][0]).trim() === String(sessionId).trim()) {
+          freshRounds = freshValues[k][10] || 0;
+          break;
+        }
+      }
+      roundNo = Number(freshRounds) + 1;
+
+      var now   = new Date();
+      var tsStr = Utilities.formatDate(now, 'Asia/Kolkata', 'yyyy-MM-dd HH:mm:ss');
+
       for (var j = 0; j < params.length; j++) {
         var p = params[j];
         logWs.appendRow([
@@ -281,14 +314,15 @@ function saveRound(sessionId, roundData) {
           roundData.avgWeight       || ''
         ]);
       }
+
+      // Increment rounds count INSIDE the lock so the counter is already updated
+      // before any concurrent caller re-reads it after we release.
+      if (sessRowIdx > 0) {
+        // rounds is column 11 (index 10, 1-based col 11)
+        sessWs.getRange(sessRowIdx, 11).setValue(roundNo);
+      }
     } finally {
       lock.releaseLock();
-    }
-
-    // Increment rounds count in IPQC_Sessions
-    if (sessRowIdx > 0) {
-      // rounds is column 11 (index 10, 1-based col 11)
-      sessWs.getRange(sessRowIdx, 11).setValue(roundNo);
     }
 
     return { ok: true, roundNo: roundNo };
@@ -500,4 +534,71 @@ function raiseIPQCNCR(sessionId, paramCode, roundNo, remark) {
     Logger.log(e);
     return { ok: false, error: e.message };
   }
+}
+
+// ---------- Diagnostic (one-shot, callable from clasp run) ----------
+function diag_IPQC_state() {
+  var ss = getSpreadsheet();
+  var sessWs = ss.getSheetByName('IPQC_Sessions');
+  var logWs  = ss.getSheetByName('IPQC_LOG');
+  var out = { sessions: [], logCounts: {}, logTotalRows: 0 };
+  if (sessWs) {
+    var sv = sessWs.getDataRange().getValues();
+    for (var i = 1; i < sv.length; i++) {
+      out.sessions.push({
+        row: i + 1,
+        id: String(sv[i][0]),
+        product: String(sv[i][1]),
+        batch: String(sv[i][3]),
+        inspector: String(sv[i][4]),
+        status: String(sv[i][9]),
+        roundsCounter: sv[i][10]
+      });
+    }
+  }
+  if (logWs) {
+    var lv = logWs.getDataRange().getValues();
+    out.logTotalRows = lv.length - 1;
+    for (var j = 1; j < lv.length; j++) {
+      var id = String(lv[j][0]).trim();
+      var rn = String(lv[j][3]);
+      var key = id + ' :: R' + rn;
+      out.logCounts[key] = (out.logCounts[key] || 0) + 1;
+    }
+  }
+  Logger.log(JSON.stringify(out, null, 2));
+  return out;
+}
+
+function diag_getSessionRounds(sessionId) {
+  var r = getSessionRounds(sessionId);
+  // Strip Date objects to strings so clasp run can serialize
+  if (r && r.rounds) {
+    r.rounds.forEach(function(rd) {
+      if (rd.timestamp instanceof Date) rd.timestamp = rd.timestamp.toISOString();
+    });
+  }
+  return JSON.stringify(r);
+}
+
+function diag_logSampleRows() {
+  var ss = getSpreadsheet();
+  var logWs = ss.getSheetByName('IPQC_LOG');
+  var lv = logWs.getDataRange().getValues();
+  var samples = [];
+  for (var i = 1; i < lv.length && samples.length < 5; i++) {
+    var id = String(lv[i][0]);
+    if (id.indexOf('2967583_b88_hj') !== -1) {
+      samples.push({
+        rowIdx: i,
+        sessionId_raw: id,
+        sessionId_len: id.length,
+        sessionId_charCodes: Array.from(id).slice(0,30).map(function(c){return c.charCodeAt(0);}),
+        round_no: lv[i][3],
+        round_no_type: typeof lv[i][3],
+        param_code: String(lv[i][5])
+      });
+    }
+  }
+  return JSON.stringify(samples, null, 2);
 }

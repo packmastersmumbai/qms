@@ -11,14 +11,22 @@
 
 function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
                             qtyIn, qtyOut, refDocType, refDocNo, operator, remarks) {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('STOCK_LEDGER');
+  if (!ws) return '';
+  var txnId = 'TXN-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMddHHmmss')
+              + '-' + Math.floor(Math.random() * 1000);
+  var qIn  = Number(qtyIn)  || 0;
+  var qOut = Number(qtyOut) || 0;
+  var op   = operator || (function(){ try { return Session.getActiveUser().getEmail() || ''; } catch(e){ return ''; } })();
+
+  // SCOPED LOCK: balance-read + appendRow must be atomic to prevent two concurrent
+  // calls reading the same stale balance and writing duplicate "Balance After" values.
+  var lock = LockService.getScriptLock();
   try {
-    var ss = getSpreadsheet();
-    var ws = ss.getSheetByName('STOCK_LEDGER');
-    if (!ws) return '';
-    var txnId = 'TXN-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMddHHmmss')
-                + '-' + Math.floor(Math.random() * 1000);
-    var qIn  = Number(qtyIn)  || 0;
-    var qOut = Number(qtyOut) || 0;
+    if (!lock.tryLock(10000)) {
+      throw new Error('LOCK_TIMEOUT: writeStockLedger_ could not acquire script lock within 10 s');
+    }
     var balance = getStockBalance_(materialCode, batchOrLotNo, locationId) + qIn - qOut;
     ws.appendRow([
       txnId,
@@ -32,15 +40,51 @@ function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
       balance,
       refDocType || '',
       refDocNo || '',
-      operator || (function(){ try { return Session.getActiveUser().getEmail() || ''; } catch(e){ return ''; } })(),
+      op,
       remarks || ''
     ]);
     var lr = ws.getLastRow();
     ws.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy HH:mm');
-    return txnId;
+  } finally {
+    lock.releaseLock();
+  }
+  return txnId;
+}
+
+// Recent stock movements for the Movements tab (Warehouse_F.html).
+// Returns most-recent N (default 100) ledger rows newest-first.
+function getStockMovements(limit) {
+  try {
+    var n = Number(limit) || 100;
+    var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+    if (!ws || ws.getLastRow() < 2) return [];
+    var rows = ws.getDataRange().getValues();
+    var TZ = 'Asia/Kolkata';
+    var out = [];
+    // Iterate from newest row back
+    for (var i = rows.length - 1; i >= 1 && out.length < n; i--) {
+      var r = rows[i];
+      if (!r[0]) continue;
+      out.push({
+        txnId:        r[0],
+        timestamp:    r[1] instanceof Date ? Utilities.formatDate(r[1], TZ, 'dd-MMM HH:mm') : String(r[1] || ''),
+        txnType:      r[2] || '',
+        materialCode: r[3] || '',
+        batchOrLotNo: r[4] || '',
+        locationId:   r[5] || '',
+        qtyIn:        Number(r[6]) || 0,
+        qtyOut:       Number(r[7]) || 0,
+        balance:      Number(r[8]) || 0,
+        refDocType:   r[9] || '',
+        refDocNo:     r[10] || '',
+        operator:     r[11] || '',
+        remarks:      r[12] || ''
+      });
+    }
+    return out;
   } catch(e) {
-    Logger.log('writeStockLedger_ failed: ' + e.message);
-    return '';
+    Logger.log('getStockMovements error: ' + e.message);
+    return [];
   }
 }
 
@@ -384,12 +428,13 @@ function issueRMForProduction(data) {
     }
 
     // Pass — write ledger entry
+    var txnType = (data.txnType === 'PROD_BOOK') ? 'PROD_BOOK' : 'RM_ISSUE';
     var refNo = data.productionOrderNo || ('PROD-' + Date.now());
-    writeStockLedger_('RM_ISSUE', mat, batch, loc,
+    writeStockLedger_(txnType, mat, batch, loc,
       0, qty,
       'PRODUCTION', refNo,
       data.issuedBy || '',
-      'RM issued — IQC pass verified');
+      txnType === 'PROD_BOOK' ? 'Booked for FG production — pending consumption' : 'RM issued — IQC pass verified');
     return { success: true, balance: bal - qty, grnNo: grnNoForBatch, iqcDisposition: iqcDisp };
   } catch(e) {
     Logger.log(e);
