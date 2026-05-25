@@ -6,25 +6,26 @@
   <title>Pack Masters QMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
   <style>
+    /* Tokens sourced from DESIGN.md — kept as legacy --pm-* names for in-file refs */
     :root {
-      --pm-navy:    #1e3a5f;
-      --pm-navy-2:  #2a4a73;
-      --pm-sky:     #0ea5e9;
-      --pm-bg:      #f5f7fa;
-      --pm-card:    #ffffff;
-      --pm-border:  #e4e8ee;
-      --pm-rule:    #eef1f5;
-      --pm-text:    #0f172a;
-      --pm-muted:   #64748b;
-      --pm-faint:   #94a3b8;
-      --pm-pass:    #16a34a;
-      --pm-fail:    #dc2626;
-      --pm-warn:    #f97316;
-      --pm-hold:    #ca8a04;
-      --pm-prog:    #2563eb;
+      --pm-navy:    #0D1B6E;   /* DESIGN.md primary */
+      --pm-navy-2:  #1A2D9E;   /* DESIGN.md primary-hover */
+      --pm-sky:     #0070F3;   /* DESIGN.md link */
+      --pm-bg:      #F5F7FA;   /* DESIGN.md canvas */
+      --pm-card:    #FFFFFF;
+      --pm-border:  #E5E7EB;   /* DESIGN.md hairline */
+      --pm-rule:    #EEF1F5;
+      --pm-text:    #0F172A;
+      --pm-muted:   #6B7280;
+      --pm-faint:   #94A3B8;
+      --pm-pass:    #16A34A;
+      --pm-fail:    #DC2626;
+      --pm-warn:    #F97316;
+      --pm-hold:    #D97706;
+      --pm-prog:    #2563EB;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; padding: 0; }
@@ -228,86 +229,96 @@
     .pm-stat.is-warn .pm-stat-icon { color: var(--pm-warn); }
     .pm-stat.is-warn .pm-stat-val { color: var(--pm-warn); }
 
-    /* ── Module row group ── */
-    .pm-group { margin-top: 4px; }
-    .pm-group-card {
+    /* ── Module tile grid (compact) ── */
+    .pm-group { margin-top: 4px; margin-bottom: 8px; }
+    .pm-tiles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .pm-tile {
+      position: relative;
+      display: flex; flex-direction: column;
+      gap: 4px;
+      padding: 10px 10px 8px;
+      min-height: 76px;
       background: #fff;
       border: 1px solid var(--pm-border);
       border-radius: 10px;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
       overflow: hidden;
     }
-    .pm-row {
-      display: flex; align-items: center;
-      gap: 10px;
-      padding: 0 6px 0 10px;
-      min-height: 40px;
-      background: transparent;
-      border: 0; border-bottom: 1px solid var(--pm-rule);
-      width: 100%; box-sizing: border-box;
-      text-align: left;
+    .pm-tile:hover { border-color: var(--pm-navy); box-shadow: 0 1px 4px rgba(13,27,110,0.08), 0 2px 8px rgba(13,27,110,0.06); }
+    .pm-tile:active { transform: scale(0.98); }
+    .pm-tile-top {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 4px;
+    }
+    .pm-tile-icon {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      background: #EEF1FA;
+      color: var(--pm-navy);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .pm-tile-icon svg { width: 13px; height: 13px; stroke-width: 1.9; }
+    .pm-tile-count {
+      flex-shrink: 0;
+      min-width: 22px; height: 20px;
+      padding: 0 6px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #EEF1FA;
+      color: var(--pm-navy);
+      border: 0; border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px; font-weight: 700;
       cursor: pointer;
       transition: background .12s ease;
     }
-    .pm-row:last-child { border-bottom: 0; }
-    .pm-row:hover { background: #f8fafc; }
-    .pm-row:active { background: #f1f5f9; }
-    .pm-row-icon {
-      width: 18px; height: 18px;
-      color: var(--pm-navy);
-      flex-shrink: 0;
-    }
-    .pm-row-icon svg { width: 100%; height: 100%; stroke-width: 1.75; }
-    .pm-row-label {
-      font-size: 13px; font-weight: 700;
+    .pm-tile-count:hover { background: #DBE4F7; }
+    .pm-tile-count.is-zero { background: transparent; color: var(--pm-faint); }
+    .pm-tile-count.is-attn { background: #FEF3C7; color: #B45309; }
+    .pm-tile-count.is-na { background: transparent; color: var(--pm-faint); }
+    .pm-tile-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px; font-weight: 700;
       color: var(--pm-text);
-      letter-spacing: 0.1px;
-      flex-shrink: 0;
-      min-width: 64px;
-    }
-    .pm-row-meta {
-      font-size: 11px; font-weight: 500;
-      color: var(--pm-muted);
-      flex: 1; min-width: 0;
+      letter-spacing: 0px;
+      line-height: 1.15;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .pm-row-count {
-      flex-shrink: 0;
-      min-width: 30px; height: 22px;
-      padding: 0 7px;
-      display: flex; align-items: center; justify-content: center;
-      background: #eff6ff;
-      color: var(--pm-navy);
-      border: 0; border-radius: 6px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px; font-weight: 700;
-      transition: background .12s ease, transform .08s ease;
+    .pm-tile-meta {
+      font-size: 10px; font-weight: 500;
+      color: var(--pm-muted);
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
-    .pm-row-count:hover { background: #dbeafe; }
-    .pm-row-count:active { transform: scale(0.94); }
-    .pm-row-count.is-zero { background: #f1f5f9; color: var(--pm-faint); }
-    .pm-row-count.is-na { background: transparent; color: var(--pm-faint); }
-    .pm-row-add {
-      flex-shrink: 0;
-      width: 26px; height: 26px;
-      display: flex; align-items: center; justify-content: center;
+    .pm-tile-add {
+      position: absolute; top: 6px; right: 6px;
+      width: 20px; height: 20px;
+      display: none; align-items: center; justify-content: center;
       background: var(--pm-sky);
       color: #fff;
-      border: 0; border-radius: 6px;
-      font-family: inherit;
-      font-size: 18px; font-weight: 600; line-height: 1;
+      border: 0; border-radius: 5px;
+      font-size: 13px; font-weight: 600; line-height: 1;
       cursor: pointer;
-      transition: background .12s ease, transform .08s ease;
+      transition: background .12s ease;
     }
-    .pm-row-add:hover { background: #0284c7; }
-    .pm-row-add:active { transform: scale(0.92); }
-    .pm-row-add svg { width: 14px; height: 14px; stroke-width: 2.5; }
-    .pm-row-chev {
-      width: 18px; height: 18px;
-      color: var(--pm-faint);
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
+    .pm-tile-add:hover { background: var(--pm-navy-2); }
+    .pm-tile:hover .pm-tile-add { display: flex; }
+    @media (hover: none) {
+      .pm-tile-add { display: flex; }   /* always-visible on touch */
     }
-    .pm-row-chev svg { width: 14px; height: 14px; stroke-width: 1.75; }
+
+    /* Tile statuses */
+    .pm-tile.has-pending { border-left: 3px solid var(--pm-hold); }
+    .pm-tile.has-fail    { border-left: 3px solid var(--pm-fail); }
 
     /* ── Activity row ── */
     .pm-act-card {
@@ -1047,56 +1058,60 @@
     var idx = 0;
     var html = GROUPS.map(function (g) {
       var rows = g.modules.filter(function(m){
-        if (!tiles || !m.countKey) return true;  // non-pending tiles always visible
+        if (!tiles || !m.countKey) return true;
         if (!tiles.hasOwnProperty(m.countKey)) return true;
         return tiles[m.countKey] !== false;
       }).map(function (m) {
         var n = m.countKey ? (c[m.countKey] != null ? c[m.countKey] : 0) : null;
         var meta = moduleMeta(m, n, b[m.countKey]);
-        var countHtml;
-        // Row click strategy:
-        //   - Module with pending count > 0 → Records page filtered to that module, pending-only
-        //   - Module with 0 / null count → open the module form directly (for adding new)
-        var rowClick;
+        // Click → Records (pending-only) if work waiting; else open form.
+        var tileClick;
         if (n == null) {
-          // Modules without a count concept (KPI, Warehouse, Masters, Control Plan) — open form
-          rowClick = "navigateTo('" + m.form + "')";
+          tileClick = "navigateTo('" + m.form + "')";
         } else if (n > 0) {
-          // Has pending work — go straight to the pending list in Records
-          rowClick = "navigateToRecords('" + m.form + "', {pendingOnly:true, period:'ALL'})";
+          tileClick = "navigateToRecords('" + m.form + "', {pendingOnly:true, period:'ALL'})";
         } else {
-          // Zero pending — open the module form (most likely intent is "add new")
-          rowClick = "navigateTo('" + m.form + "')";
+          tileClick = "navigateTo('" + m.form + "')";
         }
+        // Count pill
+        var countHtml;
         if (n == null) {
-          countHtml = '<span class="pm-row-count is-na" aria-hidden="true">—</span>';
+          countHtml = '<span class="pm-tile-count is-na" aria-hidden="true">&mdash;</span>';
         } else {
-          countHtml = '<button class="pm-row-count' + (n === 0 ? ' is-zero' : '') + '" ' +
+          var attnCls = '';
+          if (n > 0) attnCls = (m.countKey === 'NCR') ? ' is-attn' : (n >= 5 ? ' is-attn' : '');
+          countHtml = '<button class="pm-tile-count' + (n === 0 ? ' is-zero' : attnCls) + '" ' +
             'aria-label="View ' + esc(m.name) + ' records" ' +
             'onclick="event.stopPropagation();navigateToRecords(\'' + m.form + '\', {period:\'ALL\'})">' + n + '</button>';
         }
+        // + Add button (top-right)
         var addHtml = '';
         if (m.countKey && !m.noNew) {
-          addHtml = '<button class="pm-row-add" ' +
+          addHtml = '<button class="pm-tile-add" ' +
             'aria-label="New ' + esc(m.name) + '" title="New ' + esc(m.name) + '" ' +
             'onclick="event.stopPropagation();navigateTo(\'' + m.form + '\',{mode:\'new\'})">+</button>';
         }
+        // Status class for left-border
+        var stateCls = '';
+        if (n != null && n > 0) stateCls = ' has-pending';
         var delay = (idx++) * 25;
-        return '<div class="pm-row pm-rise" role="button" tabindex="0" style="animation-delay:' + delay + 'ms;" ' +
-          'onclick="' + rowClick + '" ' +
-          'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + rowClick + '}" ' +
+        return '<div class="pm-tile' + stateCls + ' pm-rise" role="button" tabindex="0" ' +
+          'style="animation-delay:' + delay + 'ms;" ' +
+          'onclick="' + tileClick + '" ' +
+          'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + tileClick + '}" ' +
           'aria-label="Open ' + esc(m.name) + '">' +
-          '<span class="pm-row-icon"><svg><use href="#' + m.icon + '"/></svg></span>' +
-          '<span class="pm-row-label">' + esc(m.name) + '</span>' +
-          '<span class="pm-row-meta">' + esc(meta) + '</span>' +
+          '<div class="pm-tile-top">' +
+            '<span class="pm-tile-icon"><svg><use href="#' + m.icon + '"/></svg></span>' +
+            countHtml +
+          '</div>' +
+          '<div class="pm-tile-label">' + esc(m.name) + '</div>' +
+          (meta ? '<div class="pm-tile-meta">' + esc(meta) + '</div>' : '') +
           addHtml +
-          countHtml +
-          '<span class="pm-row-chev"><svg><use href="#i-chev"/></svg></span>' +
           '</div>';
       }).join('');
       if (!rows) return '';
       return '<div class="pm-sec"><span class="pm-sec-l">' + esc(g.label) + '</span></div>' +
-        '<div class="pm-group"><div class="pm-group-card">' + rows + '</div></div>';
+        '<div class="pm-group"><div class="pm-tiles">' + rows + '</div></div>';
     }).join('');
     $('moduleGroups').innerHTML = html;
   }
