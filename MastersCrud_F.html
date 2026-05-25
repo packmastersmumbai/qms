@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Masters CRUD — Pack Masters QMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--pm-navy:#1e3a5f;--pm-sky:#0ea5e9;--pm-bg:#f5f7fa;--pm-border:#e4e8ee;--pm-rule:#eef1f5;--pm-text:#0f172a;--pm-muted:#64748b;--pm-faint:#94a3b8;--pm-pass:#16a34a;--pm-fail:#dc2626;--pm-warn:#f97316;}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--pm-bg);color:var(--pm-text);font-family:'Inter',system-ui,sans-serif;font-size:13px;-webkit-font-smoothing:antialiased}
+  .pm-shell{max-width:430px;margin:0 auto}
+  .pm-top{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:48px;z-index:50;background:var(--pm-navy);display:flex;align-items:center;justify-content:space-between;padding:0 8px;color:#fff}
+  .pm-top-btn{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;background:transparent;border:0;cursor:pointer}
+  .pm-top-btn:hover{background:rgba(255,255,255,0.10)}
+  .pm-top-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px}
+  main{padding:56px 12px 24px}
+  .gate{margin:30px 12px;padding:14px;background:#fff7ed;border:1px solid #fed7aa;border-left:3px solid var(--pm-warn);border-radius:8px;font-size:12.5px;color:#7c2d12;font-weight:600;text-align:center}
+  .tabs{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:8px 0;border-bottom:1px solid var(--pm-border);background:#fff;position:sticky;top:48px;z-index:20;margin:0 -12px;padding-left:12px;padding-right:12px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:6px 12px;border:1px solid var(--pm-border);border-radius:999px;background:#fff;font-size:11.5px;font-weight:700;color:var(--pm-muted);white-space:nowrap;cursor:pointer;flex-shrink:0}
+  .tab.active{background:var(--pm-navy);color:#fff;border-color:var(--pm-navy)}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px;gap:8px}
+  .toolbar input{flex:1;height:32px;border:1px solid var(--pm-border);border-radius:6px;padding:0 10px;font-size:12.5px;font-family:inherit}
+  .toolbar input:focus{outline:none;border-color:var(--pm-sky)}
+  .btn{height:32px;padding:0 12px;background:var(--pm-navy);color:#fff;border:0;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;flex-shrink:0}
+  .btn.sec{background:#fff;color:var(--pm-navy);border:1px solid var(--pm-border)}
+  .btn.danger{background:var(--pm-fail)}
+  .btn:disabled{background:var(--pm-faint);cursor:not-allowed}
+  .card{background:#fff;border:1px solid var(--pm-border);border-radius:10px;padding:10px 12px;margin-top:8px}
+  .card .code{font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--pm-navy);font-size:12.5px;letter-spacing:-0.3px}
+  .card .name{font-weight:700;font-size:12.5px;margin-top:1px;color:var(--pm-text)}
+  .card .meta{margin-top:4px;font-size:10.5px;color:var(--pm-muted);font-family:'JetBrains Mono',monospace;line-height:1.4;word-break:break-word}
+  .card .actions{display:flex;gap:6px;margin-top:8px}
+  .actions .btn{height:26px;padding:0 10px;font-size:10.5px}
+  .empty{padding:18px;text-align:center;color:var(--pm-faint);font-size:12px}
+  .audit{font-size:9.5px;color:var(--pm-faint);font-family:'JetBrains Mono',monospace;margin-top:4px}
+  /* Edit drawer */
+  .drawer{position:fixed;inset:0;z-index:9990;background:rgba(15,23,42,0.55);display:flex;align-items:flex-end;justify-content:center}
+  .drawer.hidden{display:none}
+  .drawer-sheet{background:#fff;width:100%;max-width:430px;border-radius:14px 14px 0 0;max-height:88vh;overflow-y:auto;padding:14px 14px 24px}
+  .drawer h3{margin:0 0 10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--pm-navy)}
+  .field{margin-bottom:8px}
+  .field label{display:block;font-size:10px;font-weight:700;color:var(--pm-muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px}
+  .field input,.field textarea,.field select{width:100%;border:1px solid var(--pm-border);border-radius:6px;padding:7px 10px;font-size:12.5px;font-family:inherit;color:var(--pm-text)}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--pm-sky)}
+  .field textarea{min-height:60px;resize:vertical}
+  .drawer-actions{display:flex;gap:8px;margin-top:12px}
+  .drawer-actions .btn{flex:1;height:38px}
+  #toast{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);bottom:70px;background:var(--pm-navy);color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 8px 22px rgba(15,23,42,0.25);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:9998}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.error{background:var(--pm-fail)}
+  #toast.ok{background:var(--pm-pass)}
+</style>
+<?!= include('HtmlCache') ?>
+</head>
+<body>
+<div class="pm-shell">
+<header class="pm-top">
+  <button class="pm-top-btn" onclick="goBack()" aria-label="Back">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+  </button>
+  <div class="pm-top-title">Masters</div>
+  <div style="width:36px"></div>
+</header>
+<main>
+  <div id="gateMsg" class="gate" style="display:none">Owner mode required. Open Settings to unlock.</div>
+  <div id="content" style="display:none">
+    <div class="tabs" id="tabs"></div>
+    <div class="toolbar">
+      <input id="searchBox" type="text" placeholder="Search…" oninput="onSearch()">
+      <button class="btn" onclick="openDrawer(null)">+ Add</button>
+    </div>
+    <div id="listBox"></div>
+  </div>
+</main>
+</div>
+
+<!-- Edit drawer -->
+<div id="drawer" class="drawer hidden">
+  <div class="drawer-sheet">
+    <h3 id="drawerTitle">Add</h3>
+    <div id="drawerFields"></div>
+    <div class="drawer-actions">
+      <button class="btn sec" onclick="closeDrawer()">Cancel</button>
+      <button class="btn" id="saveBtn" onclick="onSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script>
+var STATE = { name:'Suppliers', schema:null, rows:[], filter:'', editing:null, ownerMode:false, names:['Suppliers','Materials','Customers','Personnel','Parameters'] };
+
+function toast(m, k){ var t=document.getElementById('toast'); t.textContent=m; t.className=''; t.classList.add('show'); if(k) t.classList.add(k); clearTimeout(window._t); window._t=setTimeout(function(){ t.classList.remove('show'); }, 2000); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+function goBack(){
+  if (window.PMHtmlCache && PMHtmlCache.navigate) { PMHtmlCache.navigate('Settings'); return; }
+  google.script.run.withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); }).getFormHtml('Settings');
+}
+
+function checkGate(){
+  google.script.run.withSuccessHandler(function(s){
+    STATE.ownerMode = !!(s && s.ownerMode);
+    if (!STATE.ownerMode) {
+      document.getElementById('gateMsg').style.display = '';
+      document.getElementById('content').style.display = 'none';
+    } else {
+      document.getElementById('gateMsg').style.display = 'none';
+      document.getElementById('content').style.display = '';
+      renderTabs();
+      loadTable();
+    }
+  }).getUISettings('Manager');
+}
+
+function renderTabs(){
+  var html = STATE.names.map(function(n){
+    return '<button class="tab' + (n===STATE.name?' active':'') + '" onclick="switchTab(\'' + n + '\')">' + n + '</button>';
+  }).join('');
+  document.getElementById('tabs').innerHTML = html;
+}
+
+function switchTab(n){
+  STATE.name = n;
+  document.getElementById('searchBox').value = '';
+  STATE.filter = '';
+  renderTabs();
+  loadTable();
+}
+
+function loadTable(){
+  document.getElementById('listBox').innerHTML = '<div class="empty">Loading…</div>';
+  google.script.run
+    .withSuccessHandler(function(res){
+      if (!res || !res.ok) { document.getElementById('listBox').innerHTML='<div class="empty">'+esc(res && res.error || 'Error')+'</div>'; return; }
+      STATE.schema = res.columns || [];
+      STATE.rows = res.rows || [];
+      renderList();
+    })
+    .withFailureHandler(function(e){ document.getElementById('listBox').innerHTML='<div class="empty">'+esc(e && e.message || e)+'</div>'; })
+    .getMastersTable(STATE.name);
+}
+
+function renderList(){
+  var f = STATE.filter.toLowerCase();
+  var rows = STATE.rows.filter(function(r){
+    if (!f) return true;
+    return STATE.schema.some(function(c){ return String(r[c.key]||'').toLowerCase().indexOf(f) >= 0; });
+  });
+  if (!rows.length) { document.getElementById('listBox').innerHTML = '<div class="empty">No records</div>'; return; }
+  var codeKey = STATE.schema[0].key;
+  var nameKey = (STATE.schema[1] && STATE.schema[1].key) || codeKey;
+  var html = rows.map(function(r, i){
+    var metaParts = STATE.schema.slice(2).map(function(c){
+      var v = r[c.key]; if (v === '' || v == null) return null;
+      return c.label + ': ' + String(v);
+    }).filter(Boolean).slice(0, 4).join(' · ');
+    var audit = '';
+    if (r._lastModified) {
+      var d = new Date(r._lastModified);
+      var dstr = isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+      audit = 'Modified: ' + dstr + (r._modifiedBy ? ' by ' + r._modifiedBy : '');
+    }
+    return '<div class="card">' +
+      '<div class="code">' + esc(r[codeKey]) + '</div>' +
+      (nameKey !== codeKey && r[nameKey] ? '<div class="name">' + esc(r[nameKey]) + '</div>' : '') +
+      (metaParts ? '<div class="meta">' + esc(metaParts) + '</div>' : '') +
+      (audit ? '<div class="audit">' + esc(audit) + '</div>' : '') +
+      '<div class="actions">' +
+        '<button class="btn sec" onclick="openDrawer(' + i + ')">Edit</button>' +
+        '<button class="btn danger" onclick="onDelete(\'' + esc(r[codeKey]).replace(/'/g,"\\'") + '\')">Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  document.getElementById('listBox').innerHTML = html;
+}
+
+function onSearch(){
+  STATE.filter = document.getElementById('searchBox').value.trim();
+  renderList();
+}
+
+function openDrawer(rowIdx){
+  var r = (rowIdx == null) ? null : STATE.rows[rowIdx];
+  STATE.editing = r ? Object.assign({}, r) : {};
+  document.getElementById('drawerTitle').textContent = r ? ('Edit · ' + STATE.name) : ('Add · ' + STATE.name);
+  var html = STATE.schema.map(function(c, i){
+    var v = STATE.editing[c.key] != null ? STATE.editing[c.key] : '';
+    var disabled = (r && i === 0) ? ' disabled' : '';
+    if (c.type === 'longtext') {
+      return '<div class="field"><label>' + esc(c.label) + '</label><textarea data-key="' + esc(c.key) + '"' + disabled + '>' + esc(v) + '</textarea></div>';
+    } else if (c.type === 'enum:Y/N') {
+      var y = (String(v).toUpperCase() === 'Y') ? ' selected' : '';
+      var n = (String(v).toUpperCase() === 'N') ? ' selected' : '';
+      return '<div class="field"><label>' + esc(c.label) + '</label><select data-key="' + esc(c.key) + '"><option value="Y"' + y + '>Y</option><option value="N"' + n + '>N</option></select></div>';
+    } else {
+      return '<div class="field"><label>' + esc(c.label) + '</label><input data-key="' + esc(c.key) + '" type="text" value="' + esc(v) + '"' + disabled + '></div>';
+    }
+  }).join('');
+  document.getElementById('drawerFields').innerHTML = html;
+  document.getElementById('drawer').classList.remove('hidden');
+}
+
+function closeDrawer(){ document.getElementById('drawer').classList.add('hidden'); STATE.editing = null; }
+
+function onSave(){
+  var fields = {};
+  document.querySelectorAll('#drawerFields [data-key]').forEach(function(el){
+    fields[el.getAttribute('data-key')] = el.value;
+  });
+  var codeKey = STATE.schema[0].key;
+  var code = String(fields[codeKey] || '').trim();
+  if (!code) { toast('Code required','error'); return; }
+  var btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = 'Saving…';
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.disabled = false; btn.textContent = 'Save';
+      if (!res || !res.ok) { toast('Save failed: ' + (res && res.error || 'unknown'), 'error'); return; }
+      toast(res.mode === 'updated' ? 'Updated' : 'Added', 'ok');
+      closeDrawer(); loadTable();
+    })
+    .withFailureHandler(function(e){
+      btn.disabled = false; btn.textContent = 'Save';
+      toast('Save failed: ' + (e && e.message || e), 'error');
+    })
+    .upsertMasterRow(STATE.name, code, fields);
+}
+
+function onDelete(code){
+  if (!confirm('Delete ' + code + '?')) return;
+  google.script.run
+    .withSuccessHandler(function(res){
+      if (!res || !res.ok) { toast('Delete failed: ' + (res && res.error || 'unknown'), 'error'); return; }
+      var msg = 'Deleted';
+      if (res.warnings && res.warnings.length) msg += ' (warnings: ' + res.warnings.join('; ') + ')';
+      toast(msg, 'ok');
+      loadTable();
+    })
+    .withFailureHandler(function(e){ toast('Delete failed: ' + (e && e.message || e), 'error'); })
+    .deleteMasterRow(STATE.name, code);
+}
+
+checkGate();
+</script>
+</body>
+</html>

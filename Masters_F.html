@@ -1,129 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masters - Pack Masters QMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
   <style>
-    .masters-tabs {
-      display: flex;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      background: var(--navy-light);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 56px;
-      z-index: 90;
-      scrollbar-width: none;
-    }
-    .masters-tabs::-webkit-scrollbar { display: none; }
-
-    .tab-btn {
-      flex-shrink: 0;
-      padding: 12px 18px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      white-space: nowrap;
-      font-family: inherit;
-      transition: color 0.15s, border-color 0.15s, background 0.15s;
-      touch-action: manipulation;
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
       -webkit-tap-highlight-color: transparent;
     }
-    .tab-btn.active {
-      color: var(--navy);
-      background: var(--navy-light);
-      border-bottom-color: var(--navy);
-    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    .masters-search-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 10px 0;
-    }
-    .search-input {
-      flex: 1;
-      height: 36px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 0 11px;
-      font-size: 12px;
-      font-weight: 400;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--white);
-      transition: border-color 0.15s;
-    }
-    .search-input:focus { outline: none; border-color: var(--navy); }
-
+    /* Tab panel visibility */
     .tab-panel { display: none; }
     .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    .masters-table-wrap {
-      margin: 10px 10px 88px;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow-x: auto;
-    }
-
-    .masters-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: auto;
-    }
-    .masters-table thead th {
-      background: var(--navy-light);
-      color: var(--navy);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 8px 10px;
-      text-align: left;
-      white-space: nowrap;
-      position: sticky;
-      top: calc(56px + 45px);
-      z-index: 10;
-    }
-    .masters-table tbody tr {
-      border-bottom: 1px solid var(--border);
-      min-height: 44px;
-      cursor: pointer;
-      transition: background 0.1s;
-    }
-    .masters-table tbody tr:last-child { border-bottom: none; }
-    .masters-table tbody tr:nth-child(even) { background: #FAFBFF; }
-    .masters-table tbody tr:hover { background: var(--navy-light); }
-    .masters-table tbody td {
-      padding: 10px 10px;
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text);
-      vertical-align: middle;
-      min-height: 44px;
-    }
-
-    .method-chip {
-      display: inline-block;
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 12px;
-      background: var(--navy-light);
-      color: var(--navy);
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
+    /* Skeleton pulse */
     @keyframes skeleton-pulse {
       0%   { opacity: 0.4; }
       50%  { opacity: 1; }
@@ -132,170 +31,99 @@
     .skel-bar {
       display: inline-block;
       height: 13px;
-      background: var(--navy-light);
+      background: #e2e8f0;
       border-radius: 4px;
       animation: skeleton-pulse 0.8s ease-in-out infinite;
+    }
+
+    /* method chip */
+    .method-chip {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: #e0edff;
+      color: #1e3a5f;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* masters table */
+    .masters-table { width: 100%; border-collapse: collapse; table-layout: auto; }
+    .masters-table thead th {
+      background: #f1f5f9;
+      color: #1e3a5f;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .masters-table tbody tr {
+      border-bottom: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .masters-table tbody tr:last-child { border-bottom: none; }
+    .masters-table tbody tr:nth-child(even) { background: #f8fafc; }
+    .masters-table tbody tr:hover { background: #eef4ff; }
+    .masters-table tbody td {
+      padding: 10px;
+      font-size: 12px;
+      color: #0f172a;
+      vertical-align: middle;
+    }
+
+    /* fix #69: render rows as cards on mobile, with chevron */
+    @media (max-width: 640px) {
+      .masters-table, .masters-table thead, .masters-table tbody, .masters-table tr, .masters-table td { display: block; width: 100%; }
+      .masters-table thead { display: none; }
+      .masters-table tbody tr {
+        background: #fff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        padding: 12px 40px 12px 14px;
+        position: relative;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      }
+      .masters-table tbody tr::after {
+        content: '\\e5cc'; /* chevron_right */
+        font-family: 'Material Symbols Outlined';
+        font-size: 22px;
+        color: #94a3b8;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .masters-table tbody tr:nth-child(even) { background: #fff !important; }
+      .masters-table tbody td {
+        padding: 2px 0;
+        border: none;
+        white-space: normal;
+      }
+      .masters-table tbody td:first-child { font-weight: 700; color: #1e3a5f; font-size: 13px; margin-bottom: 2px; }
+      .masters-table tbody td:not(:first-child)::before {
+        font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-right: 6px;
+      }
     }
 
     .masters-empty {
       text-align: center;
       padding: 32px 16px;
       font-size: 13px;
-      font-weight: 400;
-      color: var(--muted);
+      color: #64748b;
     }
-    .masters-empty a {
-      color: var(--navy);
-      cursor: pointer;
-      text-decoration: underline;
-    }
+    .masters-empty a { color: #1e3a5f; cursor: pointer; text-decoration: underline; }
 
-    /* ── Floating Add button ── */
-    .fab-add {
-      position: fixed;
-      right: 18px;
-      bottom: 22px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      font-size: 28px;
-      font-weight: 400;
-      line-height: 1;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(11, 42, 74, 0.35);
-      z-index: 200;
-      font-family: inherit;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .fab-add:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(11, 42, 74, 0.45); }
-    .fab-add:active { transform: translateY(0); }
-
-    /* ── Modal ── */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(11, 42, 74, 0.55);
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      z-index: 1000;
-      animation: fadeIn 0.15s ease;
-    }
-    .modal-overlay.show { display: flex; }
-    @media (min-width: 600px) {
-      .modal-overlay { align-items: center; }
-    }
-
-    .modal-card {
-      background: var(--white);
-      width: 100%;
-      max-width: 540px;
-      max-height: 90vh;
-      border-radius: 12px 12px 0 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: slideUp 0.2s ease;
-    }
-    @media (min-width: 600px) {
-      .modal-card { border-radius: 12px; }
-    }
-    @keyframes slideUp {
-      from { transform: translateY(20px); opacity: 0.8; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
-
-    .modal-header {
-      padding: 16px 18px;
-      background: var(--navy);
-      color: var(--white);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .modal-title { font-size: 15px; font-weight: 600; }
-    .modal-close {
-      background: transparent;
-      border: none;
-      color: var(--white);
-      font-size: 22px;
-      cursor: pointer;
-      padding: 0 6px;
-      line-height: 1;
-      font-family: inherit;
-    }
-
-    .modal-body {
-      padding: 16px 18px;
-      overflow-y: auto;
-      flex: 1;
-    }
-    .field-row { margin-bottom: 12px; }
-    .field-row label {
-      display: block;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      margin-bottom: 4px;
-    }
-    .field-row label .req { color: var(--danger); margin-left: 2px; }
-    .field-row input, .field-row select, .field-row textarea {
-      width: 100%;
-      box-sizing: border-box;
-      height: 38px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 0 11px;
-      font-size: 13px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--white);
-      transition: border-color 0.15s;
-    }
-    .field-row textarea { height: auto; min-height: 60px; padding: 8px 11px; resize: vertical; }
-    .field-row input:focus, .field-row select:focus, .field-row textarea:focus {
-      outline: none; border-color: var(--navy);
-    }
-    .field-row input:disabled { background: #F2F4F8; color: var(--muted); }
-
-    .field-row-2col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .modal-footer {
-      padding: 12px 18px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      align-items: center;
-    }
-    .btn {
-      height: 38px;
-      padding: 0 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.15s, transform 0.1s;
-    }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: var(--navy); color: var(--white); }
-    .btn-ghost { background: transparent; color: var(--muted); }
-    .btn-danger { background: var(--danger); color: var(--white); margin-right: auto; }
-
+    /* Toast */
     .pm-toast {
       position: fixed;
-      bottom: 20px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%) translateY(8px);
       min-width: 220px;
@@ -304,7 +132,7 @@
       border-radius: 8px;
       font-size: 12px;
       font-weight: 500;
-      color: var(--white);
+      color: #fff;
       z-index: 1500;
       opacity: 0;
       pointer-events: none;
@@ -316,161 +144,356 @@
       pointer-events: auto;
       transform: translateX(-50%) translateY(0);
     }
-    .pm-toast.success { background: var(--success); }
-    .pm-toast.error   { background: var(--danger); cursor: pointer; }
+    .pm-toast.success { background: #16a34a; }
+    .pm-toast.error   { background: #dc2626; cursor: pointer; }
+
+    /* Bottom-sheet modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.show { display: flex; }
+    @media (min-width: 600px) { .modal-overlay { align-items: center; } }
+
+    .modal-card {
+      background: #fff;
+      width: 100%;
+      max-width: 540px;
+      max-height: 90vh;
+      border-radius: 16px 16px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.2s ease;
+    }
+    @media (min-width: 600px) { .modal-card { border-radius: 16px; } }
+    @keyframes slideUp {
+      from { transform: translateY(24px); opacity: 0.8; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .modal-drag-handle {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 10px 0 4px;
+    }
+    .modal-drag-handle span {
+      display: block;
+      width: 48px;
+      height: 5px;
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+
+    .modal-header {
+      padding: 4px 16px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e3a5f;
+    }
+    .modal-close-btn {
+      padding: 6px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      border-radius: 9999px;
+      color: #64748b;
+      transition: background 0.1s;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+    .modal-close-btn:hover { background: #f1f5f9; }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .field-row { display: flex; flex-direction: column; gap: 5px; }
+    .field-row label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+    .field-row label .req { color: #dc2626; margin-left: 2px; }
+    .field-row input,
+    .field-row select,
+    .field-row textarea {
+      width: 100%;
+      box-sizing: border-box;
+      height: 48px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      padding: 0 14px;
+      font-size: 15px;
+      font-family: inherit;
+      color: #0f172a;
+      background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field-row textarea { height: auto; min-height: 64px; padding: 10px 14px; resize: vertical; }
+    .field-row input:focus,
+    .field-row select:focus,
+    .field-row textarea:focus {
+      outline: none;
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 4px rgba(14,165,233,0.15);
+    }
+    .field-row input:disabled { background: #f1f5f9; color: #94a3b8; }
+
+    .field-row-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #fff;
+    }
+
+    .btn-save {
+      width: 100%;
+      height: 52px;
+      background: #1e3a5f;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.15s;
+    }
+    .btn-save:active { transform: scale(0.98); }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-delete {
+      width: 100%;
+      height: 44px;
+      background: transparent;
+      color: #dc2626;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      text-decoration: underline;
+      cursor: pointer;
+      transition: opacity 0.1s, transform 0.1s;
+    }
+    .btn-delete:hover { opacity: 0.7; }
+    .btn-delete:active { transform: scale(0.98); }
+    .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-cancel {
+      width: 100%;
+      height: 44px;
+      background: transparent;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-cancel:hover { background: #f8fafc; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
+<body class="bg-brand-surface text-[#0f172a] antialiased min-h-screen">
 
-<div class="pm-header">
-  <button class="back-btn" id="backBtn" aria-label="Back">
-    <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 h-[56px] shadow-md flex items-center justify-between px-4 bg-[#1e3a5f] text-white">
+  <button id="backBtn" aria-label="Back"
+    class="flex items-center justify-center p-2 -ml-2 rounded-full hover:bg-white/10 active:scale-95 transition-all">
+    <span class="material-symbols-outlined text-[24px]">arrow_back</span>
   </button>
-  <span class="page-title" style="flex:1;text-align:center;font-size:13px;font-weight:500;opacity:0.85;">Masters</span>
-  <span id="roleChip" class="doc-badge" style="display:none;"></span>
+  <h1 class="font-headline text-[18px] font-bold text-white tracking-tight flex-1 text-center truncate px-2">Masters</h1>
+  <span id="roleChip" class="hidden text-xs font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full"></span>
+</header>
+
+<!-- Tab Strip -->
+<div id="mastersTabBar"
+  class="fixed top-[56px] w-full z-40 flex overflow-x-auto hide-scrollbar bg-white border-b border-brand-border h-[44px]">
+  <button class="tab-btn whitespace-nowrap px-4 h-full text-[13px] font-semibold border-b-2 border-brand-accent text-brand-accent active" data-tab="suppliers">Suppliers</button>
+  <button class="tab-btn whitespace-nowrap px-4 h-full text-[13px] font-semibold border-b-2 border-transparent text-[#64748b]" data-tab="materials">Materials</button>
+  <button class="tab-btn whitespace-nowrap px-4 h-full text-[13px] font-semibold border-b-2 border-transparent text-[#64748b]" data-tab="customers">Customers</button>
+  <button class="tab-btn whitespace-nowrap px-4 h-full text-[13px] font-semibold border-b-2 border-transparent text-[#64748b]" data-tab="inspectors">Inspectors</button>
+  <button class="tab-btn whitespace-nowrap px-4 h-full text-[13px] font-semibold border-b-2 border-transparent text-[#64748b]" data-tab="fg">FG</button>
+  <button class="tab-btn whitespace-nowrap px-4 h-full text-[13px] font-semibold border-b-2 border-transparent text-[#64748b]" data-tab="parameters">Parameters</button>
 </div>
 
-<div class="masters-tabs" id="mastersTabBar">
-  <button class="tab-btn active" data-tab="suppliers">Suppliers</button>
-  <button class="tab-btn" data-tab="materials">Materials</button>
-  <button class="tab-btn" data-tab="customers">Customers</button>
-  <button class="tab-btn" data-tab="inspectors">Inspectors</button>
-  <button class="tab-btn" data-tab="fg">FG</button>
-  <button class="tab-btn" data-tab="parameters">Parameters</button>
-</div>
+<!-- Main content -->
+<main class="pt-[112px] pb-[80px] px-3">
 
-<div class="masters-search-bar">
-  <input class="search-input" id="searchInput" type="search" placeholder="Search... (tap row to edit)" autocomplete="off">
-</div>
-
-<!-- SUPPLIERS -->
-<div class="tab-panel active" id="panel-suppliers">
-  <div class="masters-table-wrap">
-    <table class="masters-table">
-      <thead>
-        <tr>
-          <th style="width:80px;">Code</th>
-          <th>Name</th>
-          <th style="width:130px;">Contact</th>
-          <th style="width:120px;">Phone</th>
-          <th style="width:150px;">Material</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-suppliers"></tbody>
-    </table>
+  <!-- Search Bar -->
+  <div class="relative my-3">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8] text-[20px]">search</span>
+    <input id="searchInput" type="search" autocomplete="off"
+      placeholder="Search... (tap row to edit)"
+      class="w-full h-[44px] pl-[38px] pr-4 rounded-full border-0 bg-[#f1f5f9] text-[14px] focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 transition-all">
   </div>
-</div>
 
-<!-- MATERIALS -->
-<div class="tab-panel" id="panel-materials">
-  <div class="masters-table-wrap">
-    <table class="masters-table">
-      <thead>
-        <tr>
-          <th style="width:90px;">Code</th>
-          <th>Description</th>
-          <th style="width:70px;">Unit</th>
-          <th style="width:110px;">Category</th>
-          <th style="width:140px;">Default Location</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-materials"></tbody>
-    </table>
+  <!-- SUPPLIERS -->
+  <div class="tab-panel active" id="panel-suppliers">
+    <div class="bg-white rounded-xl shadow-sm border border-brand-border overflow-x-auto">
+      <table class="masters-table">
+        <thead>
+          <tr>
+            <th style="width:80px;">Code</th>
+            <th>Name</th>
+            <th style="width:130px;">Contact</th>
+            <th style="width:120px;">Phone</th>
+            <th style="width:150px;">Material</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-suppliers"></tbody>
+      </table>
+    </div>
   </div>
-</div>
 
-<!-- CUSTOMERS -->
-<div class="tab-panel" id="panel-customers">
-  <div class="masters-table-wrap">
-    <table class="masters-table">
-      <thead>
-        <tr>
-          <th style="width:80px;">Code</th>
-          <th>Name</th>
-          <th style="width:130px;">Contact</th>
-          <th style="width:120px;">Phone</th>
-          <th style="width:180px;">Email</th>
-          <th style="width:140px;">Products</th>
-          <th style="width:100px;">City</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-customers"></tbody>
-    </table>
+  <!-- MATERIALS -->
+  <div class="tab-panel" id="panel-materials">
+    <div class="bg-white rounded-xl shadow-sm border border-brand-border overflow-x-auto">
+      <table class="masters-table">
+        <thead>
+          <tr>
+            <th style="width:90px;">Code</th>
+            <th>Description</th>
+            <th style="width:70px;">Unit</th>
+            <th style="width:110px;">Category</th>
+            <th style="width:140px;">Default Location</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-materials"></tbody>
+      </table>
+    </div>
   </div>
-</div>
 
-<!-- INSPECTORS -->
-<div class="tab-panel" id="panel-inspectors">
-  <div class="masters-table-wrap">
-    <table class="masters-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th style="width:120px;">Role</th>
-          <th style="width:120px;">Dept</th>
-          <th style="width:120px;">Phone</th>
-          <th style="width:70px;">Notify</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-inspectors"></tbody>
-    </table>
+  <!-- CUSTOMERS -->
+  <div class="tab-panel" id="panel-customers">
+    <div class="bg-white rounded-xl shadow-sm border border-brand-border overflow-x-auto">
+      <table class="masters-table">
+        <thead>
+          <tr>
+            <th style="width:80px;">Code</th>
+            <th>Name</th>
+            <th style="width:130px;">Contact</th>
+            <th style="width:120px;">Phone</th>
+            <th style="width:180px;">Email</th>
+            <th style="width:140px;">Products</th>
+            <th style="width:100px;">City</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-customers"></tbody>
+      </table>
+    </div>
   </div>
-</div>
 
-<!-- FG -->
-<div class="tab-panel" id="panel-fg">
-  <div class="masters-table-wrap">
-    <table class="masters-table">
-      <thead>
-        <tr>
-          <th style="width:90px;">Code</th>
-          <th>Name</th>
-          <th style="width:70px;">UOM</th>
-          <th style="width:90px;">Category</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-fg"></tbody>
-    </table>
+  <!-- INSPECTORS -->
+  <div class="tab-panel" id="panel-inspectors">
+    <div class="bg-white rounded-xl shadow-sm border border-brand-border overflow-x-auto">
+      <table class="masters-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th style="width:120px;">Role</th>
+            <th style="width:120px;">Dept</th>
+            <th style="width:120px;">Phone</th>
+            <th style="width:70px;">Notify</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-inspectors"></tbody>
+      </table>
+    </div>
   </div>
-</div>
 
-<!-- PARAMETERS -->
-<div class="tab-panel" id="panel-parameters">
-  <div class="masters-table-wrap">
-    <table class="masters-table">
-      <thead>
-        <tr>
-          <th style="width:72px;">Code</th>
-          <th>Parameter</th>
-          <th style="width:60px;">Unit</th>
-          <th style="width:72px;">Std</th>
-          <th style="width:60px;">Min</th>
-          <th style="width:60px;">Max</th>
-          <th style="width:100px;">Method</th>
-          <th style="width:140px;">Tools</th>
-          <th style="width:100px;">Doc Ref</th>
-          <th style="width:90px;">Doc No.</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-parameters"></tbody>
-    </table>
+  <!-- FG -->
+  <div class="tab-panel" id="panel-fg">
+    <div class="bg-white rounded-xl shadow-sm border border-brand-border overflow-x-auto">
+      <table class="masters-table">
+        <thead>
+          <tr>
+            <th style="width:90px;">Code</th>
+            <th>Name</th>
+            <th style="width:70px;">UOM</th>
+            <th style="width:90px;">Category</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-fg"></tbody>
+      </table>
+    </div>
   </div>
-</div>
 
-<button class="fab-add" id="fabAdd" aria-label="Add">+</button>
+  <!-- PARAMETERS -->
+  <div class="tab-panel" id="panel-parameters">
+    <div class="bg-white rounded-xl shadow-sm border border-brand-border overflow-x-auto">
+      <table class="masters-table">
+        <thead>
+          <tr>
+            <th style="width:72px;">Code</th>
+            <th>Parameter</th>
+            <th style="width:60px;">Unit</th>
+            <th style="width:72px;">Std</th>
+            <th style="width:60px;">Min</th>
+            <th style="width:60px;">Max</th>
+            <th style="width:100px;">Method</th>
+            <th style="width:140px;">Tools</th>
+            <th style="width:100px;">Doc Ref</th>
+            <th style="width:90px;">Doc No.</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-parameters"></tbody>
+      </table>
+    </div>
+  </div>
 
-<!-- Modal -->
+</main>
+
+<!-- FAB Add -->
+<button id="fabAdd" aria-label="Add"
+  class="fixed right-5 bottom-6 w-14 h-14 rounded-full bg-[#0ea5e9] text-white shadow-lg flex items-center justify-center z-50 hover:shadow-xl active:scale-95 transition-all">
+  <span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+
+<!-- Bottom-sheet Modal -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-card">
+    <div class="modal-drag-handle"><span></span></div>
     <div class="modal-header">
       <div class="modal-title" id="modalTitle">Add</div>
-      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <button class="modal-close-btn" id="modalClose" aria-label="Close">
+        <span class="material-symbols-outlined text-[22px]">close</span>
+      </button>
     </div>
     <div class="modal-body" id="modalBody"></div>
     <div class="modal-footer">
-      <button class="btn btn-danger" id="btnDelete" style="display:none;">Delete</button>
-      <button class="btn btn-ghost" id="btnCancel">Cancel</button>
-      <button class="btn btn-primary" id="btnSave">Save</button>
+      <button class="btn-save" id="btnSave">Save</button>
+      <button class="btn-delete" id="btnDelete" style="display:none;">Delete</button>
+      <button class="btn-cancel" id="btnCancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -537,17 +560,17 @@
       { key: 'name', label: 'Name', required: true, type: 'text' }
     ],
     parameter: [
-      { key: 'code',       label: 'Code',        required: true,  type: 'text', widthHalf: true },
-      { key: 'unit',       label: 'Unit',        required: false, type: 'text', widthHalf: true },
-      { key: 'name',       label: 'Parameter Name', required: true, type: 'text' },
-      { key: 'stdValue',   label: 'Std Value',   required: false, type: 'text' },
-      { key: 'tolMin',     label: 'Tol Min',     required: false, type: 'number', widthHalf: true },
-      { key: 'tolMax',     label: 'Tol Max',     required: false, type: 'number', widthHalf: true },
-      { key: 'methodType', label: 'Method Type', required: false, type: 'text', widthHalf: true },
-      { key: 'tools',      label: 'Tools',       required: false, type: 'text', widthHalf: true },
-      { key: 'checkBrief', label: 'Check Brief', required: false, type: 'textarea' },
-      { key: 'docRef',     label: 'Doc Ref',     required: false, type: 'text', widthHalf: true },
-      { key: 'docNumber',  label: 'Doc No.',     required: false, type: 'text', widthHalf: true }
+      { key: 'code',       label: 'Code',           required: true,  type: 'text', widthHalf: true },
+      { key: 'unit',       label: 'Unit',           required: false, type: 'text', widthHalf: true },
+      { key: 'name',       label: 'Parameter Name', required: true,  type: 'text' },
+      { key: 'stdValue',   label: 'Std Value',      required: false, type: 'text' },
+      { key: 'tolMin',     label: 'Tol Min',        required: false, type: 'number', widthHalf: true },
+      { key: 'tolMax',     label: 'Tol Max',        required: false, type: 'number', widthHalf: true },
+      { key: 'methodType', label: 'Method Type',    required: false, type: 'text', widthHalf: true },
+      { key: 'tools',      label: 'Tools',          required: false, type: 'text', widthHalf: true },
+      { key: 'checkBrief', label: 'Check Brief',    required: false, type: 'textarea' },
+      { key: 'docRef',     label: 'Doc Ref',        required: false, type: 'text', widthHalf: true },
+      { key: 'docNumber',  label: 'Doc No.',        required: false, type: 'text', widthHalf: true }
     ]
   };
 
@@ -572,7 +595,7 @@
     var chip = document.getElementById('roleChip');
     if (chip && role) {
       chip.textContent = role.charAt(0).toUpperCase() + role.slice(1);
-      chip.style.display = '';
+      chip.classList.remove('hidden');
     }
     if (role === 'user') {
       google.script.run
@@ -584,15 +607,25 @@
     return true;
   }
 
+  function updateTabStyle(tab) {
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+      var isActive = btn.getAttribute('data-tab') === tab;
+      btn.classList.toggle('border-brand-accent', isActive);
+      btn.classList.toggle('text-brand-accent', isActive);
+      btn.classList.toggle('active', isActive);
+      btn.classList.toggle('border-transparent', !isActive);
+      btn.classList.toggle('text-[#64748b]', !isActive);
+    });
+  }
+
   function switchTab(tab) {
     if (tab === activeTab) return;
     activeTab = tab;
     TABS.forEach(function(t) {
-      var btn = document.querySelector('[data-tab="' + t + '"]');
       var panel = document.getElementById('panel-' + t);
-      if (btn)   btn.classList.toggle('active', t === tab);
       if (panel) panel.classList.toggle('active', t === tab);
     });
+    updateTabStyle(tab);
     document.getElementById('searchInput').value = '';
     if (!loadState[tab]) loadTab(tab);
   }
@@ -689,8 +722,6 @@
       return;
     }
 
-    // We need to preserve idx into ORIGINAL cache so edit gets correct record;
-    // build via original index lookup.
     var origIdxByRef = new Map();
     rows.forEach(function(r, i) { origIdxByRef.set(r, i); });
 
@@ -792,7 +823,6 @@
       }
       data[k] = v;
     });
-    // Preserve original ID even though field was disabled (disabled inputs still post via .value, but be safe)
     if (modalState.mode === 'edit' && modalState.origIdKey != null) {
       data[ID_KEY[modalState.type]] = modalState.origIdKey;
     }
@@ -835,10 +865,8 @@
       .withSuccessHandler(function() {
         showToast('Saved.', 'success');
         closeModal();
-        // Refresh the active tab
         loadState[activeTab] = null;
         loadTab(activeTab);
-        // If we edited materials and FG view exists, invalidate FG too
         if (type === 'material' || type === 'fg') {
           loadState['materials'] = null;
           loadState['fg'] = null;
@@ -949,5 +977,6 @@
 
 })();
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

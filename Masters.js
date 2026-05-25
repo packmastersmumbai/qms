@@ -175,6 +175,54 @@ function saveControlPlan(planType, itemCode, rows) {
 }
 
 
+// Per-item Control Plan metadata (e.g. weightMatrix toggle). Single row per item.
+// Sheet: CONTROL_PLAN_META  cols: item_code | weight_matrix | updated_at | updated_by
+function saveControlPlanMeta(itemCode, meta) {
+  try {
+    if (!itemCode) return { success: false, error: 'itemCode required' };
+    meta = meta || {};
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('CONTROL_PLAN_META');
+    if (!ws) {
+      ws = ss.insertSheet('CONTROL_PLAN_META');
+      ws.appendRow(['item_code', 'weight_matrix', 'updated_at', 'updated_by']);
+      ws.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#1A237E').setFontColor('#FFFFFF');
+      ws.setFrozenRows(1);
+    }
+    var who = (function(){ try { return Session.getActiveUser().getEmail() || 'QA'; } catch(e){ return 'QA'; } })();
+    var now = new Date();
+    var values = ws.getDataRange().getValues();
+    var newRow = [itemCode, meta.weightMatrix ? 'Y' : 'N', now, who];
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() === String(itemCode).trim()) {
+        ws.getRange(i + 1, 1, 1, 4).setValues([newRow]);
+        ws.getRange(i + 1, 3).setNumberFormat('dd-MMM-yyyy HH:mm');
+        return { success: true };
+      }
+    }
+    ws.appendRow(newRow);
+    ws.getRange(ws.getLastRow(), 3).setNumberFormat('dd-MMM-yyyy HH:mm');
+    return { success: true };
+  } catch(e) {
+    Logger.log('saveControlPlanMeta error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+function getControlPlanMeta(itemCode) {
+  try {
+    var ws = getSpreadsheet().getSheetByName('CONTROL_PLAN_META');
+    if (!ws || ws.getLastRow() < 2) return { weightMatrix: false };
+    var values = ws.getDataRange().getValues();
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() === String(itemCode).trim()) {
+        return { weightMatrix: values[i][1] === 'Y' || values[i][1] === true };
+      }
+    }
+    return { weightMatrix: false };
+  } catch(e) { return { weightMatrix: false }; }
+}
+
 function seedDefaultParameters() {
   var ss = getSpreadsheet();
   var ws = ss.getSheetByName('MASTERS_Parameters');
@@ -259,19 +307,6 @@ function getFormInitData() {
     inspectors: getInspectors(),
     aqlLevels:  ['AQL 0.65', 'AQL 1.0', 'AQL 2.5', 'AQL 4.0', 'AQL 6.5'],
     defaultAql: 'AQL 2.5'
-  };
-}
-
-// ── Masters CRUD ──────────────────────────────────────────────
-
-function getMastersData() {
-  return {
-    suppliers:  getSuppliers(),
-    materials:  getMaterials(),
-    fg:         getFG(),
-    parameters: getParameters(),
-    customers:  getCustomers(),
-    inspectors: getInspectors()
   };
 }
 
