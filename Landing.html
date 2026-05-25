@@ -2,469 +2,1417 @@
 <html lang="en-IN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Pack Masters QMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <?!= include('Theme') ?>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
   <style>
+    :root {
+      --pm-navy:    #1e3a5f;
+      --pm-navy-2:  #2a4a73;
+      --pm-sky:     #0ea5e9;
+      --pm-bg:      #f5f7fa;
+      --pm-card:    #ffffff;
+      --pm-border:  #e4e8ee;
+      --pm-rule:    #eef1f5;
+      --pm-text:    #0f172a;
+      --pm-muted:   #64748b;
+      --pm-faint:   #94a3b8;
+      --pm-pass:    #16a34a;
+      --pm-fail:    #dc2626;
+      --pm-warn:    #f97316;
+      --pm-hold:    #ca8a04;
+      --pm-prog:    #2563eb;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
     body {
-      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--pm-bg);
+      color: var(--pm-text);
       min-height: 100dvh;
-      background: var(--bg);
-      padding-bottom: 32px;
-    }
-
-    /* ── Section ── */
-    .lnd-section {
-      background: var(--white);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      margin: 10px;
-      overflow: hidden;
-    }
-    .lnd-section-title {
-      background: var(--navy);
-      color: var(--white);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 7px 12px;
-      display: flex;
-      align-items: center;
-      letter-spacing: 0.6px;
-      text-transform: uppercase;
-    }
-    .lnd-section-title.success-bar {
-      background: var(--success);
-    }
-    .lnd-count-badge {
-      margin-left: auto;
-      background: var(--amber);
-      color: var(--navy);
-      font-size: 10px;
-      font-weight: 700;
-      padding: 1px 7px;
-      border-radius: 10px;
-    }
-    .lnd-section-body {
-      padding: 10px 12px;
-    }
-
-    /* ── Pending tiles ── */
-    .pending-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .pending-tile {
-      background: var(--white);
-      border-left: 3px solid var(--amber);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      min-height: 80px;
-      padding: 10px 12px;
-      cursor: pointer;
-      touch-action: manipulation;
+      -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
-      transition: transform 0.15s ease;
-    }
-    .pending-tile:active {
-      transform: scale(0.97);
-    }
-    .pending-tile.full-width {
-      grid-column: 1 / -1;
-    }
-    .pending-tile-module {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--navy);
-    }
-    .pending-tile-detail {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    /* Skeleton pending tiles */
-    .skel-pending {
-      background: var(--navy-light);
-      border-radius: var(--radius);
-      min-height: 80px;
-      animation: skeleton-pulse 0.8s ease-in-out infinite;
-    }
-
-    /* ── All-clear body ── */
-    .all-clear-body {
       font-size: 13px;
-      font-weight: 400;
-      color: var(--muted);
-      padding: 12px;
+    }
+    h1, h2, h3, .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* Shell */
+    .pm-shell { max-width: 430px; margin: 0 auto; position: relative; }
+
+    /* ── Top bar ── */
+    .pm-top {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px; height: 48px; z-index: 50;
+      background: var(--pm-navy);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 8px;
+    }
+    .pm-top-btn {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; background: transparent; border: 0;
+      transition: background .15s ease;
+    }
+    .pm-top-btn:hover { background: rgba(255,255,255,0.10); }
+    .pm-top-btn svg { width: 18px; height: 18px; }
+    .pm-top-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #fff; font-weight: 700; font-size: 14px;
+      letter-spacing: 0.3px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .pm-top-title small {
+      color: rgba(255,255,255,0.55);
+      font-weight: 600; font-size: 9px;
+      letter-spacing: 1px; text-transform: uppercase;
+      padding: 2px 6px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 4px;
     }
 
-    /* ── Module groups ── */
-    .module-group { margin-bottom: 14px; }
-    .module-group:last-child { margin-bottom: 0; }
-    .module-group-label {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--muted);
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      padding: 0 2px 6px;
+    /* ── Bottom nav ── */
+    .pm-bn {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px; height: 52px; z-index: 50;
+      background: #fff; border-top: 1px solid var(--pm-border);
+      display: grid; grid-template-columns: repeat(5, 1fr);
     }
-    .module-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+    .pm-bn-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px;
+      background: transparent; border: 0;
+      color: var(--pm-faint);
+      font-size: 9.5px; font-weight: 600;
+      letter-spacing: 0.2px;
+      transition: color .15s ease;
     }
-    .module-tile {
-      background: var(--white);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      min-height: 80px;
-      padding: 12px 8px 10px;
-      text-align: center;
+    .pm-bn-btn.is-active { color: var(--pm-sky); }
+    .pm-bn-btn svg { width: 18px; height: 18px; stroke-width: 1.75; }
+    .pm-bn-btn.is-active svg { stroke-width: 2.2; }
+
+    main { padding: 56px 12px 64px; }
+
+    /* ── Date strip ── */
+    .pm-date {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 4px 8px;
+      font-size: 11.5px; color: var(--pm-muted); font-weight: 500;
+    }
+    .pm-shift {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px; font-weight: 700;
+      color: #fff; background: var(--pm-navy);
+      padding: 2px 8px; border-radius: 999px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Hairline rule ── */
+    .pm-rule {
+      height: 1px;
+      background: linear-gradient(to right, var(--pm-rule), transparent);
+      margin: 6px 0;
+    }
+
+    /* ── Section label ── */
+    .pm-sec {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin: 10px 2px 4px;
+    }
+    .pm-sec-l {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 9.5px; font-weight: 700;
+      color: var(--pm-muted);
+      letter-spacing: 1.4px; text-transform: uppercase;
+    }
+    .pm-sec-link {
+      font-size: 11px; font-weight: 600; color: var(--pm-sky);
+      background: transparent; border: 0; padding: 0;
+    }
+    .pm-sec-link:hover { text-decoration: underline; }
+    /* Collapsible section header */
+    .pm-sec-toggle { display:flex; align-items:center; gap:5px; background:transparent; border:0; padding:0; cursor:pointer; }
+    .pm-sec-chev { width:12px; height:12px; color:var(--pm-faint); transition:transform .15s ease; transform:rotate(90deg); }
+    .pm-sec.collapsed .pm-sec-chev { transform:rotate(0deg); }
+    .pm-collapse-body { overflow:hidden; transition:max-height .2s ease, opacity .15s ease; }
+    .pm-collapse-body.collapsed { max-height:0 !important; opacity:0; }
+
+    /* ── Alert row ── */
+    .pm-alert-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+    .pm-alert {
+      display: flex; align-items: center; gap: 8px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-left: 3px solid var(--pm-warn);
+      border-radius: 8px;
+      padding: 6px 8px 6px 10px;
+      min-height: 34px;
+      color: #7c2d12;
+      width: 100%; box-sizing: border-box;
+      text-align: left;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .pm-alert:hover { box-shadow: 0 2px 8px rgba(249,115,22,0.10); }
+    .pm-alert:active { transform: scale(0.99); }
+    .pm-alert-icon { flex-shrink: 0; width: 16px; height: 16px; color: var(--pm-warn); }
+    .pm-alert-icon svg { width: 100%; height: 100%; stroke-width: 1.8; }
+    .pm-alert-body { flex: 1; min-width: 0; }
+    .pm-alert-text {
+      font-size: 11.5px; font-weight: 600; line-height: 1.25;
+      color: #7c2d12;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pm-alert-refs {
+      font-size: 10px; color: #9a3412;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 1px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pm-alert-chev { flex-shrink: 0; color: #9a3412; opacity: 0.6; }
+    .pm-alert-chev svg { width: 14px; height: 14px; }
+
+    .pm-alert-more {
+      background: transparent; border: 0;
+      color: var(--pm-warn);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.3px;
+      padding: 4px 8px;
+      align-self: flex-start;
       cursor: pointer;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
     }
-    .module-tile:hover {
-      box-shadow: var(--shadow-2);
-      border-color: rgba(13,27,110,0.2);
-      transform: translateY(-1px);
+    .pm-alert-more:hover { text-decoration: underline; }
+
+    /* ── Stat strip ── */
+    .pm-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      background: #fff;
+      border: 1px solid var(--pm-border);
+      border-radius: 10px;
+      overflow: hidden;
+      min-height: 44px;
     }
-    .module-tile:active {
-      transform: scale(0.97);
-      transition: transform 0.08s ease;
+    .pm-stat {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px;
+      padding: 8px 4px;
+      background: transparent; border: 0;
+      border-right: 1px solid var(--pm-rule);
+      transition: background .12s ease;
     }
-    .module-tile-icon {
-      display: block;
-      width: 22px;
-      height: 22px;
-      color: var(--navy);
+    .pm-stat:last-child { border-right: 0; }
+    .pm-stat:hover { background: #f8fafc; }
+    .pm-stat:active { background: #f1f5f9; }
+    .pm-stat-icon {
+      width: 14px; height: 14px;
+      color: var(--pm-muted);
       flex-shrink: 0;
     }
-    .module-tile-icon svg {
-      width: 22px;
-      height: 22px;
-      stroke: var(--navy);
-      fill: none;
-      stroke-width: 1.75;
-      stroke-linecap: round;
-      stroke-linejoin: round;
+    .pm-stat-icon svg { width: 100%; height: 100%; stroke-width: 1.8; }
+    .pm-stat-label {
+      font-size: 9.5px; font-weight: 700;
+      color: var(--pm-muted);
+      letter-spacing: 0.6px; text-transform: uppercase;
     }
-    .module-tile-name {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--navy);
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
+    .pm-stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px; font-weight: 700;
+      color: var(--pm-navy);
+      letter-spacing: -0.3px;
+      line-height: 1;
     }
-    .module-count-chip {
-      display: inline-block;
-      background: var(--navy-light);
-      color: var(--navy);
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
+    .pm-stat.is-fail .pm-stat-val { color: var(--pm-fail); }
+    .pm-stat.is-warn .pm-stat-icon { color: var(--pm-warn); }
+    .pm-stat.is-warn .pm-stat-val { color: var(--pm-warn); }
+
+    /* ── Module row group ── */
+    .pm-group { margin-top: 4px; }
+    .pm-group-card {
+      background: #fff;
+      border: 1px solid var(--pm-border);
       border-radius: 10px;
-      min-width: 24px;
+      overflow: hidden;
     }
-    .module-count-chip.zero {
-      background: #F3F4F6;
-      color: var(--muted);
-    }
-
-    /* Skeleton module tiles */
-    .skel-module {
-      background: var(--navy-light);
-      border-radius: var(--radius);
-      min-height: 72px;
-      animation: skeleton-pulse 0.8s ease-in-out infinite;
-    }
-
-    /* ── Fade-in animation ── */
-    @keyframes fade-in {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-    .fade-in {
-      animation: fade-in 0.2s ease forwards;
-    }
-
-    /* ── Skeleton pulse ── */
-    @keyframes skeleton-pulse {
-      0%, 100% { opacity: 0.4; }
-      50%       { opacity: 1;   }
-    }
-
-    /* ── Toast ── */
-    #toast {
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--danger);
-      color: var(--white);
-      padding: 10px 20px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 600;
-      z-index: 9999;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      white-space: nowrap;
-      max-width: 90vw;
-      text-align: center;
+    .pm-row {
+      display: flex; align-items: center;
+      gap: 10px;
+      padding: 0 6px 0 10px;
+      min-height: 40px;
+      background: transparent;
+      border: 0; border-bottom: 1px solid var(--pm-rule);
+      width: 100%; box-sizing: border-box;
+      text-align: left;
       cursor: pointer;
+      transition: background .12s ease;
     }
-    #toast.show {
-      opacity: 1;
-      pointer-events: auto;
+    .pm-row:last-child { border-bottom: 0; }
+    .pm-row:hover { background: #f8fafc; }
+    .pm-row:active { background: #f1f5f9; }
+    .pm-row-icon {
+      width: 18px; height: 18px;
+      color: var(--pm-navy);
+      flex-shrink: 0;
     }
+    .pm-row-icon svg { width: 100%; height: 100%; stroke-width: 1.75; }
+    .pm-row-label {
+      font-size: 13px; font-weight: 700;
+      color: var(--pm-text);
+      letter-spacing: 0.1px;
+      flex-shrink: 0;
+      min-width: 64px;
+    }
+    .pm-row-meta {
+      font-size: 11px; font-weight: 500;
+      color: var(--pm-muted);
+      flex: 1; min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pm-row-count {
+      flex-shrink: 0;
+      min-width: 30px; height: 22px;
+      padding: 0 7px;
+      display: flex; align-items: center; justify-content: center;
+      background: #eff6ff;
+      color: var(--pm-navy);
+      border: 0; border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      transition: background .12s ease, transform .08s ease;
+    }
+    .pm-row-count:hover { background: #dbeafe; }
+    .pm-row-count:active { transform: scale(0.94); }
+    .pm-row-count.is-zero { background: #f1f5f9; color: var(--pm-faint); }
+    .pm-row-count.is-na { background: transparent; color: var(--pm-faint); }
+    .pm-row-chev {
+      width: 18px; height: 18px;
+      color: var(--pm-faint);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pm-row-chev svg { width: 14px; height: 14px; stroke-width: 1.75; }
+
+    /* ── Activity row ── */
+    .pm-act-card {
+      background: #fff;
+      border: 1px solid var(--pm-border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .pm-act {
+      display: flex; align-items: center;
+      gap: 10px;
+      padding: 7px 8px 7px 0;
+      min-height: 36px;
+      background: transparent; border: 0; width: 100%;
+      border-bottom: 1px solid var(--pm-rule);
+      position: relative;
+      text-align: left;
+      transition: background .12s ease;
+    }
+    .pm-act:last-child { border-bottom: 0; }
+    .pm-act:hover { background: #f8fafc; }
+    .pm-act::before {
+      content: ''; flex-shrink: 0;
+      width: 3px; align-self: stretch;
+      background: var(--pm-faint);
+      margin-right: 8px;
+    }
+    .pm-act.s-pass::before { background: var(--pm-pass); }
+    .pm-act.s-fail::before { background: var(--pm-fail); }
+    .pm-act.s-warn::before { background: var(--pm-warn); }
+    .pm-act.s-hold::before { background: var(--pm-hold); }
+    .pm-act.s-prog::before { background: var(--pm-prog); }
+    .pm-act-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px; font-weight: 700;
+      color: var(--pm-navy);
+      letter-spacing: -0.2px;
+      flex-shrink: 0;
+    }
+    .pm-act-mid { flex: 1; min-width: 0;
+      display: flex; align-items: center; gap: 6px;
+      overflow: hidden;
+    }
+    .pm-act-status {
+      flex-shrink: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px; font-weight: 700;
+      padding: 2px 5px; border-radius: 3px;
+      letter-spacing: 0.4px;
+    }
+    .pm-act-status.s-pass { background: #dcfce7; color: #15803d; }
+    .pm-act-status.s-fail { background: #fee2e2; color: #b91c1c; }
+    .pm-act-status.s-warn { background: #ffedd5; color: #9a3412; }
+    .pm-act-status.s-hold { background: #fef9c3; color: #854d0e; }
+    .pm-act-status.s-prog { background: #dbeafe; color: #1e40af; }
+    .pm-act-status.s-grey { background: #f1f5f9; color: var(--pm-muted); }
+    .pm-act-time {
+      font-size: 10px; color: var(--pm-faint);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pm-act-chev {
+      width: 14px; height: 14px;
+      color: var(--pm-faint);
+      flex-shrink: 0; margin-right: 2px;
+    }
+    .pm-act-chev svg { width: 100%; height: 100%; stroke-width: 1.8; }
+
+    /* ── Skeleton ── */
+    @keyframes pm-shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+    .pm-skel {
+      display: inline-block;
+      background: linear-gradient(90deg, #eef2f7 25%, #dde3eb 50%, #eef2f7 75%);
+      background-size: 200% 100%;
+      animation: pm-shimmer 1.6s ease-in-out infinite;
+      border-radius: 4px;
+      color: transparent;
+      vertical-align: middle;
+    }
+
+    /* ── Reveal animation ── */
+    @keyframes pm-rise {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .pm-rise { animation: pm-rise .3s cubic-bezier(.22, 1, .36, 1) both; }
+
+    /* ── Conveyor loader ── */
+    .pm-loader {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(180deg, #1e3a5f 0%, #142844 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 24px;
+      transition: opacity .35s ease, visibility .35s ease;
+    }
+    .pm-loader.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .pm-loader-logo {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #fff;
+      font-size: 16px; font-weight: 800; letter-spacing: 0.4px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .pm-loader-logo .pm-logo-mark {
+      width: 30px; height: 30px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 18px rgba(14,165,233,0.45);
+    }
+    .pm-loader-logo svg { width: 16px; height: 16px; color: #fff; stroke-width: 2.2; }
+    .pm-loader-sub {
+      color: rgba(255,255,255,0.55);
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 1.4px; text-transform: uppercase;
+    }
+    .pm-belt {
+      position: relative;
+      width: 200px; height: 38px;
+      overflow: hidden;
+      border-radius: 4px;
+    }
+    .pm-belt-track {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 5px;
+      background:
+        repeating-linear-gradient(90deg,
+          rgba(255,255,255,0.18) 0 8px,
+          rgba(255,255,255,0.06) 8px 16px);
+    }
+    .pm-belt-box {
+      position: absolute; bottom: 5px;
+      width: 20px; height: 20px;
+      border-radius: 3px;
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      box-shadow: 0 2px 8px rgba(14,165,233,0.45);
+      animation: pm-belt-move 2.2s linear infinite;
+    }
+    .pm-belt-box::before, .pm-belt-box::after {
+      content: ''; position: absolute; background: rgba(255,255,255,0.35);
+    }
+    .pm-belt-box::before { left: 10%; right: 10%; top: 30%; height: 1.5px; }
+    .pm-belt-box::after  { left: 25%; right: 25%; top: 60%; height: 1.5px; }
+    .pm-belt-box:nth-child(2) { animation-delay: -0.55s; }
+    .pm-belt-box:nth-child(3) { animation-delay: -1.1s; }
+    .pm-belt-box:nth-child(4) { animation-delay: -1.65s; }
+    @keyframes pm-belt-move {
+      0%   { transform: translateX(-30px); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translateX(220px); opacity: 0; }
+    }
+    .pm-belt-progress {
+      position: absolute; bottom: 0; left: 0;
+      height: 5px; width: 0%;
+      background: var(--pm-sky);
+      box-shadow: 0 0 8px rgba(14,165,233,0.8);
+      transition: width .4s ease;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed; left: 50%; transform: translateX(-50%) translateY(8px);
+      bottom: 70px;
+      background: var(--pm-navy); color: #fff;
+      padding: 9px 14px; border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+      box-shadow: 0 8px 22px rgba(15,23,42,0.25);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index: 9998; white-space: nowrap; max-width: 92vw; text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    #toast.error { background: var(--pm-fail); }
+
+    /* Operator picker (compact) */
+    #opModal { position:fixed; inset:0; background:rgba(30,58,95,0.75); z-index:99990; display:flex; align-items:flex-end; justify-content:center; }
+    #opModal.hidden { display:none; }
+    .op-sheet { background:#fff; border-radius:14px 14px 0 0; width:100%; max-width:430px; padding:18px 14px 28px; }
+    .op-names-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:260px; overflow-y:auto; margin-bottom:12px; }
+    .op-name-btn { min-height:40px; border:1.5px solid var(--pm-border); border-radius:6px; background:#fff; font-size:12.5px; font-weight:600; color:var(--pm-text); text-align:left; padding:6px 10px; transition:background .12s, border-color .12s; }
+    .op-name-btn.op-selected, .op-name-btn:active { background:#eff6ff; border-color:var(--pm-navy); color:var(--pm-navy); }
+    .op-confirm-btn { width:100%; min-height:44px; background:var(--pm-navy); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; }
+    .op-confirm-btn:disabled { background:var(--pm-faint); cursor:not-allowed; }
+
+    /* GAS banner cover */
+    #__gas_cover__ { position:fixed; bottom:0; left:0; right:0; height:30px; background:var(--pm-bg); z-index:2147483647; pointer-events:none; }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .pm-rise, .pm-skel, .pm-belt-box, .pm-loader { animation: none !important; transition: none !important; }
+    }
+    /* Hero KPI strip */
+    .pm-kpi-hero { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; }
+    .pm-kpi-card { background:#fff; border:1px solid var(--pm-border); border-left-width:3px; border-radius:10px; padding:7px 9px; display:flex; flex-direction:column; gap:1px; min-height:70px; cursor:pointer; transition: background .12s; position:relative; overflow:hidden; }
+    .pm-kpi-card:hover { background:#f8fafc; }
+    .pm-kpi-card.is-err { border-color:#fed7aa; background:#fff7ed; }
+    .pm-kpi-card.s-good { border-left-color:var(--pm-pass); }
+    .pm-kpi-card.s-bad  { border-left-color:var(--pm-fail); }
+    .pm-kpi-card.s-warn { border-left-color:#d97706; }
+    .pm-kpi-card.s-na   { border-left-color:#cbd5e1; }
+    .pm-kpi-top { display:flex; justify-content:space-between; align-items:center; gap:6px; }
+    .pm-kpi-label { font-size:9px; font-weight:700; color:var(--pm-muted); letter-spacing:0.6px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pm-kpi-ic { width:18px; height:18px; border-radius:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .pm-kpi-ic svg { width:11px; height:11px; }
+    .pm-kpi-ic.s-good { background:#dcfce7; color:var(--pm-pass); }
+    .pm-kpi-ic.s-bad  { background:#fee2e2; color:var(--pm-fail); }
+    .pm-kpi-ic.s-warn { background:#fef3c7; color:#d97706; }
+    .pm-kpi-ic.s-na   { background:#f1f5f9; color:#64748b; }
+    .pm-kpi-mid { display:flex; align-items:baseline; gap:3px; }
+    .pm-kpi-val { font-family:'JetBrains Mono', monospace; font-size:20px; font-weight:800; color:var(--pm-navy); letter-spacing:-0.5px; line-height:1.05; }
+    .pm-kpi-val.is-good { color: var(--pm-pass); }
+    .pm-kpi-val.is-bad { color: var(--pm-fail); }
+    .pm-kpi-unit { font-size:10px; color:var(--pm-muted); font-weight:700; }
+    .pm-kpi-note { font-size:9px; font-weight:600; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pm-kpi-note.s-good { color:var(--pm-pass); }
+    .pm-kpi-note.s-bad  { color:var(--pm-fail); }
+    .pm-kpi-note.s-warn { color:#d97706; }
+    .pm-kpi-note.s-na   { color:var(--pm-faint); }
+    .pm-kpi-spark { margin-top:auto; height:13px; opacity:.55; }
+    .pm-kpi-empty { grid-column:1/-1; padding:14px; text-align:center; color:var(--pm-faint); font-size:11px; background:#fff; border:1px dashed var(--pm-border); border-radius:10px; }
+    /* Drill tiles — same 3-col compact grid as hero */
+    .pm-kpi-drill { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; }
+    .pm-kpi-drow { background:#fff; border:1px solid var(--pm-border); border-left-width:3px; border-radius:10px; padding:7px 9px; display:flex; flex-direction:column; gap:1px; min-height:62px; overflow:hidden; }
+    .pm-kpi-drow.is-err { border-color:#fed7aa; background:#fff7ed; }
+    .pm-kpi-drow.s-good { border-left-color:var(--pm-pass); }
+    .pm-kpi-drow.s-bad  { border-left-color:var(--pm-fail); }
+    .pm-kpi-drow.s-warn { border-left-color:#d97706; }
+    .pm-kpi-drow.s-na   { border-left-color:#cbd5e1; }
+    .pm-kpi-dlbl { font-size:9px; font-weight:700; color:var(--pm-muted); letter-spacing:0.6px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pm-kpi-dsub { font-size:9px; font-weight:600; color:var(--pm-faint); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pm-kpi-dsub.s-good { color:var(--pm-pass); }
+    .pm-kpi-dsub.s-bad  { color:var(--pm-fail); }
+    .pm-kpi-dsub.s-warn { color:#d97706; }
+    .pm-kpi-dval { font-family:'JetBrains Mono', monospace; font-size:17px; font-weight:800; color:var(--pm-navy); letter-spacing:-0.5px; line-height:1.1; }
+    .pm-kpi-dval.is-good { color: var(--pm-pass); }
+    .pm-kpi-dval.is-bad { color: var(--pm-fail); }
+    .pm-kpi-dval.is-good { color: var(--pm-pass); }
+    .pm-kpi-dval.is-bad { color: var(--pm-fail); }
   </style>
+
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
 <body>
 
-<!-- ── Header ── -->
-<header class="pm-header" role="banner">
-  <div class="logo-box" aria-hidden="true">PM</div>
-  <div class="header-text" style="flex:1;display:flex;flex-direction:column;gap:2px;">
-    <span class="logo-text">Pack Masters</span>
-    <span id="headerSub" class="logo-sub"></span>
+<!-- ══════════════ ICON SPRITE (Lucide line, stroke 1.75) ══════════════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-records" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></symbol>
+    <symbol id="i-users-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="19" cy="14" r="2"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></symbol>
+    <symbol id="i-alert-tri" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-octagon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+    <symbol id="i-clipboard-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="1"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/><line x1="9" y1="18" x2="12" y2="18"/></symbol>
+    <symbol id="i-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v9"/></symbol>
+    <symbol id="i-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v5l5 10a2 2 0 0 1-1.8 3H5.8A2 2 0 0 1 4 18L9 8z"/><line x1="9" y1="3" x2="15" y2="3"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l3.5-3.5"/><path d="M20.5 14a8.5 8.5 0 1 0-17 0"/><circle cx="12" cy="14" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-factory" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20V11l-7 4v-4l-7 4V8H3z"/><path d="M6 16h2M11 16h2M16 16h2"/></symbol>
+    <symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v7c0 5 3.5 9 8 10 4.5-1 8-5 8-10V5z"/><polyline points="9 12 11 14 15 10"/></symbol>
+    <symbol id="i-qr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="18"/><line x1="18" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="18" y1="18" x2="21" y2="18"/></symbol>
+    <symbol id="i-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="14" height="11" rx="1"/><polyline points="15 9 19 9 22 12 22 17 15 17"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></symbol>
+    <symbol id="i-ruler" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16 16 2l6 6L8 22z"/><path d="M7 17l2-2M9 19l2-2M12 14l2-2M14 16l2-2M17 11l2-2"/></symbol>
+    <symbol id="i-boxes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L11 19.61a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0z"/><path d="M7 16.5l-4.74-2.85"/><path d="M7 16.5l5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l5-3v-5.17"/><path d="M21.03 12.92A2 2 0 0 1 22 14.63v3.24a2 2 0 0 1-.97 1.71l-3 1.8a2 2 0 0 1-2.06 0L13 19.61a2 2 0 0 1-.97-1.71v-3.24a2 2 0 0 1 .97-1.71l3-1.8a2 2 0 0 1 2.06 0z"/></symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.7 16.7A8 8 0 0 0 12 16a8 8 0 0 0-4.7 1.7"/><path d="M5 13a13 13 0 0 1 4-2.7"/><path d="M19.7 13a13 13 0 0 0-3-2.2"/><path d="M2 9a17 17 0 0 1 5-3.5"/><path d="M22 9a17 17 0 0 0-7.7-4.6"/><line x1="12" y1="20" x2="12.01" y2="20"/></symbol>
+  </defs>
+</svg>
+
+<!-- ══════════════ LOADER ══════════════ -->
+<div id="pmLoader" class="pm-loader" role="status" aria-live="polite" aria-label="Loading dashboard">
+  <div class="pm-loader-logo">
+    <span class="pm-logo-mark"><svg><use href="#i-package"/></svg></span>
+    <span>Pack Masters QMS</span>
+  </div>
+  <div class="pm-belt" aria-hidden="true">
+    <div class="pm-belt-track"></div>
+    <div class="pm-belt-box"></div>
+    <div class="pm-belt-box"></div>
+    <div class="pm-belt-box"></div>
+    <div class="pm-belt-box"></div>
+    <div class="pm-belt-progress" id="pmLoaderProgress"></div>
+  </div>
+  <div class="pm-loader-sub" id="pmLoaderSub">Synchronising shift data</div>
+</div>
+
+<!-- ══════════════ TOP BAR ══════════════ -->
+<header class="pm-top">
+  <button class="pm-top-btn" aria-label="Menu" onclick="showSideMenu()">
+    <svg><use href="#i-menu"/></svg>
+  </button>
+  <div class="pm-top-title">Pack Masters<small>QMS</small></div>
+  <div style="display:flex;align-items:center;gap:4px;">
+  <button id="personaPill" onclick="cyclePersona()" aria-label="Switch persona"
+    style="background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.20);border-radius:999px;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;cursor:pointer;">…</button>
+  <button class="pm-top-btn" aria-label="Settings" onclick="navigateTo('Settings')">
+    <svg><use href="#i-settings"/></svg>
+  </button>
   </div>
 </header>
 
-<!-- ── Main content ── -->
-<main role="main">
+<!-- ══════════════ MAIN ══════════════ -->
+<main class="pm-shell">
 
-<!-- ── Pending Actions section ── -->
-<div class="lnd-section" id="pendingSection">
-  <div class="lnd-section-title">
-    PENDING ACTIONS
-    <span class="lnd-count-badge" id="pendingBadge">…</span>
+  <div class="pm-date">
+    <span id="dateLine"></span>
+    <span class="pm-shift" id="shiftPill">SHIFT A</span>
   </div>
-  <div class="lnd-section-body">
-    <div class="pending-grid" id="pendingGrid">
-      <!-- skeleton tiles -->
-      <div class="skel-pending"></div>
-      <div class="skel-pending"></div>
+
+  <!-- Alerts -->
+  <div class="pm-alert-list" id="alertList" style="display:none;"></div>
+
+  <!-- Hero KPI strip -->
+  <div class="pm-sec" id="kpiSec">
+    <button class="pm-sec-toggle" onclick="toggleSection('kpiSec','kpiHeroBody')" aria-label="Toggle KPIs">
+      <svg class="pm-sec-chev"><use href="#i-chev"/></svg>
+      <span class="pm-sec-l" id="kpiSecLabel">KPIs · 30d</span>
+    </button>
+    <button class="pm-sec-link" onclick="navigateTo('Settings')">Configure</button>
+  </div>
+  <div class="pm-collapse-body" id="kpiHeroBody">
+    <div id="kpiHero" class="pm-kpi-hero"></div>
+  </div>
+
+  <!-- Drill KPI cards (Manager-only by default) -->
+  <div id="kpiDrillSec" style="display:none">
+    <div class="pm-sec" id="kpiDrillHdr">
+      <button class="pm-sec-toggle" onclick="toggleSection('kpiDrillHdr','kpiDrillBody')" aria-label="Toggle drill-down">
+        <svg class="pm-sec-chev"><use href="#i-chev"/></svg>
+        <span class="pm-sec-l">Drill-down</span>
+      </button>
+    </div>
+    <div class="pm-collapse-body" id="kpiDrillBody">
+      <div id="kpiDrill" class="pm-kpi-drill"></div>
     </div>
   </div>
-</div>
 
-<!-- ── Modules section ── -->
-<div class="lnd-section" id="modulesSection">
-  <div class="lnd-section-title">MODULES</div>
-  <div class="lnd-section-body" id="moduleGroups">
-    <div class="module-group">
-      <div class="module-grid">
-        <div class="skel-module"></div>
-        <div class="skel-module"></div>
-        <div class="skel-module"></div>
-        <div class="skel-module"></div>
-        <div class="skel-module"></div>
-        <div class="skel-module"></div>
-      </div>
-    </div>
+  <!-- Stat strip -->
+  <div class="pm-sec"><span class="pm-sec-l">Today</span></div>
+  <div class="pm-stats" id="statStrip">
+    <button class="pm-stat"><span class="pm-stat-icon"><svg><use href="#i-package"/></svg></span><div><div class="pm-stat-label">GRN</div><div class="pm-stat-val pm-skel" style="width:24px;height:14px;">_</div></div></button>
+    <button class="pm-stat"><span class="pm-stat-icon"><svg><use href="#i-flask"/></svg></span><div><div class="pm-stat-label">IQC</div><div class="pm-stat-val pm-skel" style="width:24px;height:14px;">_</div></div></button>
+    <button class="pm-stat"><span class="pm-stat-icon"><svg><use href="#i-octagon-alert"/></svg></span><div><div class="pm-stat-label">NCR</div><div class="pm-stat-val pm-skel" style="width:24px;height:14px;">_</div></div></button>
+    <button class="pm-stat"><span class="pm-stat-icon"><svg><use href="#i-alert-tri"/></svg></span><div><div class="pm-stat-label">Alerts</div><div class="pm-stat-val pm-skel" style="width:24px;height:14px;">_</div></div></button>
   </div>
-</div>
+
+  <!-- Module workflow groups -->
+  <div id="moduleGroups"></div>
+
+  <!-- Recent activity -->
+  <div class="pm-sec">
+    <span class="pm-sec-l">Recent</span>
+    <button class="pm-sec-link" onclick="navigateTo('Records')">View all</button>
+  </div>
+  <div class="pm-act-card" id="recentActivity">
+    <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
+    <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
+    <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
+  </div>
 
 </main>
 
-<!-- ── Toast ── -->
-<div id="toast" role="status" aria-live="polite"></div>
+<!-- ══════════════ BOTTOM NAV ══════════════ -->
+<nav class="pm-bn">
+  <button class="pm-bn-btn is-active" aria-label="Home"><svg><use href="#i-home"/></svg><span>Home</span></button>
+  <button class="pm-bn-btn" onclick="navigateTo('Records')" aria-label="Records"><svg><use href="#i-records"/></svg><span>Records</span></button>
+  <button class="pm-bn-btn" onclick="navigateTo('KPI')" aria-label="KPIs"><svg><use href="#i-trending"/></svg><span>KPIs</span></button>
+  <button class="pm-bn-btn" onclick="navigateTo('Masters')" aria-label="Masters"><svg><use href="#i-users-cog"/></svg><span>Masters</span></button>
+  <button class="pm-bn-btn" onclick="showMoreMenu()" aria-label="More"><svg><use href="#i-more"/></svg><span>More</span></button>
+</nav>
+
+<div id="toast"></div>
+<div id="__gas_cover__"></div>
 
 <script>
 (function () {
   'use strict';
 
-  /* ── helpers ── */
+  /* ═════════════ CONFIG ═════════════ */
+  var CACHE_KEY = 'pmqms_landing_v5';
+  var ALERTS_VISIBLE = 3;  // Collapse beyond this; user can expand
+  var CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
-  function navigateTo(formName) {
-    google.script.run
-      .withSuccessHandler(function (html) {
-        document.open();
-        document.write(html);
-        document.close();
-      })
-      .withFailureHandler(function () {
-        showToast('Could not open ' + formName + '. Tap to retry.', true);
-      })
-      .getFormHtml(formName);
-  }
-
-
-  function getShift(hour) {
-    if (hour >= 6 && hour < 14) return 'A';
-    if (hour >= 14 && hour < 22) return 'B';
+  /* ═════════════ HELPERS ═════════════ */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function getShift(h) {
+    if (h >= 6 && h < 14) return 'A';
+    if (h >= 14 && h < 22) return 'B';
     return 'C';
   }
 
-  function formatDateLine() {
+  /* ── Date + shift ── */
+  (function () {
     var now = new Date();
-    var days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var day    = days[now.getDay()];
-    var dd     = now.getDate();
-    var month  = months[now.getMonth()];
-    var shift  = getShift(now.getHours());
-    return day + ', ' + dd + ' ' + month + ' · Shift ' + shift;
-  }
+    var dl = $('dateLine');
+    if (dl) dl.textContent = days[now.getDay()] + ' · ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+    var sp = $('shiftPill');
+    if (sp) sp.textContent = 'SHIFT ' + getShift(now.getHours());
+  }());
 
-  /* ── toast ── */
-  var toastRetryFn = null;
-  var toastEl = document.getElementById('toast');
-  toastEl.addEventListener('click', function () {
-    toastEl.classList.remove('show');
-    if (typeof toastRetryFn === 'function') toastRetryFn();
-  });
-
-  function showToast(msg, retryFn) {
+  /* ═════════════ TOAST ═════════════ */
+  var _toastTimer = null;
+  var toastEl = $('toast');
+  function showToast(msg, isError) {
+    if (!toastEl) return;
     toastEl.textContent = msg;
-    toastEl.classList.add('show');
-    toastRetryFn = (typeof retryFn === 'function') ? retryFn : null;
+    toastEl.className = isError ? 'show error' : 'show';
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(function () { toastEl.className = isError ? 'error' : ''; }, 2800);
   }
+  window.showToast = showToast;
 
-  /* ── render helpers ── */
-
-  function renderGreeting() {
-    var sub = document.getElementById('headerSub');
-    if (sub) sub.textContent = formatDateLine();
-  }
-
-  function renderPending(pendingActions) {
-    var section  = document.getElementById('pendingSection');
-    var badge    = document.getElementById('pendingBadge');
-    var grid     = document.getElementById('pendingGrid');
-    var actions  = pendingActions && pendingActions.length ? pendingActions : [];
-
-    if (actions.length === 0) {
-      /* All-clear */
-      section.innerHTML =
-        '<div class="lnd-section-title success-bar fade-in">' +
-        '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>' +
-        'All Clear</div>' +
-        '<div class="all-clear-body fade-in">No pending actions right now.</div>';
+  /* ═════════════ NAVIGATION + PREFETCH ═════════════ */
+  var _prefetchCache = {};
+  function navigateTo(formName) {
+    // Prefer shared sessionStorage-backed cache (survives across pages)
+    if (window.PMHtmlCache && typeof window.PMHtmlCache.navigate === 'function') {
+      window.PMHtmlCache.navigate(formName);
       return;
     }
-
-    badge.textContent = String(actions.length);
-
-    var tilesHtml = '';
-    for (var i = 0; i < actions.length; i++) {
-      var a = actions[i];
-      var isLast = (i === actions.length - 1);
-      var isOdd  = (actions.length % 2 !== 0);
-      var full   = (isLast && isOdd) ? ' full-width' : '';
-      tilesHtml +=
-        '<div class="pending-tile' + full + ' fade-in" data-module="' + a.module + '">' +
-        '<div class="pending-tile-module">' + a.module + '</div>' +
-        '<div class="pending-tile-detail">' + a.detail + '</div>' +
-        '</div>';
+    if (_prefetchCache[formName]) {
+      var html = _prefetchCache[formName];
+      document.open(); document.write(html); document.close();
+      return;
     }
-    grid.innerHTML = tilesHtml;
-
-    grid.addEventListener('click', function (e) {
-      var tile = e.target.closest('.pending-tile');
-      if (!tile) return;
-      navigateTo(tile.getAttribute('data-module'));
-    });
+    showLoader('Opening ' + formName);
+    google.script.run
+      .withSuccessHandler(function (html) { document.open(); document.write(html); document.close(); })
+      .withFailureHandler(function () { hideLoader(); showToast('Could not open ' + formName, true); })
+      .getFormHtml(formName);
   }
+  window.navigateTo = navigateTo;
 
-  function renderModules(todayCounts) {
-    var counts  = todayCounts || {};
-    var icons = {
-      'PO':       '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
-      'GRN':      '<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>',
-      'IQC':      '<svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 3a9 9 0 100 18A9 9 0 0012 3z"/></svg>',
-      'IPQC':     '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2m-3.5-7.5-1.5 1.5m-9 9-1.5 1.5m13 0-1.5-1.5m-9-9L4.5 4.5"/></svg>',
-      'OQC':      '<svg viewBox="0 0 24 24"><path d="M20 7l-8 5-8-5"/><path d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z"/></svg>',
-      'Gatepass': '<svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
-      'Dispatch': '<svg viewBox="0 0 24 24"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 4v3h-5z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
-      'Production': '<svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l5-3v14M10 21V7l5-3v17M15 21V11l5-3v13"/></svg>',
-      'Records':  '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>',
-      'KPI':      '<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
-      'Warehouse':'<svg viewBox="0 0 24 24"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-7h6v7"/><path d="M3 13h18"/></svg>',
-      'Masters':  '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 21v-2a4 4 0 014-4h6a4 4 0 014 4v2"/></svg>'
-    };
-    var groups = [
-      { label: 'Inbound',    modules: [{ name: 'PO', form: 'PO' }, { name: 'GRN', form: 'GRN' }, { name: 'IQC', form: 'IQC' }] },
-      { label: 'In-Process', modules: [{ name: 'IPQC', form: 'IPQC' }, { name: 'Production', form: 'Production' }] },
-      { label: 'Outbound',   modules: [{ name: 'OQC', form: 'OQC' }, { name: 'Gatepass', form: 'Gatepass' }, { name: 'Dispatch', form: 'Dispatch' }] },
-      { label: 'Reports',    modules: [{ name: 'KPI', form: 'KPI' }, { name: 'Records', form: 'Records' }] },
-      { label: 'Admin',      modules: [{ name: 'Warehouse', form: 'Warehouse' }, { name: 'Masters', form: 'Masters' }] }
+  /* Records with module filter — passes via sessionStorage */
+  function navigateToRecords(moduleName, opts) {
+    try {
+      sessionStorage.setItem('pmRecordsFilter', moduleName);
+      opts = opts || {};
+      // Default: when coming from a tile, show all-time (so pending old records appear)
+      sessionStorage.setItem('pmRecordsPeriod', opts.period || 'ALL');
+      if (opts.pendingOnly) sessionStorage.setItem('pmRecordsPendingOnly', '1');
+    } catch (e) {}
+    navigateTo('Records');
+  }
+  window.navigateToRecords = navigateToRecords;
+
+  /* Open a single document detail view directly.
+   * Mapped types (GRN/IQC/OQC/Gatepass) → DocView_F via getDocViewHtml(type, docNo).
+   * NCR / IPQC / CustomerReturn → open their form with a sessionStorage hint
+   * so the form auto-opens that doc's detail sheet on boot. */
+  var DOCVIEW_TYPES = { GRN: 1, IQC: 1, OQC: 1, Gatepass: 1, PO: 1 };
+  function navigateToRecord(moduleName, docNo) {
+    if (!docNo) { navigateToRecords(moduleName); return; }
+    if (DOCVIEW_TYPES[moduleName]) {
+      showLoader('Opening ' + docNo);
+      google.script.run
+        .withSuccessHandler(function (html) { document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function (e) { hideLoader(); showToast('Could not open ' + docNo, true); })
+        .getDocViewHtml(moduleName, docNo);
+      return;
+    }
+    // Fallback: open the module form with a stash so it can auto-open the doc
+    try { sessionStorage.setItem('pmAutoOpenDoc', docNo); } catch (e) {}
+    navigateTo(moduleName);
+  }
+  window.navigateToRecord = navigateToRecord;
+
+  function showMoreMenu() {
+    var items = [
+      { label: 'Warehouse',       form: 'Warehouse',     icon: 'i-boxes' },
+      { label: 'Customer Return', form: 'CustomerReturn',icon: 'i-undo' },
+      { label: 'Dispatch',        form: 'Dispatch',      icon: 'i-truck' },
+      { label: 'Import CSV',      form: 'ImportCSV',     icon: 'i-records' }
     ];
+    var html = items.map(function (i) {
+      return '<button onclick="navigateTo(\'' + i.form + '\');this.closest(\'#moreSheet\').remove()" ' +
+        'style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:13px;font-weight:600;color:var(--pm-text);background:transparent;border:0;border-bottom:1px solid var(--pm-border);text-align:left;font-family:inherit;">' +
+        '<svg width="16" height="16" style="color:var(--pm-navy);"><use href="#' + i.icon + '"/></svg>' + i.label + '</button>';
+    }).join('');
+    var sheet = document.createElement('div');
+    sheet.id = 'moreSheet';
+    sheet.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(30,58,95,0.55);';
+    sheet.innerHTML = '<div style="background:#fff;width:100%;max-width:430px;border-radius:14px 14px 0 0;overflow:hidden;">' +
+      '<div style="padding:12px 14px;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:9.5px;font-weight:700;color:var(--pm-muted);text-transform:uppercase;letter-spacing:1.4px;border-bottom:1px solid var(--pm-border);">More modules</div>' +
+      html + '</div>';
+    sheet.addEventListener('click', function (e) { if (e.target === sheet) sheet.remove(); });
+    document.body.appendChild(sheet);
+  }
+  window.showMoreMenu = showMoreMenu;
+  function showSideMenu() { showToast('Menu coming soon'); }
+  window.showSideMenu = showSideMenu;
 
-    function tileHtml(m) {
-      var cnt = counts[m.name];
-      var chipHtml;
-      if (m.name === 'Records' || m.name === 'KPI' || m.name === 'Warehouse' || m.name === 'Masters') {
-        chipHtml = '<span class="module-count-chip">→</span>';
-      } else if (cnt === 0 || cnt === '0') {
-        chipHtml = '<span class="module-count-chip zero">0</span>';
-      } else {
-        chipHtml = '<span class="module-count-chip">' + (cnt != null ? String(cnt) : '0') + '</span>';
-      }
-      var iconSvg = icons[m.name] || '';
-      return '<div class="module-tile fade-in" data-form="' + m.form + '" role="button" aria-label="Open ' + m.name + '">' +
-        '<span class="module-tile-icon" aria-hidden="true">' + iconSvg + '</span>' +
-        '<span class="module-tile-name">' + m.name + '</span>' +
-        chipHtml + '</div>';
-    }
-
-    var html = '';
-    for (var g = 0; g < groups.length; g++) {
-      var grp = groups[g];
-      var tiles = '';
-      for (var j = 0; j < grp.modules.length; j++) tiles += tileHtml(grp.modules[j]);
-      html += '<div class="module-group">' +
-              '<div class="module-group-label">' + grp.label + '</div>' +
-              '<div class="module-grid">' + tiles + '</div>' +
-              '</div>';
-    }
-
-    var container = document.getElementById('moduleGroups');
-    container.innerHTML = html;
-
-    container.addEventListener('click', function (e) {
-      var tile = e.target.closest('.module-tile');
-      if (!tile) return;
-      navigateTo(tile.getAttribute('data-form'));
+  /* ═════════════ OPERATOR PICKER ═════════════ */
+  function getOperatorName() { try { return sessionStorage.getItem('pmOperatorName') || ''; } catch (e) { return ''; } }
+  function setOperatorName(n) { try { sessionStorage.setItem('pmOperatorName', n); } catch (e) {} }
+  function showOperatorPicker(list, onConfirm) {
+    var existing = $('opModal'); if (existing) existing.remove();
+    var modal = document.createElement('div');
+    modal.id = 'opModal';
+    var btns = (list || []).map(function (n) {
+      var name = typeof n === 'string' ? n : (n.name || String(n));
+      return '<button class="op-name-btn" data-name="' + name.replace(/"/g, '&quot;') + '">' + name + '</button>';
+    }).join('');
+    modal.innerHTML = '<div class="op-sheet"><div style="font-size:14px;font-weight:700;color:var(--pm-navy);margin-bottom:4px;font-family:\'Plus Jakarta Sans\',sans-serif;">Who are you?</div><div style="font-size:11px;color:var(--pm-muted);margin-bottom:12px;">Select your name</div><div class="op-names-grid" id="opNamesGrid">' + btns + '</div><button class="op-confirm-btn" id="opConfirmBtn" disabled>Confirm</button></div>';
+    document.body.appendChild(modal);
+    var selected = '';
+    modal.querySelector('#opNamesGrid').addEventListener('click', function (e) {
+      var btn = e.target.closest('.op-name-btn'); if (!btn) return;
+      modal.querySelectorAll('.op-name-btn').forEach(function (b) { b.classList.remove('op-selected'); });
+      btn.classList.add('op-selected');
+      selected = btn.dataset.name;
+      modal.querySelector('#opConfirmBtn').disabled = false;
+    });
+    modal.querySelector('#opConfirmBtn').addEventListener('click', function () {
+      if (!selected) return;
+      setOperatorName(selected); modal.remove();
+      if (typeof onConfirm === 'function') onConfirm(selected);
     });
   }
+  window.QMS = window.QMS || {};
+  window.QMS.getOperatorName = getOperatorName;
+  window.QMS.setOperatorName = setOperatorName;
+  window.QMS.requireOperator = function (list, cb) { var n = getOperatorName(); if (n) { cb(n); return; } showOperatorPicker(list, cb); };
+  window.QMS.showOperatorPicker = showOperatorPicker;
 
-  /* ── main render ── */
+  /* ═════════════ MODULE CATALOG (workflow order) ═════════════ */
+  var GROUPS = [
+    { label: 'Receive', modules: [
+      { name: 'PO',         form: 'PO',         icon: 'i-clipboard-list', countKey: 'PO' },
+      { name: 'GRN',        form: 'GRN',        icon: 'i-package',         countKey: 'GRN' },
+      { name: 'IQC',        form: 'IQC',        icon: 'i-flask',           countKey: 'IQC' }
+    ]},
+    { label: 'Make', modules: [
+      { name: 'IPQC',       form: 'IPQC',       icon: 'i-gauge',           countKey: 'IPQC' },
+      { name: 'Production', form: 'Production', icon: 'i-factory',         countKey: 'Production' }
+    ]},
+    { label: 'Ship', modules: [
+      { name: 'OQC',        form: 'OQC',        icon: 'i-shield-check',    countKey: 'OQC' },
+      { name: 'Gatepass',   form: 'Gatepass',   icon: 'i-qr',              countKey: 'Gatepass' },
+      { name: 'Dispatch',   form: 'Dispatch',   icon: 'i-truck',           countKey: 'Dispatch' }
+    ]},
+    { label: 'Resolve', modules: [
+      { name: 'NCR',        form: 'NCR',        icon: 'i-octagon-alert',   countKey: 'NCR' },
+      { name: 'Returns',    form: 'CustomerReturn', icon: 'i-undo',        countKey: 'CustomerReturn' },
+      { name: 'Control Plan', form: 'ControlPlan', icon: 'i-ruler',        countKey: null }
+    ]},
+    { label: 'Manage', modules: [
+      { name: 'KPI Dashboard', form: 'KPI',       icon: 'i-trending',      countKey: null },
+      { name: 'Warehouse',     form: 'Warehouse', icon: 'i-boxes',         countKey: null },
+      { name: 'Masters',       form: 'Masters',   icon: 'i-users-cog',     countKey: null }
+    ]}
+  ];
 
-  function renderLanding(result) {
-    if (!result) return;
-    renderGreeting();
-    renderPending(result.pendingActions);
-    renderModules(result.todayCounts);
+  /* Short meta line per module given counts.
+   * Now uses status breakdowns when available — e.g. "5 PENDING · 3 HOLD"
+   * instead of duplicating the count. */
+  function moduleMeta(m, n, breakdown) {
+    if (n == null) {
+      var hints = {
+        'KPI Dashboard': 'Trends · failure rate · OTD',
+        'Warehouse':     'Stock by location · movements',
+        'Masters':       'Suppliers · materials · inspectors',
+        'Control Plan':  'Per-product param matrix'
+      };
+      return hints[m.name] || '';
+    }
+    if (n === 0) return 'Nothing pending';
+    // Build breakdown text from server-provided distribution
+    if (breakdown && typeof breakdown === 'object') {
+      var keys = Object.keys(breakdown);
+      if (keys.length > 0) {
+        // Sort by count desc, take top 3
+        keys.sort(function(a,b){ return breakdown[b] - breakdown[a]; });
+        var parts = keys.slice(0, 3).map(function(k){
+          return breakdown[k] + ' ' + k.toLowerCase().replace(/_/g, ' ');
+        });
+        return parts.join(' · ');
+      }
+    }
+    return 'pending';
+  }
+
+  /* ═════════════ STATUS CLASSIFIER ═════════════ */
+  function statusClass(status) {
+    var s = String(status || '').toUpperCase();
+    if (s === 'ACCEPTED' || s === 'RELEASED' || s === 'PASS')      return 's-pass';
+    if (s === 'REJECTED' || s === 'FAIL')                          return 's-fail';
+    if (s === 'OPEN' || s === 'PENDING_DISPOSITION')               return 's-warn';
+    if (s.indexOf('HOLD') >= 0 || s.indexOf('PENDING') >= 0)       return 's-hold';
+    if (s === 'IN_PROGRESS')                                       return 's-prog';
+    if (s === 'CLOSED')                                            return 's-grey';
+    return 's-grey';
+  }
+
+  /* ═════════════ ALERT → ROUTING + DOC EXTRACTION ═════════════
+   * Returns { module, docNo } so the click goes straight to that record.
+   * Module is what Records.js expects (GRN/IQC/OQC/NCR/CustomerReturn/Gatepass/IPQC).
+   * docNo is pulled from the action's typed fields if present, else parsed
+   * out of `detail` (which usually contains "… · PM/<TYPE>/<id> · …").
+   */
+  function alertRoute(action) {
+    var detail = String(action.detail || '');
+    var lower = detail.toLowerCase();
+    // Doc extractors — typed fields take precedence
+    var docNo = action.grnNo || action.oqcNo || action.ncrNo || action.rtnNo || action.sessionId || '';
+    if (!docNo) {
+      var m = detail.match(/(PM\/[A-Z]+\/[A-Z0-9\-/]+)/i);
+      if (m) docNo = m[1];
+    }
+
+    // Route to whichever Records list will contain that doc
+    var module = 'ALL';
+    if (lower.indexOf('iqc needed') >= 0 || lower.indexOf('awaiting iqc') >= 0) {
+      // The doc IS a GRN; we want to find it under GRN records (then user runs IQC from there)
+      module = 'GRN';
+    } else if (lower.indexOf('dispatch pending') >= 0) {
+      // Doc is an OQC; route to OQC records
+      module = 'OQC';
+    } else if (lower.indexOf('open session') >= 0) {
+      module = 'IPQC';
+    } else if (lower.indexOf('ncr') >= 0) {
+      module = 'NCR';
+    } else if (lower.indexOf('return') >= 0) {
+      module = 'CustomerReturn';
+    } else if (lower.indexOf('gatepass') >= 0) {
+      module = 'Gatepass';
+    }
+    return { module: module, docNo: docNo };
+  }
+
+  /* ═════════════ RENDER ═════════════ */
+  /* Shorten verbose details like
+     "IQC needed · PM/GRN/2026-037 · CAN-M_TIN-PLT - 5L Rectangular Tin Can"
+     →  "IQC needed · GRN/2026-037 · CAN-M_TIN-PLT" (drop PM/ prefix, drop description tail)
+  */
+  function shortenDetail(d) {
+    if (!d) return '';
+    var parts = String(d).split('·').map(function (s) { return s.trim(); });
+    if (parts.length >= 2) parts[1] = parts[1].replace(/^PM\//, '');
+    if (parts.length >= 3) parts[2] = parts[2].split(' - ')[0]; // drop long product name
+    return parts.slice(0, 3).join(' · ');
+  }
+
+  function renderAlerts(pendingActions) {
+    var el = $('alertList');
+    if (!el) return;
+    if (!pendingActions || !pendingActions.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    var total = pendingActions.length;
+    var capped = total > ALERTS_VISIBLE;
+    var visible = capped ? pendingActions.slice(0, ALERTS_VISIBLE) : pendingActions;
+    var html = visible.map(function (a, i) {
+      var r = alertRoute(a);
+      return '<button class="pm-alert pm-rise" style="animation-delay:' + (i * 40) + 'ms;" ' +
+        'onclick="navigateToRecord(\'' + r.module + '\',\'' + esc(r.docNo) + '\')" aria-label="' + esc(a.detail) + '">' +
+        '<span class="pm-alert-icon"><svg><use href="#i-alert-tri"/></svg></span>' +
+        '<div class="pm-alert-body">' +
+          '<div class="pm-alert-text">' + esc(shortenDetail(a.detail)) + '</div>' +
+        '</div>' +
+        '<span class="pm-alert-chev"><svg><use href="#i-chev"/></svg></span>' +
+        '</button>';
+    }).join('');
+    if (capped) {
+      html += '<button class="pm-alert-more" onclick="window.PM.expandAlerts()">+ ' + (total - ALERTS_VISIBLE) + ' more alert' + ((total - ALERTS_VISIBLE) === 1 ? '' : 's') + '</button>';
+    }
+    el.innerHTML = html;
+    el.style.display = '';
+  }
+
+  function expandAlerts() {
+    // Re-render with the full list by temporarily raising the cap
+    var cached = readCache() || {};
+    var full = cached.pendingActions || [];
+    var el = $('alertList');
+    el.innerHTML = full.map(function (a, i) {
+      var r = alertRoute(a);
+      return '<button class="pm-alert pm-rise" style="animation-delay:' + (i * 20) + 'ms;" ' +
+        'onclick="navigateToRecord(\'' + r.module + '\',\'' + esc(r.docNo) + '\')" aria-label="' + esc(a.detail) + '">' +
+        '<span class="pm-alert-icon"><svg><use href="#i-alert-tri"/></svg></span>' +
+        '<div class="pm-alert-body">' +
+          '<div class="pm-alert-text">' + esc(shortenDetail(a.detail)) + '</div>' +
+        '</div>' +
+        '<span class="pm-alert-chev"><svg><use href="#i-chev"/></svg></span>' +
+        '</button>';
+    }).join('');
+  }
+
+  function renderStatStrip(counts, alertCount) {
+    counts = counts || {};
+    var defs = [
+      { key: 'GRN', label: 'GRN', icon: 'i-package',         target: 'GRN' },
+      { key: 'IQC', label: 'IQC', icon: 'i-flask',           target: 'IQC' },
+      { key: 'NCR', label: 'NCR', icon: 'i-octagon-alert',   target: 'NCR', isFail: true },
+      { key: '_alerts', label: 'Alerts', icon: 'i-alert-tri', target: '_alerts', isWarn: true }
+    ];
+    var strip = $('statStrip');
+    strip.innerHTML = defs.map(function (d, i) {
+      var v = d.key === '_alerts' ? (alertCount || 0) : (counts[d.key] != null ? counts[d.key] : 0);
+      var cls = '';
+      if (d.isFail && v > 0) cls = ' is-fail';
+      if (d.isWarn && v > 0) cls = ' is-warn';
+      var click = d.key === '_alerts'
+        ? 'document.getElementById(\'alertList\').scrollIntoView({behavior:\'smooth\',block:\'center\'})'
+        : 'navigateToRecords(\'' + d.target + '\')';
+      return '<button class="pm-stat pm-rise' + cls + '" style="animation-delay:' + (i * 30) + 'ms;" ' +
+        'onclick="' + click + '">' +
+        '<span class="pm-stat-icon"><svg><use href="#' + d.icon + '"/></svg></span>' +
+        '<div>' +
+          '<div class="pm-stat-label">' + esc(d.label) + '</div>' +
+          '<div class="pm-stat-val">' + v + '</div>' +
+        '</div>' +
+        '</button>';
+    }).join('');
+  }
+
+  function renderGroups(counts, breakdowns) {
+    var c = counts || {};
+    var b = breakdowns || {};
+    var tiles = (SETTINGS && SETTINGS.tiles) || null;
+    var idx = 0;
+    var html = GROUPS.map(function (g) {
+      var rows = g.modules.filter(function(m){
+        if (!tiles || !m.countKey) return true;  // non-pending tiles always visible
+        if (!tiles.hasOwnProperty(m.countKey)) return true;
+        return tiles[m.countKey] !== false;
+      }).map(function (m) {
+        var n = m.countKey ? (c[m.countKey] != null ? c[m.countKey] : 0) : null;
+        var meta = moduleMeta(m, n, b[m.countKey]);
+        var countHtml;
+        // Row click strategy:
+        //   - Module with pending count > 0 → Records page filtered to that module, pending-only
+        //   - Module with 0 / null count → open the module form directly (for adding new)
+        var rowClick;
+        if (n == null) {
+          // Modules without a count concept (KPI, Warehouse, Masters, Control Plan) — open form
+          rowClick = "navigateTo('" + m.form + "')";
+        } else if (n > 0) {
+          // Has pending work — go straight to the pending list in Records
+          rowClick = "navigateToRecords('" + m.form + "', {pendingOnly:true, period:'ALL'})";
+        } else {
+          // Zero pending — open the module form (most likely intent is "add new")
+          rowClick = "navigateTo('" + m.form + "')";
+        }
+        if (n == null) {
+          countHtml = '<span class="pm-row-count is-na" aria-hidden="true">—</span>';
+        } else {
+          countHtml = '<button class="pm-row-count' + (n === 0 ? ' is-zero' : '') + '" ' +
+            'aria-label="View ' + esc(m.name) + ' records" ' +
+            'onclick="event.stopPropagation();navigateToRecords(\'' + m.form + '\', {period:\'ALL\'})">' + n + '</button>';
+        }
+        var delay = (idx++) * 25;
+        return '<div class="pm-row pm-rise" role="button" tabindex="0" style="animation-delay:' + delay + 'ms;" ' +
+          'onclick="' + rowClick + '" ' +
+          'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + rowClick + '}" ' +
+          'aria-label="Open ' + esc(m.name) + '">' +
+          '<span class="pm-row-icon"><svg><use href="#' + m.icon + '"/></svg></span>' +
+          '<span class="pm-row-label">' + esc(m.name) + '</span>' +
+          '<span class="pm-row-meta">' + esc(meta) + '</span>' +
+          countHtml +
+          '<span class="pm-row-chev"><svg><use href="#i-chev"/></svg></span>' +
+          '</div>';
+      }).join('');
+      if (!rows) return '';
+      return '<div class="pm-sec"><span class="pm-sec-l">' + esc(g.label) + '</span></div>' +
+        '<div class="pm-group"><div class="pm-group-card">' + rows + '</div></div>';
+    }).join('');
+    $('moduleGroups').innerHTML = html;
+  }
+
+  function renderActivity(records) {
+    var el = $('recentActivity');
+    if (!records || !records.length) {
+      el.innerHTML = '<div style="text-align:center;padding:22px 12px;color:var(--pm-faint);font-size:11.5px;">No recent activity</div>';
+      return;
+    }
+    var html = records.slice(0, 6).map(function (r, i) {
+      var cls = statusClass(r.status);
+      var t = esc(r.type || '');
+      var d = esc(r.docNo || '');
+      return '<button class="pm-act ' + cls + ' pm-rise" style="animation-delay:' + (i * 30) + 'ms;" ' +
+        'onclick="navigateToRecord(\'' + t + '\',\'' + d + '\')">' +
+        '<span class="pm-act-id">' + (d || '—') + '</span>' +
+        '<span class="pm-act-mid">' +
+          '<span class="pm-act-status ' + cls + '">' + esc(r.status || '—') + '</span>' +
+          '<span class="pm-act-time">' + esc(r.date || '') + '</span>' +
+        '</span>' +
+        '<span class="pm-act-chev"><svg><use href="#i-chev"/></svg></span>' +
+        '</button>';
+    }).join('');
+    el.innerHTML = html;
+  }
+
+  function renderError() {
+    var s = $('statStrip');
+    if (s) s.innerHTML =
+      '<div style="grid-column:1/-1;padding:12px 14px;display:flex;align-items:center;gap:10px;color:var(--pm-fail);background:#fef2f2;">' +
+      '<svg width="16" height="16"><use href="#i-wifi-off"/></svg>' +
+      '<div><div style="font-weight:700;font-size:12px;">Could not load data</div>' +
+      '<button onclick="window.PM.loadState()" style="background:transparent;border:0;color:var(--pm-fail);font-size:11px;text-decoration:underline;padding:0;font-family:inherit;">Tap to retry</button></div></div>';
+  }
+
+  /* ═════════════ LOADER ═════════════ */
+  var loaderEl = $('pmLoader');
+  var loaderProg = $('pmLoaderProgress');
+  var loaderSub = $('pmLoaderSub');
+  var loaderProgress = 0, loaderInterval = null;
+  function showLoader(msg) {
+    if (msg && loaderSub) loaderSub.textContent = msg;
+    if (loaderEl) loaderEl.classList.remove('is-hidden');
+  }
+  function hideLoader() {
+    if (loaderInterval) { clearInterval(loaderInterval); loaderInterval = null; }
+    if (loaderProg) loaderProg.style.width = '100%';
+    setTimeout(function () {
+      if (loaderEl) loaderEl.classList.add('is-hidden');
+      if (loaderProg) loaderProg.style.width = '0%';
+      loaderProgress = 0;
+    }, 220);
+  }
+  function startLoaderProgress() {
+    loaderProgress = 8;
+    if (loaderProg) loaderProg.style.width = loaderProgress + '%';
+    loaderInterval = setInterval(function () {
+      loaderProgress += (92 - loaderProgress) * 0.04;
+      if (loaderProg) loaderProg.style.width = loaderProgress + '%';
+    }, 180);
+  }
+
+  /* ═════════════ CACHE ═════════════ */
+  function readCache() {
+    try {
+      var raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || !p.savedAt || (Date.now() - p.savedAt) > CACHE_TTL_MS) return null;
+      return p.data || null;
+    } catch (e) { return null; }
+  }
+  function writeCache(data) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data: data })); } catch (e) {}
+  }
+
+  /* ═════════════ PERSONA ═════════════ */
+  var PERSONAS = ['Operator', 'Manager'];
+  function getPersona() {
+    try { return localStorage.getItem('pmqms_persona') || 'Manager'; } catch (e) { return 'Manager'; }
+  }
+  function setPersonaLocal(p) {
+    try { localStorage.setItem('pmqms_persona', p); sessionStorage.setItem('pmqms_persona', p); } catch (e) {}
+  }
+  function refreshPersonaPill() {
+    var pill = $('personaPill'); if (!pill) return;
+    pill.textContent = getPersona();
+  }
+  function cyclePersona() {
+    var cur = getPersona();
+    var i = PERSONAS.indexOf(cur); if (i < 0) i = 0;
+    var next = PERSONAS[(i + 1) % PERSONAS.length];
+    setPersonaLocal(next);
+    refreshPersonaPill();
+    showToast('Persona: ' + next);
+    try { localStorage.removeItem(CACHE_KEY); } catch (e) {}
+    loadState();
+  }
+  window.cyclePersona = cyclePersona;
+
+  /* ═════════════ COLLAPSIBLE SECTIONS ═════════════ */
+  function toggleSection(hdrId, bodyId){
+    var hdr = $(hdrId), body = $(bodyId);
+    if (!hdr || !body) return;
+    var collapsed = hdr.classList.toggle('collapsed');
+    if (collapsed) {
+      body.style.maxHeight = body.scrollHeight + 'px';   // set a value to animate from
+      body.offsetHeight;                                  // force reflow
+      body.classList.add('collapsed');
+    } else {
+      body.classList.remove('collapsed');
+      body.style.maxHeight = body.scrollHeight + 'px';
+      setTimeout(function(){ if (!hdr.classList.contains('collapsed')) body.style.maxHeight = ''; }, 220);
+    }
+  }
+  window.toggleSection = toggleSection;
+
+  /* ═════════════ KPI HERO ═════════════ */
+  // KPIs where a LOWER value is better (gap math + status flip).
+  var KPI_LOWER_BETTER = { OTD:true, NCR_MTTR:true, AGED_STOCK:true, IPQC_REJECT:true, CR_RATE:true };
+  // KPI key → sprite icon id (sprite defs already in Landing.html).
+  var KPI_ICON = {
+    IQC_PASS:'i-shield-check', FPY:'i-gauge', OTD:'i-truck', NCR_MTTR:'i-alert-tri',
+    SUPPLIER_OTIF:'i-factory', TOP_DEFECT:'i-octagon-alert', FIFO_COMPL:'i-trending',
+    AGED_STOCK:'i-boxes', DWELL:'i-clipboard-list', IPQC_REJECT:'i-ruler',
+    CR_RATE:'i-undo', COST_OF_QUAL:'i-package'
+  };
+  function fmtKpiVal(k){
+    if (k.value === null || k.value === undefined || isNaN(k.value)) return { text:'—', cls:'' };
+    var n = Number(k.value);
+    var text = (k.format === 'pct') ? n.toFixed(1) : (k.format === 'num') ? (Math.abs(n) >= 100 ? n.toFixed(0) : n.toFixed(1)) : String(n);
+    var cls = '';
+    if (k.target != null && k.format === 'pct') {
+      cls = (n >= Number(k.target)) ? 'is-good' : 'is-bad';
+    } else if (k.target != null && k.key === 'NCR_MTTR') {
+      cls = (n <= Number(k.target)) ? 'is-good' : 'is-bad';
+    }
+    return { text:text, cls:cls };
+  }
+  // Status: 'good' | 'bad' | 'warn' | 'na' — value vs target, direction-aware.
+  function kpiStatus(k){
+    if (k.status === 'error') return 'bad';
+    if (k.value == null || isNaN(k.value) || k.target == null) return 'na';
+    var v = Number(k.value), t = Number(k.target);
+    if (isNaN(v) || isNaN(t)) return 'na';
+    if (KPI_LOWER_BETTER[k.key]) {
+      if (v <= t) return 'good';
+      return (v <= t * 1.5) ? 'warn' : 'bad';
+    }
+    if (v >= t) return 'good';
+    return (v >= t * 0.95) ? 'warn' : 'bad';
+  }
+  // One-line plain-language interpretation (gap vs target).
+  function kpiNote(k, status){
+    if (k.status === 'error') return 'Data error';
+    if (k.format === 'text') return '';                       // Top Defect / Module Dwell
+    if (k.value == null || isNaN(k.value)) return 'No data';
+    if (k.target == null) return '';
+    var v = Number(k.value), t = Number(k.target);
+    if (isNaN(v) || isNaN(t)) return '';
+    if (status === 'good') return KPI_LOWER_BETTER[k.key] ? 'Within target' : 'On target';
+    var lower = !!KPI_LOWER_BETTER[k.key];
+    var diff = Math.abs(lower ? v - t : t - v);
+    var mag = (k.format === 'pct')
+      ? diff.toFixed(1) + 'pp'
+      : (diff % 1 !== 0 ? diff.toFixed(1) : diff.toFixed(0)) + (k.unit || '');
+    return mag + (lower ? ' over target' : ' below target');
+  }
+  function sparklineSvg(arr){
+    if (!arr || !arr.length) return '';
+    var vals = arr.filter(function(v){ return v != null && !isNaN(v); });
+    if (vals.length < 2) return '';
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    var range = (max - min) || 1;
+    var w = 100, h = 14;
+    var pts = arr.map(function(v, i){
+      var x = (i / (arr.length - 1)) * w;
+      if (v == null || isNaN(v)) return null;
+      var y = h - ((v - min) / range) * h;
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    var d = '';
+    pts.forEach(function(p, i){
+      if (p == null) return;
+      d += (d ? ' L' : 'M') + p;
+    });
+    return '<svg class="pm-kpi-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" width="100%" height="14">' +
+      '<path d="' + d + '" fill="none" stroke="#0ea5e9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  function renderKpis(kpis){
+    var box = $('kpiHero');
+    if (!box) return;
+    var hero = (kpis || []).filter(function(k){ return k.group === 'hero'; });
+    if (!hero.length) {
+      box.innerHTML = '<div class="pm-kpi-empty">No KPIs visible for this persona. Tap Configure.</div>';
+    } else {
+      box.innerHTML = hero.map(function(k){
+        var fv = fmtKpiVal(k);
+        var err = (k.status === 'error');
+        var st = kpiStatus(k);
+        var spark = (!err && k.sparkline) ? sparklineSvg(k.sparkline) : '';
+        var note = kpiNote(k, st);
+        var icon = KPI_ICON[k.key] || 'i-gauge';
+        // Value colour follows status (direction-aware), not raw value≥target.
+        var valCls = st === 'good' ? 'is-good' : st === 'bad' ? 'is-bad' : '';
+        var title = err ? ('KPI error: ' + (k.message || '')) : k.label;
+        return '<div class="pm-kpi-card s-' + st + (err ? ' is-err' : '') + ' pm-rise" title="' + esc(title) + '" onclick="navigateTo(\'KPI\')">' +
+          '<div class="pm-kpi-top"><span class="pm-kpi-label">' + esc(k.label) + '</span>' +
+          '<span class="pm-kpi-ic s-' + st + '"><svg><use href="#' + icon + '"/></svg></span></div>' +
+          '<div class="pm-kpi-mid"><span class="pm-kpi-val ' + valCls + '">' + esc(fv.text) + '</span>' +
+          '<span class="pm-kpi-unit">' + esc(k.unit || '') + '</span></div>' +
+          (note ? '<div class="pm-kpi-note s-' + st + '">' + esc(note) + '</div>' : '') +
+          spark +
+          '</div>';
+      }).join('');
+    }
+    renderKpiDrill(kpis);
+  }
+
+  function renderKpiDrill(kpis){
+    var sec = $('kpiDrillSec'); var box = $('kpiDrill');
+    if (!sec || !box) return;
+    var drill = (kpis || []).filter(function(k){ return k.group === 'drill'; });
+    if (!drill.length) {
+      sec.style.display = 'none';
+      return;
+    }
+    sec.style.display = '';
+    box.innerHTML = drill.map(function(k){
+      var err = (k.status === 'error');
+      var st = kpiStatus(k);
+      var valTxt;
+      if (k.format === 'text') {
+        valTxt = (k.value == null) ? '—' : String(k.value);
+      } else {
+        valTxt = fmtKpiVal(k).text + (k.unit || '');
+      }
+      // Value colour follows status (direction-aware), not raw value≥target.
+      var valCls = st === 'good' ? 'is-good' : st === 'bad' ? 'is-bad' : '';
+      var note = kpiNote(k, st);
+      var tgt = (k.target != null) ? ('Target ' + k.target + (k.unit || '')) : '';
+      var sub = note || tgt;
+      var icon = KPI_ICON[k.key] || 'i-gauge';
+      var title = err ? ('KPI error: ' + (k.message || '')) : k.label;
+      return '<div class="pm-kpi-drow s-' + st + (err ? ' is-err' : '') + ' pm-rise" title="' + esc(title) + '">' +
+        '<div class="pm-kpi-top"><span class="pm-kpi-dlbl">' + esc(k.label) + '</span>' +
+        '<span class="pm-kpi-ic s-' + st + '"><svg><use href="#' + icon + '"/></svg></span></div>' +
+        '<div class="pm-kpi-mid"><span class="pm-kpi-dval ' + valCls + '">' + esc(valTxt) + '</span></div>' +
+        (sub ? '<div class="pm-kpi-dsub s-' + st + '">' + esc(sub) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  /* ═════════════ MAIN LOAD ═════════════ */
+  var SETTINGS = null;
+
+  function applyData(result) {
+    var alerts = result.pendingActions || [];
+    renderAlerts(alerts);
+    renderStatStrip(result.todayCounts || {}, alerts.length);
+    renderGroups(result.todayCounts || {}, result.pendingBreakdowns || {});
+    renderActivity(result.recentActivity || []);
+  }
+
+  function applyBundle(bundle) {
+    if (!bundle) return;
+    SETTINGS = bundle.settings || null;
+    if (bundle.landing) applyData(bundle.landing);
+    renderKpis(bundle.kpis || []);
   }
 
   function loadState() {
+    refreshPersonaPill();
+    /* Static shell: paint groups immediately (counts as 0) */
+    renderGroups({});
+
+    var cached = readCache();
+    if (cached) {
+      // Cached only had landing — apply, then we'll refresh KPIs+settings from server
+      applyData(cached);
+      hideLoader();
+    } else {
+      showLoader('Synchronising shift data');
+      startLoaderProgress();
+    }
     google.script.run
-      .withSuccessHandler(renderLanding)
-      .withFailureHandler(function () {
-        showToast('Could not load shift data. Tap to retry.', loadState);
+      .withSuccessHandler(function (bundle) {
+        if (!bundle) {
+          if (!cached) { hideLoader(); renderError(); }
+          return;
+        }
+        applyBundle(bundle);
+        if (bundle.landing) writeCache(bundle.landing);
+        hideLoader();
+        schedulePrefetch();
       })
-      .getQmsLandingState();
+      .withFailureHandler(function () {
+        if (!cached) {
+          hideLoader(); renderError();
+          showToast('Could not load data. Tap to retry.', true);
+        } else {
+          showToast('Live refresh failed — showing cached data', true);
+        }
+      })
+      .getLandingBundleV2(getPersona());
   }
 
-  loadState();
+  /* Idle prefetch — uses shared PMHtmlCache (persists across navigation) */
+  function schedulePrefetch() {
+    var targets = ['GRN', 'IQC', 'OQC', 'NCR', 'KPI', 'Records', 'Production', 'IPQC', 'Gatepass', 'Dispatch'];
+    if (window.PMHtmlCache && typeof window.PMHtmlCache.prefetch === 'function') {
+      window.PMHtmlCache.prefetch(targets);
+      return;
+    }
+    // Fallback to in-memory
+    var idle = window.requestIdleCallback || function (cb) { return setTimeout(cb, 1200); };
+    targets.forEach(function (form, i) {
+      idle(function () {
+        if (_prefetchCache[form]) return;
+        google.script.run
+          .withSuccessHandler(function (html) { _prefetchCache[form] = html; })
+          .withFailureHandler(function () {})
+          .getFormHtml(form);
+      }, { timeout: 2000 + i * 500 });
+    });
+  }
 
+  /* GAS banner suppressor */
+  (function () {
+    function kill(node) {
+      if (!node || node.nodeType !== 1 || node.id === '__gas_cover__') return;
+      var t = node.textContent || node.innerText || '';
+      if (t.indexOf('Google Apps Script') !== -1 || t.indexOf('created using Google') !== -1) {
+        node.style.cssText = 'display:none!important';
+      }
+    }
+    var obs = new MutationObserver(function (muts) { muts.forEach(function (m) { m.addedNodes.forEach(kill); }); });
+    function start() { obs.observe(document.body, { childList: true }); }
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+  }());
+
+  /* Boot */
+  window.PM = window.PM || {};
+  window.PM.loadState = loadState;
+  window.PM.expandAlerts = expandAlerts;
+  loadState();
 }());
 </script>
 

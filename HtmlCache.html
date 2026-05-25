@@ -1,0 +1,106 @@
+<!-- Shared HTML cache & prefetch utility. Include via: <?!= include('HtmlCache') ?> in <head>.
+     Provides:
+       window.PMHtmlCache.navigate(formName)   — instant nav if cached, else server fetch
+       window.PMHtmlCache.prefetch(formNames)  — background fetch + store in sessionStorage
+       window.PMHtmlCache.invalidate()         — clear all cached HTML
+-->
+<script>
+(function(){
+  var PFX = 'pmqms_html_v1_';
+  var TTL_MS = 5 * 60 * 1000; // 5 min — HTML is largely static; CacheService handles data freshness
+
+  function readCache(form) {
+    try {
+      var raw = sessionStorage.getItem(PFX + form);
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      if (!obj || !obj.ts || (Date.now() - obj.ts) > TTL_MS) {
+        sessionStorage.removeItem(PFX + form);
+        return null;
+      }
+      return obj.html;
+    } catch (e) { return null; }
+  }
+  function writeCache(form, html) {
+    try {
+      // Don't cache massive HTML (sessionStorage limit ~5MB total)
+      if (html && html.length < 800000) {
+        sessionStorage.setItem(PFX + form, JSON.stringify({ ts: Date.now(), html: html }));
+      }
+    } catch (e) { /* quota exceeded — silently skip */ }
+  }
+  function clearAll() {
+    try {
+      var keys = [];
+      for (var i = 0; i < sessionStorage.length; i++) {
+        var k = sessionStorage.key(i);
+        if (k && k.indexOf(PFX) === 0) keys.push(k);
+      }
+      keys.forEach(function(k){ sessionStorage.removeItem(k); });
+    } catch(e) {}
+  }
+
+  function navigate(form) {
+    var cached = readCache(form);
+    if (cached) {
+      // Render immediately, then background-refresh to keep cache warm
+      document.open(); document.write(cached); document.close();
+      // Best-effort background refresh — fires from the NEW page after load if possible
+      return;
+    }
+    // Cold path — show loader, fetch from server
+    showInlineLoader(form);
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      window.location.reload();
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(function(html){
+        writeCache(form, html);
+        document.open(); document.write(html); document.close();
+      })
+      .withFailureHandler(function(){
+        hideInlineLoader();
+        alert('Could not open ' + form);
+      })
+      .getFormHtml(form);
+  }
+
+  function prefetch(forms) {
+    if (typeof google === 'undefined' || !google.script || !google.script.run) return;
+    var idle = window.requestIdleCallback || function(cb){ return setTimeout(cb, 1500); };
+    (forms || []).forEach(function(form, i){
+      if (readCache(form)) return; // already cached and fresh
+      idle(function(){
+        google.script.run
+          .withSuccessHandler(function(html){ writeCache(form, html); })
+          .withFailureHandler(function(){})
+          .getFormHtml(form);
+      }, { timeout: 2000 + i * 400 });
+    });
+  }
+
+  function showInlineLoader(form) {
+    var d = document.createElement('div');
+    d.id = '__pmqms_loader__';
+    d.style.cssText = 'position:fixed;inset:0;background:rgba(13,27,110,0.94);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:system-ui,sans-serif;gap:14px;';
+    d.innerHTML = '<div style="font-size:36px;">📦</div>' +
+      '<div style="font-weight:700;font-size:16px;">Opening ' + (form||'…') + '</div>' +
+      '<div style="width:32px;height:32px;border:3px solid rgba(255,255,255,0.2);border-top-color:#E8A020;border-radius:50%;animation:__pmsp .8s linear infinite;"></div>' +
+      '<style>@keyframes __pmsp{to{transform:rotate(360deg);}}</style>';
+    document.body.appendChild(d);
+  }
+  function hideInlineLoader() {
+    var d = document.getElementById('__pmqms_loader__');
+    if (d) d.remove();
+  }
+
+  window.PMHtmlCache = {
+    navigate: navigate,
+    prefetch: prefetch,
+    invalidate: clearAll,
+    _read: readCache,
+    _write: writeCache
+  };
+})();
+</script>

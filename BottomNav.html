@@ -1,0 +1,78 @@
+<!-- Shared bottom nav. Include via: <?!= include('BottomNav') ?> just before </body>. -->
+<style>
+  .pm-bnav {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #fff; border-top: 1px solid #e3e6ea;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    z-index: 9999;
+    padding: 4px 0 max(4px, env(safe-area-inset-bottom));
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+  }
+  .pm-bnav-btn {
+    background: none; border: 0; padding: 6px 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    cursor: pointer; color: #5f6b7c; font-size: 10px; font-weight: 600;
+    transition: color 0.12s;
+  }
+  .pm-bnav-btn:hover { color: #0B2A4A; }
+  .pm-bnav-btn.is-active { color: #1A73E8; }
+  .pm-bnav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  body.has-pm-bnav { padding-bottom: 72px !important; }
+</style>
+
+<nav class="pm-bnav" id="pmBnav" role="navigation" aria-label="Main">
+  <button class="pm-bnav-btn" onclick="pmBnavGo('Landing')" aria-label="Home">
+    <svg viewBox="0 0 24 24"><path d="M3 12L12 3l9 9"/><path d="M5 10v10h14V10"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="pm-bnav-btn" onclick="pmBnavGo('Records')" aria-label="Records">
+    <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+    <span>Records</span>
+  </button>
+  <button class="pm-bnav-btn" onclick="pmBnavGo('KPI')" aria-label="KPIs">
+    <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+    <span>KPIs</span>
+  </button>
+  <button class="pm-bnav-btn" onclick="pmBnavGo('Masters')" aria-label="Masters">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 21v-1a6 6 0 0 1 12 0v1"/></svg>
+    <span>Masters</span>
+  </button>
+  <button class="pm-bnav-btn" onclick="pmBnavGo('Dashboard')" aria-label="Dashboard">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+    <span>Dashboard</span>
+  </button>
+</nav>
+
+<script>
+(function(){
+  document.body.classList.add('has-pm-bnav');
+  // Idle-prefetch the 5 bottom-nav targets so future taps are instant.
+  // Each page loaded gets its sibling nav targets warmed automatically.
+  setTimeout(function(){
+    if (window.PMHtmlCache && typeof window.PMHtmlCache.prefetch === 'function') {
+      window.PMHtmlCache.prefetch(['Landing','Records','KPI','Masters','Dashboard']);
+    }
+  }, 1500);
+  window.pmBnavGo = function(formName){
+    if (!formName) return;
+    // Prefer shared HTML cache (instant nav if cached, server fetch otherwise)
+    if (window.PMHtmlCache && typeof window.PMHtmlCache.navigate === 'function') {
+      window.PMHtmlCache.navigate(formName);
+      return;
+    }
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      console.error('[BottomNav] google.script.run unavailable');
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(function(html){
+        document.open(); document.write(html); document.close();
+      })
+      .withFailureHandler(function(e){
+        alert('Could not open ' + formName + ': ' + ((e && e.message) || e));
+      })
+      .getFormHtml(formName);
+  };
+})();
+</script>

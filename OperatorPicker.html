@@ -1,0 +1,107 @@
+<!--
+  OperatorPicker.html — Shared "Who are you?" bottom-sheet.
+  Provides window.QMS so forms (GRN/IQC/etc.) can require an operator
+  before save. Include via:
+    <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
+  in any form's <head>. Sets up styles + window.QMS on script load.
+-->
+<style>
+  #opModal { position:fixed; inset:0; background:rgba(30,58,95,0.75); z-index:99990; display:flex; align-items:flex-end; justify-content:center; }
+  #opModal.hidden { display:none; }
+  .op-sheet { background:#fff; border-radius:14px 14px 0 0; width:100%; max-width:480px; padding:18px 14px 28px; box-shadow: 0 -8px 24px rgba(0,0,0,0.18); }
+  .op-sheet-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; font-weight:700; color:#1e3a5f; margin-bottom:4px; }
+  .op-sheet-sub   { font-size:12px; color:#64748b; margin-bottom:12px; }
+  .op-names-grid  { display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:280px; overflow-y:auto; margin-bottom:12px; padding:2px; }
+  .op-name-btn    { min-height:44px; border:1.5px solid #e2e8f0; border-radius:8px; background:#fff; font-size:13px; font-weight:600; color:#0f172a; font-family:inherit; cursor:pointer; text-align:left; padding:8px 12px; transition:background .12s, border-color .12s; }
+  .op-name-btn.op-selected, .op-name-btn:active { background:#eff6ff; border-color:#1e3a5f; color:#1e3a5f; }
+  .op-confirm-btn { width:100%; min-height:46px; background:#1e3a5f; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
+  .op-confirm-btn:disabled { background:#94a3b8; cursor:not-allowed; }
+  .op-cancel-btn  { width:100%; background:transparent; border:0; color:#64748b; font-size:12px; font-weight:600; padding:8px 0 0; cursor:pointer; font-family:inherit; }
+</style>
+
+<script>
+(function () {
+  if (window.QMS && window.QMS.requireOperator) return;  // already loaded
+
+  function getOperatorName() {
+    try { return sessionStorage.getItem('pmOperatorName') || ''; } catch (e) { return ''; }
+  }
+  function setOperatorName(name) {
+    try { sessionStorage.setItem('pmOperatorName', name); } catch (e) {}
+  }
+  function clearOperatorName() {
+    try { sessionStorage.removeItem('pmOperatorName'); } catch (e) {}
+  }
+
+  function showOperatorPicker(list, onConfirm, onCancel) {
+    var existing = document.getElementById('opModal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'opModal';
+
+    var names = (list || []).map(function (n) {
+      return typeof n === 'string' ? n : (n.name || String(n));
+    }).filter(Boolean);
+
+    var btns = names.map(function (name) {
+      var safe = name.replace(/"/g, '&quot;');
+      return '<button class="op-name-btn" data-name="' + safe + '">' + safe + '</button>';
+    }).join('');
+
+    if (!btns) {
+      btns = '<div style="grid-column:1/-1;text-align:center;font-size:12px;color:#64748b;padding:18px;">No inspectors configured. Add them in Masters → Inspectors.</div>';
+    }
+
+    modal.innerHTML =
+      '<div class="op-sheet">' +
+        '<div class="op-sheet-title">Who are you?</div>' +
+        '<div class="op-sheet-sub">Select your name — required for the shift record</div>' +
+        '<div class="op-names-grid" id="opNamesGrid">' + btns + '</div>' +
+        '<button class="op-confirm-btn" id="opConfirmBtn" disabled>Confirm</button>' +
+        '<button class="op-cancel-btn" id="opCancelBtn">Cancel</button>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+
+    var selected = '';
+    var grid = modal.querySelector('#opNamesGrid');
+    var confirmBtn = modal.querySelector('#opConfirmBtn');
+    var cancelBtn = modal.querySelector('#opCancelBtn');
+
+    if (grid) grid.addEventListener('click', function (e) {
+      var btn = e.target.closest('.op-name-btn');
+      if (!btn) return;
+      modal.querySelectorAll('.op-name-btn').forEach(function (b) { b.classList.remove('op-selected'); });
+      btn.classList.add('op-selected');
+      selected = btn.dataset.name;
+      if (confirmBtn) confirmBtn.disabled = false;
+    });
+
+    if (confirmBtn) confirmBtn.addEventListener('click', function () {
+      if (!selected) return;
+      setOperatorName(selected);
+      modal.remove();
+      if (typeof onConfirm === 'function') onConfirm(selected);
+    });
+
+    if (cancelBtn) cancelBtn.addEventListener('click', function () {
+      modal.remove();
+      if (typeof onCancel === 'function') onCancel();
+    });
+  }
+
+  function requireOperator(list, onConfirm, onCancel) {
+    var name = getOperatorName();
+    if (name) { onConfirm(name); return; }
+    showOperatorPicker(list, onConfirm, onCancel);
+  }
+
+  window.QMS = window.QMS || {};
+  window.QMS.getOperatorName    = getOperatorName;
+  window.QMS.setOperatorName    = setOperatorName;
+  window.QMS.clearOperatorName  = clearOperatorName;
+  window.QMS.showOperatorPicker = showOperatorPicker;
+  window.QMS.requireOperator    = requireOperator;
+})();
+</script>
