@@ -680,43 +680,50 @@
       /* Bottom nav hidden on desktop */
       .pm-bn { display: none !important; }
 
-      /* Shell becomes the two-pane grid */
+      /* Shell becomes the two-pane grid. Width sized for comfortable
+         reading at 1440px+ monitors without going edge-to-edge on 4K. */
       .pm-shell {
-        max-width: 1180px;
-        padding: 0 24px;
+        max-width: 1280px;
+        padding: 0 28px;
       }
       main {
-        padding: 72px 0 32px;
+        padding: 76px 0 32px;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 340px;
-        gap: 28px;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        grid-template-areas:
+          "hero  hero"
+          "alert aside"
+          "mods  aside"
+          "recent aside";
+        column-gap: 28px;
+        row-gap: 16px;
         align-items: start;
       }
-      /* Hero spans full width above the two columns */
+      .pm-hero        { grid-area: hero; }
+      #alertList      { grid-area: alert; }
+      #moduleGroups   { grid-area: mods; }
+      #recentSection  { grid-area: recent; }
+      #pmAside        { grid-area: aside; align-self: start; display: flex; flex-direction: column; gap: 6px; }
+      /* Hero spans full width above the two columns. White card with
+         hairline + soft shadow so it stands out against the canvas. */
       .pm-hero {
-        margin: 0 0 16px;
+        margin: 0;
         grid-column: 1 / -1;
-        padding: 22px 24px;
-        background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%);
+        grid-row: 1;
+        padding: 20px 24px;
+        background: #FFFFFF;
         border: 1px solid var(--pm-border);
         border-radius: 14px;
-        box-shadow: 0 1px 4px rgba(13,27,110,0.04);
+        box-shadow: 0 1px 4px rgba(13,27,110,0.06);
       }
-      .pm-hero-date { font-size: 22px; }
+      .pm-hero-date { font-size: 24px; letter-spacing: -0.4px; }
       .pm-hero-day  { font-size: 13px; }
-      .pm-shift     { font-size: 11px; padding: 6px 12px; }
+      .pm-shift     { font-size: 11px; padding: 6px 14px; }
 
-      /* Main column: alerts (when present), tile groups, recent */
-      .pm-main-col {
-        display: contents;  /* allow child blocks to land in main grid cell */
-      }
-      /* Group children into the two columns by explicit class. */
-      #moduleGroups, #recentSection {
-        grid-column: 1;
-      }
-      #alertList, #kpiSec, #kpiHeroBody, #kpiDrillSec {
-        grid-column: 2;
-      }
+      /* Sidebar section headers hug their bodies (no top margin) so
+         the KPI stack reads as a single column unit. */
+      #pmAside .pm-sec:first-child { margin-top: 0; }
+      #pmAside .pm-sec { margin: 8px 2px 6px; }
 
       /* Tile grid breathes wider */
       .pm-tiles { grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -832,38 +839,40 @@
     </div>
   </div>
 
-  <!-- Alerts (only render if any pending) -->
+  <!-- Mobile order is preserved by DOM order. On desktop, CSS pulls
+       #pmAside out as the right column via grid-column:2; everything
+       outside it stays in column 1 (modules, recent). The .pm-alert-list
+       sits in DOM order at top — on desktop the CSS hoists it into
+       the aside via `order` + DOM nesting via JS is unnecessary. -->
   <div class="pm-alert-list" id="alertList" style="display:none;"></div>
-
-  <!-- Module workflow groups (canonical action surface — first, per DESIGN.md) -->
   <div id="moduleGroups"></div>
 
-  <!-- Hero KPI strip (metrics after actions) -->
-  <div class="pm-sec" id="kpiSec">
-    <button class="pm-sec-toggle" onclick="toggleSection('kpiSec','kpiHeroBody')" aria-label="Toggle KPIs">
-      <svg class="pm-sec-chev"><use href="#i-chev"/></svg>
-      <span class="pm-sec-l" id="kpiSecLabel">KPIs &middot; 30d</span>
-    </button>
-    <button class="pm-sec-link" onclick="navigateTo('Settings')">Configure</button>
-  </div>
-  <div class="pm-collapse-body" id="kpiHeroBody">
-    <div id="kpiHero" class="pm-kpi-hero"></div>
-  </div>
-
-  <!-- Drill KPI cards (Manager-only by default) -->
-  <div id="kpiDrillSec" style="display:none">
-    <div class="pm-sec" id="kpiDrillHdr">
-      <button class="pm-sec-toggle" onclick="toggleSection('kpiDrillHdr','kpiDrillBody')" aria-label="Toggle drill-down">
+  <!-- Aside column (KPI section). On mobile this just flows under
+       moduleGroups; on desktop it becomes the right column. -->
+  <aside id="pmAside">
+    <div class="pm-sec" id="kpiSec">
+      <button class="pm-sec-toggle" onclick="toggleSection('kpiSec','kpiHeroBody')" aria-label="Toggle KPIs">
         <svg class="pm-sec-chev"><use href="#i-chev"/></svg>
-        <span class="pm-sec-l">Drill-down</span>
+        <span class="pm-sec-l" id="kpiSecLabel">KPIs &middot; 30d</span>
       </button>
+      <button class="pm-sec-link" onclick="navigateTo('Settings')">Configure</button>
     </div>
-    <div class="pm-collapse-body" id="kpiDrillBody">
-      <div id="kpiDrill" class="pm-kpi-drill"></div>
+    <div class="pm-collapse-body" id="kpiHeroBody">
+      <div id="kpiHero" class="pm-kpi-hero"></div>
     </div>
-  </div>
+    <div id="kpiDrillSec" style="display:none">
+      <div class="pm-sec" id="kpiDrillHdr">
+        <button class="pm-sec-toggle" onclick="toggleSection('kpiDrillHdr','kpiDrillBody')" aria-label="Toggle drill-down">
+          <svg class="pm-sec-chev"><use href="#i-chev"/></svg>
+          <span class="pm-sec-l">Drill-down</span>
+        </button>
+      </div>
+      <div class="pm-collapse-body" id="kpiDrillBody">
+        <div id="kpiDrill" class="pm-kpi-drill"></div>
+      </div>
+    </div>
+  </aside>
 
-  <!-- Recent activity -->
   <div id="recentSection">
     <div class="pm-sec">
       <span class="pm-sec-l">Recent</span>

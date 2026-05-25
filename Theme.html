@@ -652,10 +652,17 @@
     color: var(--pm-on-primary);
   }
 
-  /* ── Desktop center ───────────────────────────────────────────── */
+  /* ── Desktop center ─────────────────────────────────────────────
+     Opt-in centering only. Pages that want the legacy "narrow form
+     in a centered column" look add the .pm-narrow class to <body>.
+     Without it, the page gets full viewport width — required for
+     Landing's two-pane desktop grid and any future wide layouts.
+     ─────────────────────────────────────────────────────────────── */
   @media (min-width: 640px) {
-    body { max-width: 600px; margin-left: auto; margin-right: auto; }
-    .pm-header, .filter-bar, .tab-bar {
+    body.pm-narrow { max-width: 600px; margin-left: auto; margin-right: auto; }
+    body.pm-narrow .pm-header,
+    body.pm-narrow .filter-bar,
+    body.pm-narrow .tab-bar {
       max-width: 600px;
       left: 50%; transform: translateX(-50%);
       width: 100%;
