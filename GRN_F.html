@@ -164,8 +164,8 @@
       <div style="font-size:10px;color:#92400E;margin-top:6px">All receipts share supplier, disposition, vehicle no, and date. Leave Receive blank to skip a line.</div>
     </div>
 
-    <!-- Batch + Expiry grid -->
-    <div class="grid grid-cols-2 gap-3">
+    <!-- Batch + Expiry: single column per DESIGN.md -->
+    <div class="flex flex-col gap-3">
       <div id="f-batchNo" class="flex flex-col gap-[6px]">
         <label class="font-label text-[14px] font-medium text-[#374151]">Batch Number <span class="text-status-danger">*</span></label>
         <input id="batchNo" type="text" placeholder="B-" autocomplete="off"
@@ -202,7 +202,8 @@
   <!-- Section 3: Quantity -->
   <section id="qty-section" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
     <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Quantity</h2>
-    <div class="grid grid-cols-2 gap-3">
+    <!-- Single column per DESIGN.md -->
+    <div class="flex flex-col gap-3">
 
       <div id="f-qtyReceived" class="flex flex-col gap-[6px]">
         <label class="font-label text-[14px] font-medium text-[#374151]">Qty Received <span class="text-status-danger">*</span></label>

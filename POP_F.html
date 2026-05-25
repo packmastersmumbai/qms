@@ -77,10 +77,11 @@
   <div class="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-[#e2e8f0]">
     <p class="text-[11px] font-bold uppercase tracking-wider text-[#1e3a5f] mb-3">Purchase Order Details</p>
 
-    <div class="grid grid-cols-2 gap-3">
+    <!-- Single column per DESIGN.md (col-span-2 elements are unaffected by the flex switch) -->
+    <div class="flex flex-col gap-3">
 
       <!-- Supplier -->
-      <div class="col-span-2">
+      <div>
         <label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1" for="supplierCode">Supplier *</label>
         <div class="relative">
           <select id="supplierCode" onchange="onSupplierChange()"

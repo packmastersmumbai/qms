@@ -85,8 +85,8 @@
     <!-- Material chips (populated on GRN select) -->
     <div id="materialChips" class="flex flex-wrap gap-2"></div>
 
-    <!-- Inspector + AQL row -->
-    <div class="grid grid-cols-2 gap-3 mt-3">
+    <!-- Inspector + AQL: single column per DESIGN.md -->
+    <div class="flex flex-col gap-3 mt-3">
       <div>
         <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Inspector</label>
         <div class="relative">
@@ -172,8 +172,8 @@
         WITH DEVIATION
       </button>
 
-      <!-- Qty inputs -->
-      <div class="grid grid-cols-2 gap-3 mb-4">
+      <!-- Qty inputs: single column per DESIGN.md -->
+      <div class="flex flex-col gap-3 mb-4">
         <div>
           <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty Accepted</label>
           <input id="acceptedQty" type="number" min="0" placeholder="0"
@@ -265,7 +265,7 @@
       <textarea id="remarks" rows="3" placeholder="Any deviations, observations, or notes"
         class="w-full border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value p-3 focus:border-accent focus:outline-none bg-white resize-none"></textarea>
     </div>
-    <div class="grid grid-cols-2 gap-3">
+    <div class="flex flex-col gap-3">
       <div>
         <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">NCR Ref <span class="font-normal text-text-helper">(if reject)</span></label>
         <input id="ncrRef" type="text" placeholder="Leave blank to auto-generate"
