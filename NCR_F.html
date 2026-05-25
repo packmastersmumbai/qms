@@ -1,190 +1,274 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pack Masters QMS - Open NCRs</title>
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
   <style>
-    body { background: var(--bg); }
-
-    .ncr-wrap { max-width: 720px; margin: 0 auto; padding-bottom: 40px; }
-
-    .ncr-header {
-      background: var(--navy);
-      color: var(--white);
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      position: sticky; top: 0; z-index: 100;
+    body {
+      background-color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      min-height: max(884px, 100dvh);
     }
-    .ncr-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
-    .ncr-count {
-      background: var(--amber); color: var(--navy);
-      padding: 2px 8px; border-radius: 10px;
-      font-size: 11px; font-weight: 700;
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
 
-    .ncr-body { padding: 14px; }
+    /* Status / source chip colours */
+    .status-open        { background-color: #f97316; }
+    .status-in-progress { background-color: #2563eb; }
+    .status-closed      { background-color: #6b7280; }
+    .source-chip        { background-color: #1e3a5f; }
 
-    .ncr-empty {
-      text-align: center; padding: 60px 20px; color: #888;
-      font-size: 13px;
-    }
-    .ncr-empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+    /* Busy overlay */
+    .ncr-busy { opacity: 0.45; pointer-events: none; }
 
-    .ncr-card {
-      background: var(--white);
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .ncr-card-head {
-      padding: 10px 12px;
-      background: #FFF3CD;
-      border-bottom: 1px solid #f0e0a0;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .ncr-card.in-progress .ncr-card-head { background: #E3F2FD; border-bottom-color: #BBDEFB; }
-    .ncr-docno { font-weight: 700; color: var(--navy); font-size: 13px; flex: 1; }
-    .ncr-source-chip {
-      background: var(--navy); color: var(--white);
-      padding: 2px 8px; border-radius: 10px;
-      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-    }
-    .ncr-status-chip {
-      padding: 2px 8px; border-radius: 10px;
-      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-      background: #FFA000; color: white;
-    }
-    .ncr-status-chip.in-progress { background: #1976D2; }
+    /* Hide scrollbar for filter chips */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Modal */
-    .ncr-modal-bg {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-      display: none; align-items: center; justify-content: center;
-      z-index: 300;
-    }
-    .ncr-modal-bg.show { display: flex; }
-    .ncr-modal {
-      background: var(--white); border-radius: 8px;
-      width: 90%; max-width: 460px; padding: 18px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    }
-    .ncr-modal h3 { margin: 0 0 12px; font-size: 15px; color: var(--navy); }
-    .ncr-modal-field { margin-bottom: 12px; }
-    .ncr-modal-field label {
-      display: block; font-size: 11px; color: #555;
-      margin-bottom: 4px; font-weight: 600;
-    }
-    .ncr-modal-field input, .ncr-modal-field select, .ncr-modal-field textarea {
-      width: 100%; padding: 7px 9px; font-size: 13px;
-      border: 1px solid #ccc; border-radius: 5px;
-      font-family: inherit; box-sizing: border-box;
-    }
-    .ncr-modal-field textarea { min-height: 60px; resize: vertical; }
-    .ncr-modal-actions {
-      display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;
-    }
-    .ncr-modal-actions button {
-      padding: 8px 16px; font-size: 12px; font-weight: 600;
-      border-radius: 5px; cursor: pointer; font-family: inherit; border: 1px solid #ccc;
-      background: var(--white); color: #444;
-    }
-    .ncr-modal-actions button.primary {
-      background: var(--navy); color: var(--white); border-color: var(--navy);
-    }
-    .ncr-modal-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .ncr-card-body { padding: 10px 12px; font-size: 12px; line-height: 1.5; }
-    .ncr-row { display: flex; gap: 8px; margin-bottom: 4px; }
-    .ncr-label { color: #888; min-width: 80px; font-size: 11px; }
-    .ncr-value { color: #222; flex: 1; }
-    .ncr-defect {
-      background: #fafafa; border-left: 3px solid var(--amber);
-      padding: 6px 10px; margin-top: 6px; font-style: italic;
-      color: #555; font-size: 12px;
-    }
-
-    .ncr-actions {
-      padding: 10px 12px; background: #fafafa;
-      border-top: 1px solid #eee;
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-    }
-    .ncr-btn {
-      background: var(--white); border: 1px solid #ccc;
-      border-radius: 5px; padding: 8px 4px;
-      font-size: 11px; font-weight: 600;
-      cursor: pointer; font-family: inherit;
-      transition: all 0.15s;
-      color: #444;
-    }
-    .ncr-btn:hover {
-      background: var(--navy); color: var(--white); border-color: var(--navy);
-    }
-    .ncr-btn.full { grid-column: span 3; }
-
-    .ncr-busy { opacity: 0.5; pointer-events: none; }
-
-    .ncr-toast {
-      position: fixed; bottom: 20px; left: 50%;
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 80px; left: 50%;
       transform: translateX(-50%);
-      background: var(--navy); color: var(--white);
-      padding: 10px 16px; border-radius: 20px;
-      font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      background: #1e3a5f; color: white;
+      padding: 10px 20px; border-radius: 9999px;
+      font-size: 13px; font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.22);
       opacity: 0; transition: opacity 0.2s;
-      pointer-events: none; z-index: 200;
+      pointer-events: none; z-index: 400;
+      white-space: nowrap;
     }
-    .ncr-toast.show { opacity: 1; }
-    .ncr-toast.err { background: #c1334b; }
+    #toast.show     { opacity: 1; }
+    #toast.err      { background: #c1334b; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
-  <div class="ncr-wrap">
-    <div class="ncr-header">
-      <div class="ncr-title">📋 OPEN NCRs</div>
-      <div class="ncr-count" id="ncrCount">…</div>
+<body class="antialiased pb-[80px] flex flex-col">
+
+  <!-- ── TOP APP BAR ── -->
+  <header class="bg-[#1e3a5f] text-white fixed top-0 w-full h-[56px] shadow-sm flex items-center justify-between px-4 z-50">
+    <button onclick="ncrGoto('Landing')" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95" aria-label="Home">
+      <span class="material-symbols-outlined text-white">arrow_back</span>
+    </button>
+    <h1 class="font-headline text-[20px] font-bold text-white tracking-tight">Non-Conformances</h1>
+    <div id="ncrCountBadge"
+         class="bg-amber-400 text-[#1e3a5f] text-[11px] font-bold px-3 py-1 rounded-full leading-none">
+      …
     </div>
-    <div class="ncr-body" id="ncrBody">
-      <div class="ncr-empty"><div class="ncr-empty-icon">⏳</div>Loading…</div>
+  </header>
+
+  <!-- ── STATUS FILTER TABS ── -->
+  <div class="fixed top-[56px] w-full z-40 bg-white border-b border-[#e2e8f0] shadow-sm" style="max-width:600px;left:50%;transform:translateX(-50%);">
+    <div class="flex px-4 py-2 gap-2 overflow-x-auto hide-scrollbar" id="ncrFilterTabs">
+      <button onclick="setFilter('ALL')" data-filter="ALL"
+        class="ncr-tab flex-shrink-0 h-[32px] px-4 text-[12px] font-semibold rounded-full bg-[#1e3a5f] text-white transition-all">ALL</button>
+      <button onclick="setFilter('OPEN')" data-filter="OPEN"
+        class="ncr-tab flex-shrink-0 h-[32px] px-4 text-[12px] font-semibold rounded-full bg-[#f1f5f9] text-[#64748b] hover:text-[#1e3a5f] transition-all">OPEN</button>
+      <button onclick="setFilter('IN_PROGRESS')" data-filter="IN_PROGRESS"
+        class="ncr-tab flex-shrink-0 h-[32px] px-4 text-[12px] font-semibold rounded-full bg-[#f1f5f9] text-[#64748b] hover:text-[#1e3a5f] transition-all">IN PROGRESS</button>
+      <button onclick="setFilter('CLOSED')" data-filter="CLOSED"
+        class="ncr-tab flex-shrink-0 h-[32px] px-4 text-[12px] font-semibold rounded-full bg-[#f1f5f9] text-[#64748b] hover:text-[#1e3a5f] transition-all">CLOSED</button>
     </div>
   </div>
-  <div class="ncr-toast" id="toast"></div>
 
-  <div class="ncr-modal-bg" id="closeModal">
-    <div class="ncr-modal">
-      <h3>Close NCR <span id="closeDocNo"></span></h3>
-      <div class="ncr-modal-field">
-        <label>CAPA Reference (recommended)</label>
-        <input type="text" id="closeCapaRef" placeholder="e.g. CAPA-2026-007 or 'N/A — trivial'">
+  <!-- ── MAIN CONTENT ── -->
+  <main class="flex-1 mt-[56px] pt-[60px] px-4 pb-4 overflow-y-auto max-w-lg mx-auto w-full">
+    <!-- NCR List rendered by JS -->
+    <div id="ncrBody" class="flex flex-col gap-3 pt-2">
+      <!-- Loading placeholder -->
+      <div class="flex flex-col items-center justify-center py-16 text-[#94a3b8]">
+        <span class="material-symbols-outlined text-[48px] mb-3 opacity-40">hourglass_top</span>
+        <p class="text-[14px] font-medium">Loading…</p>
       </div>
-      <div class="ncr-modal-field">
-        <label>Effectiveness Check *</label>
-        <select id="closeEffective">
+    </div>
+  </main>
+
+  <!-- ── NCR DETAIL BOTTOM SHEET (fix #19) ── -->
+  <div id="detailSheet" class="fixed inset-0 z-[280] hidden bg-black/50 items-end justify-center"
+       onclick="if(event.target===this)hideDetail()">
+    <div class="bg-white w-full max-w-[600px] rounded-t-2xl max-h-[90vh] overflow-y-auto shadow-[0_-10px_40px_rgba(0,0,0,0.25)]">
+      <!-- Sheet header -->
+      <div class="sticky top-0 bg-white border-b border-[#e2e8f0] px-4 py-3 flex items-center justify-between rounded-t-2xl">
+        <div class="flex flex-col">
+          <span class="font-headline text-[15px] font-bold text-[#1e3a5f]" id="dtlDocNo">PM/NCR/—</span>
+          <span class="text-[11px] text-[#64748b]" id="dtlMeta">—</span>
+        </div>
+        <button onclick="hideDetail()"
+          class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100">
+          <span class="material-symbols-outlined text-[22px] text-[#64748b]">close</span>
+        </button>
+      </div>
+
+      <!-- Sheet body -->
+      <div class="p-4 space-y-4">
+
+        <!-- Status + source row -->
+        <div class="flex gap-2 flex-wrap" id="dtlChips"></div>
+
+        <!-- Doc fields -->
+        <section>
+          <div class="text-[11px] font-bold text-[#64748b] uppercase tracking-wider mb-2">Document Details</div>
+          <div class="bg-[#f8fafc] rounded-lg p-3 space-y-2" id="dtlDocFields"></div>
+        </section>
+
+        <!-- Disposition -->
+        <section>
+          <div class="text-[11px] font-bold text-[#64748b] uppercase tracking-wider mb-2">Disposition</div>
+          <div class="bg-[#f8fafc] rounded-lg p-3 space-y-2" id="dtlDispoFields"></div>
+        </section>
+
+        <!-- Photos -->
+        <section>
+          <div class="text-[11px] font-bold text-[#64748b] uppercase tracking-wider mb-2">Evidence Photos</div>
+          <div class="flex gap-2 flex-wrap items-center">
+            <div id="dtlPhotos" class="flex gap-2 flex-wrap"></div>
+            <label class="w-[72px] h-[72px] border-2 border-dashed border-[#cbd5e1] rounded-lg flex items-center justify-center cursor-pointer hover:border-[#0ea5e9] hover:bg-[#f0f9ff] transition-colors">
+              <input type="file" accept="image/*" multiple class="hidden" id="dtlPhotoUpload">
+              <span class="material-symbols-outlined text-[#94a3b8] text-[28px]">photo_camera</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Timeline -->
+        <section>
+          <div class="text-[11px] font-bold text-[#64748b] uppercase tracking-wider mb-2">Timeline</div>
+          <ol class="relative border-l-2 border-[#e2e8f0] ml-2 space-y-3 pl-4" id="dtlTimeline"></ol>
+        </section>
+
+      </div>
+
+      <!-- Sheet footer actions -->
+      <div class="sticky bottom-0 bg-white border-t border-[#e2e8f0] px-4 py-3 flex gap-2"
+           style="padding-bottom: max(12px, env(safe-area-inset-bottom));">
+        <button onclick="hideDetail()"
+          class="flex-1 h-[44px] border border-[#d1d5db] text-[#374151] font-semibold text-[14px] rounded-lg hover:bg-slate-50">
+          Close
+        </button>
+        <button id="dtlCloseNcrBtn" onclick="closeNcrFromDetail()"
+          class="flex-1 h-[44px] bg-[#1e3a5f] text-white font-semibold text-[14px] rounded-lg hover:bg-[#162d4a] hidden">
+          Close NCR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TOAST ── -->
+  <div id="toast"></div>
+
+  <!-- ── CLOSE NCR MODAL ── -->
+  <div id="closeModal"
+       class="fixed inset-0 bg-black/50 z-[300] hidden items-center justify-center px-4">
+    <div class="bg-white rounded-[16px] w-full max-w-[460px] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.28)]">
+      <h3 class="font-headline text-[17px] font-bold text-[#1e3a5f] mb-4">
+        Close NCR &nbsp;<span id="closeDocNo" class="font-normal text-[15px] text-[#64748b]"></span>
+      </h3>
+
+      <!-- CAPA Ref -->
+      <div class="mb-4">
+        <label class="block text-[12px] font-semibold text-[#374151] mb-1.5 uppercase tracking-wide">
+          CAPA Reference <span class="text-[#94a3b8] font-normal normal-case">(recommended)</span>
+        </label>
+        <input id="closeCapaRef" type="text"
+               placeholder="e.g. CAPA-2026-007 or 'N/A — trivial'"
+               class="w-full border border-[#d1d5db] rounded-lg px-3 py-2.5 text-[14px] text-[#0f172a]
+                      focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 outline-none transition-all">
+      </div>
+
+      <!-- Effectiveness -->
+      <div class="mb-4">
+        <label class="block text-[12px] font-semibold text-[#374151] mb-1.5 uppercase tracking-wide">
+          Effectiveness Check <span class="text-red-500">*</span>
+        </label>
+        <select id="closeEffective"
+                class="w-full border border-[#d1d5db] rounded-lg px-3 py-2.5 text-[14px] text-[#0f172a]
+                       focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 outline-none transition-all">
           <option value="">— select —</option>
           <option value="PASS">PASS — verified no recurrence</option>
           <option value="NOT_REQUIRED">NOT REQUIRED — trivial / one-off</option>
           <option value="FAIL">FAIL — recurrence observed (do not close)</option>
         </select>
       </div>
-      <div class="ncr-modal-field">
-        <label>Closure Notes (verification evidence, customer communication ref, etc.)</label>
-        <textarea id="closeNotes" placeholder="e.g. Next 3 batches inspected clean. Customer notified via email 2026-05-17."></textarea>
+
+      <!-- Closure Notes -->
+      <div class="mb-5">
+        <label class="block text-[12px] font-semibold text-[#374151] mb-1.5 uppercase tracking-wide">
+          Closure Notes
+          <span class="text-[#94a3b8] font-normal normal-case">(evidence, comms ref)</span>
+        </label>
+        <textarea id="closeNotes" rows="3"
+                  placeholder="e.g. Next 3 batches inspected clean. Customer notified via email 2026-05-17."
+                  class="w-full border border-[#d1d5db] rounded-lg px-3 py-2.5 text-[14px] text-[#0f172a]
+                         resize-vertical focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15
+                         outline-none transition-all"></textarea>
       </div>
-      <div class="ncr-modal-actions">
-        <button onclick="hideCloseModal()">Cancel</button>
-        <button class="primary" id="closeSubmit" onclick="submitClose()">Close NCR</button>
+
+      <!-- Actions -->
+      <div class="flex gap-3">
+        <button onclick="hideCloseModal()"
+                class="flex-1 h-[44px] border border-[#d1d5db] text-[#374151] font-semibold text-[14px]
+                       rounded-lg hover:bg-slate-50 transition-colors">
+          Cancel
+        </button>
+        <button id="closeSubmit" onclick="submitClose()"
+                class="flex-1 h-[44px] bg-[#1e3a5f] text-white font-semibold text-[14px]
+                       rounded-lg hover:bg-[#162d4a] transition-colors
+                       disabled:opacity-50 disabled:cursor-not-allowed">
+          Close NCR
+        </button>
       </div>
     </div>
   </div>
 
+  <!-- ── BOTTOM NAV ── -->
+  <nav class="bg-white fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2
+              border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.08)] h-[64px]">
+    <button onclick="ncrGoto('Landing')" class="flex flex-col items-center justify-center text-[#94a3b8]
+                   hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
+      <span class="material-symbols-outlined mb-1">home</span>
+      <span class="font-label text-[12px] font-semibold">Home</span>
+    </button>
+    <button onclick="ncrGoto('Records')" class="flex flex-col items-center justify-center text-[#0ea5e9] font-bold
+                   hover:bg-slate-50 active:scale-90 transition-all w-16 h-full relative">
+      <div class="absolute -top-1 w-8 h-1 bg-[#0ea5e9] rounded-b-full"></div>
+      <span class="material-symbols-outlined mb-1"
+            style="font-variation-settings:'FILL' 1;">assignment</span>
+      <span class="font-label text-[12px] font-bold">Records</span>
+    </button>
+    <button onclick="ncrGoto('KPI')" class="flex flex-col items-center justify-center text-[#94a3b8]
+                   hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
+      <span class="material-symbols-outlined mb-1">leaderboard</span>
+      <span class="font-label text-[12px] font-semibold">KPIs</span>
+    </button>
+    <button onclick="ncrGoto('Masters')" class="flex flex-col items-center justify-center text-[#94a3b8]
+                   hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
+      <span class="material-symbols-outlined mb-1">settings_applications</span>
+      <span class="font-label text-[12px] font-semibold">Masters</span>
+    </button>
+    <button onclick="ncrShowMore()" class="flex flex-col items-center justify-center text-[#94a3b8]
+                   hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
+      <span class="material-symbols-outlined mb-1">more_horiz</span>
+      <span class="font-label text-[12px] font-semibold">More</span>
+    </button>
+  </nav>
+
 <script>
+  /* ─────────────────────────── STATE ─────────────────────────── */
   var DISPOSITIONS = [];
   var WHO = '';
+  var pendingCloseDocNo = null;
+  var ALL_NCRS = [];
+  var activeFilter = 'ALL';
 
+  /* ─────────────────────────── INIT ──────────────────────────── */
   function init() {
     google.script.run
       .withSuccessHandler(function(d) { DISPOSITIONS = d; })
@@ -195,80 +279,219 @@
     loadList();
   }
 
-  function loadList() {
-    google.script.run
-      .withSuccessHandler(renderList)
-      .withFailureHandler(function(e) { toast('Load failed: ' + e.message, true); })
-      .getOpenNCRs();
+  /* ─────────────────────────── FILTER TABS ───────────────────── */
+  function setFilter(f) {
+    activeFilter = f;
+    document.querySelectorAll('.ncr-tab').forEach(function(btn) {
+      var isActive = btn.dataset.filter === f;
+      btn.className = 'ncr-tab flex-shrink-0 h-[32px] px-4 text-[12px] font-semibold rounded-full transition-all ' +
+        (isActive ? 'bg-[#1e3a5f] text-white' : 'bg-[#f1f5f9] text-[#64748b] hover:text-[#1e3a5f]');
+    });
+    var filtered = f === 'ALL' ? ALL_NCRS : ALL_NCRS.filter(function(r) { return r.status === f; });
+    renderList(filtered);
   }
 
+  /* ─────────────────────────── LOAD ──────────────────────────── */
+  function maybeAutoOpen() {
+    try {
+      var d = sessionStorage.getItem('pmAutoOpenDoc');
+      if (d) {
+        sessionStorage.removeItem('pmAutoOpenDoc');
+        var hit = ALL_NCRS.find(function(r) { return r.docNo === d; });
+        if (hit) {
+          // Wait one tick so the card is in the DOM
+          setTimeout(function() { showDetail(d); }, 50);
+        }
+      }
+    } catch (e) {}
+  }
+  function onLoaded(rows) { ALL_NCRS = rows; renderList(rows); maybeAutoOpen(); }
+  function loadList() {
+    var runner = google.script.run
+      .withFailureHandler(function(e) {
+        google.script.run
+          .withSuccessHandler(onLoaded)
+          .withFailureHandler(function(e2) { toast('Load failed: ' + e2.message, true); })
+          .getOpenNCRs();
+      });
+    if (typeof runner.getAllNCRs === 'function') {
+      runner.withSuccessHandler(onLoaded).getAllNCRs();
+    } else {
+      google.script.run
+        .withSuccessHandler(onLoaded)
+        .withFailureHandler(function(e) { toast('Load failed: ' + e.message, true); })
+        .getOpenNCRs();
+    }
+  }
+
+  /* ─────────────────────────── RENDER ────────────────────────── */
   function renderList(rows) {
     var body = document.getElementById('ncrBody');
-    document.getElementById('ncrCount').textContent = rows.length;
+    document.getElementById('ncrCountBadge').textContent = rows.length;
 
     if (!rows || rows.length === 0) {
-      body.innerHTML = '<div class="ncr-empty"><div class="ncr-empty-icon">✅</div>No open NCRs.</div>';
+      body.innerHTML =
+        '<div class="flex flex-col items-center justify-center py-20 text-[#94a3b8]">' +
+          '<span class="material-symbols-outlined text-[56px] mb-3 opacity-40" ' +
+                'style="font-variation-settings:\'FILL\' 1;">check_circle</span>' +
+          '<p class="text-[14px] font-semibold">No NCRs found</p>' +
+          '<p class="text-[12px] mt-1 opacity-70">Nothing matches the current filter.</p>' +
+        '</div>';
       return;
     }
 
     var html = rows.map(function(r) {
       var isInProgress = r.status === 'IN_PROGRESS';
-      var statusLabel = isInProgress ? 'IN PROGRESS' : 'OPEN';
+      var isClosed     = r.status === 'CLOSED';
+      var statusLabel  = isInProgress ? 'IN PROGRESS' : (isClosed ? 'CLOSED' : 'OPEN');
+      var statusCls    = isInProgress ? 'status-in-progress' : (isClosed ? 'status-closed' : 'status-open');
+
+      /* Disposition buttons */
       var actionsHtml;
       if (isInProgress) {
-        actionsHtml = ''
-          + '<button class="ncr-btn full" onclick="showCloseModal(\'' + esc(r.docNo) + '\')">'
-          +   '✅ Close NCR (verify & sign off)'
-          + '</button>';
+        actionsHtml =
+          '<button class="w-full h-[44px] bg-[#1e3a5f] text-white ' +
+                  'font-semibold text-[13px] rounded-lg hover:bg-[#162d4a] ' +
+                  'transition-colors active:scale-[0.98]" ' +
+                  'onclick="showCloseModal(\'' + esc(r.docNo) + '\')">' +
+            '<span class="material-symbols-outlined text-[16px] align-middle mr-1">verified</span>' +
+            'Close NCR — verify &amp; sign off' +
+          '</button>';
       } else {
-        actionsHtml = DISPOSITIONS.map(function(d, i) {
-          var cls = (DISPOSITIONS.length === 5 && i === 4) ? 'ncr-btn full' : 'ncr-btn';
-          return '<button class="' + cls + '" onclick="pick(\'' + esc(r.docNo) + '\',\'' + esc(d) + '\')">' + esc(d) + '</button>';
+        var btnCount = DISPOSITIONS.length;
+        actionsHtml = '<div class="grid gap-2" style="grid-template-columns:repeat(' +
+          Math.min(btnCount, 3) + ',1fr)">';
+        actionsHtml += DISPOSITIONS.map(function(d, i) {
+          /* If 5 dispositions, last one spans full row (matching original logic) */
+          var extraCls = (btnCount === 5 && i === 4) ? ' col-span-3' : '';
+          return '<button class="h-[44px] rounded-lg border-2 border-[#d1d5db] text-[#374151] ' +
+                          'font-medium text-[13px] transition-colors hover:border-[#0ea5e9] ' +
+                          'hover:text-[#0ea5e9] active:scale-[0.97]' + extraCls + '" ' +
+                          'onclick="pick(\'' + esc(r.docNo) + '\',\'' + esc(d) + '\')">' +
+                   esc(d) +
+                 '</button>';
         }).join('');
+        actionsHtml += '</div>';
       }
-      return ''
-        + '<div class="ncr-card' + (isInProgress ? ' in-progress' : '') + '" id="card-' + esc(r.docNo) + '">'
-        +   '<div class="ncr-card-head">'
-        +     '<div class="ncr-docno">' + esc(r.docNo) + '</div>'
-        +     '<div class="ncr-source-chip">' + esc(r.source) + '</div>'
-        +     '<div class="ncr-status-chip' + (isInProgress ? ' in-progress' : '') + '">' + statusLabel + '</div>'
-        +   '</div>'
-        +   '<div class="ncr-card-body">'
-        +     row('Date',     r.date)
-        +     row('Source',   r.sourceRef)
-        +     row('Material', r.materialDesc)
-        +     row('Batch',    r.batchNo)
-        +     row('Qty',      r.qtyAffected)
-        +     (isInProgress ? row('Disposition', r.disposition + (r.dispositionBy ? ' — ' + r.dispositionBy : '') + (r.dispositionAt ? ' (' + r.dispositionAt + ')' : '')) : '')
-        +     (isInProgress && r.capaRef ? row('CAPA Ref', r.capaRef) : '')
-        +     (r.defectDesc ? '<div class="ncr-defect">' + esc(r.defectDesc) + '</div>' : '')
-        +   '</div>'
-        +   '<div class="ncr-actions">'
-        +     actionsHtml
-        +   '</div>'
-        + '</div>';
+
+      /* Defect icon: in-progress = warning, open = error */
+      var defectIcon     = isInProgress ? 'warning'      : 'error';
+      var defectIconColor= isInProgress ? 'text-[#f59e0b]': 'text-[#ef4444]';
+
+      /* Disposition info row (only for in-progress) */
+      var dispoRow = '';
+      if (isInProgress) {
+        var dispoText = r.disposition || '—';
+        if (r.dispositionBy) dispoText += ' — ' + r.dispositionBy;
+        if (r.dispositionAt) dispoText += ' (' + r.dispositionAt + ')';
+        dispoRow = detailRow('Disposition', dispoText);
+        if (r.capaRef) dispoRow += detailRow('CAPA Ref', r.capaRef);
+      }
+
+      return '' +
+        '<div class="bg-white rounded-[12px] p-4 border border-[#e2e8f0] ' +
+              'shadow-[0_2px_8px_rgba(0,0,0,0.08)] relative overflow-hidden cursor-pointer ' +
+              (isInProgress ? 'border-l-4 border-l-[#2563eb]' : isClosed ? 'border-l-4 border-l-[#6b7280]' : 'border-l-4 border-l-[#f97316]') + '" ' +
+             'id="card-' + esc(r.docNo) + '" ' +
+             'onclick="if(!event.target.closest(\'button\'))showDetail(\'' + esc(r.docNo) + '\')">' +
+
+          /* Header row */
+          '<div class="flex justify-between items-start mb-3">' +
+            '<div class="flex flex-col gap-1">' +
+              '<span class="font-headline text-[15px] font-bold text-[#1e3a5f] tracking-tight">' +
+                esc(r.docNo) +
+              '</span>' +
+              '<div class="flex items-center gap-2 mt-0.5">' +
+                '<span class="source-chip rounded-full px-3 py-1 text-[11px] font-bold text-white ' +
+                             'leading-none tracking-wider">' +
+                  esc(r.source) +
+                '</span>' +
+                '<span class="' + statusCls + ' rounded-full px-3 py-1 text-[11px] font-bold ' +
+                             'text-white leading-none tracking-wider">' +
+                  statusLabel +
+                '</span>' +
+              '</div>' +
+            '</div>' +
+            '<span class="text-[12px] text-[#64748b] font-medium">' + esc(r.date) + '</span>' +
+          '</div>' +
+
+          /* Material / batch details */
+          '<div class="flex flex-col gap-1.5 mb-3">' +
+            '<p class="text-[14px] font-medium text-[#374151]">' + esc(r.materialDesc || '—') + '</p>' +
+            '<div class="flex items-center gap-1.5 text-[12px] text-[#64748b]">' +
+              '<span class="material-symbols-outlined text-[14px]">inventory_2</span>' +
+              '<span>Batch: <span class="font-medium text-[#374151]">' + esc(r.batchNo || '—') + '</span></span>' +
+            '</div>' +
+            (r.qtyAffected
+              ? '<div class="flex items-center gap-1.5 text-[12px] text-[#64748b]">' +
+                  '<span class="material-symbols-outlined text-[14px]">scale</span>' +
+                  '<span>Qty: <span class="font-medium text-[#374151]">' + esc(r.qtyAffected) + '</span></span>' +
+                '</div>'
+              : '') +
+            (r.sourceRef
+              ? '<div class="flex items-center gap-1.5 text-[12px] text-[#64748b]">' +
+                  '<span class="material-symbols-outlined text-[14px]">link</span>' +
+                  '<span class="font-medium text-[#0ea5e9]">' + esc(r.sourceRef) + '</span>' +
+                '</div>'
+              : '') +
+          '</div>' +
+
+          /* Disposition rows (in-progress only) */
+          (dispoRow
+            ? '<div class="bg-slate-50 rounded-lg p-3 mb-3 text-[12px] space-y-1.5">' + dispoRow + '</div>'
+            : '') +
+
+          /* Defect description */
+          (r.defectDesc
+            ? '<div class="mt-0 pt-3 border-t border-slate-100 flex items-start gap-2 mb-3">' +
+                '<span class="material-symbols-outlined ' + defectIconColor + ' text-[16px] mt-0.5">' +
+                  defectIcon +
+                '</span>' +
+                '<p class="text-[13px] text-[#64748b] leading-relaxed">' + esc(r.defectDesc) + '</p>' +
+              '</div>'
+            : '<div class="border-t border-slate-100 mb-3"></div>') +
+
+          /* Action buttons */
+          '<div>' + actionsHtml + '</div>' +
+
+        '</div>';
     }).join('');
+
     body.innerHTML = html;
   }
 
-  var pendingCloseDocNo = null;
+  /* ─────────────────── DETAIL ROW HELPER ─────────────────────── */
+  function detailRow(label, value) {
+    if (value === '' || value === null || value === undefined) value = '—';
+    return '<div class="flex justify-between items-start">' +
+             '<span class="text-[12px] text-[#64748b] font-medium">' + esc(label) + '</span>' +
+             '<span class="text-[12px] text-[#374151] font-semibold text-right ml-4">' + esc(value) + '</span>' +
+           '</div>';
+  }
+
+  /* ─────────────────── CLOSE MODAL ───────────────────────────── */
   function showCloseModal(docNo) {
     pendingCloseDocNo = docNo;
     document.getElementById('closeDocNo').textContent = docNo;
-    document.getElementById('closeCapaRef').value = '';
+    document.getElementById('closeCapaRef').value  = '';
     document.getElementById('closeEffective').value = '';
-    document.getElementById('closeNotes').value = '';
-    document.getElementById('closeModal').classList.add('show');
+    document.getElementById('closeNotes').value    = '';
+    var m = document.getElementById('closeModal');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
   }
   function hideCloseModal() {
-    document.getElementById('closeModal').classList.remove('show');
+    var m = document.getElementById('closeModal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
     pendingCloseDocNo = null;
   }
   function submitClose() {
     if (!pendingCloseDocNo) return;
     var eff = document.getElementById('closeEffective').value;
-    if (!eff) { toast('Pick an effectiveness check result.', true); return; }
+    if (!eff)           { toast('Pick an effectiveness check result.', true); return; }
     if (eff === 'FAIL') { toast('FAIL means NCR stays open — re-do CAPA.', true); return; }
+
     var payload = {
       capaRef:       document.getElementById('closeCapaRef').value.trim(),
       effectiveness: eff,
@@ -277,40 +500,41 @@
     };
     var btn = document.getElementById('closeSubmit');
     btn.disabled = true;
+
     google.script.run
       .withSuccessHandler(function(res) {
         btn.disabled = false;
         if (res && res.success) {
-          toast('✅ ' + pendingCloseDocNo + ' closed.');
+          toast('NCR ' + pendingCloseDocNo + ' closed.');
           var card = document.getElementById('card-' + pendingCloseDocNo);
           if (card) card.remove();
           hideCloseModal();
-          var remaining = document.querySelectorAll('.ncr-card').length;
-          document.getElementById('ncrCount').textContent = remaining;
+          var remaining = document.querySelectorAll('[id^="card-"]').length;
+          document.getElementById('ncrCountBadge').textContent = remaining;
           if (remaining === 0) renderList([]);
         } else {
           toast('Error: ' + (res && res.error || 'unknown'), true);
         }
       })
-      .withFailureHandler(function(e) { btn.disabled = false; toast('Failed: ' + e.message, true); })
+      .withFailureHandler(function(e) {
+        btn.disabled = false;
+        toast('Failed: ' + e.message, true);
+      })
       .closeNCR(pendingCloseDocNo, payload);
   }
 
-  function row(label, value) {
-    if (value === '' || value === null || value === undefined) value = '—';
-    return '<div class="ncr-row"><div class="ncr-label">' + esc(label) + '</div><div class="ncr-value">' + esc(value) + '</div></div>';
-  }
-
+  /* ─────────────────── DISPOSITION PICK ──────────────────────── */
   function pick(docNo, dispo) {
     var card = document.getElementById('card-' + docNo);
     if (card) card.classList.add('ncr-busy');
+
     google.script.run
       .withSuccessHandler(function(res) {
         if (res && res.success) {
-          toast('✅ ' + docNo + ' → ' + dispo);
+          toast(docNo + ' → ' + dispo);
           if (card) card.remove();
-          var remaining = document.querySelectorAll('.ncr-card').length;
-          document.getElementById('ncrCount').textContent = remaining;
+          var remaining = document.querySelectorAll('[id^="card-"]').length;
+          document.getElementById('ncrCountBadge').textContent = remaining;
           if (remaining === 0) renderList([]);
         } else {
           if (card) card.classList.remove('ncr-busy');
@@ -324,6 +548,7 @@
       .setNCRDisposition(docNo, dispo, WHO);
   }
 
+  /* ─────────────────── UTILITIES ─────────────────────────────── */
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -333,11 +558,192 @@
   function toast(msg, isErr) {
     var t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = 'ncr-toast show' + (isErr ? ' err' : '');
-    setTimeout(function() { t.className = 'ncr-toast' + (isErr ? ' err' : ''); }, 2400);
+    t.className = 'show' + (isErr ? ' err' : '');
+    setTimeout(function() { t.className = isErr ? 'err' : ''; }, 2800);
   }
 
+  /* ─────────────────── DETAIL BOTTOM SHEET (fix #19) ─────────── */
+  var detailDocNo = null;
+
+  function showDetail(docNo) {
+    var r = ALL_NCRS.find(function(x){ return x.docNo === docNo; });
+    if (!r) { toast('Record not found', true); return; }
+    detailDocNo = docNo;
+
+    document.getElementById('dtlDocNo').textContent = r.docNo;
+    document.getElementById('dtlMeta').textContent =
+      (r.date || '—') + ' · ' + (r.source || 'NCR');
+
+    /* Chips */
+    var isInProgress = r.status === 'IN_PROGRESS';
+    var isClosed = r.status === 'CLOSED';
+    var statusLabel = isInProgress ? 'IN PROGRESS' : (isClosed ? 'CLOSED' : 'OPEN');
+    var statusCls = isInProgress ? 'status-in-progress' : (isClosed ? 'status-closed' : 'status-open');
+    document.getElementById('dtlChips').innerHTML =
+      '<span class="source-chip rounded-full px-3 py-1 text-[11px] font-bold text-white tracking-wider">' + esc(r.source || '') + '</span>' +
+      '<span class="' + statusCls + ' rounded-full px-3 py-1 text-[11px] font-bold text-white tracking-wider">' + statusLabel + '</span>';
+
+    /* Doc fields */
+    var docFields = [
+      ['Material',  r.materialDesc],
+      ['Batch No',  r.batchNo],
+      ['Qty Affected', r.qtyAffected],
+      ['Source Ref', r.sourceRef],
+      ['Defect',    r.defectDesc],
+      ['Raised By', r.raisedBy],
+      ['Raised At', r.raisedAt || r.date]
+    ];
+    document.getElementById('dtlDocFields').innerHTML =
+      docFields.map(function(f){ return detailRow(f[0], f[1]); }).join('');
+
+    /* Disposition fields */
+    var dispoFields = [
+      ['Disposition',    r.disposition],
+      ['Disposition By', r.dispositionBy],
+      ['Disposition At', r.dispositionAt],
+      ['CAPA Ref',       r.capaRef],
+      ['Effectiveness',  r.effectiveness],
+      ['Closure Notes',  r.closureNotes]
+    ];
+    document.getElementById('dtlDispoFields').innerHTML =
+      dispoFields.map(function(f){ return detailRow(f[0], f[1]); }).join('');
+
+    /* Photos */
+    var photos = r.photos || r.photoUrls || [];
+    var photosEl = document.getElementById('dtlPhotos');
+    if (photos.length) {
+      photosEl.innerHTML = photos.map(function(p){
+        var url = typeof p === 'string' ? p : (p.url || '');
+        return '<a href="' + esc(url) + '" target="_blank" class="block w-[72px] h-[72px] rounded-lg overflow-hidden border border-[#e2e8f0]">' +
+               '<img src="' + esc(url) + '" alt="evidence" class="w-full h-full object-cover"/></a>';
+      }).join('');
+    } else {
+      photosEl.innerHTML = '<span class="text-[12px] text-[#94a3b8] italic">No photos uploaded yet.</span>';
+    }
+
+    /* Timeline */
+    var events = [];
+    if (r.raisedAt || r.date) events.push({ when: r.raisedAt || r.date, who: r.raisedBy || '—', label: 'NCR raised', color: '#f97316' });
+    if (r.dispositionAt)      events.push({ when: r.dispositionAt, who: r.dispositionBy || '—', label: 'Disposition: ' + (r.disposition || '—'), color: '#2563eb' });
+    if (r.closedAt)           events.push({ when: r.closedAt, who: r.closedBy || '—', label: 'NCR closed', color: '#6b7280' });
+    var timelineEl = document.getElementById('dtlTimeline');
+    if (events.length) {
+      timelineEl.innerHTML = events.map(function(ev){
+        return '<li class="relative">' +
+          '<span class="absolute -left-[22px] top-1 w-3 h-3 rounded-full border-2 border-white" style="background:' + ev.color + '"></span>' +
+          '<div class="text-[12px] font-semibold text-[#0f172a]">' + esc(ev.label) + '</div>' +
+          '<div class="text-[11px] text-[#64748b]">' + esc(ev.when) + ' · ' + esc(ev.who) + '</div>' +
+        '</li>';
+      }).join('');
+    } else {
+      timelineEl.innerHTML = '<li class="text-[12px] text-[#94a3b8] italic">No events.</li>';
+    }
+
+    /* Footer: show "Close NCR" only when IN_PROGRESS */
+    var closeBtn = document.getElementById('dtlCloseNcrBtn');
+    if (isInProgress) closeBtn.classList.remove('hidden');
+    else closeBtn.classList.add('hidden');
+
+    var sheet = document.getElementById('detailSheet');
+    sheet.classList.remove('hidden');
+    sheet.classList.add('flex');
+  }
+
+  function hideDetail() {
+    var sheet = document.getElementById('detailSheet');
+    sheet.classList.add('hidden');
+    sheet.classList.remove('flex');
+    detailDocNo = null;
+  }
+  window.showDetail = showDetail;
+  window.hideDetail = hideDetail;
+
+  function closeNcrFromDetail() {
+    if (!detailDocNo) return;
+    var docNo = detailDocNo;
+    hideDetail();
+    showCloseModal(docNo);
+  }
+  window.closeNcrFromDetail = closeNcrFromDetail;
+
+  // Photo upload — base64 to Drive via uploadNCRPhoto
+  document.addEventListener('change', function(e){
+    if (!e.target || e.target.id !== 'dtlPhotoUpload') return;
+    if (!detailDocNo) { toast('Open an NCR first.', true); return; }
+    var files = e.target.files || [];
+    if (!files.length) return;
+    var docNo = detailDocNo;
+    Array.prototype.forEach.call(files, function(f){
+      var reader = new FileReader();
+      reader.onload = function(ev){
+        var b64 = (ev.target.result || '').split(',')[1] || '';
+        if (!b64) return;
+        google.script.run
+          .withSuccessHandler(function(res){
+            if (res && res.success) {
+              toast('Photo uploaded.');
+              // Re-render the photos block in-place
+              var photos = res.photos || [];
+              var photosEl = document.getElementById('dtlPhotos');
+              photosEl.innerHTML = photos.map(function(url){
+                return '<a href="' + esc(url) + '" target="_blank" class="block w-[72px] h-[72px] rounded-lg overflow-hidden border border-[#e2e8f0]">' +
+                       '<img src="' + esc(url) + '" alt="evidence" class="w-full h-full object-cover"/></a>';
+              }).join('');
+              // Also patch ALL_NCRS so subsequent opens show the upload
+              for (var i = 0; i < ALL_NCRS.length; i++) {
+                if (ALL_NCRS[i].docNo === docNo) { ALL_NCRS[i].photos = photos; break; }
+              }
+            } else {
+              toast('Upload failed: ' + (res && res.error || 'unknown'), true);
+            }
+          })
+          .withFailureHandler(function(err){ toast('Upload failed: ' + err.message, true); })
+          .uploadNCRPhoto({ ncrDocNo: docNo, base64: b64, filename: f.name, mimeType: f.type || 'image/jpeg' });
+      };
+      reader.readAsDataURL(f);
+    });
+    e.target.value = '';
+  });
+
+  /* ─────────────────── NAV ────────────────────────────────────── */
+  function ncrGoto(formName) {
+    google.script.run
+      .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+      .withFailureHandler(function() { toast('Could not open ' + formName, true); })
+      .getFormHtml(formName);
+  }
+  window.ncrGoto = ncrGoto;
+
+  function ncrShowMore() {
+    var existing = document.getElementById('ncrMoreSheet');
+    if (existing) { existing.remove(); return; }
+    var items = [
+      { label: 'Warehouse',       form: 'Warehouse' },
+      { label: 'Customer Return', form: 'CustomerReturn' },
+      { label: 'Dispatch',        form: 'Dispatch' },
+      { label: 'Import CSV',      form: 'ImportCSV' }
+    ];
+    var html = items.map(function(i) {
+      return '<button class="ncrMoreItem" data-form="' + i.form + '" style="width:100%;display:block;padding:14px 16px;font-size:14px;font-weight:600;color:#0f172a;background:transparent;border:0;border-bottom:1px solid #e2e8f0;text-align:left;cursor:pointer;font-family:inherit;">' + i.label + '</button>';
+    }).join('');
+    var sheet = document.createElement('div');
+    sheet.id = 'ncrMoreSheet';
+    sheet.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(30,58,95,0.55);';
+    sheet.innerHTML = '<div style="background:#fff;width:100%;max-width:600px;border-radius:14px 14px 0 0;overflow:hidden;">' +
+      '<div style="padding:12px 14px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.4px;border-bottom:1px solid #e2e8f0;">More modules</div>' +
+      html + '</div>';
+    sheet.addEventListener('click', function(e) {
+      if (e.target === sheet) { sheet.remove(); return; }
+      var b = e.target.closest('.ncrMoreItem');
+      if (b) { var f = b.getAttribute('data-form'); sheet.remove(); ncrGoto(f); }
+    });
+    document.body.appendChild(sheet);
+  }
+  window.ncrShowMore = ncrShowMore;
+
+  /* ─────────────────── BOOT ───────────────────────────────────── */
   init();
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

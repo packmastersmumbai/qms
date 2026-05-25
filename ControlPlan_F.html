@@ -1,110 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html class="light" lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Control Plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
-    /* ── product bar ── */
-    .product-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 56px;
-      z-index: 80;
-      flex-wrap: wrap;
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f8fafc;
+      -webkit-tap-highlight-color: transparent;
+      min-height: max(884px, 100dvh);
     }
-    .product-bar label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      white-space: nowrap;
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
-    .product-bar select {
-      flex: 1;
-      min-width: 160px;
-      max-width: 340px;
-      font-size: 13px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 10px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--bg);
-      -webkit-appearance: none;
-    }
-    .product-bar select:focus {
-      outline: none;
-      border-color: var(--navy);
-    }
-
-    /* ── content area ── */
-    .content-area {
-      padding: 10px 12px 80px;
-    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     /* ── table ── */
-    .table-wrap {
-      background: var(--white);
-      border-radius: 10px;
-      box-shadow: var(--shadow-1);
-      overflow: hidden;
-    }
-    .table-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .cp-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 640px;
-    }
+    .cp-table { width: 100%; border-collapse: collapse; min-width: 640px; }
     .cp-table thead th {
-      background: var(--navy-light);
-      color: var(--navy);
+      background: #f1f5f9;
+      color: #1e3a5f;
       font-size: 10px;
       font-weight: 700;
-      padding: 8px 10px;
+      padding: 10px 12px;
       text-align: left;
       letter-spacing: 0.5px;
       white-space: nowrap;
-      border-bottom: 2px solid var(--border);
+      border-bottom: 2px solid #e2e8f0;
     }
     .cp-table tbody tr {
-      border-bottom: 1px solid var(--border);
-      min-height: 44px;
+      border-bottom: 1px solid #f1f5f9;
       transition: background 0.1s;
     }
     .cp-table tbody tr:last-child { border-bottom: none; }
-    .cp-table tbody tr.row-enabled { background: #F0FFF4; }
+    .cp-table tbody tr.row-enabled { background: #ffffff; border-left: 3px solid #0ea5e9; }
+    .cp-table tbody tr:not(.row-enabled) { border-left: 3px solid transparent; }
     .cp-table tbody td {
-      padding: 9px 10px;
+      padding: 10px 12px;
       font-size: 12px;
-      color: var(--text);
+      color: #374151;
       vertical-align: middle;
     }
     .cp-table tbody td.td-code {
       font-family: monospace;
       font-size: 11px;
-      color: var(--muted);
+      color: #64748b;
       white-space: nowrap;
     }
     .cp-table tbody td.td-spec {
       font-size: 11px;
-      color: var(--muted);
+      color: #64748b;
       white-space: nowrap;
     }
-    .cp-table tbody td.td-toggle {
-      text-align: center;
-      width: 60px;
-    }
+    .cp-table tbody td.td-toggle { text-align: center; width: 60px; }
+    /* fix #60: Overrides column hidden by default, revealed on row tap */
+    .cp-table thead th.th-overrides,
+    .cp-table tbody td.td-overrides { display: none; }
+    .cp-table tbody tr.row-expanded td.td-overrides { display: table-cell; }
+    .cp-table tbody tr.row-expanded ~ thead th.th-overrides { display: table-cell; }
 
     /* ── toggle btn ── */
     .toggle-btn {
@@ -120,49 +77,35 @@
       line-height: 1;
       transition: background 0.15s, transform 0.1s;
       touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
     }
-    .toggle-btn.btn-on  { background: var(--success); color: #fff; }
-    .toggle-btn.btn-off { background: #E5E7EB; color: #9CA3AF; }
+    .toggle-btn.btn-on  { background: #0ea5e9; color: #fff; }
+    .toggle-btn.btn-off { background: #e5e7eb; color: #9ca3af; }
     .toggle-btn:active  { transform: scale(0.92); }
     .toggle-btn.saving  { opacity: 0.5; pointer-events: none; }
     .toggle-btn[disabled] { opacity: 0.4; cursor: default; pointer-events: none; }
 
     /* ── override inputs ── */
-    .ov-wrap {
-      display: flex;
-      gap: 4px;
-      flex-wrap: nowrap;
-    }
-    .ov-group {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-    .ov-group label {
-      font-size: 9px;
-      font-weight: 600;
-      color: var(--muted);
-      letter-spacing: 0.3px;
-    }
+    .ov-wrap { display: flex; gap: 4px; flex-wrap: nowrap; }
+    .ov-group { display: flex; flex-direction: column; gap: 1px; }
+    .ov-group label { font-size: 9px; font-weight: 600; color: #64748b; letter-spacing: 0.3px; }
     .ov-input {
       width: 66px;
       padding: 5px 6px;
-      border: 1.5px solid var(--border);
-      border-radius: 5px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 6px;
       font-size: 11px;
       font-family: inherit;
-      color: var(--text);
-      background: var(--white);
+      color: #374151;
+      background: #fff;
     }
-    .ov-input:focus   { outline: none; border-color: var(--navy); }
-    .ov-input:disabled { background: var(--bg); color: var(--muted); }
+    .ov-input:focus   { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
+    .ov-input:disabled { background: #f8fafc; color: #94a3b8; }
     .ov-save-btn {
       align-self: flex-end;
       padding: 5px 8px;
       border: none;
-      border-radius: 5px;
-      background: var(--navy);
+      border-radius: 6px;
+      background: #1e3a5f;
       color: #fff;
       font-size: 10px;
       font-weight: 600;
@@ -171,16 +114,28 @@
       white-space: nowrap;
       transition: background 0.12s;
     }
-    .ov-save-btn:hover   { background: #1A2D9E; }
+    .ov-save-btn:hover   { background: #0ea5e9; }
     .ov-save-btn:active  { transform: scale(0.96); }
-    .ov-save-btn:disabled { background: #9CA3AF; cursor: not-allowed; }
+    .ov-save-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    /* ── method badge ── */
+    .method-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(14,165,233,0.1);
+      color: #0ea5e9;
+      white-space: nowrap;
+    }
 
     /* ── skeleton ── */
-    .skel-row td { padding: 10px; }
+    .skel-row td { padding: 12px; }
     .skel-cell {
       height: 12px;
       border-radius: 4px;
-      background: linear-gradient(90deg, var(--navy-light) 25%, #f3f4f6 50%, var(--navy-light) 75%);
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
       background-size: 200% 100%;
       animation: shimmer 1.2s infinite;
     }
@@ -189,75 +144,63 @@
       100% { background-position: -200% 0; }
     }
 
-    /* ── empty / error state ── */
+    /* ── state box ── */
     .state-box {
-      padding: 40px 20px;
+      padding: 48px 20px;
       text-align: center;
-      color: var(--muted);
+      color: #64748b;
       font-size: 14px;
     }
-    .state-box .icon {
-      font-size: 32px;
-      display: block;
-      margin-bottom: 8px;
-    }
+    .state-box .icon { font-size: 32px; display: block; margin-bottom: 10px; }
 
-    /* ── method badge ── */
-    .method-badge {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: 600;
-      background: var(--navy-light);
-      color: var(--navy);
-      white-space: nowrap;
-    }
-
-    /* ── read-only indicator ── */
+    /* ── ro-badge ── */
     .ro-badge {
       display: inline-flex;
       align-items: center;
       gap: 4px;
       font-size: 11px;
-      color: var(--muted);
+      color: #64748b;
       font-weight: 500;
     }
+
+    /* ── toast ── */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e3a5f;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 9999;
+      white-space: nowrap;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: #16a34a; }
+    .toast.error   { background: #dc2626; }
 
     /* ── responsive cards (mobile) ── */
     .cp-cards { display: none; }
     .cp-card {
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
     }
     .cp-card:last-child { border-bottom: none; }
-    .cp-card.card-enabled { background: #F0FFF4; }
-    .cp-card-top {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
+    .cp-card.card-enabled { background: #ffffff; border-left: 3px solid #0ea5e9; }
+    .cp-card:not(.card-enabled) { border-left: 3px solid transparent; }
+    .cp-card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
     .cp-card-info { flex: 1; }
-    .cp-card-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.3;
-    }
-    .cp-card-code {
-      font-size: 10px;
-      font-family: monospace;
-      color: var(--muted);
-    }
-    .cp-card-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
+    .cp-card-name { font-size: 13px; font-weight: 600; color: #374151; line-height: 1.3; }
+    .cp-card-code { font-size: 10px; font-family: monospace; color: #64748b; }
+    .cp-card-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; color: #64748b; margin-bottom: 8px; }
     .cp-card-meta span { white-space: nowrap; }
     .cp-card-overrides {
       display: grid;
@@ -268,38 +211,71 @@
 
     @media (max-width: 560px) {
       .table-scroll { display: none; }
-      .cp-cards     { display: block; }
+      .cp-cards { display: block; }
     }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col pb-24 md:pb-0">
 
-<div class="pm-header">
-  <button class="back-btn" id="backBtn">
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 4l-6 6 6 6"/>
-    </svg>
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full h-[56px] bg-[#1e3a5f] shadow-md flex items-center px-4 z-50">
+  <button id="backBtn" class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 active:opacity-80 rounded-full transition-colors mr-2 shrink-0">
+    <span class="material-symbols-outlined">arrow_back</span>
   </button>
-  <span class="page-title">Control Plan</span>
-  <span id="roleChip" class="role-chip" style="visibility:hidden;"></span>
+  <h1 class="font-headline text-[20px] font-[700] text-white truncate flex-1 text-center pr-12">Control Plan</h1>
+  <span id="roleChip" style="visibility:hidden;" class="text-xs font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full shrink-0"></span>
+</header>
+
+<!-- Product bar -->
+<div class="sticky top-[56px] z-40 bg-white border-b border-[#e2e8f0] shadow-sm px-4 py-3">
+  <div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4">
+      <label class="block text-[13px] font-[600] text-[#374151] mb-1.5">Product (FG)</label>
+      <div class="relative">
+        <select id="fgSelect" class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[15px] font-[400] text-[#0f172a] px-3 pr-10 appearance-none focus:outline-none focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 bg-white transition-all font-body">
+          <option value="">— Select FG —</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[20px]">expand_more</span>
+      </div>
+      <div id="roNote" style="display:none;" class="mt-2 flex items-center gap-1 text-[12px] text-[#64748b] font-[500]">
+        <span class="material-symbols-outlined text-[14px]">lock</span>
+        Read-only
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="product-bar">
-  <label>Product:</label>
-  <select id="fgSelect">
-    <option value="">— Select FG —</option>
-  </select>
-  <span id="roNote" class="ro-badge" style="display:none;">
-    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="14" height="10" rx="2"/><path d="M7 9V6a3 3 0 016 0v3"/></svg>
-    Read-only
-  </span>
-</div>
-
-<div class="content-area" id="contentArea">
-  <div class="state-box">
+<!-- Content area -->
+<div class="flex-1 px-4 pt-4 pb-28 max-w-3xl mx-auto w-full" id="contentArea">
+  <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] state-box">
     <span class="icon">📋</span>
     Select a finished good above to view its control plan.
   </div>
+</div>
+
+<!-- Weight Matrix toggle card (fix #25) -->
+<div class="px-4 max-w-3xl mx-auto w-full mb-4" id="weightMatrixCardWrap" style="display:none;">
+  <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4 flex items-center justify-between">
+    <div>
+      <div class="text-[14px] font-[600] text-[#0f172a]">Enable weight matrix capture</div>
+      <div class="text-[12px] text-[#64748b] mt-0.5">Record 5×3 sample weights during IPQC rounds.</div>
+    </div>
+    <label class="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" id="weightMatrixToggle" class="sr-only peer">
+      <div class="w-12 h-7 bg-slate-300 rounded-full peer peer-checked:bg-[#16a34a] transition-colors"></div>
+      <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></div>
+    </label>
+  </div>
+</div>
+
+<!-- Sticky Save footer (fix #24) -->
+<div id="cpStickyFooter" class="fixed bottom-0 left-0 w-full bg-white border-t border-[#e2e8f0] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 px-4 py-3" style="display:none;">
+  <button id="btnSaveControlPlan" onclick="saveControlPlan()"
+    class="w-full max-w-3xl mx-auto h-[52px] bg-[#1e3a5f] hover:bg-[#162d4a] text-white rounded-[10px] font-headline text-[15px] font-semibold transition-colors shadow-sm">
+    Save Control Plan
+  </button>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -344,7 +320,7 @@
     chip.textContent = role || 'guest';
     chip.style.visibility = 'visible';
     if (!_canEdit) {
-      document.getElementById('roNote').style.display = 'inline-flex';
+      document.getElementById('roNote').style.display = 'flex';
     }
 
     document.getElementById('backBtn').addEventListener('click', function() {
@@ -405,27 +381,46 @@
         _planMap = {};
         (rows || []).forEach(function(r) { _planMap[r.paramCode] = r; });
         renderTable(itemCode);
+        // Pre-populate weight matrix toggle from meta
+        google.script.run
+          .withSuccessHandler(function(meta){
+            var el = document.getElementById('weightMatrixToggle');
+            if (el && meta) el.checked = !!meta.weightMatrix;
+          })
+          .withFailureHandler(function(){})
+          .getControlPlanMeta(itemCode);
       })
       .withFailureHandler(function(err) {
         showToast('Load failed: ' + (err.message || err), 'error');
         document.getElementById('contentArea').innerHTML =
-          '<div class="state-box"><span class="icon">⚠️</span>Failed to load plan. ' + esc(err.message || err) + '</div>';
+          '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] state-box"><span class="icon">⚠️</span>Failed to load plan. ' + esc(err.message || err) + '</div>';
       })
       .getControlPlan('fg', itemCode);
   }
 
   function showEmpty() {
     document.getElementById('contentArea').innerHTML =
-      '<div class="state-box"><span class="icon">📋</span>Select a finished good above to view its control plan.</div>';
+      '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] state-box"><span class="icon">📋</span>Select a finished good above to view its control plan.</div>';
   }
 
   // ── render ────────────────────────────────────────────
   function renderTable(itemCode) {
+    // reveal sticky footer + weight matrix when a plan is loaded
+    var foot = document.getElementById('cpStickyFooter');
+    if (foot && _canEdit) foot.style.display = '';
+    var wmw = document.getElementById('weightMatrixCardWrap');
+    if (wmw) wmw.style.display = '';
     var area = document.getElementById('contentArea');
     if (!_params.length) {
-      area.innerHTML = '<div class="state-box"><span class="icon">⚙️</span>No parameters defined yet. Add them in Masters → Parameters.</div>';
+      area.innerHTML = '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] state-box"><span class="icon">⚙️</span>No parameters defined yet. Add them in Masters → Parameters.</div>';
       return;
     }
+
+    var enabledCount = 0;
+    _params.forEach(function(p) {
+      var ov = _planMap[p.code] || {};
+      if (ov.enabled === true) enabledCount++;
+    });
 
     var tRows = '';
     var cards = '';
@@ -461,11 +456,11 @@
         '<td class="td-code">' + esc(p.code) + '</td>' +
         '<td style="font-weight:600;">' + esc(p.name) + '</td>' +
         '<td class="td-spec">' + esc(specStr) + '</td>' +
-        '<td>' + (p.methodType ? '<span class="method-badge">' + esc(p.methodType) + '</span>' : '<span style="color:var(--muted);font-size:11px;">—</span>') + '</td>' +
+        '<td>' + (p.methodType ? '<span class="method-badge">' + esc(p.methodType) + '</span>' : '<span style="color:#94a3b8;font-size:11px;">—</span>') + '</td>' +
         '<td class="td-toggle">' +
           '<button class="toggle-btn ' + btnCls + '" id="tog-' + idx + '" data-idx="' + idx + '" title="' + (enabled ? 'Enabled — click to disable' : 'Disabled — click to enable') + '"' + (!_canEdit ? ' disabled' : '') + '>' + btnIcon + '</button>' +
         '</td>' +
-        '<td>' +
+        '<td class="td-overrides">' +
           '<div class="ov-wrap">' +
             '<div class="ov-group"><label>Std</label><input class="ov-input" id="ov-std-' + idx + '" type="text"' + disAttr + ' value="' + esc(stdOvr) + '" placeholder="' + esc(p.stdValue || '—') + '"></div>' +
             '<div class="ov-group"><label>Min</label><input class="ov-input" id="ov-min-' + idx + '" type="text"' + disAttr + ' value="' + esc(minOvr) + '" placeholder="' + esc(p.tolMin || '—') + '"></div>' +
@@ -501,8 +496,12 @@
     });
 
     area.innerHTML =
-      '<div class="table-wrap">' +
-        '<div class="table-scroll">' +
+      '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">' +
+        '<div class="px-4 py-3 border-b border-[#f1f5f9] flex justify-between items-center bg-slate-50/50">' +
+          '<h2 class="text-[15px] font-[600] text-[#0f172a] font-headline">IPQC Parameters</h2>' +
+          '<span class="bg-[#0ea5e9] text-white px-3 py-1 rounded-[20px] text-[12px] font-[600]">' + enabledCount + ' enabled</span>' +
+        '</div>' +
+        '<div class="overflow-x-auto hide-scrollbar table-scroll">' +
           '<table class="cp-table">' +
             '<thead><tr>' +
               '<th>CODE</th>' +
@@ -510,7 +509,7 @@
               '<th>SPECIFICATION</th>' +
               '<th>METHOD</th>' +
               '<th style="text-align:center;">ENABLED</th>' +
-              '<th>OVERRIDES</th>' +
+              '<th class="th-overrides">OVERRIDES</th>' +
             '</tr></thead>' +
             '<tbody id="tableBody">' + tRows + '</tbody>' +
           '</table>' +
@@ -521,18 +520,53 @@
     attachListeners();
   }
 
+  // ── save Control Plan (fix #24) ───────────────────────
+  function saveControlPlan() {
+    var btn = document.getElementById('btnSaveControlPlan');
+    var wmEl = document.getElementById('weightMatrixToggle');
+    var weightMatrix = wmEl ? !!wmEl.checked : false;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function(res){
+        btn.disabled = false;
+        btn.textContent = 'Save Control Plan';
+        var ok = !res || res.success !== false;
+        var t = document.getElementById('toast');
+        t.textContent = ok ? 'Control plan saved.' : ('Save failed: ' + (res && res.error || 'unknown'));
+        t.className = 'toast show ' + (ok ? 'success' : 'error');
+        setTimeout(function(){ t.className = 'toast'; }, 2800);
+      })
+      .withFailureHandler(function(e){
+        btn.disabled = false;
+        btn.textContent = 'Save Control Plan';
+        var t = document.getElementById('toast');
+        t.textContent = 'Save failed: ' + (e.message || e);
+        t.className = 'toast show error';
+        setTimeout(function(){ t.className = 'toast'; }, 2800);
+      })
+      .saveControlPlanMeta(_itemCode, { weightMatrix: weightMatrix });
+  }
+  window.saveControlPlan = saveControlPlan;
+
   // ── listeners ─────────────────────────────────────────
   function attachListeners() {
-    // Toggle buttons (table + card)
     var btns = document.querySelectorAll('.toggle-btn:not([disabled])');
     for (var i = 0; i < btns.length; i++) {
       btns[i].addEventListener('click', onToggleClick);
     }
-    // Override save buttons
     var saveBtns = document.querySelectorAll('.ov-save-btn');
     for (var j = 0; j < saveBtns.length; j++) {
       saveBtns[j].addEventListener('click', onOvSaveClick);
     }
+    // fix #60: tap a table row to reveal overrides
+    var rows = document.querySelectorAll('#tableBody tr');
+    rows.forEach(function(row){
+      row.addEventListener('click', function(e){
+        if (e.target.closest('button') || e.target.closest('input')) return;
+        row.classList.toggle('row-expanded');
+      });
+    });
   }
 
   function onToggleClick(e) {
@@ -545,10 +579,8 @@
     var wasEnabled = ref.getAttribute('data-enabled') === '1';
     var nowEnabled = !wasEnabled;
 
-    // Optimistic UI update
     setRowState(idx, nowEnabled);
 
-    // Persist
     var p = _params[idx];
     var ov = _planMap[p.code] || {};
     var saveRow = {
@@ -571,13 +603,11 @@
         if (ctogEl) ctogEl.classList.remove('saving');
         _planMap[p.code] = saveRow;
         showToast((nowEnabled ? 'Enabled' : 'Disabled') + ': ' + esc(p.name), 'success');
-        // Refresh override save buttons visibility
         refreshOvSaveBtn(idx, nowEnabled);
       })
       .withFailureHandler(function(err) {
         if (togEl)  togEl.classList.remove('saving');
         if (ctogEl) ctogEl.classList.remove('saving');
-        // Rollback
         setRowState(idx, wasEnabled);
         showToast('Save failed: ' + (err.message || err), 'error');
       })
@@ -610,7 +640,6 @@
   }
 
   function refreshOvSaveBtn(idx, enabled) {
-    // Re-render override save button based on enabled state (only for editors)
     if (!_canEdit) return;
     var saveRow  = document.getElementById('ov-save-' + idx);
     var csaveRow = document.getElementById('cov-save-' + idx);
@@ -676,7 +705,6 @@
         btn.textContent = 'Save';
         _planMap[p.code] = saveRow;
         showToast('Overrides saved for ' + esc(p.name), 'success');
-        // Sync sibling inputs
         syncOverrideInputs(idx, saveRow, isCard);
       })
       .withFailureHandler(function(err) {
@@ -702,7 +730,7 @@
     });
   }
 
-  // ── skeleton ─────────────────────────────────────────
+  // ── skeleton ──────────────────────────────────────────
   function renderSkeleton() {
     var rows = '';
     var widths = [30, 60, 50, 40, 20, 80];
@@ -713,8 +741,12 @@
       });
       rows += '</tr>';
     }
-    return '<div class="table-wrap">' +
-      '<div class="table-scroll">' +
+    return '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">' +
+      '<div class="px-4 py-3 border-b border-[#f1f5f9] flex justify-between items-center bg-slate-50/50">' +
+        '<h2 class="text-[15px] font-[600] text-[#0f172a]">IPQC Parameters</h2>' +
+        '<span class="bg-slate-100 text-slate-400 px-3 py-1 rounded-[20px] text-[12px] font-[600]">Loading…</span>' +
+      '</div>' +
+      '<div class="overflow-x-auto hide-scrollbar">' +
         '<table class="cp-table">' +
           '<thead><tr>' +
             '<th>CODE</th><th>PARAMETER</th><th>SPECIFICATION</th><th>METHOD</th><th>ENABLED</th><th>OVERRIDES</th>' +
@@ -725,5 +757,6 @@
     '</div>';
   }
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

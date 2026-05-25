@@ -1,410 +1,253 @@
 <!DOCTYPE html>
-<html>
+<html class="light" lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pack Masters QMS - Records</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
+    html, body {
+      overflow-x: hidden;
+      background-color: #f8fafc;
       font-family: 'Inter', sans-serif;
-      color: var(--text);
+      color: #0f172a;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+      margin: 0;
     }
+    body { min-height: max(884px, 100dvh); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* ── Header ── */
-    .pm-header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      height: 56px;
-      background: var(--navy);
-      display: flex;
-      align-items: center;
-      padding: 0 14px;
-    }
-    .pm-header .logo {
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-      cursor: pointer;
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-    .pm-header .screen-label {
-      flex: 1;
-      text-align: center;
-      font-size: 13px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.8);
-    }
-    .pm-header .role-chip {
-      flex: 0 0 auto;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--navy);
-      background: #fff;
-      border-radius: 12px;
-      padding: 3px 9px;
-      white-space: nowrap;
-    }
-
-    /* ── Filter Bar ── */
-    .filter-bar {
-      position: sticky;
-      top: 56px;
-      z-index: 99;
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 12px 8px;
-    }
-    .filter-bar .date-row {
-      display: flex;
-      gap: 4%;
-      margin-bottom: 8px;
-    }
-    .filter-bar .date-field {
-      flex: 0 0 48%;
-    }
-    .filter-bar label {
-      display: block;
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--muted);
-      margin-bottom: 3px;
-      letter-spacing: 0.5px;
-    }
-    .filter-bar input[type="date"],
-    .filter-bar input[type="search"] {
-      width: 100%;
-      height: 36px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0 10px;
-      font-size: 13px;
-      font-family: 'Inter', sans-serif;
-      color: var(--text);
-      background: var(--white);
-      -webkit-appearance: none;
-    }
-    .filter-bar input[type="date"]:focus,
-    .filter-bar input[type="search"]:focus {
-      outline: none;
-      border-color: var(--navy);
-    }
-    .filter-bar input[type="search"]::placeholder { color: var(--muted); }
+    /* ── Search input ── */
     .search-wrap { position: relative; }
     .search-clear {
       position: absolute;
       right: 10px;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 16px;
-      color: var(--muted);
+      font-size: 18px;
+      color: #94a3b8;
       cursor: pointer;
       display: none;
       line-height: 1;
-      padding: 2px;
     }
-
-    /* ── Tab Bar ── */
-    .tab-bar {
-      position: sticky;
-      top: calc(56px + 108px);
-      z-index: 98;
-      height: 44px;
-      background: var(--navy-light);
-      display: flex;
-      overflow-x: auto;
-      white-space: nowrap;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      border-bottom: 1px solid var(--border);
-    }
-    .tab-bar::-webkit-scrollbar { display: none; }
-    .tab-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      height: 44px;
-      padding: 0 14px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      border-bottom: 3px solid transparent;
-      cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .tab-btn.active {
-      background: var(--white);
-      color: var(--navy);
-      font-weight: 700;
-      border-bottom-color: var(--navy);
-      border-radius: 4px 4px 0 0;
-    }
-    .tab-count {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--navy);
-      background: var(--navy-light);
-      border-radius: 10px;
-      padding: 1px 6px;
-      min-width: 18px;
-      text-align: center;
-    }
-    .tab-btn.active .tab-count {
-      background: var(--border);
-    }
-
-    /* ── Content area ── */
-    .content-area {
-      padding: 10px;
-    }
-
-    /* ── Table section ── */
-    .table-section {
-      background: var(--white);
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-      overflow: hidden;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-    thead tr {
-      background: var(--navy-light);
-    }
-    thead th {
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--navy);
-      text-transform: uppercase;
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    tbody tr.data-row {
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.1s;
-    }
-    tbody tr.data-row:nth-child(even) { background: #FAFBFF; }
-    tbody tr.data-row:nth-child(odd)  { background: var(--white); }
-    tbody tr.data-row.fail-row  { background: #FEF2F2 !important; }
-    tbody tr.data-row.pending-row { background: #FFFBEB !important; }
-    tbody tr.data-row:active { background: var(--navy-light) !important; }
-    td {
-      padding: 8px 10px;
-      vertical-align: middle;
-      font-size: 12px;
-      color: var(--text);
-    }
-    td.dt-cell .dt-date { font-size: 12px; font-weight: 600; display: block; }
-    td.dt-cell .dt-time { font-size: 10px; color: var(--muted); display: block; margin-top: 1px; }
-
-    /* Operator col hidden on mobile */
-    .col-op { display: none; }
-    @media (min-width: 600px) { .col-op { display: table-cell; } }
 
     /* ── Status chip ── */
     .chip {
       display: inline-block;
       font-size: 10px;
       font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
       white-space: nowrap;
+      letter-spacing: 0.04em;
     }
-    .chip-pass, .chip-accepted { background: #DCFCE7; color: #15803D; }
-    .chip-fail, .chip-rejected { background: #FEE2E2; color: #B91C1C; }
-    .chip-pending, .chip-open  { background: #FEF9C3; color: #92400E; }
-    .chip-issued               { background: #DBEAFE; color: #1E40AF; }
-    .chip-default              { background: var(--navy-light); color: var(--navy); }
+    .chip-pass, .chip-accepted    { background: #16a34a; color: #fff; }
+    .chip-fail, .chip-rejected    { background: #dc2626; color: #fff; }
+    .chip-pending, .chip-open     { background: #d97706; color: #fff; }
+    .chip-issued                  { background: #2563eb; color: #fff; }
+    .chip-default                 { background: #1e3a5f; color: #fff; }
 
-    /* ── Inline detail panel ── */
-    tr.detail-row td {
-      padding: 0;
-      background: var(--navy-light);
-    }
+    /* ── Card row classes (status tinting) ── */
+    /* Override only the left border; keep top/right/bottom from Tailwind's border-[#e2e8f0]. */
+    .card-fail    { border-left: 4px solid #dc2626; border-top-color: #e2e8f0; border-right-color: #e2e8f0; border-bottom-color: #e2e8f0; }
+    .card-pending { border-left: 4px solid #d97706; border-top-color: #e2e8f0; border-right-color: #e2e8f0; border-bottom-color: #e2e8f0; }
+
+    /* ── Detail panel ── */
     .detail-inner {
       overflow: hidden;
       max-height: 0;
       opacity: 0;
-      transition: max-height 0.2s ease, opacity 0.2s ease;
+      transition: max-height 0.25s ease, opacity 0.2s ease;
     }
     .detail-inner.open {
-      max-height: 500px;
+      max-height: 600px;
       opacity: 1;
     }
-    .detail-body {
-      padding: 12px;
-    }
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px 12px;
-    }
-    .detail-field label {
-      display: block;
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--navy);
-      text-transform: uppercase;
-      margin-bottom: 2px;
-    }
-    .detail-field span {
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--text);
-    }
-    .detail-close {
-      display: block;
-      text-align: right;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--navy);
-      cursor: pointer;
-      margin-top: 8px;
-    }
 
-    /* ── Empty state ── */
-    .empty-row td {
-      text-align: center;
-      padding: 32px 16px;
-    }
-    .empty-row .empty-main { font-size: 13px; color: var(--muted); }
-    .empty-row .empty-sub  { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-    /* ── Skeleton ── */
+    /* ── Skeleton pulse ── */
     @keyframes skeleton-pulse {
-      0%   { opacity: 0.4; }
-      50%  { opacity: 1; }
-      100% { opacity: 0.4; }
+      0%   { opacity: 0.35; }
+      50%  { opacity: 0.8; }
+      100% { opacity: 0.35; }
     }
-    .skeleton-row td { padding: 10px; }
     .skel-bar {
-      height: 16px;
-      border-radius: 4px;
-      background: var(--navy-light);
-      animation: skeleton-pulse 0.8s ease-in-out infinite;
+      height: 14px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      animation: skeleton-pulse 1s ease-in-out infinite;
     }
+
+    /* ── Fade in ── */
+    @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fade-in 0.2s ease forwards; }
 
     /* ── Toast ── */
     .toast {
       position: fixed;
-      bottom: 20px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
-      background: #B91C1C;
+      background: #dc2626;
       color: #fff;
       font-size: 13px;
       font-weight: 500;
       padding: 10px 18px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      z-index: 500;
       cursor: pointer;
       display: none;
       white-space: nowrap;
     }
     .toast.show { display: block; }
 
-    /* ── Loading dim ── */
-    .table-loading { opacity: 0.5; pointer-events: none; transition: opacity 0.1s; }
-
-    /* ── Fade in for new content ── */
-    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-    .fade-in { animation: fade-in 0.2s ease forwards; }
-
-    /* ── Desktop: filter bar rows inline ── */
-    @media (min-width: 900px) {
-      .filter-bar .date-row { margin-bottom: 0; flex: 1; }
-      .filter-bar .filter-desktop-row {
-        display: flex;
-        align-items: flex-end;
-        gap: 12px;
-      }
-      .filter-bar .search-wrap { flex: 1; }
-    }
+    /* ── Table loading dim ── */
+    .table-loading { opacity: 0.45; pointer-events: none; transition: opacity 0.1s; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
+<body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px]">
 
-<!-- Header -->
-<div class="pm-header">
-  <div class="logo" id="logoBtn">Pack Masters</div>
-  <div class="screen-label">Records</div>
-  <div class="role-chip" id="roleChip">—</div>
-</div>
+<!-- ── Top App Bar ── -->
+<header class="fixed top-0 w-full z-50 h-[56px] bg-[#1e3a5f] shadow-md flex items-center justify-between px-4">
+  <div class="flex items-center gap-2">
+    <span id="logoBtn"
+          class="material-symbols-outlined text-white active:scale-95 duration-100 hover:bg-white/10 transition-colors p-1 rounded-full cursor-pointer"
+          style="font-variation-settings:'FILL' 0;">arrow_back</span>
+    <span class="font-headline text-[15px] font-bold text-white cursor-pointer" id="logoBtnText">Pack Masters</span>
+  </div>
+  <h1 class="font-headline text-[18px] font-bold text-white tracking-tight absolute left-1/2 -translate-x-1/2">Records</h1>
+  <div class="flex items-center gap-1">
+    <div id="roleChip" class="hidden text-[11px] font-bold text-[#1e3a5f] bg-white rounded-full px-3 py-0.5"></div>
+  </div>
+</header>
 
-<!-- Filter Bar -->
-<div class="filter-bar">
-  <div class="filter-desktop-row">
-    <div class="date-row">
-      <div class="date-field">
-        <label>FROM</label>
-        <input type="date" id="fromDate">
+<!-- ── Sticky filter strip ── -->
+<div class="fixed top-[56px] w-full z-40 bg-[#f8fafc] shadow-sm">
+
+  <!-- Row 1: Module tab pills -->
+  <div class="flex overflow-x-auto no-scrollbar gap-[10px] px-4 pt-3 pb-2 snap-x" id="tabBar">
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-[#1e3a5f] text-white font-body text-[13px] font-semibold border border-[#1e3a5f] active:scale-95 transition-transform whitespace-nowrap" data-module="ALL">
+      ALL <span class="ml-1 text-[10px] font-bold bg-white/20 rounded-full px-1.5 py-0.5" id="cnt-ALL">—</span>
+    </button>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="GRN">
+      GRN <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-GRN">—</span>
+    </button>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="IQC">
+      IQC <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-IQC">—</span>
+    </button>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="IPQC">
+      IPQC <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-IPQC">—</span>
+    </button>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="OQC">
+      OQC <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-OQC">—</span>
+    </button>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="Gatepass">
+      GP <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-Gatepass">—</span>
+    </button>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="PO">
+      PO <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-PO">—</span>
+    </button>
+  </div>
+
+  <!-- Row 1b: Time-period quick pills -->
+  <div class="flex gap-2 px-4 pb-2" id="timePills">
+    <button onclick="setTimePeriod('TODAY')" data-period="TODAY"
+      class="time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all whitespace-nowrap active:scale-95">TODAY</button>
+    <button onclick="setTimePeriod('WEEK')" data-period="WEEK"
+      class="time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all whitespace-nowrap active:scale-95">WEEK</button>
+    <button onclick="setTimePeriod('MONTH')" data-period="MONTH"
+      class="time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#1e3a5f] bg-[#1e3a5f] text-white transition-all whitespace-nowrap active:scale-95">MONTH</button>
+    <button onclick="setTimePeriod('ALL')" data-period="ALL"
+      class="time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all whitespace-nowrap active:scale-95">ALL</button>
+  </div>
+
+  <!-- Row 2: Date range + search -->
+  <div class="flex items-end gap-2 px-4 pb-3">
+    <div class="flex gap-2 flex-1">
+      <div class="flex-1">
+        <label class="block text-[10px] font-semibold text-[#64748b] uppercase tracking-wide mb-1">From</label>
+        <input type="date" id="fromDate"
+               class="w-full h-[34px] border border-[#e2e8f0] rounded-[8px] px-2 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]">
       </div>
-      <div class="date-field">
-        <label>TO</label>
-        <input type="date" id="toDate">
+      <div class="flex-1">
+        <label class="block text-[10px] font-semibold text-[#64748b] uppercase tracking-wide mb-1">To</label>
+        <input type="date" id="toDate"
+               class="w-full h-[34px] border border-[#e2e8f0] rounded-[8px] px-2 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]">
       </div>
     </div>
-    <div style="margin-top:0;" class="search-wrap" id="searchWrap">
-      <label>SEARCH</label>
-      <div style="position:relative;">
-        <input type="search" id="searchInput" placeholder="Search ID, item, operator…">
-        <span class="search-clear" id="searchClear">×</span>
+    <div class="flex-1 search-wrap">
+      <label class="block text-[10px] font-semibold text-[#64748b] uppercase tracking-wide mb-1">Search</label>
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#94a3b8] text-[16px]" style="font-variation-settings:'FILL' 0;">search</span>
+        <input type="search" id="searchInput" placeholder="ID, item, supplier…"
+               class="w-full h-[34px] border border-[#e2e8f0] rounded-[8px] pl-7 pr-7 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]">
+        <span class="search-clear" id="searchClear" style="right:8px;">×</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Tab Bar -->
-<div class="tab-bar" id="tabBar">
-  <button class="tab-btn active" data-module="GRN">GRN <span class="tab-count" id="cnt-GRN">—</span></button>
-  <button class="tab-btn" data-module="IQC">IQC <span class="tab-count" id="cnt-IQC">—</span></button>
-  <button class="tab-btn" data-module="IPQC">IPQC <span class="tab-count" id="cnt-IPQC">—</span></button>
-  <button class="tab-btn" data-module="OQC">OQC <span class="tab-count" id="cnt-OQC">—</span></button>
-  <button class="tab-btn" data-module="Gatepass">Gatepass <span class="tab-count" id="cnt-Gatepass">—</span></button>
-  <button class="tab-btn" data-module="PO">PO <span class="tab-count" id="cnt-PO">—</span></button>
-</div>
-
-<!-- PO Detail Modal -->
-<div id="poDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;overflow-y:auto;padding:20px;box-sizing:border-box;">
-  <div style="background:#fff;border-radius:10px;max-width:680px;margin:0 auto;padding:20px;">
+<!-- ── PO Detail Modal ── -->
+<div id="poDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:600;overflow-y:auto;padding:20px;box-sizing:border-box;">
+  <div style="background:#fff;border-radius:12px;max-width:680px;margin:0 auto;padding:20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <div style="font-size:15px;font-weight:700;color:#0D1B6E;" id="poModalTitle">PO Details</div>
-      <button onclick="document.getElementById('poDetailModal').style.display='none';" style="background:none;border:none;font-size:20px;cursor:pointer;color:#666;">×</button>
+      <div class="font-headline" style="font-size:16px;font-weight:700;color:#1e3a5f;" id="poModalTitle">PO Details</div>
+      <button onclick="document.getElementById('poDetailModal').style.display='none';"
+              style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;">×</button>
     </div>
     <div id="poDetailContent"></div>
   </div>
 </div>
 
-<!-- Content -->
-<div class="content-area">
-  <div class="table-section" id="tableSection">
-    <table id="recordsTable">
-      <thead id="tableHead"></thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </div>
-</div>
+<!-- ── Main content ── -->
+<!-- offset = 56px topbar + ~130px filter strip -->
+<main class="pt-[226px] px-4 max-w-[640px] mx-auto w-full" id="mainContent">
 
-<!-- Toast -->
+  <!-- record count label -->
+  <div class="flex justify-between items-center pb-2" id="countRow">
+    <span class="font-body text-[13px] text-[#64748b]" id="recordCountLabel"></span>
+  </div>
+
+  <!-- card list -->
+  <div class="flex flex-col gap-[12px]" id="cardList">
+    <!-- populated by JS -->
+  </div>
+</main>
+
+<!-- ── Toast ── -->
 <div class="toast" id="toast"></div>
+
+<!-- ── Bottom nav ── -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-safe z-50 h-[64px] bg-white border-t border-[#e2e8f0]">
+  <button id="navHome" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">home</span>
+    <span class="font-label text-[11px] font-semibold">Home</span>
+  </button>
+  <button class="flex flex-col items-center justify-center text-[#1e3a5f] font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 1;">inventory</span>
+    <span class="font-label text-[11px] font-semibold">Records</span>
+  </button>
+  <button id="navKPI" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">analytics</span>
+    <span class="font-label text-[11px] font-semibold">KPIs</span>
+  </button>
+  <button id="navMasters" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">database</span>
+    <span class="font-label text-[11px] font-semibold">Masters</span>
+  </button>
+  <button id="navMore" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">more_horiz</span>
+    <span class="font-label text-[11px] font-semibold">More</span>
+  </button>
+</nav>
 
 <script>
 (function() {
@@ -422,26 +265,102 @@
   }
 
   // ── State ──
+  // Read optional module filter + auto-open docNo + period/pendingOnly hints set by Landing
+  var _initialModule = 'ALL';
+  var _autoOpenDocNo = null;
+  var _initialPeriod = null;
+  var _initialPendingOnly = false;
+  try {
+    var pmf = sessionStorage.getItem('pmRecordsFilter');
+    if (pmf) {
+      _initialModule = pmf;
+      sessionStorage.removeItem('pmRecordsFilter');
+    }
+    var pmd = sessionStorage.getItem('pmRecordsOpen');
+    if (pmd) {
+      _autoOpenDocNo = pmd;
+      sessionStorage.removeItem('pmRecordsOpen');
+    }
+    var pmp = sessionStorage.getItem('pmRecordsPeriod');
+    if (pmp) {
+      _initialPeriod = pmp;
+      sessionStorage.removeItem('pmRecordsPeriod');
+    }
+    var pmpo = sessionStorage.getItem('pmRecordsPendingOnly');
+    if (pmpo) {
+      _initialPendingOnly = true;
+      sessionStorage.removeItem('pmRecordsPendingOnly');
+    }
+  } catch (e) {}
   var state = {
-    module: 'GRN',
+    module: _initialModule,
     fromDate: '',
     toDate: '',
     search: '',
-    openDocNo: null,
+    openDocNo: _autoOpenDocNo,
     requestId: 0
   };
 
-  // ── Role chip ──
+  // ── Role chip (hidden until populated) ──
   var roleEl = document.getElementById('roleChip');
-  if (roleEl) roleEl.style.display = 'none';
+  if (roleEl) roleEl.classList.add('hidden');
 
-  // ── Logo → back to Landing ──
-  document.getElementById('logoBtn').addEventListener('click', function() {
+  // ── Logo / back → Landing (uses PMHtmlCache for instant nav when cached) ──
+  function goLanding() {
+    if (window.PMHtmlCache) { window.PMHtmlCache.navigate('Landing'); return; }
     google.script.run
       .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
       .withFailureHandler(function() {})
       .getFormHtml('Landing');
-  });
+  }
+  document.getElementById('logoBtn').addEventListener('click', goLanding);
+  document.getElementById('logoBtnText').addEventListener('click', goLanding);
+  document.getElementById('navHome').addEventListener('click', goLanding);
+
+  // Bottom-nav routes
+  function gotoForm(name) {
+    if (window.PMHtmlCache) { window.PMHtmlCache.navigate(name); return; }
+    google.script.run
+      .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+      .withFailureHandler(function() {})
+      .getFormHtml(name);
+  }
+  function bindNav(id, target) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', function() { gotoForm(target); });
+  }
+  bindNav('navKPI',     'KPI');
+  bindNav('navMasters', 'Masters');
+
+  // More menu
+  var navMoreBtn = document.getElementById('navMore');
+  if (navMoreBtn) {
+    navMoreBtn.addEventListener('click', function() {
+      var existing = document.getElementById('recMoreSheet');
+      if (existing) { existing.remove(); return; }
+      var items = [
+        { label: 'Warehouse',       form: 'Warehouse' },
+        { label: 'Customer Return', form: 'CustomerReturn' },
+        { label: 'Dispatch',        form: 'Dispatch' },
+        { label: 'Import CSV',      form: 'ImportCSV' }
+      ];
+      var html = items.map(function(i) {
+        return '<button class="recMoreItem" data-form="' + i.form + '" style="width:100%;display:block;padding:14px 16px;font-size:14px;font-weight:600;color:#0f172a;background:transparent;border:0;border-bottom:1px solid #e2e8f0;text-align:left;cursor:pointer;font-family:inherit;">' + i.label + '</button>';
+      }).join('');
+      var sheet = document.createElement('div');
+      sheet.id = 'recMoreSheet';
+      sheet.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(30,58,95,0.55);';
+      sheet.innerHTML = '<div style="background:#fff;width:100%;max-width:600px;border-radius:14px 14px 0 0;overflow:hidden;">' +
+        '<div style="padding:12px 14px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.4px;border-bottom:1px solid #e2e8f0;">More modules</div>' +
+        html + '</div>';
+      sheet.addEventListener('click', function(e) {
+        if (e.target === sheet) { sheet.remove(); return; }
+        var b = e.target.closest('.recMoreItem');
+        if (b) { var f = b.getAttribute('data-form'); sheet.remove(); gotoForm(f); }
+      });
+      document.body.appendChild(sheet);
+    });
+  }
 
   // ── Date defaults: 7 days ago → today ──
   function toYMD(d) {
@@ -449,20 +368,51 @@
     var dd = String(d.getDate()).padStart(2, '0');
     return d.getFullYear() + '-' + mm + '-' + dd;
   }
-  var today = new Date();
+  var today   = new Date();
   var weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 7);
-  var fromEl = document.getElementById('fromDate');
-  var toEl   = document.getElementById('toDate');
+  var fromEl  = document.getElementById('fromDate');
+  var toEl    = document.getElementById('toDate');
   fromEl.value = toYMD(weekAgo);
   toEl.value   = toYMD(today);
   state.fromDate = fromEl.value;
   state.toDate   = toEl.value;
 
-  // ── Date inputs ──
-  fromEl.addEventListener('change', function() { state.fromDate = this.value; load(); });
-  toEl.addEventListener('change',   function() { state.toDate   = this.value; load(); });
+  fromEl.addEventListener('change', function() { state.fromDate = this.value; clearTimePill(); load(); });
+  toEl.addEventListener('change',   function() { state.toDate   = this.value; clearTimePill(); load(); });
 
-  // ── Search input with debounce ──
+  function clearTimePill() {
+    document.querySelectorAll('.time-pill').forEach(function(b) {
+      b.className = 'time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all whitespace-nowrap active:scale-95';
+    });
+  }
+
+  function setTimePeriod(period) {
+    var now = new Date();
+    var from, to;
+    to = toYMD(now);
+    if (period === 'TODAY') {
+      from = to;
+    } else if (period === 'WEEK') {
+      var w = new Date(now); w.setDate(now.getDate() - 7);
+      from = toYMD(w);
+    } else if (period === 'MONTH') {
+      var m = new Date(now); m.setDate(now.getDate() - 30);
+      from = toYMD(m);
+    } else {
+      from = '2020-01-01';
+      to   = toYMD(now);
+    }
+    fromEl.value = from; state.fromDate = from;
+    toEl.value   = to;   state.toDate   = to;
+    document.querySelectorAll('.time-pill').forEach(function(b) {
+      var isActive = b.dataset.period === period;
+      b.className = 'time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border transition-all whitespace-nowrap active:scale-95 ' +
+        (isActive ? 'border-[#1e3a5f] bg-[#1e3a5f] text-white' : 'border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f]');
+    });
+    load();
+  }
+
+  // ── Search with debounce ──
   var searchEl    = document.getElementById('searchInput');
   var searchClear = document.getElementById('searchClear');
   var debTimer    = null;
@@ -488,183 +438,211 @@
     var mod = btn.getAttribute('data-module');
     if (mod === state.module) return;
     state.module = mod;
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
+    // Update active styles
+    document.querySelectorAll('.tab-btn').forEach(function(b) {
+      b.classList.remove('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
+      b.classList.add('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
+      var cnt = b.querySelector('span[id^="cnt-"]');
+      if (cnt) { cnt.classList.remove('bg-white/20'); cnt.classList.add('text-[#64748b]'); }
+    });
+    btn.classList.remove('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
+    btn.classList.add('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
+    var activeCnt = btn.querySelector('span[id^="cnt-"]');
+    if (activeCnt) { activeCnt.classList.add('bg-white/20'); activeCnt.classList.remove('text-[#64748b]'); }
     btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     state.openDocNo = null;
     load();
   });
 
-  // ── Column definitions per module ──
-  var COLS = {
-    GRN:      ['Date', 'GRN ID', 'Supplier', 'Status', 'OP'],
-    IQC:      ['Date', 'IQC ID', 'GRN · Material', 'Result', 'OP'],
-    IPQC:     ['Date', 'IPQC ID', 'Product · Batch', 'Status', 'OP'],
-    OQC:      ['Date', 'OQC ID', 'Customer', 'Result', 'OP'],
-    Gatepass: ['Date', 'GP ID', 'Type · Party', 'Status', 'OP'],
-    PO:       ['Date', 'PO No.', 'Supplier', 'Status', 'Total']
-  };
-
-  // ── Render table header ──
-  function renderHead(module) {
-    var cols = COLS[module] || COLS.GRN;
-    var html = '<tr>';
-    cols.forEach(function(c, i) {
-      var cls = (i === 4) ? ' class="col-op"' : '';
-      html += '<th' + cls + '>' + esc(c) + '</th>';
+  // ── Apply initial active tab if Landing passed a module filter ──
+  (function applyInitialModule() {
+    if (state.module === 'ALL') return;
+    var btn = document.querySelector('.tab-btn[data-module="' + state.module + '"]');
+    if (!btn) return;
+    document.querySelectorAll('.tab-btn').forEach(function(b) {
+      b.classList.remove('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
+      b.classList.add('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
     });
-    html += '</tr>';
-    document.getElementById('tableHead').innerHTML = html;
-  }
+    btn.classList.remove('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
+    btn.classList.add('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
+    setTimeout(function () { btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, 80);
+  }());
 
-  // ── Status chip ──
+  // ── Status chip HTML ──
   function chipHtml(status) {
     var s = (status || '').toUpperCase();
     var cls = 'chip-default';
-    if (s === 'PASS' || s === 'ACCEPTED') cls = 'chip-pass';
+    if (s === 'PASS' || s === 'ACCEPTED')  cls = 'chip-pass';
     else if (s === 'FAIL' || s === 'REJECTED') cls = 'chip-fail';
-    else if (s === 'PENDING' || s === 'OPEN') cls = 'chip-pending';
-    else if (s === 'ISSUED') cls = 'chip-issued';
+    else if (s.indexOf('PENDING') !== -1 || s === 'OPEN')  cls = 'chip-pending'; // matches 'IQC PENDING' etc.
+    else if (s === 'ISSUED')               cls = 'chip-issued';
     return '<span class="chip ' + cls + '">' + esc(status || '—') + '</span>';
   }
 
-  // ── Row class based on status ──
-  function rowClass(status) {
+  // ── PO status chip ──
+  function poStatusChip(st) {
+    var cls = 'chip-default';
+    if (st === 'OPEN' || st === 'PARTIAL_RECEIVED') cls = 'chip-pending';
+    else if (st === 'CLOSED')     cls = 'chip-pass';
+    else if (st === 'CANCELLED')  cls = 'chip-fail';
+    return '<span class="chip ' + cls + '">' + esc(st || '—') + '</span>';
+  }
+
+  // ── Module label badge color per module (fix #72) ──
+  function moduleColor(module) {
+    var m = (module || '').toUpperCase();
+    if (m === 'GRN') return '#0d9488';
+    if (m === 'IQC') return '#2563eb';
+    if (m === 'IPQC') return '#7c3aed';
+    if (m === 'OQC') return '#9333ea';
+    if (m === 'NCR') return '#dc2626';
+    if (m === 'GATEPASS' || m === 'GP') return '#64748b';
+    if (m === 'PO') return '#0ea5e9';
+    return '#1e3a5f';
+  }
+
+  // ── Card border tint ──
+  function cardExtraClass(status) {
     var s = (status || '').toUpperCase();
-    if (s === 'FAIL' || s === 'REJECTED') return ' fail-row';
-    if (s === 'PENDING' || s === 'OPEN')  return ' pending-row';
+    if (s === 'FAIL' || s === 'REJECTED' || s === 'CANCELLED') return 'card-fail';
+    if (s.indexOf('PENDING') !== -1 || s === 'OPEN' || s === 'PARTIAL_RECEIVED') return 'card-pending'; // matches 'IQC PENDING' etc.
     return '';
   }
 
-  // ── Parse date string into two lines ──
-  function dtCell(dateStr) {
-    // dateStr from backend: 'dd-MMM-yyyy' e.g. '14-Mar-2026'
-    return '<td class="dt-cell">'
-      + '<span class="dt-date">' + esc(dateStr || '—') + '</span>'
-      + '</td>';
-  }
-
-  // ── Detail fields per record ──
-  function detailFields(rec) {
-    var fields = [];
-    fields.push({ label: 'Doc No', value: rec.docNo });
-    fields.push({ label: 'Date',   value: rec.date  });
-    fields.push({ label: 'Name',   value: rec.name  });
-    fields.push({ label: 'Status', value: rec.status });
-    return fields;
-  }
-
-  // ── Detail row HTML ──
-  function detailRowHtml(rec, colCount) {
-    var flds = detailFields(rec);
-    var gridHtml = flds.map(function(f) {
-      return '<div class="detail-field"><label>' + esc(f.label) + '</label>'
-           + '<span>' + esc(f.value) + '</span></div>';
-    }).join('');
-    return '<tr class="detail-row" data-detail="' + esc(rec.docNo) + '">'
-         + '<td colspan="' + colCount + '">'
-         + '<div class="detail-inner" id="di-' + esc(rec.docNo.replace(/[^a-zA-Z0-9]/g, '_')) + '">'
-         + '<div class="detail-body">'
-         + '<div class="detail-grid">' + gridHtml + '</div>'
-         + '<span class="detail-close" data-closedoc="' + esc(rec.docNo) + '">Close ×</span>'
-         + '</div></div></td></tr>';
-  }
-
-  // ── Skeleton rows ──
+  // ── Skeleton cards ──
   function renderSkeleton() {
     var html = '';
-    for (var i = 0; i < 8; i++) {
-      html += '<tr class="skeleton-row"><td colspan="5"><div class="skel-bar"></div></td></tr>';
+    for (var i = 0; i < 6; i++) {
+      html += '<div class="bg-white rounded-[12px] p-[16px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)]">'
+            + '<div class="skel-bar mb-3 w-2/3"></div>'
+            + '<div class="skel-bar mb-2 w-1/2" style="height:10px;"></div>'
+            + '<div class="skel-bar w-1/3" style="height:10px;"></div>'
+            + '</div>';
     }
-    document.getElementById('tableBody').innerHTML = html;
+    document.getElementById('cardList').innerHTML = html;
+    document.getElementById('recordCountLabel').textContent = '';
   }
 
-  // ── Render records ──
+  // ── Detail fields ──
+  function detailFields(rec) {
+    return [
+      { label: 'Doc No', value: rec.docNo },
+      { label: 'Date',   value: rec.date  },
+      { label: 'Name',   value: rec.name  },
+      { label: 'Status', value: rec.status }
+    ];
+  }
+
+  // ── Render records as cards ──
   function renderRecords(records) {
-    var module = state.module;
-    var tbody  = document.getElementById('tableBody');
-    var colCount = 5;
+    var module  = state.module;
+    var cardList = document.getElementById('cardList');
+    var countLbl = document.getElementById('recordCountLabel');
+    document.getElementById('mainContent').classList.remove('table-loading');
+
+    // Filter to pending only if Landing requested it
+    if (state.pendingOnly && records && records.length) {
+      records = records.filter(function(r){
+        var s = String(r.status || '').toUpperCase().trim();
+        // "Pending" = anything that's not a terminal/passed state
+        if (s === '') return true;
+        if (s === 'ACCEPTED' || s === 'PASS' || s === 'PASSED') return false;
+        if (s === 'RELEASED' || s === 'COMPLETE' || s === 'COMPLETED' || s === 'CLOSED') return false;
+        if (s === 'DELIVERED' || s === 'PRODUCED') return false;
+        if (s === 'REJECTED' || s === 'FAIL' || s === 'FAILED' || s === 'CANCELLED') return false;
+        return true;
+      });
+    }
 
     if (!records || records.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="' + colCount + '">'
-        + '<div class="empty-main">No records match your search.</div>'
-        + '<div class="empty-sub">Try adjusting the date range or clearing the search.</div>'
-        + '</td></tr>';
-      document.getElementById('tableSection').classList.remove('table-loading');
+      cardList.innerHTML =
+        '<div class="bg-white rounded-[12px] p-8 border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] text-center">'
+        + '<span class="material-symbols-outlined text-[48px] text-[#cbd5e1] block mb-3" style="font-variation-settings:\'FILL\' 0;">inbox</span>'
+        + '<p class="font-body text-[14px] font-medium text-[#64748b]">No records match your search.</p>'
+        + '<p class="font-body text-[12px] text-[#94a3b8] mt-1">Try adjusting the date range or clearing the search.</p>'
+        + '</div>';
+      countLbl.textContent = '';
       return;
     }
 
+    countLbl.textContent = 'Showing ' + records.length + ' record' + (records.length !== 1 ? 's' : '');
+
     var html = '';
+    var lastDate = '';
     records.forEach(function(rec) {
-      var rc = rowClass(rec.status);
-      var docSafe = esc(rec.docNo.replace(/[^a-zA-Z0-9]/g, '_'));
-      html += '<tr class="data-row' + rc + ' fade-in" data-docno="' + esc(rec.docNo) + '">'
-            + dtCell(rec.date)
-            + '<td>' + esc(rec.docNo) + '</td>'
-            + '<td>' + esc(rec.name)  + '</td>'
-            + '<td>' + chipHtml(rec.status) + '</td>'
-            + '<td class="col-op">—</td>'
-            + '</tr>'
-            + detailRowHtml(rec, colCount);
+      var dateKey = rec.date || '';
+      if (dateKey && dateKey !== lastDate) {
+        html += '<div class="sticky top-0 z-10 bg-[#f8fafc]/90 backdrop-blur px-1 py-2 text-[11px] font-bold text-[#64748b] uppercase tracking-widest">' + esc(dateKey) + '</div>';
+        lastDate = dateKey;
+      }
+      var borderCls = cardExtraClass(rec.status);
+      var recType = rec.type || module;
+      html += '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] overflow-hidden fade-in ' + borderCls + '">'
+            + '<div class="p-[16px] cursor-pointer active:bg-gray-50 transition-colors data-row" '
+            +      'data-docno="' + esc(rec.docNo) + '" data-rectype="' + esc(recType) + '">'
+            +   '<div class="flex justify-between items-start mb-1.5">'
+            +     '<h2 class="font-headline text-[14px] font-bold text-[#1e3a5f]">' + esc(rec.docNo) + '</h2>'
+            +     '<div class="flex gap-2 items-center">'
+            +       '<span style="background:' + moduleColor(recType) + ';color:#fff;" class="px-2 py-0.5 rounded-[4px] font-label text-[10px] font-bold tracking-wider">' + esc(recType) + '</span>'
+            +       chipHtml(rec.status)
+            +     '</div>'
+            +   '</div>'
+            +   '<div class="flex justify-between items-end">'
+            +     '<p class="font-body text-[13px] font-medium text-[#374151] truncate pr-4">' + esc(rec.name) + '</p>'
+            +     '<div class="flex items-center gap-1 shrink-0">'
+            +       '<span class="font-body text-[11px] text-[#64748b]">' + esc(rec.date || '—') + '</span>'
+            +       '<span class="material-symbols-outlined text-[16px] text-[#94a3b8]">chevron_right</span>'
+            +     '</div>'
+            +   '</div>'
+            + '</div>'
+            + '</div>';
     });
 
-    tbody.innerHTML = html;
-    document.getElementById('tableSection').classList.remove('table-loading');
-
-    // Re-attach row tap listeners
+    cardList.innerHTML = html;
     attachRowTaps();
 
-    // Restore open panel if same doc is still in results
+    // Auto-open requested doc: route straight to DocView_F
     if (state.openDocNo) {
-      var key = state.openDocNo.replace(/[^a-zA-Z0-9]/g, '_');
-      var panel = document.getElementById('di-' + key);
-      if (panel) panel.classList.add('open');
+      var pendingDoc = state.openDocNo;
+      state.openDocNo = null;  // clear so we don't loop
+      var card = document.querySelector('[data-docno="' + pendingDoc + '"]');
+      var recType = card ? card.getAttribute('data-rectype') : (state.module !== 'ALL' ? state.module : '');
+      if (card) setTimeout(function () { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+      openDoc(recType, pendingDoc);
     }
   }
 
-  // ── Row tap: open/close detail ──
+  // ── Row taps (delegated on cardList) — open DocView directly ──
   function attachRowTaps() {
-    var tbody = document.getElementById('tableBody');
-
-    if (tbody._tapsAttached) return;
-    tbody._tapsAttached = true;
-    tbody.addEventListener('click', function(e) {
-      // Close button
-      var closeBtn = e.target.closest('[data-closedoc]');
-      if (closeBtn) {
-        var docNo = closeBtn.getAttribute('data-closedoc');
-        closeDetail(docNo);
-        if (state.openDocNo === docNo) state.openDocNo = null;
-        return;
-      }
-
-      // Data row tap
-      var row = e.target.closest('tr.data-row');
+    var list = document.getElementById('cardList');
+    if (list._tapsAttached) return;
+    list._tapsAttached = true;
+    list.addEventListener('click', function(e) {
+      var row = e.target.closest('.data-row');
       if (!row) return;
       var docNo = row.getAttribute('data-docno');
       if (!docNo) return;
-
-      if (state.openDocNo === docNo) {
-        closeDetail(docNo);
-        state.openDocNo = null;
-      } else {
-        if (state.openDocNo) closeDetail(state.openDocNo);
-        state.openDocNo = docNo;
-        openDetail(docNo);
-      }
+      var recType = row.getAttribute('data-rectype') || (state.module !== 'ALL' ? state.module : '');
+      openDoc(recType, docNo);
     });
   }
 
-  function openDetail(docNo) {
-    var key   = docNo.replace(/[^a-zA-Z0-9]/g, '_');
-    var panel = document.getElementById('di-' + key);
-    if (panel) panel.classList.add('open');
-  }
-
-  function closeDetail(docNo) {
-    var key   = docNo.replace(/[^a-zA-Z0-9]/g, '_');
-    var panel = document.getElementById('di-' + key);
-    if (panel) panel.classList.remove('open');
+  /* Navigate to the document detail page */
+  var DOCVIEW_TYPES = { GRN: 1, IQC: 1, OQC: 1, Gatepass: 1, PO: 1 };
+  function openDoc(type, docNo) {
+    if (!docNo) return;
+    if (DOCVIEW_TYPES[type]) {
+      google.script.run
+        .withSuccessHandler(function (html) { document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function (e) { showToast('Could not open ' + docNo); })
+        .getDocViewHtml(type, docNo);
+    } else {
+      // NCR / IPQC / CustomerReturn — open the form (has list + detail sheet)
+      google.script.run
+        .withSuccessHandler(function (html) { document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function (e) { showToast('Could not open ' + type); })
+        .getFormHtml(type);
+    }
   }
 
   // ── Toast ──
@@ -676,80 +654,22 @@
   function hideToast() {
     document.getElementById('toast').classList.remove('show');
   }
-  document.getElementById('toast').addEventListener('click', function() {
-    hideToast();
-    load();
-  });
+  document.getElementById('toast').addEventListener('click', function() { hideToast(); load(); });
 
-  // ── Main load ──
-  function load() {
-    hideToast();
-    state.openDocNo = null;
-    var reqId = ++state.requestId;
-
-    var filters = {
-      fromDate: state.fromDate,
-      toDate:   state.toDate,
-      search:   state.search
-    };
-
-    // Dim existing content or show skeleton on first load
-    var tbody = document.getElementById('tableBody');
-    if (tbody.children.length === 0 || tbody.querySelector('.skeleton-row')) {
-      renderHead(state.module);
-      renderSkeleton();
-    } else {
-      document.getElementById('tableSection').classList.add('table-loading');
-    }
-
-    // PO tab: use getRecentPOs and render differently
-    if (state.module === 'PO') {
-      google.script.run
-        .withSuccessHandler(function(poList) {
-          if (reqId !== state.requestId) return;
-          renderHead('PO');
-          renderPOList(poList || []);
-        })
-        .withFailureHandler(function(err) {
-          if (reqId !== state.requestId) return;
-          document.getElementById('tableSection').classList.remove('table-loading');
-          showToast('Could not load PO records. Tap to retry.');
-        })
-        .getRecentPOs(200);
-      return;
-    }
-
-    google.script.run
-      .withSuccessHandler(function(records) {
-        if (reqId !== state.requestId) return; // stale
-        renderHead(state.module);
-        renderRecords(records);
-      })
-      .withFailureHandler(function(err) {
-        if (reqId !== state.requestId) return;
-        document.getElementById('tableSection').classList.remove('table-loading');
-        showToast('Could not load records. Tap to retry.');
-      })
-      .getRecordsList(state.module, filters);
+  // ── INR formatter ──
+  function fmtInr(n) {
+    return 'INR ' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   // ── PO list renderer ──
-  function fmtInr(n) { return 'INR ' + Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
-
-  function poStatusChip(st) {
-    var cls = 'chip-default';
-    if (st === 'OPEN' || st === 'PARTIAL_RECEIVED') cls = 'chip-pending';
-    else if (st === 'CLOSED') cls = 'chip-pass';
-    else if (st === 'CANCELLED') cls = 'chip-fail';
-    return '<span class="chip ' + cls + '">' + esc(st || '—') + '</span>';
-  }
-
   function renderPOList(poList) {
-    var tbody = document.getElementById('tableBody');
+    var cardList = document.getElementById('cardList');
+    var countLbl = document.getElementById('recordCountLabel');
+    document.getElementById('mainContent').classList.remove('table-loading');
     var cntEl = document.getElementById('cnt-PO');
     if (cntEl) cntEl.textContent = poList.length;
 
-    // Filter by search / date
+    // Client-side filter by date / search
     var from = state.fromDate ? new Date(state.fromDate) : null;
     var to   = state.toDate   ? new Date(state.toDate + 'T23:59:59') : null;
     var srch = (state.search || '').toLowerCase();
@@ -770,32 +690,44 @@
     });
 
     if (filtered.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><div class="empty-main">No PO records match.</div><div class="empty-sub">Adjust filters or create a new PO.</div></td></tr>';
-      document.getElementById('tableSection').classList.remove('table-loading');
+      cardList.innerHTML =
+        '<div class="bg-white rounded-[12px] p-8 border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] text-center">'
+        + '<p class="font-body text-[14px] text-[#64748b]">No PO records match.</p>'
+        + '<p class="font-body text-[12px] text-[#94a3b8] mt-1">Adjust filters or create a new PO.</p>'
+        + '</div>';
+      countLbl.textContent = '';
       return;
     }
 
+    countLbl.textContent = 'Showing ' + filtered.length + ' PO' + (filtered.length !== 1 ? 's' : '');
+
     var html = '';
     filtered.forEach(function(po) {
-      var rc = po.status === 'PARTIAL_RECEIVED' || po.status === 'OPEN' ? ' pending-row' : po.status === 'CANCELLED' ? ' fail-row' : '';
-      html += '<tr class="data-row' + rc + ' fade-in po-row" data-pono="' + esc(po.poNo) + '">' +
-        dtCell(po.date) +
-        '<td>' + esc(po.poNo) + '</td>' +
-        '<td>' + esc(po.supplierName || po.supplierCode) + '</td>' +
-        '<td>' + poStatusChip(po.status) + '</td>' +
-        '<td style="font-size:11px;font-weight:600;">' + fmtInr(po.grandTotal) + '</td>' +
-        '</tr>';
+      var borderCls = cardExtraClass(po.status);
+      html += '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] p-[16px] cursor-pointer active:bg-gray-50 transition-colors po-row fade-in ' + borderCls + '" data-pono="' + esc(po.poNo) + '">'
+            +   '<div class="flex justify-between items-start mb-2">'
+            +     '<h2 class="font-headline text-[14px] font-bold text-[#1e3a5f]">' + esc(po.poNo) + '</h2>'
+            +     '<div class="flex gap-2 items-center">'
+            +       '<span style="background:#1e3a5f;color:#fff;" class="px-2 py-0.5 rounded-[4px] font-label text-[10px] font-bold tracking-wider">PO</span>'
+            +       poStatusChip(po.status)
+            +     '</div>'
+            +   '</div>'
+            +   '<div class="flex justify-between items-end">'
+            +     '<p class="font-body text-[14px] font-medium text-[#374151] truncate pr-4">' + esc(po.supplierName || po.supplierCode) + '</p>'
+            +     '<span class="font-body text-[11px] font-semibold text-[#0f172a] shrink-0">' + fmtInr(po.grandTotal) + '</span>'
+            +   '</div>'
+            +   '<div class="mt-1 font-body text-[12px] text-[#64748b]">' + esc(po.date || '—') + '</div>'
+            + '</div>';
     });
-    tbody.innerHTML = html;
-    document.getElementById('tableSection').classList.remove('table-loading');
+    cardList.innerHTML = html;
 
-    // Row click → open PO detail modal
-    tbody.removeEventListener('click', handlePORowClick);
-    tbody.addEventListener('click', handlePORowClick);
+    // PO row → modal
+    cardList.removeEventListener('click', handlePORowClick);
+    cardList.addEventListener('click', handlePORowClick);
   }
 
   function handlePORowClick(e) {
-    var row = e.target.closest('tr.po-row');
+    var row = e.target.closest('tr.po-row, div.po-row');
     if (!row) return;
     var poNo = row.getAttribute('data-pono');
     if (!poNo) return;
@@ -803,45 +735,39 @@
   }
 
   function openPODetail(poNo) {
-    var modal = document.getElementById('poDetailModal');
+    var modal   = document.getElementById('poDetailModal');
     var content = document.getElementById('poDetailContent');
     var title   = document.getElementById('poModalTitle');
     title.textContent = 'Loading ' + poNo + '…';
-    content.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">Loading…</p>';
+    content.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:24px 0;">Loading…</p>';
     modal.style.display = 'block';
 
     google.script.run
       .withSuccessHandler(function(result) {
-        if (!result) { content.innerHTML = '<p style="color:#c62828;">PO not found.</p>'; return; }
+        if (!result) { content.innerHTML = '<p style="color:#dc2626;">PO not found.</p>'; return; }
         renderPODetail(result);
       })
       .withFailureHandler(function(e) {
-        content.innerHTML = '<p style="color:#c62828;">Error: ' + esc(e.message) + '</p>';
+        content.innerHTML = '<p style="color:#dc2626;">Error: ' + esc(e.message) + '</p>';
       })
       .getPOById(poNo);
   }
 
   function renderPODetail(result) {
-    var h = result.header;
+    var h     = result.header;
     var title = document.getElementById('poModalTitle');
     title.textContent = h.poNo + ' — ' + h.supplierName;
 
     var html = '';
-    // Status row + action buttons
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">';
     html += poStatusChip(h.status);
-    html += '<span style="font-size:11px;color:#777;margin-left:4px;">Due: ' + esc(h.dueDate || '—') + '</span>';
+    html += '<span style="font-size:11px;color:#64748b;margin-left:4px;">Due: ' + esc(h.dueDate || '—') + '</span>';
     html += '<span style="flex:1;"></span>';
-    // Cancel button: visible for any active status. Server enforces the
-    // "has receipts" guard and returns the specific GRN docNo blocking cancel.
     if (h.status !== 'CANCELLED' && h.status !== 'CLOSED') {
-      html += '<button onclick="doCancelPO(\'' + esc(h.poNo) + '\')" style="background:#c62828;color:#fff;border:none;padding:6px 12px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">Cancel PO</button>';
+      html += '<button onclick="doCancelPO(\'' + esc(h.poNo) + '\')" style="background:#dc2626;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Cancel PO</button>';
     }
-    // Edit-as-draft: not implemented yet (would need getPOById wire-up + form pre-fill).
-    // Plan §5 says edit-as-draft re-opens POP_F with draft loaded; deferred to polish bundle.
     html += '</div>';
 
-    // Header fields
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">';
     var hdrFields = [
       ['PO Date', h.poDate], ['Supplier', h.supplierName],
@@ -852,39 +778,37 @@
     ];
     if (h.cancelledReason) hdrFields.push(['Cancelled Reason', h.cancelledReason]);
     hdrFields.forEach(function(f) {
-      html += '<div><div style="font-size:10px;font-weight:600;color:#0D1B6E;text-transform:uppercase;margin-bottom:2px;">' + esc(f[0]) + '</div>';
+      html += '<div><div style="font-size:10px;font-weight:600;color:#1e3a5f;text-transform:uppercase;margin-bottom:2px;">' + esc(f[0]) + '</div>';
       html += '<div style="font-size:12px;">' + esc(f[1] || '—') + '</div></div>';
     });
     html += '</div>';
 
-    // Lines
-    html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#0D1B6E;margin-bottom:6px;">Lines</div>';
+    html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#1e3a5f;margin-bottom:6px;">Lines</div>';
     html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
-    html += '<thead><tr style="background:#f0f0f5;">';
+    html += '<thead><tr style="background:#f0f4f8;">';
     ['#','Material','Qty Ord','Qty Rcvd','Qty Pend','Unit Price','Status','Promised'].forEach(function(c) {
-      html += '<th style="padding:5px 7px;text-align:left;font-size:10px;text-transform:uppercase;">' + esc(c) + '</th>';
+      html += '<th style="padding:5px 7px;text-align:left;font-size:10px;text-transform:uppercase;color:#1e3a5f;">' + esc(c) + '</th>';
     });
     html += '</tr></thead><tbody>';
     (result.lines || []).forEach(function(l) {
-      html += '<tr style="border-bottom:1px solid #f0f0f0;">' +
-        '<td style="padding:4px 7px;">' + l.lineNo + '</td>' +
-        '<td style="padding:4px 7px;">' + esc(l.materialCode) + '<br><span style="color:#999;font-size:10px;">' + esc(l.materialDesc) + '</span></td>' +
-        '<td style="padding:4px 7px;">' + l.qtyOrdered + ' ' + esc(l.unit) + '</td>' +
-        '<td style="padding:4px 7px;">' + l.qtyReceived + '</td>' +
-        '<td style="padding:4px 7px;font-weight:' + (l.qtyPending > 0 ? '700' : '400') + ';color:' + (l.qtyPending > 0 ? '#c65c00' : '#555') + ';">' + l.qtyPending + '</td>' +
-        '<td style="padding:4px 7px;">INR ' + Number(l.unitPrice).toFixed(2) + '</td>' +
-        '<td style="padding:4px 7px;">' + poStatusChip(l.lineStatus) + '</td>' +
-        '<td style="padding:4px 7px;color:#777;">' + esc(l.promisedDate || '—') + '</td>' +
-        '</tr>';
+      html += '<tr style="border-bottom:1px solid #f0f0f0;">'
+        + '<td style="padding:4px 7px;">' + l.lineNo + '</td>'
+        + '<td style="padding:4px 7px;">' + esc(l.materialCode) + '<br><span style="color:#94a3b8;font-size:10px;">' + esc(l.materialDesc) + '</span></td>'
+        + '<td style="padding:4px 7px;">' + l.qtyOrdered + ' ' + esc(l.unit) + '</td>'
+        + '<td style="padding:4px 7px;">' + l.qtyReceived + '</td>'
+        + '<td style="padding:4px 7px;font-weight:' + (l.qtyPending > 0 ? '700' : '400') + ';color:' + (l.qtyPending > 0 ? '#d97706' : '#64748b') + ';">' + l.qtyPending + '</td>'
+        + '<td style="padding:4px 7px;">INR ' + Number(l.unitPrice).toFixed(2) + '</td>'
+        + '<td style="padding:4px 7px;">' + poStatusChip(l.lineStatus) + '</td>'
+        + '<td style="padding:4px 7px;color:#94a3b8;">' + esc(l.promisedDate || '—') + '</td>'
+        + '</tr>';
     });
     html += '</tbody></table></div>';
 
-    // Linked GRNs
     if (result.linkedGrns && result.linkedGrns.length > 0) {
-      html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#0D1B6E;margin:12px 0 6px;">Linked GRNs</div>';
+      html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#1e3a5f;margin:12px 0 6px;">Linked GRNs</div>';
       html += '<div style="font-size:12px;">';
       result.linkedGrns.forEach(function(g) {
-        html += '<span style="display:inline-block;background:#e8f0fe;color:#0D1B6E;padding:3px 8px;border-radius:10px;margin:2px;font-weight:600;">' + esc(g.grnNo) + ' (' + esc(g.date) + ')</span>';
+        html += '<span style="display:inline-block;background:#e0f2fe;color:#1e3a5f;padding:3px 8px;border-radius:8px;margin:2px;font-weight:600;">' + esc(g.grnNo) + ' (' + esc(g.date) + ')</span>';
       });
       html += '</div>';
     }
@@ -897,7 +821,7 @@
     if (reason === null) return;
     google.script.run
       .withSuccessHandler(function(r) {
-        if (r.success) { document.getElementById('poDetailModal').style.display='none'; load(); }
+        if (r.success) { document.getElementById('poDetailModal').style.display = 'none'; load(); }
         else alert('Cancel failed: ' + r.error);
       })
       .withFailureHandler(function(e) { alert('Error: ' + e.message); })
@@ -911,6 +835,7 @@
   };
 
   // ── Load counts ──
+  // Tab counts now reflect PENDING (matches Landing tile semantics).
   function loadCounts() {
     google.script.run
       .withSuccessHandler(function(counts) {
@@ -920,22 +845,35 @@
           var el = document.getElementById('cnt-' + mod);
           if (el && map[mod] != null) el.textContent = map[mod];
         });
+        // ALL = sum of all pending
+        var allEl = document.getElementById('cnt-ALL');
+        if (allEl) {
+          var sum = (counts.grn||0)+(counts.iqc||0)+(counts.ipqc||0)+(counts.oqc||0)+(counts.gp||0);
+          allEl.textContent = sum;
+        }
       })
       .withFailureHandler(function() {})
       .getRecordsCounts();
-    // PO count from getRecentPOs
+    // PO pending count (separate server call to keep it cheap)
     google.script.run
-      .withSuccessHandler(function(poList) {
+      .withSuccessHandler(function(payload) {
         var el = document.getElementById('cnt-PO');
-        if (el && poList) el.textContent = poList.length;
+        if (el && payload && payload.PO != null) el.textContent = payload.PO;
       })
-      .withFailureHandler(function() {})
-      .getRecentPOs(500);
+      .withFailureHandler(function() {
+        // Fallback to old behavior — total recent POs
+        google.script.run
+          .withSuccessHandler(function(poList) {
+            var el = document.getElementById('cnt-PO');
+            if (el && poList) el.textContent = poList.length;
+          })
+          .withFailureHandler(function() {})
+          .getRecentPOs(500);
+      })
+      .getPendingCountsJSON();
   }
 
-  // ── URL param pre-population (MUST-FIX #4) ──
-  // KPI dashboard routes here with ?type=&from=&to=&supplier=&dispoFilter=&filter=
-  // Supports both location.search (web-app) and location.hash (iframe fallback).
+  // ── URL param pre-population ──
   function setFiltersFromURL_() {
     try {
       var raw = '';
@@ -947,10 +885,8 @@
       if (!raw || raw.length < 2) return;
       var params = new URLSearchParams(raw);
 
-      // type → switch tab
       var type = params.get('type');
       if (type) {
-        // Map sheet names → tab module names
         var typeMap = {
           'NCR_LOG':             'NCR',
           'CUSTOMER_RETURN_LOG': 'CustomerReturn',
@@ -960,26 +896,25 @@
           'GATEPASS_LOG':        'Gatepass'
         };
         var mod = typeMap[type] || type;
-        // Find matching tab button
         var tabBtn = document.querySelector('.tab-btn[data-module="' + mod + '"]');
-        if (!tabBtn) {
-          // Try direct match (e.g. type=NCR)
-          tabBtn = document.querySelector('.tab-btn[data-module="' + type + '"]');
-        }
+        if (!tabBtn) tabBtn = document.querySelector('.tab-btn[data-module="' + type + '"]');
         if (tabBtn && mod !== state.module) {
-          document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-          tabBtn.classList.add('active');
+          // Simulate click to apply active styles
+          document.querySelectorAll('.tab-btn').forEach(function(b) {
+            b.classList.remove('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
+            b.classList.add('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
+          });
+          tabBtn.classList.remove('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
+          tabBtn.classList.add('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
           state.module = tabBtn.getAttribute('data-module');
         }
       }
 
-      // from / to dates
       var from = params.get('from');
       var to   = params.get('to');
       if (from) { fromEl.value = from; state.fromDate = from; }
       if (to)   { toEl.value   = to;   state.toDate   = to;   }
 
-      // supplier → append to search
       var supplier = params.get('supplier');
       if (supplier) {
         searchEl.value = supplier;
@@ -987,7 +922,6 @@
         state.search = supplier;
       }
 
-      // dispoFilter → append to search if no supplier
       var dispoFilter = params.get('dispoFilter');
       if (dispoFilter && !supplier) {
         searchEl.value = dispoFilter;
@@ -995,10 +929,8 @@
         state.search = dispoFilter;
       }
 
-      // generic filter (e.g. filter=poNo:X)
       var filter = params.get('filter');
       if (filter && !supplier && !dispoFilter) {
-        // Strip "poNo:" prefix for plain search
         var filterVal = filter.indexOf(':') >= 0 ? filter.split(':')[1] : filter;
         searchEl.value = filterVal;
         searchClear.style.display = 'block';
@@ -1009,15 +941,84 @@
     }
   }
 
-  setFiltersFromURL_();
+  // ── Main load ──
+  function load() {
+    hideToast();
+    // Preserve auto-open docNo on first load; clear only on subsequent loads
+    if (load._hasRun) state.openDocNo = null;
+    load._hasRun = true;
+    var reqId = ++state.requestId;
+
+    var filters = {
+      fromDate: state.fromDate,
+      toDate:   state.toDate,
+      search:   state.search
+    };
+
+    var cardList = document.getElementById('cardList');
+    if (cardList.children.length === 0) {
+      renderSkeleton();
+    } else {
+      document.getElementById('mainContent').classList.add('table-loading');
+    }
+
+    if (state.module === 'PO') {
+      google.script.run
+        .withSuccessHandler(function(poList) {
+          if (reqId !== state.requestId) return;
+          renderPOList(poList || []);
+        })
+        .withFailureHandler(function(err) {
+          if (reqId !== state.requestId) return;
+          document.getElementById('mainContent').classList.remove('table-loading');
+          showToast('Could not load PO records. Tap to retry.');
+        })
+        .getRecentPOs(200);
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function(records) {
+        if (reqId !== state.requestId) return;
+        renderRecords(records);
+      })
+      .withFailureHandler(function(err) {
+        if (reqId !== state.requestId) return;
+        document.getElementById('mainContent').classList.remove('table-loading');
+        showToast('Could not load records. Tap to retry.');
+      })
+      .getRecordsList(state.module, filters);
+  }
 
   // ── Init ──
-  renderHead(state.module);
+  setFiltersFromURL_();
+  // Apply period hint from Landing (so tile→Records shows ALL not MONTH)
+  if (_initialPeriod && typeof setTimePeriod === 'function') {
+    try { setTimePeriod(_initialPeriod); } catch(e) {}
+  }
+  // Pending-only hint: store on state; backend filtering will be applied client-side at render time
+  state.pendingOnly = _initialPendingOnly;
+  if (state.pendingOnly) {
+    var hint = document.createElement('div');
+    hint.style.cssText = 'background:#fff8e1;border-left:3px solid #f5a623;padding:6px 14px;font-size:11px;color:#5a4500;display:flex;justify-content:space-between;align-items:center;';
+    hint.innerHTML = '<span><b>Showing PENDING only</b> — click to show all</span>' +
+      '<button onclick="window.__togglePending()" style="background:#f5a623;color:#fff;border:0;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;">Show all</button>';
+    hint.id = 'pendingOnlyHint';
+    var bar = document.getElementById('timePills');
+    if (bar && bar.parentNode) bar.parentNode.insertBefore(hint, bar.nextSibling);
+    window.__togglePending = function(){
+      state.pendingOnly = false;
+      var h = document.getElementById('pendingOnlyHint');
+      if (h) h.remove();
+      load();
+    };
+  }
   renderSkeleton();
   load();
   loadCounts();
 
 })();
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

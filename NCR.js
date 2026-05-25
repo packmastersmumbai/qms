@@ -67,16 +67,19 @@ function setNCRDisposition(ncrDocNo, disposition, dispositionBy) {
     if (!ws) throw new Error('NCR_LOG sheet not found.');
     var data = ws.getDataRange().getValues();
     var ref = String(ncrDocNo).trim();
+    var actor = (function() { try { return Session.getActiveUser().getEmail() || dispositionBy || ''; } catch(e) { return dispositionBy || ''; } })();
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).trim() === ref) {
         var row = i + 1;
         var fromStatus = String(data[i][14] || '').toUpperCase() || 'OPEN';
         var toStatus = disposition === 'use-as-is' ? 'CLOSED' : 'IN_PROGRESS';
         ws.getRange(row, 11).setValue(disposition).setBackground('#E8F5E9');
-        ws.getRange(row, 12).setValue(dispositionBy || '');
+        ws.getRange(row, 12).setValue(actor);
         ws.getRange(row, 13).setValue(new Date()).setNumberFormat('dd-MMM-yyyy HH:mm');
         ws.getRange(row, 15).setValue(toStatus);
-        logNCRHistory_(ref, fromStatus, toStatus, dispositionBy, 'Disposition: ' + disposition);
+        logNCRHistory_(ref, fromStatus, toStatus, actor, 'Disposition: ' + disposition);
+        _logNCRRevision_(ref, actor, 'Disposition', String(data[i][10] || 'PENDING_DISPOSITION'), disposition);
+        _logNCRRevision_(ref, actor, 'Status', fromStatus, toStatus);
         return { success: true };
       }
     }
@@ -119,6 +122,174 @@ function getOpenNCRs() {
 
 function getNCRDispositions() { return NCR_DISPOSITIONS.slice(); }
 
+function getAllNCRs() {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('NCR_LOG');
+  if (!ws || ws.getLastRow() < 2) return [];
+  // Resolve dynamic closure columns by header name (added by ensureNCRClosureColumns_)
+  var headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+  var iClosedBy   = headers.indexOf('Closed By');
+  var iClosedAt   = headers.indexOf('Closed At');
+  var iEffective  = headers.indexOf('Effectiveness Check');
+  var iCloseNotes = headers.indexOf('Closure Notes');
+  var iPhotos     = headers.indexOf('Photos');
+  var TZ = 'Asia/Kolkata';
+  function fmtDate(v) { return v instanceof Date ? Utilities.formatDate(v, TZ, 'dd-MMM-yyyy') : String(v || ''); }
+  function fmtDT(v)   { return v instanceof Date ? Utilities.formatDate(v, TZ, 'dd-MMM-yyyy HH:mm') : String(v || ''); }
+  function colVal(row, idx) { return idx >= 0 ? row[idx] : ''; }
+
+  var data = ws.getDataRange().getValues();
+  var out = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!r[0]) continue;
+    var st = String(r[14] || '').toUpperCase() || 'OPEN';
+    var photosRaw = colVal(r, iPhotos);
+    var photos = [];
+    if (photosRaw) {
+      try { photos = JSON.parse(photosRaw); }
+      catch(e) { photos = String(photosRaw).split('|').map(function(u){ return u.trim(); }).filter(Boolean); }
+    }
+    out.push({
+      docNo:          r[0],
+      date:           fmtDate(r[1]),
+      source:         r[2],
+      sourceRef:      r[3],
+      materialDesc:   r[5],
+      batchNo:        r[6],
+      qtyAffected:    r[7],
+      defectDesc:     r[9],
+      disposition:    r[10],
+      dispositionBy:  r[11],
+      dispositionAt:  fmtDT(r[12]),
+      capaRef:        r[13],
+      status:         st,
+      // Raised-by / raised-at come from createBy + timestamp columns
+      raisedBy:       r[15] || '',
+      raisedAt:       fmtDT(r[16]),
+      // Closure fields (dynamic columns)
+      closedBy:       colVal(r, iClosedBy),
+      closedAt:       fmtDT(colVal(r, iClosedAt)),
+      effectiveness:  colVal(r, iEffective),
+      closureNotes:   colVal(r, iCloseNotes),
+      photos:         photos
+    });
+  }
+  return out;
+}
+
+// Append a photo (Drive URL) to an NCR row's Photos column.
+// Returns { success, photos } so the UI can re-render thumbnails.
+function appendNCRPhoto(ncrDocNo, photoUrl) {
+  try {
+    // Validate photoUrl must originate from Google Drive (prevents SSRF-style open redirect writes)
+    if (!photoUrl || String(photoUrl).indexOf('https://drive.google.com/') !== 0) {
+      return { success: false, error: 'photoUrl must be a https://drive.google.com/ URL.' };
+    }
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('NCR_LOG');
+    if (!ws) return { success: false, error: 'NCR_LOG sheet not found.' };
+    // Ensure Photos column exists
+    var headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+    var iPhotos = headers.indexOf('Photos');
+    if (iPhotos < 0) {
+      var newCol = ws.getLastColumn() + 1;
+      ws.getRange(1, newCol).setValue('Photos').setFontWeight('bold');
+      iPhotos = newCol - 1;
+    }
+    var data = ws.getDataRange().getValues();
+    var ref = String(ncrDocNo).trim();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim() !== ref) continue;
+      var existing = data[i][iPhotos];
+      var arr = [];
+      if (existing) {
+        try { arr = JSON.parse(existing); }
+        catch(e) { arr = String(existing).split('|').filter(Boolean); }
+      }
+      arr.push(photoUrl);
+      ws.getRange(i + 1, iPhotos + 1).setValue(JSON.stringify(arr));
+      return { success: true, photos: arr };
+    }
+    return { success: false, error: 'NCR ' + ref + ' not found.' };
+  } catch(e) {
+    Logger.log('appendNCRPhoto error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+// Upload a base64-encoded image to Drive and attach to NCR.
+// data: { ncrDocNo, base64, filename, mimeType }
+var UPLOAD_NCR_PHOTO_MIME_ALLOWLIST_ = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+var UPLOAD_NCR_PHOTO_MAX_B64_LEN_    = 7000000;  // ~5 MB decoded
+
+function uploadNCRPhoto(data) {
+  try {
+    data = data || {};
+    if (!data.ncrDocNo || !data.base64) return { success: false, error: 'ncrDocNo and base64 required' };
+
+    // 1. Enforce MIME allowlist (caller controls mimeType, so validate before use)
+    var mime = String(data.mimeType || '').toLowerCase().trim();
+    if (!mime || UPLOAD_NCR_PHOTO_MIME_ALLOWLIST_.indexOf(mime) < 0) {
+      return { success: false, error: 'Invalid mimeType. Allowed: ' + UPLOAD_NCR_PHOTO_MIME_ALLOWLIST_.join(', ') };
+    }
+
+    // 2. Cap payload size before any decoding work
+    if (String(data.base64).length > UPLOAD_NCR_PHOTO_MAX_B64_LEN_) {
+      return { success: false, error: 'Image too large. Maximum ~5 MB.' };
+    }
+
+    // 3. Verify NCR row exists BEFORE decoding / creating the Drive file (fail fast)
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('NCR_LOG');
+    if (!ws) return { success: false, error: 'NCR_LOG sheet not found.' };
+    var ncrData = ws.getDataRange().getValues();
+    var ref = String(data.ncrDocNo).trim();
+    var ncrRowExists = false;
+    for (var i = 1; i < ncrData.length; i++) {
+      if (String(ncrData[i][0]).trim() === ref) { ncrRowExists = true; break; }
+    }
+    if (!ncrRowExists) return { success: false, error: 'NCR ' + ref + ' not found.' };
+
+    var bytes = Utilities.base64Decode(data.base64);
+    var blob  = Utilities.newBlob(bytes, mime, data.filename || ('ncr-' + Date.now() + '.jpg'));
+    var folder = getOrCreateNCRPhotoFolder_();
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var url = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+    return appendNCRPhoto(data.ncrDocNo, url);
+  } catch(e) {
+    Logger.log('uploadNCRPhoto error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+function getOrCreateNCRPhotoFolder_() {
+  var folderName = 'PM-QMS — NCR Photos';
+  var it = DriveApp.getFoldersByName(folderName);
+  if (it.hasNext()) return it.next();
+  return DriveApp.createFolder(folderName);
+}
+
+// Append one row to REVISIONS_LOG. Never throws into caller.
+function _logNCRRevision_(docNo, revisedBy, field, oldValue, newValue) {
+  try {
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('REVISIONS_LOG');
+    if (!ws) {
+      ws = ss.insertSheet('REVISIONS_LOG');
+      var hdrs = ['TYPE', 'DOC_NO', 'TIMESTAMP', 'REVISED_BY', 'FIELD', 'OLD_VALUE', 'NEW_VALUE'];
+      ws.getRange(1, 1, 1, hdrs.length).setValues([hdrs]).setFontWeight('bold')
+        .setBackground('#0D1B6E').setFontColor('#FFFFFF');
+      ws.setFrozenRows(1);
+    }
+    ws.appendRow(['NCR', docNo, new Date(), revisedBy || '', field || '', oldValue || '', newValue || '']);
+    ws.getRange(ws.getLastRow(), 3).setNumberFormat('dd-MMM-yyyy HH:mm');
+  } catch(e) {
+    Logger.log('_logNCRRevision_ failed: ' + e.message);
+  }
+}
+
 // ── NCR closure ──────────────────────────────────────────────
 // Closes an NCR after effectiveness verification.
 // payload: { capaRef, effectiveness ('PASS'|'FAIL'|'NOT_REQUIRED'), notes, closedBy }
@@ -154,6 +325,7 @@ function closeNCR(ncrDocNo, payload) {
         return { success: false, error: 'NCR ' + ref + ' has no disposition set.' };
       }
       var now = new Date();
+      var actor = (function() { try { return Session.getActiveUser().getEmail() || payload.closedBy || ''; } catch(e) { return payload.closedBy || ''; } })();
       // CAPA Ref (col 14) — write if supplied (or leave existing)
       if (payload.capaRef) ws.getRange(row, 14).setValue(payload.capaRef);
       // Status (col 15)
@@ -164,12 +336,14 @@ function closeNCR(ncrDocNo, payload) {
       var iClosedAt = headers.indexOf('Closed At') + 1;
       var iEffective = headers.indexOf('Effectiveness Check') + 1;
       var iCloseNotes = headers.indexOf('Closure Notes') + 1;
-      if (iClosedBy)  ws.getRange(row, iClosedBy).setValue(payload.closedBy || '');
+      if (iClosedBy)  ws.getRange(row, iClosedBy).setValue(actor);
       if (iClosedAt)  ws.getRange(row, iClosedAt).setValue(now).setNumberFormat('dd-MMM-yyyy HH:mm');
       if (iEffective) ws.getRange(row, iEffective).setValue(payload.effectiveness);
       if (iCloseNotes && payload.notes) ws.getRange(row, iCloseNotes).setValue(payload.notes);
 
-      logNCRHistory_(ref, curStatus, 'CLOSED', payload.closedBy, payload.notes || ('Effectiveness: ' + payload.effectiveness));
+      logNCRHistory_(ref, curStatus, 'CLOSED', actor, payload.notes || ('Effectiveness: ' + payload.effectiveness));
+      _logNCRRevision_(ref, actor, 'Status', curStatus, 'CLOSED');
+      _logNCRRevision_(ref, actor, 'Effectiveness', '', payload.effectiveness);
       return { success: true };
     }
     return { success: false, error: 'NCR ' + ref + ' not found.' };

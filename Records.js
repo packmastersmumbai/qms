@@ -5,11 +5,13 @@
 
 // Sheet name mapping
 var SHEET_MAP = {
-  GRN:      'GRN_LOG',
-  IQC:      'IQC_LOG',
-  OQC:      'OQC_LOG',
-  Gatepass: 'GATEPASS_LOG',
-  IPQC:     'IPQC_Sessions'
+  GRN:            'GRN_LOG',
+  IQC:            'IQC_LOG',
+  OQC:            'OQC_LOG',
+  Gatepass:       'GATEPASS_LOG',
+  IPQC:           'IPQC_Sessions',
+  NCR:            'NCR_LOG',
+  CustomerReturn: 'CUSTOMER_RETURN_LOG'
 };
 
 // Column indices (1-based) per sheet type
@@ -25,6 +27,18 @@ var SHEET_MAP = {
  * @returns {Array} [ { docNo, date, name, status }, … ] newest-first, max 200
  */
 function getRecordsList(type, filters) {
+  var cacheKey = 'pmqms_records_list_' + type + '_' + JSON.stringify(filters || {}).substring(0, 200);
+  var cached = _pmCacheGet_(cacheKey);
+  if (cached) return cached;
+  var result = _computeRecordsList_(type, filters);
+  _pmCachePut_(cacheKey, result);
+  return result;
+}
+
+function _computeRecordsList_(type, filters) {
+  // ALL: merge across logs newest-first
+  if (type === 'ALL') return _getRecordsAll(filters);
+
   var sheetName = SHEET_MAP[type];
   if (!sheetName) return [];
 
@@ -76,7 +90,10 @@ function getRecordsList(type, filters) {
 
     if (type === 'GRN') {
       name   = row[3]       ? String(row[3]).trim()       : '';       // col4 supplierName
+      // col16 = IQC disposition; bare 'PENDING'/blank means IQC not yet done.
+      // Show 'IQC Pending' so it isn't read as an ambiguous workflow state.
       status = row[15]      ? String(row[15]).trim()      : 'PENDING'; // col16 status
+      if (status.toUpperCase() === 'PENDING') status = 'IQC Pending';
     } else if (type === 'IQC') {
       var grnNo      = row[2] ? String(row[2]).trim() : '';           // col3
       var materialDesc = row[3] ? String(row[3]).trim() : '';         // col4
@@ -96,6 +113,19 @@ function getRecordsList(type, filters) {
       var batchVal    = row[3] ? String(row[3]).trim() : '';
       name   = productName && batchVal ? productName + ' · Batch ' + batchVal : productName || batchVal;
       status = row[9] ? String(row[9]).trim() : 'OPEN';              // col10 = status
+    } else if (type === 'NCR') {
+      // NCR_LOG cols: 0 docNo · 1 date · 2 source · 5 materialDesc · 6 batchNo · 10 disposition · 14 status
+      var ncrSrc   = row[2] ? String(row[2]).trim() : '';
+      var ncrMat   = row[5] ? String(row[5]).trim() : '';
+      var ncrBatch = row[6] ? String(row[6]).trim() : '';
+      name   = ncrSrc + (ncrMat ? ' · ' + ncrMat : '') + (ncrBatch ? ' · ' + ncrBatch : '');
+      status = row[14] ? String(row[14]).trim() : 'OPEN';
+    } else if (type === 'CustomerReturn') {
+      // CUSTOMER_RETURN_LOG cols: 0 rtnNo · 1 date · 3 custName · 6 productDesc · 7 fgBatch · 13 disposition · 15 status
+      var crCust = row[3] ? String(row[3]).trim() : '';
+      var crProd = row[6] ? String(row[6]).trim() : '';
+      name   = crCust + (crProd ? ' · ' + crProd : '');
+      status = row[15] ? String(row[15]).trim() : 'OPEN';
     }
 
     // Search filter (docNo or name)
@@ -141,17 +171,59 @@ function getRecordsList(type, filters) {
 
 
 /**
+ * ALL-type aggregator: pulls last N rows from each log, merges newest-first.
+ * Tagged with `type` so the UI can render colored badges.
+ */
+function _getRecordsAll(filters) {
+  var types = ['GRN', 'IQC', 'IPQC', 'OQC', 'Gatepass', 'NCR', 'CustomerReturn'];
+  var combined = [];
+  types.forEach(function(t) {
+    try {
+      var rows = getRecordsList(t, filters) || [];
+      rows.forEach(function(r) { r.type = t; combined.push(r); });
+    } catch(e) { Logger.log('_getRecordsAll ' + t + ': ' + e); }
+  });
+  // Sort newest-first by date (string compare on dd-MMM-yyyy is wrong; parse instead)
+  combined.sort(function(a, b) {
+    var da = new Date(a.date || 0).getTime();
+    var db = new Date(b.date || 0).getTime();
+    return db - da;
+  });
+  if (combined.length > 200) combined = combined.slice(0, 200);
+  return combined;
+}
+
+/**
  * Returns counts of records in each log sheet.
  * @returns {{ grn: number, iqc: number, oqc: number, gp: number, ipqc: number }}
  */
 function getRecordsCounts() {
+  var cached = _pmCacheGet_('pmqms_records_counts_v1');
+  if (cached) return cached;
+  var result = _computeRecordsCounts_();
+  _pmCachePut_('pmqms_records_counts_v1', result);
+  return result;
+}
+
+function _computeRecordsCounts_() {
+  // Switched to PENDING counts (matches Landing tile semantics).
+  // Total record counts retained as `.total*` for any caller that needs them.
   var ss = getSpreadsheet();
+  var pending = {};
+  try {
+    pending = computePendingCounts_(ss);
+  } catch(e) { Logger.log('Pending count error: ' + e); }
   return {
-    grn:  _countRows(ss, 'GRN_LOG'),
-    iqc:  _countRows(ss, 'IQC_LOG'),
-    oqc:  _countRows(ss, 'OQC_LOG'),
-    gp:   _countRows(ss, 'GATEPASS_LOG'),
-    ipqc: _countRows(ss, 'IPQC_Sessions')
+    grn:  pending.GRN  || 0,
+    iqc:  pending.IQC  || 0,
+    oqc:  pending.OQC  || 0,
+    gp:   pending.Gatepass || 0,
+    ipqc: pending.IPQC || 0,
+    totalGrn:  _countRows(ss, 'GRN_LOG'),
+    totalIqc:  _countRows(ss, 'IQC_LOG'),
+    totalOqc:  _countRows(ss, 'OQC_LOG'),
+    totalGp:   _countRows(ss, 'GATEPASS_LOG'),
+    totalIpqc: _countRows(ss, 'IPQC_Sessions')
   };
 }
 

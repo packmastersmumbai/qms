@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <?!= include('HtmlCache') ?>
 </head>
 <body>
 <div class="pm-header"><a onclick="goHome()" style="color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;margin-right:4px;text-decoration:none;">‹</a><span class="logo-text">📂 Import Past Data</span></div>
@@ -52,5 +53,6 @@ function doImport() {
     .importPastData(csv, type);
 }
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

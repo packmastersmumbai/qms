@@ -1,410 +1,205 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warehouse — Pack Masters QMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
-    .wh-tabs {
-      display: flex;
-      overflow-x: auto;
-      background: var(--navy-light);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 56px;
-      z-index: 90;
-      scrollbar-width: none;
-    }
-    .wh-tabs::-webkit-scrollbar { display: none; }
-    .tab-btn {
-      flex-shrink: 0;
-      padding: 12px 18px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      white-space: nowrap;
-      font-family: inherit;
-      transition: color 0.15s, border-color 0.15s, background 0.15s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .tab-btn.active {
-      color: var(--navy);
-      background: var(--navy-light);
-      border-bottom-color: var(--navy);
-    }
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; min-height: max(884px, 100dvh); }
+    h1, h2, h3, .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
 
-    .wh-toolbar {
-      display: flex;
-      gap: 8px;
-      padding: 10px 10px 0;
-      align-items: center;
-    }
-    .search-input {
-      flex: 1;
-      height: 36px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 0 11px;
-      font-size: 12px;
-      color: var(--text);
-      background: var(--white);
-      font-family: inherit;
-    }
-    .search-input:focus { outline: none; border-color: var(--navy); }
+    /* Tab strip active state managed by JS */
+    .tab-btn-active   { color: #0ea5e9; border-bottom: 2px solid #0ea5e9; font-weight: 600; }
+    .tab-btn-inactive { color: #64748b; border-bottom: 2px solid transparent; font-weight: 500; }
 
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    /* Tab panels */
+    .tab-panel          { display: none; }
+    .tab-panel.active   { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
 
-    .wh-table-wrap {
-      margin: 10px 10px 88px;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow-x: auto;
-    }
-    .wh-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    /* Skeleton pulse */
+    @keyframes skel-pulse { 0%{opacity:.4}50%{opacity:1}100%{opacity:.4} }
+    .skel-bar { display:inline-block; height:13px; background:#e2e8f0; border-radius:4px; animation:skel-pulse 0.8s ease-in-out infinite; }
+
+    /* Qty pill */
+    .qty-pill      { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; background:#1e3a5f; color:#fff; }
+    .qty-pill.zero { background:#94a3b8; }
+
+    /* Location type chip */
+    .loc-chip    { display:inline-block; font-size:10px; padding:2px 7px; border-radius:12px; background:#e2e8f0; color:#1e3a5f; font-weight:600; }
+    .loc-chip.q  { background:#FFE9D6; color:#B5650F; }
+    .loc-chip.s  { background:#FCD9D9; color:#A4271A; }
+    .loc-chip.sm { background:#E7EBFA; color:#4F4E96; }
+
+    /* Balance hint */
+    .balance-hint      { font-size:12px; font-weight:600; color:#0369a1; padding:8px 12px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; display:flex; align-items:center; gap:6px; margin-bottom:12px; }
+    .balance-hint.warn { color:#A4271A; background:#FCD9D9; border-color:#f9a8a8; }
+
+    /* Empty state */
+    .wh-empty   { text-align:center; padding:32px 16px; font-size:13px; color:#64748b; }
+    .wh-empty a { color:#0ea5e9; cursor:pointer; text-decoration:underline; }
+
+    /* Stock table */
+    .wh-table { width:100%; border-collapse:collapse; }
     .wh-table thead th {
-      background: var(--navy-light);
-      color: var(--navy);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 8px 10px;
-      text-align: left;
-      white-space: nowrap;
-      position: sticky;
-      top: calc(56px + 45px);
-      z-index: 10;
+      background:#f1f5f9; color:#1e3a5f; font-size:11px; font-weight:700;
+      text-transform:uppercase; letter-spacing:.5px; padding:8px 10px;
+      text-align:left; white-space:nowrap;
+      position:sticky; top:calc(56px + 44px + 52px); z-index:10;
     }
-    .wh-table tbody tr {
-      border-bottom: 1px solid var(--border);
-    }
-    .wh-table tbody tr:nth-child(even) { background: #FAFBFF; }
-    .wh-table tbody td {
-      padding: 10px 10px;
-      font-size: 12px;
-      color: var(--text);
-      vertical-align: middle;
-    }
-    .row-clickable { cursor: pointer; }
-    .row-clickable:hover { background: var(--navy-light) !important; }
+    .wh-table tbody tr  { border-bottom:1px solid #e2e8f0; }
+    .wh-table tbody tr:nth-child(even) { background:#f8fafc; }
+    .wh-table tbody td  { padding:10px; font-size:12px; color:#0f172a; vertical-align:middle; }
+    .loc-row { cursor:pointer; }
+    .loc-row:hover { background:#eff6ff !important; }
 
-    .qty-pill {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 10px;
-      background: var(--navy);
-      color: var(--white);
-    }
-    .qty-pill.zero { background: var(--muted); }
-    .loc-chip {
-      display: inline-block;
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 12px;
-      background: var(--navy-light);
-      color: var(--navy);
-      font-weight: 600;
-    }
-    .loc-chip.q { background: #FFE9D6; color: #B5650F; }
-    .loc-chip.s { background: #FCD9D9; color: #A4271A; }
-    .loc-chip.sm{ background: #E7EBFA; color: #4F4E96; }
-
-    @keyframes skel-pulse { 0%{opacity:0.4}50%{opacity:1}100%{opacity:0.4} }
-    .skel-bar {
-      display: inline-block;
-      height: 13px;
-      background: var(--navy-light);
-      border-radius: 4px;
-      animation: skel-pulse 0.8s ease-in-out infinite;
-    }
-    .wh-empty {
-      text-align: center;
-      padding: 32px 16px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .wh-empty a { color: var(--navy); cursor: pointer; text-decoration: underline; }
-
-    /* Action menu */
-    .action-bar {
-      position: fixed;
-      right: 18px;
-      bottom: 22px;
-      z-index: 200;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-    }
-    .action-menu {
-      display: none;
-      flex-direction: column;
-      gap: 6px;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 6px;
-      box-shadow: 0 6px 18px rgba(11,42,74,0.18);
-    }
-    .action-menu.open { display: flex; }
-    .action-menu button {
-      background: transparent;
-      border: none;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--navy);
-      padding: 10px 14px;
-      border-radius: 6px;
-      text-align: left;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .action-menu button:hover { background: var(--navy-light); }
-    .fab-action {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(11,42,74,0.35);
-      font-family: inherit;
-      transition: transform 0.15s;
-    }
-    .fab-action:hover { transform: translateY(-2px); }
-    .fab-action.open { transform: rotate(45deg); }
+    /* FAB + action menu */
+    .action-bar  { position:fixed; right:18px; bottom:22px; z-index:200; display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+    .action-menu { display:none; flex-direction:column; gap:4px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:6px; box-shadow:0 6px 18px rgba(30,58,95,0.18); }
+    .action-menu.open { display:flex; }
+    .action-menu button { background:transparent; border:none; font-family:inherit; font-size:13px; font-weight:600; color:#1e3a5f; padding:10px 16px; border-radius:8px; text-align:left; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:8px; }
+    .action-menu button:hover { background:#f0f9ff; }
+    .fab-action { width:56px; height:56px; border-radius:50%; background:#0ea5e9; color:#fff; border:none; font-size:24px; cursor:pointer; box-shadow:0 4px 12px rgba(14,165,233,0.35); font-family:inherit; transition:transform .15s; display:flex; align-items:center; justify-content:center; }
+    .fab-action:hover { transform:translateY(-2px); }
+    .fab-action.open  { transform:rotate(45deg); }
 
     /* Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(11,42,74,0.55);
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      z-index: 1000;
-      animation: fadeIn 0.15s ease;
-    }
-    .modal-overlay.show { display: flex; }
-    @media (min-width: 600px) { .modal-overlay { align-items: center; } }
-
-    .modal-card {
-      background: var(--white);
-      width: 100%;
-      max-width: 540px;
-      max-height: 90vh;
-      border-radius: 12px 12px 0 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: slideUp 0.2s ease;
-    }
-    @media (min-width: 600px) { .modal-card { border-radius: 12px; } }
-    @keyframes slideUp { from{transform:translateY(20px);opacity:0.8} to{transform:translateY(0);opacity:1} }
-
-    .modal-header {
-      padding: 16px 18px;
-      background: var(--navy);
-      color: var(--white);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .modal-title { font-size: 15px; font-weight: 600; }
-    .modal-close {
-      background: transparent;
-      border: none;
-      color: var(--white);
-      font-size: 22px;
-      cursor: pointer;
-      padding: 0 6px;
-      font-family: inherit;
-    }
-
-    .modal-body {
-      padding: 16px 18px;
-      overflow-y: auto;
-      flex: 1;
-    }
-    .field-row { margin-bottom: 12px; }
-    .field-row label {
-      display: block;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      margin-bottom: 4px;
-    }
-    .field-row label .req { color: var(--danger); margin-left: 2px; }
+    .modal-overlay { position:fixed; inset:0; background:rgba(11,42,74,0.55); display:none; align-items:flex-end; justify-content:center; z-index:1000; }
+    .modal-overlay.show { display:flex; animation:fadeIn .15s ease; }
+    @media (min-width:600px) { .modal-overlay { align-items:center; } }
+    .modal-card { background:#fff; width:100%; max-width:540px; max-height:90vh; border-radius:12px 12px 0 0; display:flex; flex-direction:column; overflow:hidden; animation:slideUp .2s ease; }
+    @media (min-width:600px) { .modal-card { border-radius:12px; } }
+    @keyframes slideUp { from{transform:translateY(20px);opacity:.8} to{transform:translateY(0);opacity:1} }
+    .modal-header  { padding:16px 18px; background:#1e3a5f; color:#fff; display:flex; align-items:center; justify-content:space-between; }
+    .modal-title   { font-size:15px; font-weight:700; font-family:'Plus Jakarta Sans',sans-serif; }
+    .modal-close   { background:transparent; border:none; color:#fff; font-size:22px; cursor:pointer; padding:0 6px; font-family:inherit; }
+    .modal-body    { padding:16px 18px; overflow-y:auto; flex:1; }
+    .field-row     { margin-bottom:12px; }
+    .field-row label { display:block; font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+    .field-row label .req { color:#dc2626; margin-left:2px; }
     .field-row input, .field-row select, .field-row textarea {
-      width: 100%;
-      box-sizing: border-box;
-      height: 38px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      padding: 0 11px;
-      font-size: 13px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--white);
+      width:100%; box-sizing:border-box; height:44px;
+      border:1.5px solid #d1d5db; border-radius:8px; padding:0 12px;
+      font-size:14px; font-family:inherit; color:#0f172a; background:#fff;
+      transition:border-color .15s;
     }
-    .field-row textarea { height: auto; min-height: 60px; padding: 8px 11px; resize: vertical; }
-    .field-row input:focus, .field-row select:focus, .field-row textarea:focus {
-      outline: none; border-color: var(--navy);
-    }
-    .field-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-row textarea { height:auto; min-height:68px; padding:10px 12px; resize:vertical; }
+    .field-row input:focus, .field-row select:focus, .field-row textarea:focus { outline:none; border-color:#0ea5e9; box-shadow:0 0 0 3px rgba(14,165,233,.1); }
+    .field-row-2col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .modal-footer  { padding:12px 18px; border-top:1px solid #e2e8f0; display:flex; gap:10px; justify-content:flex-end; }
+    .btn           { height:44px; padding:0 20px; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; border:none; }
+    .btn:disabled  { opacity:.5; cursor:not-allowed; }
+    .btn-primary   { background:#1e3a5f; color:#fff; }
+    .btn-primary:hover:not(:disabled) { background:#162e4f; }
+    .btn-ghost     { background:transparent; color:#64748b; }
+    .btn-ghost:hover { background:#f1f5f9; }
+    .btn-danger    { background:#dc2626; color:#fff; }
 
-    .balance-hint {
-      margin-top: -4px;
-      margin-bottom: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--navy);
-      padding: 6px 10px;
-      background: var(--navy-light);
-      border-radius: 6px;
-    }
-    .balance-hint.warn { color: #A4271A; background: #FCD9D9; }
+    /* Toast */
+    .pm-toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(8px); min-width:220px; max-width:360px; padding:12px 18px; border-radius:10px; font-size:13px; font-weight:500; color:#fff; z-index:1500; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; text-align:center; }
+    .pm-toast.show { opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+    .pm-toast.success { background:#16a34a; }
+    .pm-toast.error   { background:#dc2626; cursor:pointer; }
 
-    .modal-footer {
-      padding: 12px 18px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-    .btn {
-      height: 38px;
-      padding: 0 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      border: none;
-    }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: var(--navy); color: var(--white); }
-    .btn-ghost { background: transparent; color: var(--muted); }
-    .btn-danger { background: #d9534f; color: var(--white); }
-
-    .pm-toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(8px);
-      min-width: 220px;
-      max-width: 360px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--white);
-      z-index: 1500;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      text-align: center;
-    }
-    .pm-toast.show {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateX(-50%) translateY(0);
-    }
-    .pm-toast.success { background: var(--success); }
-    .pm-toast.error   { background: var(--danger); cursor: pointer; }
+    /* Search input icon padding override */
+    .search-with-icon { padding-left: 2.5rem !important; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
+<body class="bg-surface min-h-screen pb-20">
 
-<div class="pm-header">
-  <button class="back-btn" id="backBtn" aria-label="Back">
-    <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
+<!-- ═══ TOP APP BAR ═══ -->
+<header class="fixed top-0 w-full z-50 h-[56px] bg-[#1e3a5f] shadow-md flex items-center justify-between px-4">
+  <button id="backBtn" class="text-white hover:bg-white/10 transition-colors p-2 rounded-full active:scale-95 duration-100 flex items-center justify-center" aria-label="Back">
+    <span class="material-symbols-outlined text-[22px]">arrow_back</span>
   </button>
-  <span class="page-title" style="flex:1;text-align:center;font-size:13px;font-weight:500;opacity:0.85;">Warehouse</span>
-  <span id="roleChip" class="doc-badge" style="display:none;"></span>
+  <h1 class="font-headline text-[18px] font-bold text-white tracking-tight">Warehouse</h1>
+  <span id="roleChip" class="hidden text-xs font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full"></span>
+</header>
+
+<!-- ═══ TAB STRIP ═══ -->
+<div id="whTabBar" class="fixed top-[56px] w-full z-40 bg-white border-b border-[#e2e8f0] flex h-[44px]">
+  <button class="flex-1 flex items-center justify-center text-[14px] tab-btn-active transition-colors" data-tab="stock">Stock</button>
+  <button class="flex-1 flex items-center justify-center text-[14px] tab-btn-inactive transition-colors" data-tab="locations">Locations</button>
+  <button class="flex-1 flex items-center justify-center text-[14px] tab-btn-inactive transition-colors" data-tab="movements">Movements</button>
 </div>
 
-<div class="wh-tabs" id="whTabBar">
-  <button class="tab-btn active" data-tab="stock">Stock</button>
-  <button class="tab-btn" data-tab="locations">Locations</button>
-</div>
-
-<div class="wh-toolbar">
-  <input class="search-input" id="searchInput" type="search" placeholder="Search material / location..." autocomplete="off">
-</div>
-
-<!-- STOCK -->
-<div class="tab-panel active" id="panel-stock">
-  <div class="wh-table-wrap">
-    <table class="wh-table">
-      <thead>
-        <tr>
-          <th style="width:110px;">Material</th>
-          <th>Description</th>
-          <th style="width:120px;">Batch / Lot</th>
-          <th style="width:120px;">Location</th>
-          <th style="width:80px;">Balance</th>
-          <th style="width:50px;">Unit</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-stock"></tbody>
-    </table>
+<!-- ═══ SEARCH ═══ -->
+<div class="fixed top-[100px] w-full z-30 bg-surface px-4 py-2">
+  <div class="relative max-w-2xl mx-auto">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8] text-[20px] pointer-events-none">search</span>
+    <input id="searchInput" type="search" autocomplete="off"
+      placeholder="Search material / location..."
+      class="search-with-icon w-full h-[44px] pr-4 bg-[#f1f5f9] border-0 rounded-full text-[15px] text-[#0f172a] placeholder-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[rgba(14,165,233,0.30)] shadow-none transition-all">
   </div>
 </div>
 
-<!-- LOCATIONS -->
-<div class="tab-panel" id="panel-locations">
-  <div class="wh-table-wrap">
-    <table class="wh-table">
-      <thead>
-        <tr>
-          <th style="width:110px;">ID</th>
-          <th>Label</th>
-          <th style="width:90px;">Type</th>
-          <th style="width:80px;">Section</th>
-          <th style="width:70px;">Aisle</th>
-          <th style="width:70px;">Rack</th>
-          <th style="width:80px;">Capacity</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-locations"></tbody>
-    </table>
-  </div>
-</div>
+<!-- ═══ CONTENT (offset for fixed topbar + tabs + search) ═══ -->
+<div class="pt-[156px] px-4 max-w-2xl mx-auto">
 
-<!-- Action FAB + menu -->
+  <!-- STOCK PANEL -->
+  <div class="tab-panel active" id="panel-stock">
+    <!-- Stock summary bar (fix #83) -->
+    <div id="stockSummaryBar" class="bg-white rounded-[10px] border border-[#e2e8f0] shadow-card px-4 py-2 mb-3 flex items-center justify-between text-[12px] text-[#64748b]">
+      <span><span id="summLotsCount" class="font-bold text-[#0f172a]">—</span> lots</span>
+      <span class="opacity-50">·</span>
+      <span>est. value <span id="summLotsValue" class="font-bold text-[#0f172a]">—</span></span>
+    </div>
+    <div id="cards-stock" class="flex flex-col gap-3 mb-24"></div>
+  </div>
+
+  <!-- MOVEMENTS PANEL (fix #77) -->
+  <div class="tab-panel" id="panel-movements">
+    <div id="movementsList" class="flex flex-col gap-3 mb-24">
+      <div class="bg-white rounded-[12px] p-8 border border-[#e2e8f0] shadow-card text-center text-[#94a3b8] text-[13px]">
+        <span class="material-symbols-outlined text-[40px] block mb-2 opacity-40">swap_horiz</span>
+        Stock movements will appear here as transfers, issues, and returns are recorded.
+      </div>
+    </div>
+  </div>
+
+  <!-- LOCATIONS PANEL -->
+  <div class="tab-panel" id="panel-locations">
+    <div class="bg-white rounded-[12px] shadow-card border border-[#e2e8f0] overflow-x-auto mb-24">
+      <table class="wh-table">
+        <thead>
+          <tr>
+            <th style="width:110px;">ID</th>
+            <th>Label</th>
+            <th style="width:90px;">Type</th>
+            <th style="width:80px;">Section</th>
+            <th style="width:70px;">Aisle</th>
+            <th style="width:70px;">Rack</th>
+            <th style="width:80px;">Capacity</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-locations"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- ═══ FAB + ACTION MENU ═══ -->
 <div class="action-bar">
   <div class="action-menu" id="actionMenu">
-    <button data-action="transfer">↔ Transfer Stock</button>
-    <button data-action="issue">→ Issue to Production</button>
-    <button data-action="scrap">✕ Record Scrap</button>
-    <button data-action="sample">⬚ Take Sample</button>
-    <button data-action="newLocation">+ New Location</button>
+    <button data-action="transfer"><span class="material-symbols-outlined text-[18px]">swap_horiz</span>Transfer Stock</button>
+    <button data-action="issue"><span class="material-symbols-outlined text-[18px]">output</span>Issue to Production</button>
+    <button data-action="scrap"><span class="material-symbols-outlined text-[18px]">delete_forever</span>Record Scrap</button>
+    <button data-action="sample"><span class="material-symbols-outlined text-[18px]">science</span>Take Sample</button>
+    <button data-action="newLocation"><span class="material-symbols-outlined text-[18px]">add_location</span>New Location</button>
   </div>
-  <button class="fab-action" id="fabAction" aria-label="Actions">+</button>
+  <button class="fab-action" id="fabAction" aria-label="Actions">
+    <span class="material-symbols-outlined text-[26px]">add</span>
+  </button>
 </div>
 
-<!-- Modal -->
+<!-- ═══ MODAL ═══ -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-card">
     <div class="modal-header">
@@ -420,6 +215,7 @@
   </div>
 </div>
 
+<!-- ═══ TOAST ═══ -->
 <div class="pm-toast" id="pmToast"></div>
 
 <script>
@@ -453,7 +249,9 @@
     if (tab === activeTab) return;
     activeTab = tab;
     document.querySelectorAll('[data-tab]').forEach(function(el) {
-      el.classList.toggle('active', el.getAttribute('data-tab') === tab);
+      var isActive = el.getAttribute('data-tab') === tab;
+      el.className = el.className.replace(/tab-btn-(active|inactive)/g, '');
+      el.classList.add(isActive ? 'tab-btn-active' : 'tab-btn-inactive');
     });
     document.querySelectorAll('.tab-panel').forEach(function(p) {
       p.classList.toggle('active', p.id === 'panel-' + tab);
@@ -464,27 +262,95 @@
 
   /* ── Skeleton ── */
   function showSkeleton(tab) {
-    var tbody = document.getElementById('tbody-' + tab);
-    if (!tbody) return;
-    var cols = (tab === 'stock') ? 6 : 7;
-    var html = '';
-    var widths = [55, 70, 62, 80, 58, 66, 72];
-    for (var r = 0; r < 6; r++) {
-      html += '<tr>';
-      for (var c = 0; c < cols; c++) {
-        html += '<td><span class="skel-bar" style="width:' + widths[(r+c) % widths.length] + '%">&nbsp;</span></td>';
+    if (tab === 'stock') {
+      var el = document.getElementById('cards-stock');
+      if (!el) return;
+      var html = '';
+      for (var r = 0; r < 4; r++) {
+        html += '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-card p-4">' +
+          '<div class="skel-bar w-2/5 mb-2" style="height:16px;"></div>' +
+          '<div class="skel-bar w-3/5 mb-3" style="height:12px;"></div>' +
+          '<div class="flex gap-2"><div class="skel-bar w-16" style="height:22px;"></div><div class="skel-bar w-20" style="height:22px;"></div></div>' +
+          '</div>';
       }
-      html += '</tr>';
+      el.innerHTML = html;
+    } else {
+      var tbody = document.getElementById('tbody-' + tab);
+      if (!tbody) return;
+      var cols = 7;
+      var skHtml = '';
+      var widths = [55, 70, 62, 80, 58, 66, 72];
+      for (var rr = 0; rr < 6; rr++) {
+        skHtml += '<tr>';
+        for (var c = 0; c < cols; c++) {
+          skHtml += '<td><span class="skel-bar" style="width:' + widths[(rr+c) % widths.length] + '%">&nbsp;</span></td>';
+        }
+        skHtml += '</tr>';
+      }
+      tbody.innerHTML = skHtml;
     }
-    tbody.innerHTML = html;
   }
 
   /* ── Load ── */
+  function loadMovements() {
+    var list = document.getElementById('movementsList');
+    list.innerHTML = '<div class="bg-white rounded-[12px] p-8 border border-[#e2e8f0] shadow-card text-center text-[#94a3b8] text-[13px]">' +
+      '<span class="material-symbols-outlined text-[40px] block mb-2 opacity-40">hourglass_top</span>Loading movements…</div>';
+    google.script.run
+      .withSuccessHandler(function(rows){
+        loadState['movements'] = 'loaded';
+        renderMovements(rows || []);
+      })
+      .withFailureHandler(function(e){
+        loadState['movements'] = 'error';
+        list.innerHTML = '<div class="bg-white rounded-[12px] p-8 border border-[#e2e8f0] shadow-card text-center text-[#dc2626] text-[13px]">Load failed: ' + esc(e.message || e) + '</div>';
+      })
+      .getStockMovements(100);
+  }
+
+  function renderMovements(rows) {
+    var list = document.getElementById('movementsList');
+    if (!rows.length) {
+      list.innerHTML = '<div class="bg-white rounded-[12px] p-8 border border-[#e2e8f0] shadow-card text-center text-[#94a3b8] text-[13px]">' +
+        '<span class="material-symbols-outlined text-[40px] block mb-2 opacity-40">swap_horiz</span>No movements recorded yet.</div>';
+      return;
+    }
+    var typeColor = {
+      'GRN_RECEIPT':           '#16a34a',
+      'CUSTOMER_RETURN_IN':    '#16a34a',
+      'OQC_RELEASE':           '#0ea5e9',
+      'DISPATCH':              '#dc2626',
+      'GATEPASS':              '#dc2626',
+      'LOCATION_TRANSFER':     '#0ea5e9',
+      'SCRAP':                 '#dc2626',
+      'SAMPLE':                '#d97706',
+      'ISSUE_TO_PRODUCTION':   '#7c3aed'
+    };
+    list.innerHTML = rows.map(function(r){
+      var col = typeColor[r.txnType] || '#64748b';
+      var qty = r.qtyIn > 0 ? ('+' + r.qtyIn) : ('−' + r.qtyOut);
+      return '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-card p-3" style="border-left:4px solid ' + col + ';">' +
+        '<div class="flex items-center justify-between mb-1">' +
+          '<span class="font-headline text-[13px] font-bold text-[#1e3a5f]">' + esc(r.materialCode) + ' · ' + esc(r.batchOrLotNo || '—') + '</span>' +
+          '<span class="text-[11px] text-[#64748b]">' + esc(r.timestamp) + '</span>' +
+        '</div>' +
+        '<div class="flex items-center justify-between">' +
+          '<span class="text-[11px] font-semibold uppercase tracking-wider" style="color:' + col + ';">' + esc(r.txnType.replace(/_/g, ' ')) + '</span>' +
+          '<span class="text-[14px] font-bold" style="color:' + col + ';">' + qty + '</span>' +
+        '</div>' +
+        '<div class="text-[11px] text-[#64748b] mt-1">' + esc(r.locationId || '—') + (r.refDocNo ? ' · ' + esc(r.refDocNo) : '') + (r.operator ? ' · ' + esc(r.operator) : '') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
   function loadTab(tab) {
     loadState[tab] = 'loading';
+    if (tab === 'movements') {
+      loadMovements();
+      return;
+    }
     showSkeleton(tab);
     if (tab === 'stock') {
-      // We need materials map to enrich stock rows with description/unit
       Promise.all([
         new Promise(function(res, rej) {
           google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStockSummary();
@@ -525,6 +391,9 @@
     showToast('Could not load ' + tab + '.', 'error');
   }
   window.retryTab = function(tab) { loadState[tab] = null; loadTab(tab); };
+  window.showLedger = function(matCode, batchNo) {
+    showToast('Ledger: ' + matCode + (batchNo ? ' · ' + batchNo : ''), 'info');
+  };
 
   /* ── Render ── */
   function renderTab(tab, query) {
@@ -540,36 +409,83 @@
       });
     }
 
-    var tbody = document.getElementById('tbody-' + tab);
-    if (!filtered.length) {
-      var cols = (tab === 'stock') ? 6 : 7;
-      var msg = q
-        ? 'No results for &ldquo;' + esc(query) + '&rdquo;. <a onclick="clearSearch()">Clear</a>'
-        : (tab === 'stock' ? 'No stock on hand.' : 'No locations. Tap + to add.');
-      tbody.innerHTML = '<tr><td colspan="' + cols + '"><div class="wh-empty">' + msg + '</div></td></tr>';
+    if (tab === 'stock') {
+      var cardsEl = document.getElementById('cards-stock');
+      if (!cardsEl) return;
+      if (!filtered.length) {
+        var emptyMsg = q
+          ? 'No results for &ldquo;' + esc(query) + '&rdquo;. <a onclick="clearSearch()">Clear</a>'
+          : 'No stock on hand.';
+        cardsEl.innerHTML = '<div class="wh-empty">' + emptyMsg + '</div>';
+        return;
+      }
+      var statusCfg = {
+        'ACCEPTED':   { bg: '#dcfce7', color: '#16a34a', label: 'ACCEPTED' },
+        'RELEASED':   { bg: '#dcfce7', color: '#16a34a', label: 'RELEASED' },
+        'HOLD':       { bg: '#fff7ed', color: '#ea580c', label: 'HOLD' },
+        'QUARANTINE': { bg: '#ffe9d6', color: '#b5650f', label: 'QUARANTINE' },
+        'REJECTED':   { bg: '#fee2e2', color: '#dc2626', label: 'REJECTED' },
+      };
+      var cardHtml = '';
+      filtered.forEach(function(r) {
+        var st   = (r.status || '').toUpperCase();
+        var cfg  = statusCfg[st] || { bg: '#f1f5f9', color: '#64748b', label: st || '—' };
+        var isRM = r.locationId && r.locationId.indexOf('RM') === 0;
+        var isFG = r.locationId && r.locationId.indexOf('FG') === 0;
+        var locBg    = isRM ? '#fee2e2' : (isFG ? '#dbeafe' : '#e0f2fe');
+        var locColor = isRM ? '#dc2626' : (isFG ? '#1d4ed8' : '#0369a1');
+        cardHtml +=
+          '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-card p-4">' +
+            '<div class="flex justify-between items-start mb-1">' +
+              '<div>' +
+                '<p class="font-headline text-[15px] font-bold text-[#1e3a5f]">' + esc(r.materialCode) + '</p>' +
+                '<p class="text-[13px] text-[#64748b] mt-0.5">' + esc(r.desc || '') + '</p>' +
+              '</div>' +
+              (r.locationId
+                ? '<span style="background:' + locBg + ';color:' + locColor + ';" class="text-[11px] font-bold px-2 py-1 rounded-full">' + esc(r.locationId) + '</span>'
+                : '') +
+            '</div>' +
+            '<p class="text-[12px] text-[#94a3b8] mb-2">Batch: ' + esc(r.batchOrLotNo || '—') + '</p>' +
+            '<div class="flex items-center justify-between">' +
+              '<div class="flex items-center gap-3">' +
+                '<span style="background:' + cfg.bg + ';color:' + cfg.color + ';" class="text-[11px] font-bold px-2.5 py-1 rounded-full">' + cfg.label + '</span>' +
+                '<button onclick="showLedger(\'' + esc(r.materialCode) + '\',\'' + esc(r.batchOrLotNo || '') + '\')" class="text-[#0ea5e9] text-[12px] font-semibold hover:underline whitespace-nowrap">+ View Ledger</button>' +
+              '</div>' +
+              '<span class="font-headline text-[22px] font-bold text-[#0f172a]">' + esc(r.balance) + ' <span class="text-[13px] font-normal text-[#64748b]">' + esc(r.unit || '') + '</span></span>' +
+            '</div>' +
+          '</div>';
+      });
+      cardsEl.innerHTML = cardHtml;
+      /* Stock summary (fix #83) */
+      var lots = filtered.length;
+      var val = filtered.reduce(function(s, r){
+        var v = parseFloat(r.estValue || r.balanceValue || 0);
+        return s + (isNaN(v) ? 0 : v);
+      }, 0);
+      var lc = document.getElementById('summLotsCount');
+      var lv = document.getElementById('summLotsValue');
+      if (lc) lc.textContent = lots;
+      if (lv) lv.textContent = val > 0 ? ('₹' + val.toLocaleString('en-IN')) : '—';
       return;
     }
 
-    var html = '';
-    if (tab === 'stock') {
-      filtered.forEach(function(r) {
-        var pillCls = r.balance > 0 ? '' : 'zero';
-        html += '<tr>' +
-          td(r.materialCode) + td(r.desc) + td(r.batchOrLotNo) + td(r.locationId) +
-          '<td><span class="qty-pill ' + pillCls + '">' + esc(r.balance) + '</span></td>' +
-          td(r.unit) +
-        '</tr>';
-      });
-    } else {
-      filtered.forEach(function(r) {
-        var cap = (r.capacityQty || r.capacityQty === 0) ? (esc(r.capacityQty) + ' ' + esc(r.capacityUnit || '')) : '';
-        html += '<tr class="loc-row" data-loc-id="' + esc(r.id) + '" style="cursor:pointer;">' +
-          td(r.id) + td(r.label || r.id) +
-          '<td><span class="loc-chip ' + locTypeChipClass(r.type) + '">' + esc(r.type || '') + '</span></td>' +
-          td(r.section) + td(r.aisle) + td(r.rack) + td(cap) +
-        '</tr>';
-      });
+    var tbody = document.getElementById('tbody-' + tab);
+    if (!filtered.length) {
+      var msg2 = q
+        ? 'No results for &ldquo;' + esc(query) + '&rdquo;. <a onclick="clearSearch()">Clear</a>'
+        : 'No locations. Tap + to add.';
+      tbody.innerHTML = '<tr><td colspan="7"><div class="wh-empty">' + msg2 + '</div></td></tr>';
+      return;
     }
+    var html = '';
+    filtered.forEach(function(r) {
+      var cap = (r.capacityQty || r.capacityQty === 0) ? (esc(r.capacityQty) + ' ' + esc(r.capacityUnit || '')) : '';
+      html += '<tr class="loc-row" data-loc-id="' + esc(r.id) + '">' +
+        td(r.id) + td(r.label || r.id) +
+        '<td><span class="loc-chip ' + locTypeChipClass(r.type) + '">' + esc(r.type || '') + '</span></td>' +
+        td(r.section) + td(r.aisle) + td(r.rack) + td(cap) +
+      '</tr>';
+    });
     tbody.innerHTML = html;
   }
 
@@ -592,26 +508,11 @@
     currentAction = action;
     var title, body;
     switch (action) {
-      case 'transfer':
-        title = 'Transfer Stock';
-        body = fieldsFor('transfer');
-        break;
-      case 'issue':
-        title = 'Issue RM to Production';
-        body = fieldsFor('issue');
-        break;
-      case 'scrap':
-        title = 'Record Scrap';
-        body = fieldsFor('scrap');
-        break;
-      case 'sample':
-        title = 'Take Sample';
-        body = fieldsFor('sample');
-        break;
-      case 'newLocation':
-        title = 'Add Location';
-        body = fieldsFor('newLocation');
-        break;
+      case 'transfer':    title = 'Transfer Stock';          body = fieldsFor('transfer'); break;
+      case 'issue':       title = 'Issue RM to Production';  body = fieldsFor('issue'); break;
+      case 'scrap':       title = 'Record Scrap';            body = fieldsFor('scrap'); break;
+      case 'sample':      title = 'Take Sample';             body = fieldsFor('sample'); break;
+      case 'newLocation': title = 'Add Location';            body = fieldsFor('newLocation'); break;
     }
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').innerHTML = body;
@@ -620,7 +521,6 @@
     document.getElementById('btnDelete').style.display = 'none';
     editingLocationId = null;
     document.getElementById('modalOverlay').classList.add('show');
-    // Bind balance hint listeners for stock-aware modals
     if (action === 'transfer' || action === 'issue' || action === 'scrap' || action === 'sample') {
       bindBalanceHint();
     }
@@ -633,7 +533,6 @@
     document.getElementById('btnDelete').style.display = 'none';
   }
 
-  // Open Edit Location modal pre-filled from a row in cache.locations
   function openEditLocation(locId) {
     var row = (cache.locations || []).find(function(l){ return String(l.id) === String(locId); });
     if (!row) { showToast('Location not found.', 'error'); return; }
@@ -645,7 +544,6 @@
     document.getElementById('btnSubmit').textContent = 'Save';
     document.getElementById('btnDelete').style.display = '';
     document.getElementById('modalOverlay').classList.add('show');
-    // Pre-fill values
     var keys = ['id','type','label','floor','section','aisle','rack','shelf','bin','capacityQty','capacityUnit'];
     keys.forEach(function(k){
       var el = document.querySelector('#modalBody [data-key="' + k + '"]');
@@ -699,7 +597,7 @@
     if (action === 'transfer') {
       return '' +
         '<div class="field-row"><label>Source Lot<span class="req">*</span></label><select data-key="lot">' + stockOpts() + '</select></div>' +
-        '<div class="balance-hint" id="balHint" style="display:none;"></div>' +
+        '<div class="balance-hint" id="balHint" style="display:none;"><span class="material-symbols-outlined text-[16px]">info</span><span></span></div>' +
         '<div class="field-row"><label>Destination Location<span class="req">*</span></label><select data-key="toLocationId">' + locOpts() + '</select></div>' +
         '<div class="field-row-2col">' +
           '<div class="field-row"><label>Qty<span class="req">*</span></label><input type="number" data-key="qty" step="any" min="0"></div>' +
@@ -710,7 +608,7 @@
     if (action === 'issue') {
       return '' +
         '<div class="field-row"><label>Source Lot<span class="req">*</span></label><select data-key="lot">' + stockOpts() + '</select></div>' +
-        '<div class="balance-hint" id="balHint" style="display:none;"></div>' +
+        '<div class="balance-hint" id="balHint" style="display:none;"><span class="material-symbols-outlined text-[16px]">info</span><span></span></div>' +
         '<div class="field-row-2col">' +
           '<div class="field-row"><label>Qty<span class="req">*</span></label><input type="number" data-key="qtyToIssue" step="any" min="0"></div>' +
           '<div class="field-row"><label>Production Order</label><input type="text" data-key="productionOrderNo" placeholder="auto if blank"></div>' +
@@ -720,7 +618,7 @@
     if (action === 'scrap') {
       return '' +
         '<div class="field-row"><label>Source Lot<span class="req">*</span></label><select data-key="lot">' + stockOpts() + '</select></div>' +
-        '<div class="balance-hint" id="balHint" style="display:none;"></div>' +
+        '<div class="balance-hint" id="balHint" style="display:none;"><span class="material-symbols-outlined text-[16px]">info</span><span></span></div>' +
         '<div class="field-row-2col">' +
           '<div class="field-row"><label>Qty Scrap<span class="req">*</span></label><input type="number" data-key="qtyScrap" step="any" min="0"></div>' +
           '<div class="field-row"><label>Destination</label><input type="text" data-key="scrapDestination" placeholder="e.g. RBP Vendor"></div>' +
@@ -731,7 +629,7 @@
     if (action === 'sample') {
       return '' +
         '<div class="field-row"><label>Source Lot<span class="req">*</span></label><select data-key="lot">' + stockOpts() + '</select></div>' +
-        '<div class="balance-hint" id="balHint" style="display:none;"></div>' +
+        '<div class="balance-hint" id="balHint" style="display:none;"><span class="material-symbols-outlined text-[16px]">info</span><span></span></div>' +
         '<div class="field-row-2col">' +
           '<div class="field-row"><label>Qty Sample<span class="req">*</span></label><input type="number" data-key="qtySample" step="any" min="0"></div>' +
           '<div class="field-row"><label>Stored At</label><input type="text" data-key="locationStored" value="SAMPLE-CABINET"></div>' +
@@ -779,9 +677,10 @@
         return s.materialCode === parts[0] && s.batchOrLotNo === parts[1] && s.locationId === parts[2];
       });
       if (!lot) { hint.style.display = 'none'; return; }
-      hint.textContent = 'Available: ' + lot.balance + ' ' + (lot.unit || '') + ' @ ' + lot.locationId;
+      var span = hint.querySelector('span:last-child');
+      if (span) span.textContent = 'Available: ' + lot.balance + ' ' + (lot.unit || '') + ' @ ' + lot.locationId;
       hint.className = 'balance-hint' + (lot.balance > 0 ? '' : ' warn');
-      hint.style.display = '';
+      hint.style.display = 'flex';
     }
     sel.addEventListener('change', update);
   }
@@ -795,13 +694,12 @@
       else if (typeof v === 'string') v = v.trim();
       data[k] = v;
     });
-    // Explode "lot" composite key into material/batch/location
     if (data.lot) {
       var p = data.lot.split('|');
-      data.materialCode  = p[0];
-      data.batchOrLotNo  = p[1];
+      data.materialCode   = p[0];
+      data.batchOrLotNo   = p[1];
       data.fromLocationId = p[2];
-      data.locationId    = p[2];
+      data.locationId     = p[2];
       delete data.lot;
     }
     return data;
@@ -854,7 +752,6 @@
         }
         showToast('Done.', 'success');
         closeModal();
-        // Refresh both tabs since most actions affect both stock + (possibly) locations
         loadState.stock = null;
         loadState.locations = null;
         loadTab(activeTab);
@@ -882,7 +779,7 @@
     var chip = document.getElementById('roleChip');
     if (chip && role) {
       chip.textContent = role.charAt(0).toUpperCase() + role.slice(1);
-      chip.style.display = '';
+      chip.classList.remove('hidden');
     }
     if (role === 'user') {
       google.script.run
@@ -919,13 +816,14 @@
     document.getElementById('fabAction').addEventListener('click', function() {
       toggleActionMenu();
     });
+
     document.getElementById('actionMenu').addEventListener('click', function(e) {
       var b = e.target.closest('[data-action]');
       if (!b) return;
       toggleActionMenu(false);
-      // Ensure both stock + locations are loaded before opening (modals need lot/loc options)
       var promises = [];
-      if (!cache.stock)     promises.push(new Promise(function(res){ google.script.run.withSuccessHandler(function(r){
+      if (!cache.stock) promises.push(new Promise(function(res){
+        google.script.run.withSuccessHandler(function(r){
           cache.stock = r || []; loadState.stock = 'loaded';
           google.script.run.withSuccessHandler(function(m){
             cache.materials = m || [];
@@ -933,8 +831,12 @@
             cache.stock.forEach(function(s){ var x = mm[String(s.materialCode).trim()] || {}; s.desc = x.desc || ''; s.unit = x.unit || ''; });
             res();
           }).withFailureHandler(function(){ res(); }).getMaterials();
-        }).withFailureHandler(function(){ res(); }).getStockSummary(); }));
-      if (!cache.locations) promises.push(new Promise(function(res){ google.script.run.withSuccessHandler(function(r){ cache.locations = r || []; loadState.locations = 'loaded'; res(); }).withFailureHandler(function(){ res(); }).getLocations(); }));
+        }).withFailureHandler(function(){ res(); }).getStockSummary();
+      }));
+      if (!cache.locations) promises.push(new Promise(function(res){
+        google.script.run.withSuccessHandler(function(r){ cache.locations = r || []; loadState.locations = 'loaded'; res(); })
+          .withFailureHandler(function(){ res(); }).getLocations();
+      }));
       Promise.all(promises).then(function(){ openAction(b.getAttribute('data-action')); });
     });
 
@@ -961,5 +863,6 @@
 
 })();
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

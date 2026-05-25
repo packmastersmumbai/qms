@@ -1,229 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Purchase Order - Pack Masters QMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    body { background: var(--bg); }
-    .pop-wrap { max-width: 820px; margin: 0 auto; padding-bottom: 40px; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+    body { min-height: max(884px, 100dvh); }
 
-    /* ── Header ── */
-    .pop-header {
-      background: var(--navy); color: var(--white);
-      padding: 10px 14px;
-      display: flex; align-items: center; gap: 10px;
-      position: sticky; top: 0; z-index: 100;
-    }
-    .pop-back-btn {
-      background: none; border: none; color: var(--white); cursor: pointer;
-      font-size: 18px; padding: 2px 6px; border-radius: 4px;
-      line-height: 1;
-    }
-    .pop-back-btn:hover { background: rgba(255,255,255,0.15); }
-    .pop-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; flex: 1; }
-    .pop-badge {
-      background: var(--amber); color: var(--navy);
-      padding: 2px 9px; border-radius: 10px;
-      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
-    }
+    /* Line cards: blue left border accent */
+    .line-card { border-left: 4px solid #0ea5e9; }
 
-    /* ── Body ── */
-    .pop-body { padding: 14px; }
-    .pop-card {
-      background: var(--white);
-      border: 1px solid #e0e0e0; border-radius: 8px;
-      padding: 14px; margin-bottom: 14px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: #333; color: #fff; padding: 10px 20px; border-radius: 6px;
+      font-size: 13px; font-weight: 600; z-index: 9999; opacity: 0;
+      pointer-events: none; transition: opacity 0.3s; white-space: nowrap;
+      max-width: 90vw; text-align: center;
     }
-    .pop-card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--navy); margin-bottom: 12px; }
-    .pop-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .pop-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    .pop-field { margin-bottom: 10px; }
-    .pop-field label { display: block; font-size: 11px; color: #555; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
-    .pop-field input, .pop-field select, .pop-field textarea {
-      width: 100%; box-sizing: border-box;
-      padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 5px;
-      font-size: 13px; font-family: inherit; background: var(--white);
-    }
-    .pop-field input:disabled, .pop-field select:disabled { background: #f5f5f5; color: #777; }
-    .pop-field textarea { resize: vertical; min-height: 46px; }
+    #toast.show { opacity: 1; }
+    #toast.err  { background: #c62828; }
 
-    /* ── Lines table ── */
-    .pop-lines-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .pop-lines-table th {
-      background: var(--navy); color: var(--white); padding: 6px 8px;
-      font-weight: 600; text-align: left; font-size: 10px; text-transform: uppercase;
-    }
-    .pop-lines-table td { padding: 4px 6px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
-    .pop-lines-table input, .pop-lines-table select {
-      width: 100%; padding: 5px 6px; border: 1px solid #ddd; border-radius: 4px;
-      font-size: 12px; font-family: inherit; box-sizing: border-box;
-    }
-    .pop-lines-table .del-btn {
-      background: none; border: none; color: #e53935; cursor: pointer; font-size: 16px;
-      padding: 2px 6px;
-    }
-
-    /* ── Totals ── */
-    .pop-totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .pop-total-box { background: #f7f8fc; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; text-align: center; }
-    .pop-total-label { font-size: 10px; text-transform: uppercase; font-weight: 600; color: #777; margin-bottom: 4px; }
-    .pop-total-value { font-size: 16px; font-weight: 700; color: var(--navy); }
-
-    /* ── Buttons ── */
-    .pop-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
-    .btn-draft { background: #f5f5f5; color: var(--navy); border: 1px solid #ccc; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .btn-submit { background: var(--navy); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
-    .btn-draft:disabled, .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-add-row { background: none; border: 1px dashed #aaa; color: #555; padding: 6px 14px; border-radius: 5px; font-size: 12px; cursor: pointer; margin-top: 8px; }
-    .btn-add-row:hover { background: #f5f5f5; }
-
-    /* ── Modal ── */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
-    .modal-overlay.show { display: flex; }
-    .modal-box { background: var(--white); border-radius: 10px; padding: 22px; max-width: 480px; width: 92%; }
-    .modal-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
-    .modal-section { font-size: 12px; font-weight: 600; text-transform: uppercase; color: #777; margin: 10px 0 4px; }
-    .modal-line { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
-    .modal-total { font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 8px; }
-    .modal-warn { background: #FFF3E0; border-left: 3px solid var(--amber); padding: 8px 12px; font-size: 12px; border-radius: 4px; margin-top: 8px; }
-    .modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
-    .btn-cancel-modal { background: #f5f5f5; color: var(--navy); border: 1px solid #ccc; padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .btn-confirm { background: #16A34A; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
-    .btn-load-draft { background: rgba(255,255,255,0.15); color: var(--white); border: 1px solid rgba(255,255,255,0.3); padding: 5px 12px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; letter-spacing: 0.3px; }
-    .btn-load-draft:hover { background: rgba(255,255,255,0.25); }
-    .draft-list { max-height: 360px; overflow-y: auto; margin: 4px 0 12px; }
-    .draft-row { padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 6px; cursor: pointer; background: #fafafa; }
-    .draft-row:hover { background: #eef2f7; border-color: var(--navy); }
-    .draft-row .dr-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--navy); }
+    /* Draft picker rows */
+    .draft-row { padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px; cursor: pointer; background: #fafafa; }
+    .draft-row:hover { background: #eef2f7; border-color: #1e3a5f; }
+    .draft-row .dr-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #1e3a5f; }
     .draft-row .dr-sub { font-size: 11px; color: #666; margin-top: 3px; }
     .draft-empty { padding: 16px; text-align: center; color: #888; font-size: 12px; font-style: italic; }
+    .draft-list  { max-height: 360px; overflow-y: auto; margin: 4px 0 12px; }
 
-    /* ── Toast ── */
-    #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; max-width: 90vw; text-align: center; }
-    #toast.show { opacity: 1; }
-    #toast.err { background: #c62828; }
+    /* Promised date row in line card */
+    .pdate-row { margin-top: 8px; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
-<div class="pop-wrap">
+<body class="bg-[#f8fafc] font-body text-[#0f172a] antialiased min-h-screen pb-[100px]">
 
-  <!-- Header -->
-  <div class="pop-header">
-    <button class="pop-back-btn" onclick="goHome()" title="Back to Landing">&#8592;</button>
-    <div class="pop-title" id="popTitle">New Purchase Order</div>
-    <button class="btn-load-draft" id="btnLoadDraft" onclick="openDraftPicker()" title="Load an existing DRAFT PO">Load DRAFT</button>
-    <div class="pop-badge" id="docBadge">PO …</div>
+<!-- ── Top App Bar ── -->
+<header class="fixed top-0 w-full h-[56px] z-50 bg-[#1e3a5f] shadow-sm flex items-center px-3 gap-2">
+  <button onclick="goHome()" aria-label="Go back"
+    class="text-white hover:bg-white/10 transition-colors p-2 -ml-1 rounded-full active:scale-95 flex items-center justify-center w-10 h-10">
+    <span class="material-symbols-outlined text-[24px]">chevron_left</span>
+  </button>
+  <h1 id="popTitle" class="font-headline text-[18px] font-bold text-white flex-1 truncate">New Purchase Order</h1>
+  <button id="btnLoadDraft" onclick="openDraftPicker()"
+    class="text-white border border-white/30 hover:bg-white/15 active:scale-95 transition-all text-[11px] font-semibold px-3 py-1.5 rounded-full">
+    Load DRAFT
+  </button>
+  <span id="docBadge"
+    class="bg-[#d97706] text-white text-[11px] font-bold px-3 py-1 rounded-full ml-1 whitespace-nowrap">
+    PO …
+  </span>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="mt-[56px] px-4 pt-4 space-y-4">
+
+  <!-- DOC ID CARD -->
+  <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] px-4 py-3 flex justify-between items-center">
+    <div>
+      <div class="flex items-center gap-2">
+        <p id="poDocNo" class="font-headline text-[16px] font-bold text-[#1e3a5f]">PM/PO/—</p>
+        <span class="bg-[#f1f5f9] text-[#64748b] text-[11px] font-bold px-2.5 py-0.5 rounded-full">DRAFT</span>
+      </div>
+      <p class="text-[12px] text-[#94a3b8]">Auto-generated</p>
+    </div>
+    <span id="poDateLabel" class="text-[13px] text-[#64748b] font-medium"></span>
   </div>
 
-  <div class="pop-body">
-    <!-- PO Header Fields -->
-    <div class="pop-card">
-      <div class="pop-card-title">Purchase Order Details</div>
-      <div class="pop-grid2">
-        <div class="pop-field">
-          <label>Supplier *</label>
-          <select id="supplierCode" onchange="onSupplierChange()">
+  <!-- PO Header Card -->
+  <div class="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-[#e2e8f0]">
+    <p class="text-[11px] font-bold uppercase tracking-wider text-[#1e3a5f] mb-3">Purchase Order Details</p>
+
+    <div class="grid grid-cols-2 gap-3">
+
+      <!-- Supplier -->
+      <div class="col-span-2">
+        <label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1" for="supplierCode">Supplier *</label>
+        <div class="relative">
+          <select id="supplierCode" onchange="onSupplierChange()"
+            class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 pr-9 appearance-none focus:border-[#0ea5e9] focus:ring-0 outline-none transition-all">
             <option value="">— select supplier —</option>
           </select>
-        </div>
-        <div class="pop-field">
-          <label>Due Date</label>
-          <input type="date" id="dueDate">
-        </div>
-        <div class="pop-field">
-          <label>Currency</label>
-          <input type="text" id="currency" value="INR" disabled>
-        </div>
-        <div class="pop-field">
-          <label>GST %</label>
-          <input type="number" id="gstPct" value="18" min="0" max="100" step="0.01" onchange="recomputeTotals()">
-        </div>
-        <div class="pop-field">
-          <label>Payment Terms</label>
-          <input type="text" id="paymentTerms" placeholder="e.g. Net 30">
-        </div>
-        <div class="pop-field">
-          <label>PO Date</label>
-          <input type="date" id="poDate">
+          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none text-[20px]">expand_more</span>
         </div>
       </div>
-      <div class="pop-field">
-        <label>Remarks</label>
-        <textarea id="remarks" rows="2" placeholder="Optional remarks..."></textarea>
-      </div>
-    </div>
 
-    <!-- Lines -->
-    <div class="pop-card">
-      <div class="pop-card-title">Line Items</div>
-      <div style="overflow-x:auto;">
-        <table class="pop-lines-table" id="linesTable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th style="min-width:280px;">Material *</th>
-              <th style="min-width:50px;">Unit</th>
-              <th style="min-width:80px;">Qty *</th>
-              <th style="min-width:90px;">Unit Price</th>
-              <th style="min-width:90px;">Line Amount</th>
-              <th style="min-width:110px;">Promised Date</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="linesBody"></tbody>
-        </table>
+      <!-- Due Date -->
+      <div>
+        <label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1" for="dueDate">Due Date</label>
+        <input type="date" id="dueDate"
+          class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] outline-none transition-all">
       </div>
-      <button class="btn-add-row" onclick="addLine()">+ Add Line</button>
-    </div>
 
-    <!-- Totals -->
-    <div class="pop-card">
-      <div class="pop-card-title">Order Totals</div>
-      <div class="pop-totals">
-        <div class="pop-total-box">
-          <div class="pop-total-label">Sub Total</div>
-          <div class="pop-total-value" id="dispSubTotal">INR 0.00</div>
-        </div>
-        <div class="pop-total-box">
-          <div class="pop-total-label">GST Amount</div>
-          <div class="pop-total-value" id="dispGst">INR 0.00</div>
-        </div>
-        <div class="pop-total-box">
-          <div class="pop-total-label">Grand Total</div>
-          <div class="pop-total-value" id="dispGrandTotal">INR 0.00</div>
-        </div>
+      <!-- PO Date -->
+      <div>
+        <label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1" for="poDate">PO Date</label>
+        <input type="date" id="poDate"
+          class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] outline-none transition-all">
       </div>
-    </div>
 
-    <!-- Buttons -->
-    <div class="pop-btns">
-      <button class="btn-draft" id="btnDraft" onclick="saveDraft()">Save as Draft</button>
-      <button class="btn-submit" id="btnPreview" onclick="doPreview()">Preview &amp; Submit</button>
+      <!-- Currency -->
+      <div>
+        <label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1" for="currency">Currency</label>
+        <input type="text" id="currency" value="INR" disabled
+          class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] bg-[#f5f5f5] text-[#777] px-3 outline-none">
+      </div>
+
+      <!-- GST % -->
+      <div>
+        <label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1" for="gstPct">GST %</label>
+        <input type="number" id="gstPct" value="18" min="0" max="100" step="0.01" onchange="recomputeTotals()"
+          class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] outline-none transition-all">
+      </div>
+
+      <!-- Payment Terms -->
+      <div class="col-span-2">
+        <label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1" for="paymentTerms">Payment Terms</label>
+        <input type="text" id="paymentTerms" placeholder="e.g. Net 30"
+          class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] outline-none transition-all">
+      </div>
+
+      <!-- Remarks -->
+      <div class="col-span-2">
+        <label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1" for="remarks">Remarks</label>
+        <textarea id="remarks" rows="2" placeholder="Optional remarks..."
+          class="w-full border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 py-2.5 focus:border-[#0ea5e9] outline-none transition-all resize-y min-h-[48px]"></textarea>
+      </div>
     </div>
   </div>
+
+  <!-- Line Items Section -->
+  <section class="space-y-3">
+    <div class="flex justify-between items-center">
+      <p class="text-[15px] font-semibold text-[#0f172a]">Line Items</p>
+      <button onclick="addLine()" type="button"
+        class="text-[#0ea5e9] text-[13px] font-semibold flex items-center gap-1 active:opacity-70 transition-opacity">
+        Add Line <span class="material-symbols-outlined text-[18px]">add</span>
+      </button>
+    </div>
+    <!-- Dynamic line cards inserted here -->
+    <div id="linesBody" class="space-y-3"></div>
+  </section>
+
+  <!-- Order Totals Card -->
+  <div class="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-[#e2e8f0]">
+    <p class="text-[11px] font-bold uppercase tracking-wider text-[#1e3a5f] mb-3">Order Totals</p>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3 text-center">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-[#64748b] mb-1">Sub Total</p>
+        <p id="dispSubTotal" class="text-[15px] font-bold text-[#1e3a5f]">INR 0.00</p>
+      </div>
+      <div class="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3 text-center">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-[#64748b] mb-1">GST Amount</p>
+        <p id="dispGst" class="text-[15px] font-bold text-[#1e3a5f]">INR 0.00</p>
+      </div>
+      <div class="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3 text-center">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-[#64748b] mb-1">Grand Total</p>
+        <p id="dispGrandTotal" class="text-[20px] font-bold text-[#1e3a5f] font-headline">INR 0.00</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Sticky Bottom Actions ── -->
+<div class="fixed bottom-0 left-0 w-full bg-white border-t border-[#e2e8f0] p-4 flex gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40">
+  <button id="btnDraft" onclick="saveDraft()" type="button"
+    class="flex-1 h-14 border-[1.5px] border-[#1e3a5f] text-[#1e3a5f] bg-transparent rounded-[10px] text-[15px] font-semibold flex items-center justify-center hover:bg-[#f1f5f9] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+    Save as Draft
+  </button>
+  <button id="btnPreview" onclick="doPreview()" type="button"
+    class="flex-1 h-14 bg-[#1e3a5f] text-white rounded-[10px] text-[15px] font-semibold flex items-center justify-center shadow-md hover:bg-[#152e4d] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+    Preview &amp; Submit
+  </button>
 </div>
 
-<!-- DRAFT Picker Modal -->
-<div class="modal-overlay" id="draftPickerModal">
-  <div class="modal-box">
-    <div class="modal-title">Load DRAFT PO</div>
+<!-- ── DRAFT Picker Modal ── -->
+<div id="draftPickerModal" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center">
+  <div class="bg-white rounded-xl p-5 max-w-[480px] w-[92%] shadow-xl">
+    <p class="text-[16px] font-bold text-[#1e3a5f] mb-3">Load DRAFT PO</p>
     <div class="draft-list" id="draftList"><div class="draft-empty">Loading…</div></div>
-    <div class="modal-btns">
-      <button class="btn-cancel-modal" onclick="closeDraftPicker()">Cancel</button>
+    <div class="flex justify-end">
+      <button onclick="closeDraftPicker()"
+        class="bg-[#f5f5f5] text-[#1e3a5f] border border-[#ccc] px-4 py-2 rounded-lg text-[13px] font-semibold hover:bg-[#eee] transition-colors">
+        Cancel
+      </button>
     </div>
   </div>
 </div>
 
-<!-- Preview Modal -->
-<div class="modal-overlay" id="previewModal">
-  <div class="modal-box">
-    <div class="modal-title">Confirm Purchase Order</div>
-    <div id="previewContent"></div>
-    <div class="modal-btns">
-      <button class="btn-cancel-modal" onclick="closeModal()">Cancel</button>
-      <button class="btn-confirm" id="btnConfirm" onclick="confirmSubmit()">Confirm &amp; Submit</button>
+<!-- ── Preview / Confirm Modal ── -->
+<div id="previewModal" class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center">
+  <div class="bg-white rounded-xl p-5 max-w-[480px] w-[92%] shadow-xl max-h-[90vh] overflow-y-auto">
+    <p class="text-[16px] font-bold text-[#1e3a5f] mb-3">Confirm Purchase Order</p>
+    <div id="previewContent" class="text-sm"></div>
+    <div class="flex gap-3 justify-end mt-4">
+      <button onclick="closeModal()"
+        class="bg-[#f5f5f5] text-[#1e3a5f] border border-[#ccc] px-4 py-2 rounded-lg text-[13px] font-semibold hover:bg-[#eee] transition-colors">
+        Cancel
+      </button>
+      <button id="btnConfirm" onclick="confirmSubmit()"
+        class="bg-[#16A34A] text-white px-4 py-2 rounded-lg text-[13px] font-bold hover:bg-[#15803d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        Confirm &amp; Submit
+      </button>
     </div>
   </div>
 </div>
@@ -246,6 +230,13 @@ function init() {
   google.script.run
     .withSuccessHandler(function(d) {
       _docNo = d.docNumber || 'PM/PO/…';
+      var poDocEl = document.getElementById('poDocNo');
+      if (poDocEl) poDocEl.textContent = _docNo;
+      var poDateEl = document.getElementById('poDateLabel');
+      if (poDateEl) {
+        var n = new Date();
+        poDateEl.textContent = n.toLocaleDateString('en-IN', { day:'2-digit', month:'2-digit', year:'numeric' });
+      }
       document.getElementById('docBadge').textContent = 'PO ' + _docNo;
       _materials = d.materials || [];
       var suppSel = document.getElementById('supplierCode');
@@ -271,41 +262,74 @@ var lineCount = 0;
 window.addLine = function() {
   lineCount++;
   var idx = lineCount;
-  var tbody = document.getElementById('linesBody');
-  var tr = document.createElement('tr');
-  tr.id = 'line-' + idx;
-  tr.innerHTML =
-    '<td style="text-align:center;color:#999;">' + idx + '</td>' +
-    '<td><select onchange="onMatChange(' + idx + ')">' +
-      '<option value="">— select —</option>' +
-      _materials.map(function(m){ return '<option value="' + m.code + '">' + m.code + ' — ' + (m.desc || '') + '</option>'; }).join('') +
-    '</select></td>' +
-    '<td><input type="text" id="unit-' + idx + '" readonly style="background:#f9f9f9;width:50px;"></td>' +
-    '<td><input type="number" id="qty-' + idx + '" min="0.001" step="any" placeholder="0" onchange="recomputeTotals()"></td>' +
-    '<td><input type="number" id="price-' + idx + '" min="0" step="any" placeholder="0.00" onchange="recomputeTotals()"></td>' +
-    '<td><input type="text" id="amt-' + idx + '" readonly style="background:#f9f9f9;"></td>' +
-    '<td><input type="date" id="pdate-' + idx + '"></td>' +
-    '<td><button class="del-btn" onclick="removeLine(' + idx + ')">×</button></td>';
-  tbody.appendChild(tr);
+  var container = document.getElementById('linesBody');
+  var card = document.createElement('div');
+  card.id = 'line-' + idx;
+  card.className = 'line-card bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-[#e2e8f0]';
+  card.innerHTML =
+    '<div class="flex justify-between items-center mb-3">' +
+      '<p class="text-[12px] font-bold uppercase tracking-wider text-[#1e3a5f]">Line ' + idx + '</p>' +
+      '<button class="text-red-500 hover:text-red-700 active:scale-95 transition-all flex items-center gap-0.5 text-[12px] font-semibold" onclick="removeLine(' + idx + ')" type="button">' +
+        '<span class="material-symbols-outlined text-[16px]">delete</span> Remove' +
+      '</button>' +
+    '</div>' +
+    '<div class="mb-3">' +
+      '<label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1">Material *</label>' +
+      '<div class="relative">' +
+        '<select onchange="onMatChange(' + idx + ')" class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 pr-9 appearance-none focus:border-[#0ea5e9] outline-none transition-all">' +
+          '<option value="">— select material —</option>' +
+          _materials.map(function(m){ return '<option value="' + m.code + '">' + m.code + ' — ' + (m.desc || '') + '</option>'; }).join('') +
+        '</select>' +
+        '<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none text-[20px]">expand_more</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="grid grid-cols-3 gap-3 mb-3">' +
+      '<div>' +
+        '<label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1">Qty *</label>' +
+        '<input type="number" id="qty-' + idx + '" min="0.001" step="any" placeholder="0" onchange="recomputeTotals()"' +
+          ' class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] outline-none transition-all">' +
+      '</div>' +
+      '<div>' +
+        '<label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1">Unit</label>' +
+        '<input type="text" id="unit-' + idx + '" readonly' +
+          ' class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#777] bg-[#f9f9f9] px-3 outline-none">' +
+      '</div>' +
+      '<div>' +
+        '<label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1 truncate">Unit Price</label>' +
+        '<input type="number" id="price-' + idx + '" min="0" step="any" placeholder="0.00" onchange="recomputeTotals()"' +
+          ' class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] outline-none transition-all">' +
+      '</div>' +
+    '</div>' +
+    '<div class="pdate-row">' +
+      '<label class="block text-[12px] font-semibold text-[#374151] uppercase tracking-wide mb-1">Promised Date</label>' +
+      '<input type="date" id="pdate-' + idx + '"' +
+        ' class="w-full h-[48px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[14px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] outline-none transition-all">' +
+    '</div>' +
+    '<div class="border-t border-[#e2e8f0] pt-2 mt-3 text-right">' +
+      '<p class="text-[13px] text-[#64748b]">Line Amount: <span id="amt-' + idx + '" class="font-semibold text-[#0f172a]">—</span></p>' +
+    '</div>';
+  container.appendChild(card);
   _dirty = true;
 };
 
 window.removeLine = function(idx) {
-  var tr = document.getElementById('line-' + idx);
-  if (tr) tr.remove();
+  var card = document.getElementById('line-' + idx);
+  if (card) card.remove();
   recomputeTotals();
   _dirty = true;
 };
 
 window.onMatChange = function(idx) {
-  var sel = document.querySelector('#line-' + idx + ' select');
+  var card = document.getElementById('line-' + idx);
+  if (!card) return;
+  var sel = card.querySelector('select');
   if (!sel) return;
   var code = sel.value;
   var mat = _materials.filter(function(m){ return m.code === code; })[0];
   if (mat) {
-    document.getElementById('unit-' + idx).value  = mat.unit || '';
+    document.getElementById('unit-' + idx).value = mat.unit || '';
   } else {
-    document.getElementById('unit-' + idx).value  = '';
+    document.getElementById('unit-' + idx).value = '';
   }
   recomputeTotals();
   _dirty = true;
@@ -316,33 +340,37 @@ function fmt(n) { return 'INR ' + Number(n).toLocaleString('en-IN', {minimumFrac
 
 function recomputeTotals() {
   var subTotal = 0;
-  var tbody = document.getElementById('linesBody');
-  var rows = tbody.querySelectorAll('tr');
-  rows.forEach(function(tr) {
-    var id = tr.id.replace('line-','');
-    var qty   = parseFloat(document.getElementById('qty-'  + id).value)   || 0;
-    var price = parseFloat(document.getElementById('price-'+ id).value) || 0;
+  var container = document.getElementById('linesBody');
+  var cards = container.querySelectorAll('[id^="line-"]');
+  cards.forEach(function(card) {
+    var id = card.id.replace('line-','');
+    var qtyEl   = document.getElementById('qty-'   + id);
+    var priceEl = document.getElementById('price-' + id);
+    var amtEl   = document.getElementById('amt-'   + id);
+    if (!qtyEl || !priceEl || !amtEl) return;
+    var qty   = parseFloat(qtyEl.value)   || 0;
+    var price = parseFloat(priceEl.value) || 0;
     var amt   = qty * price;
-    document.getElementById('amt-' + id).value = amt ? amt.toFixed(2) : '';
+    amtEl.textContent = amt ? ('INR ' + amt.toFixed(2)) : '—';
     subTotal += amt;
   });
   var gstPct    = parseFloat(document.getElementById('gstPct').value) || 0;
   var gstAmount = subTotal * gstPct / 100;
   var grand     = subTotal + gstAmount;
-  document.getElementById('dispSubTotal').textContent  = fmt(subTotal);
-  document.getElementById('dispGst').textContent       = fmt(gstAmount);
-  document.getElementById('dispGrandTotal').textContent= fmt(grand);
+  document.getElementById('dispSubTotal').textContent   = fmt(subTotal);
+  document.getElementById('dispGst').textContent        = fmt(gstAmount);
+  document.getElementById('dispGrandTotal').textContent = fmt(grand);
 }
 window.recomputeTotals = recomputeTotals;
 
 /* ── Build payload ── */
 function buildPayload() {
-  var tbody = document.getElementById('linesBody');
-  var rows  = tbody.querySelectorAll('tr');
+  var container = document.getElementById('linesBody');
+  var cards  = container.querySelectorAll('[id^="line-"]');
   var lines = [];
-  rows.forEach(function(tr) {
-    var id  = tr.id.replace('line-','');
-    var sel = tr.querySelector('select');
+  cards.forEach(function(card) {
+    var id  = card.id.replace('line-','');
+    var sel = card.querySelector('select');
     var matCode = sel ? sel.value : '';
     var qty   = parseFloat(document.getElementById('qty-'  + id).value)  || 0;
     var price = parseFloat(document.getElementById('price-'+ id).value) || 0;
@@ -398,23 +426,27 @@ window.doPreview = function() {
 };
 
 function showPreviewModal(prev) {
-  var html = '<div class="modal-section">Supplier</div>';
-  html += '<div class="modal-line">' + prev.supplier + '</div>';
-  html += '<div class="modal-section">Lines (' + prev.lines.length + ')</div>';
+  var html = '<p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">Supplier</p>';
+  html += '<p class="text-[13px] border-b border-[#f0f0f0] pb-2 mb-2">' + prev.supplier + '</p>';
+  html += '<p class="text-[11px] font-bold uppercase tracking-wider text-[#64748b] mb-1">Lines (' + prev.lines.length + ')</p>';
   prev.lines.forEach(function(l) {
-    html += '<div class="modal-line">' + l.line_no + '. ' + l.material_code +
+    html += '<p class="text-[13px] border-b border-[#f0f0f0] py-1">' + l.line_no + '. ' + l.material_code +
       ' — Qty ' + l.qty_ordered + ' × INR ' + l.unit_price.toFixed(2) +
-      ' = INR ' + l.line_amount.toFixed(2) + '</div>';
+      ' = INR ' + l.line_amount.toFixed(2) + '</p>';
   });
-  html += '<div class="modal-total">Grand Total: INR ' + prev.totals.grandTotal.toFixed(2) + '</div>';
+  html += '<p class="text-[15px] font-bold text-[#1e3a5f] mt-3">Grand Total: INR ' + prev.totals.grandTotal.toFixed(2) + '</p>';
   if (prev.warnings && prev.warnings.length) {
-    html += '<div class="modal-warn"><b>Warnings:</b><br>' + prev.warnings.join('<br>') + '</div>';
+    html += '<div class="bg-[#FFF3E0] border-l-4 border-amber-400 p-3 rounded mt-3 text-[12px]"><b>Warnings:</b><br>' + prev.warnings.join('<br>') + '</div>';
   }
   document.getElementById('previewContent').innerHTML = html;
-  document.getElementById('previewModal').classList.add('show');
+  document.getElementById('previewModal').classList.remove('hidden');
+  document.getElementById('previewModal').classList.add('flex');
 }
 
-window.closeModal = function() { document.getElementById('previewModal').classList.remove('show'); };
+window.closeModal = function() {
+  document.getElementById('previewModal').classList.add('hidden');
+  document.getElementById('previewModal').classList.remove('flex');
+};
 
 window.confirmSubmit = function() {
   document.getElementById('btnConfirm').disabled = true;
@@ -438,7 +470,9 @@ window.confirmSubmit = function() {
 window.openDraftPicker = function() {
   var list = document.getElementById('draftList');
   list.innerHTML = '<div class="draft-empty">Loading…</div>';
-  document.getElementById('draftPickerModal').classList.add('show');
+  var modal = document.getElementById('draftPickerModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
   google.script.run
     .withSuccessHandler(function(drafts) {
       if (!drafts || !drafts.length) {
@@ -457,7 +491,9 @@ window.openDraftPicker = function() {
 };
 
 window.closeDraftPicker = function() {
-  document.getElementById('draftPickerModal').classList.remove('show');
+  var modal = document.getElementById('draftPickerModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
 };
 
 window.loadDraft = function(poNo) {
@@ -490,9 +526,9 @@ function hydrateFromPO(po) {
   (po.lines || []).forEach(function(l) {
     addLine();
     var idx = lineCount;
-    var tr = document.getElementById('line-' + idx);
-    if (!tr) return;
-    var sel = tr.querySelector('select');
+    var card = document.getElementById('line-' + idx);
+    if (!card) return;
+    var sel = card.querySelector('select');
     if (sel) sel.value = l.materialCode;
     document.getElementById('unit-'  + idx).value = l.unit;
     document.getElementById('qty-'   + idx).value = l.qtyOrdered;
@@ -515,7 +551,7 @@ function isoFromDisplay_(s) {
 
 /* ── Helpers ── */
 function setBusy(b) {
-  document.getElementById('btnDraft').disabled = b;
+  document.getElementById('btnDraft').disabled   = b;
   document.getElementById('btnPreview').disabled = b;
 }
 
@@ -542,5 +578,6 @@ window.addEventListener('beforeunload', function(e) {
 init();
 }());
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <?!= include('HtmlCache') ?>
   <style>
     body { background: var(--bg); }
     .prd-wrap { max-width: 760px; margin: 0 auto; padding-bottom: 40px; }
@@ -43,7 +44,7 @@
     .prd-field input, .prd-field select, .prd-field textarea {
       width: 100%; box-sizing: border-box;
       padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 5px;
-      font-size: 13px; font-family: inherit; background: var(--white);
+      font-size: 16px; font-family: inherit; background: var(--white);
     }
     .prd-field input:disabled { background: #f5f5f5; color: #777; }
     .prd-field textarea { resize: vertical; min-height: 50px; }
@@ -116,17 +117,22 @@
 <body>
   <div class="prd-wrap">
     <div class="prd-header">
-      <div class="prd-title">🏭 Production — RM Issuance</div>
+      <div class="prd-title">🏭 Production</div>
       <span class="prd-count" id="lotCount">0 lots</span>
     </div>
 
     <div class="prd-tabs">
-      <div class="prd-tab active" data-tab="issue" onclick="switchTab('issue')">Issue RM</div>
-      <div class="prd-tab" data-tab="recent" onclick="switchTab('recent')">Recent Issues</div>
+      <div class="prd-tab active" data-tab="issue" onclick="switchTab('issue')" title="Ad-hoc issue without FG order — samples, rework, R&amp;D">Quick Issue</div>
+      <div class="prd-tab" data-tab="fgplan" onclick="switchTab('fgplan')" title="BOM-driven issue against an FG production order">Production Issue</div>
+      <div class="prd-tab" data-tab="book" onclick="switchTab('book')" title="Close a booked production job against IPQC + actual consumption">Book Production</div>
+      <div class="prd-tab" data-tab="recent" onclick="switchTab('recent')">Recent</div>
     </div>
 
     <div class="prd-body">
       <div id="paneIssue">
+        <div style="background:#fff8e1;border-left:3px solid #f5a623;padding:6px 10px;margin-bottom:10px;font-size:11px;color:#5a4500;">
+          <b>Quick Issue</b> — single material, no FG order. Use for samples, rework, R&amp;D, or any consumption not tied to a booked production job. Writes <code>RM_ISSUE</code> (consumed immediately).
+        </div>
         <div class="prd-form">
           <div class="prd-grid2">
             <div class="prd-field">
@@ -184,6 +190,124 @@
         </div>
       </div>
 
+      <div id="paneFgPlan" style="display:none;">
+        <div style="background:#e8f0fe;border-left:3px solid #1a73e8;padding:6px 10px;margin-bottom:10px;font-size:11px;color:#0B2A4A;">
+          <b>Production Issue</b> — pick FG + qty, BOM explodes to components, FIFO picks oldest IQC-passed lots, qty rounds up to whole supplier packs. Writes <code>PROD_BOOK</code> (booked, not yet consumed) and creates a Production Job for later reconciliation in <b>Book Production</b>.
+        </div>
+        <div class="prd-form">
+          <div class="prd-grid2">
+            <div class="prd-field">
+              <label>Client</label>
+              <select id="fgClient"><option value="">— select client —</option></select>
+            </div>
+            <div class="prd-field">
+              <label>FG (Finished Good)</label>
+              <select id="fgItem" disabled><option value="">— pick client first —</option></select>
+            </div>
+          </div>
+
+          <div class="prd-grid2">
+            <div class="prd-field">
+              <label>FG Qty Required</label>
+              <input type="number" id="fgQty" min="0" step="any" placeholder="e.g. 1000" />
+            </div>
+            <div class="prd-field">
+              <label>Issued By</label>
+              <select id="fgIssuedBy"></select>
+            </div>
+          </div>
+
+          <div class="prd-field">
+            <label>Production Order No. (optional)</label>
+            <input id="fgProdOrder" placeholder="auto-generated if blank" />
+          </div>
+
+          <button class="prd-save" id="btnLoadPlan" onclick="loadFgPlan()">Load Plan</button>
+
+          <div id="fgPlanResult" style="display:none;margin-top:14px;">
+            <div id="fgBanner" style="padding:10px;border-radius:6px;font-size:13px;font-weight:600;margin-bottom:10px;"></div>
+            <div style="overflow-x:auto;border:1px solid #e0e0e0;border-radius:6px;-webkit-overflow-scrolling:touch;">
+              <table id="fgPlanTbl" style="width:100%;min-width:780px;border-collapse:collapse;font-size:11px;">
+                <thead style="background:#0B2A4A;color:#fff;">
+                  <tr>
+                    <th style="padding:6px 8px;text-align:left;">Component</th>
+                    <th style="padding:6px 8px;text-align:left;">Type</th>
+                    <th style="padding:6px 8px;text-align:right;">Qty/Unit</th>
+                    <th style="padding:6px 8px;text-align:right;">Required</th>
+                    <th style="padding:6px 8px;text-align:right;">Pack Size</th>
+                    <th style="padding:6px 8px;text-align:right;background:#1a3a6a;">Issue As</th>
+                    <th style="padding:6px 8px;text-align:right;">Available</th>
+                    <th style="padding:6px 8px;text-align:right;">Possible FG</th>
+                    <th style="padding:6px 8px;text-align:right;">Shortfall</th>
+                  </tr>
+                </thead>
+                <tbody id="fgPlanBody"></tbody>
+              </table>
+            </div>
+            <button class="prd-save" id="btnIssueFG" onclick="issueFgPlan()" style="margin-top:10px;">Issue Production Job</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="paneBook" style="display:none;">
+        <div style="background:#e6f4ea;border-left:3px solid #34a853;padding:6px 10px;margin-bottom:10px;font-size:11px;color:#0b3d1d;">
+          <b>Book Production</b> — close a <code>BOOKED</code> job after the line runs. Pick the job + its CLOSED IPQC session, enter actual FG produced, and split booked qty into Consumed / Returned / Scrap / Wastage / Loss per component.
+        </div>
+        <div class="prd-form">
+          <div class="prd-field">
+            <label style="display:flex;justify-content:space-between;align-items:center;">
+              <span>Open Job (status BOOKED)</span>
+              <button type="button" onclick="loadOpenJobs()" style="font-size:10px;background:none;border:1px solid #999;border-radius:4px;padding:2px 8px;cursor:pointer;">↻ Refresh</button>
+            </label>
+            <select id="bkJob"><option value="">— loading jobs —</option></select>
+          </div>
+          <div id="bkJobMeta" style="display:none;font-size:11px;color:#555;background:#f7faff;border:1px solid #cfdcef;border-radius:5px;padding:8px;margin-bottom:10px;"></div>
+
+          <div class="prd-field">
+            <label>IPQC Session (status CLOSED — passed)</label>
+            <select id="bkIpqc" disabled><option value="">— select a job first —</option></select>
+          </div>
+
+          <div class="prd-grid2">
+            <div class="prd-field">
+              <label>FG Actually Produced</label>
+              <input type="number" id="bkFgProduced" min="0" step="any" placeholder="enter actual" />
+              <div id="bkPlannedNote" style="font-size:10px;color:#777;margin-top:3px;"></div>
+            </div>
+            <div class="prd-field">
+              <label>Booked By</label>
+              <select id="bkBookedBy"></select>
+            </div>
+          </div>
+
+          <div id="bkLinesWrap" style="display:none;">
+            <div style="font-size:11px;color:#555;font-weight:600;margin:8px 0 4px;">Per-component split — Consumed = FG produced × BOM Consum (editable). Constraint: Consumed + Returned + Scrap + Wastage + Loss = Booked.</div>
+            <div style="overflow-x:auto;border:1px solid #e0e0e0;border-radius:6px;">
+              <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                <thead style="background:#0B2A4A;color:#fff;">
+                  <tr>
+                    <th style="padding:6px;text-align:left;">Component</th>
+                    <th style="padding:6px;text-align:left;">Lot/Loc</th>
+                    <th style="padding:6px;text-align:right;">Booked</th>
+                    <th style="padding:6px;text-align:right;background:#1a3a6a;">Consumed</th>
+                    <th style="padding:6px;text-align:right;">Returned</th>
+                    <th style="padding:6px;text-align:right;">Scrap</th>
+                    <th style="padding:6px;text-align:right;">Wastage</th>
+                    <th style="padding:6px;text-align:right;">Loss</th>
+                  </tr>
+                </thead>
+                <tbody id="bkLinesBody"></tbody>
+              </table>
+            </div>
+            <div class="prd-field" style="margin-top:10px;">
+              <label>Remarks (optional)</label>
+              <input id="bkRemarks" placeholder="batch notes, deviation refs" />
+            </div>
+            <button class="prd-save" id="btnSubmitBooking" onclick="submitBooking()">Submit Production Booking</button>
+          </div>
+        </div>
+      </div>
+
       <div id="paneRecent" style="display:none;">
         <div id="recentList" class="prd-empty">
           <div class="prd-empty-icon">⏳</div>Loading…
@@ -217,8 +341,12 @@
         t.classList.toggle('active', t.dataset.tab === name);
       });
       document.getElementById('paneIssue').style.display  = name === 'issue'  ? '' : 'none';
+      document.getElementById('paneFgPlan').style.display  = name === 'fgplan' ? '' : 'none';
+      document.getElementById('paneBook').style.display    = name === 'book'   ? '' : 'none';
       document.getElementById('paneRecent').style.display = name === 'recent' ? '' : 'none';
       if (name === 'recent') reloadRecent();
+      if (name === 'fgplan') loadFgClients();
+      if (name === 'book') loadOpenJobs();
     }
 
     function loadInit() {
@@ -238,12 +366,16 @@
                      escapeHtml(label) + '</option>';
             }).join('');
 
-          var ib = document.getElementById('fIssuedBy');
-          ib.innerHTML = '<option value="">— select —</option>' +
+          var inspectorOpts = '<option value="">— select —</option>' +
             (data.inspectors || []).map(function(i){
               var n = i.name || i;
               return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>';
             }).join('');
+          document.getElementById('fIssuedBy').innerHTML = inspectorOpts;
+          var fgIb = document.getElementById('fgIssuedBy');
+          if (fgIb) fgIb.innerHTML = inspectorOpts;
+          var bkIb = document.getElementById('bkBookedBy');
+          if (bkIb) bkIb.innerHTML = inspectorOpts;
         })
         .withFailureHandler(function(e){ showToast('Init failed: ' + (e.message || e), 'error'); })
         .getProductionFormInit();
@@ -463,7 +595,442 @@
         if (CURRENT_PLAN) clearPlan();
       });
     });
+    // ===== FG Plan mode =====
+    var FG_PLAN = null;
+
+    function loadFgClients() {
+      var sel = document.getElementById('fgClient');
+      if (sel.dataset.loaded === '1') return;
+      sel.innerHTML = '<option value="">loading…</option>';
+      google.script.run
+        .withSuccessHandler(function(list){
+          sel.dataset.loaded = '1';
+          sel.innerHTML = '<option value="">— select client —</option>' +
+            (list || []).map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+          sel.onchange = function(){ loadFgItems(sel.value); };
+        })
+        .withFailureHandler(function(e){
+          sel.innerHTML = '<option value="">— error —</option>';
+          showToast('Client list failed: ' + (e.message || e), 'error');
+        })
+        .getClientList();
+    }
+
+    function loadFgItems(client) {
+      var sel = document.getElementById('fgItem');
+      sel.disabled = true;
+      sel.innerHTML = '<option value="">loading…</option>';
+      if (!client) {
+        sel.innerHTML = '<option value="">— pick client first —</option>';
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(list){
+          sel.disabled = false;
+          sel.innerHTML = '<option value="">— select FG —</option>' +
+            (list || []).map(function(f){
+              return '<option value="' + escapeHtml(f.code) + '" data-uom="' + escapeHtml(f.uom) + '">' +
+                     escapeHtml(f.code + ' — ' + f.desc) + '</option>';
+            }).join('');
+        })
+        .withFailureHandler(function(e){
+          sel.innerHTML = '<option value="">— error —</option>';
+          showToast('FG list failed: ' + (e.message || e), 'error');
+        })
+        .getFGListByClient(client);
+    }
+
+    function loadFgPlan() {
+      var fgCode = document.getElementById('fgItem').value;
+      var fgQty  = Number(document.getElementById('fgQty').value) || 0;
+      if (!fgCode) { showToast('Pick an FG.', 'error'); return; }
+      if (fgQty <= 0) { showToast('Enter FG qty > 0.', 'error'); return; }
+      var btn = document.getElementById('btnLoadPlan');
+      btn.disabled = true; btn.textContent = 'Loading…';
+      google.script.run
+        .withSuccessHandler(function(plan){
+          btn.disabled = false; btn.textContent = 'Load Plan';
+          if (!plan || !plan.success) {
+            showToast(plan && plan.error || 'Plan failed.', 'error');
+            return;
+          }
+          FG_PLAN = plan;
+          renderFgPlan(plan);
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false; btn.textContent = 'Load Plan';
+          showToast('Plan error: ' + (e.message || e), 'error');
+        })
+        .computeProductionPlan(fgCode, fgQty);
+    }
+
+    function renderFgPlan(plan) {
+      document.getElementById('fgPlanResult').style.display = '';
+      var banner = document.getElementById('fgBanner');
+      var short = plan.maxProducible < plan.fgQtyRequested;
+      banner.style.background = short ? '#fff3cd' : '#d4edda';
+      banner.style.color      = short ? '#7a5a00' : '#155724';
+      banner.style.border     = '1px solid ' + (short ? '#ffe69c' : '#b6e0c4');
+      var fgPack = (plan.fgPerCarton > 0)
+        ? ' &nbsp;|&nbsp; FG output: <b>' + plan.fgCartonsFull + ' carton(s)</b> × ' + plan.fgPerCarton +
+          (plan.fgLooseUnits > 0 ? ' + ' + plan.fgLooseUnits + ' loose' : '') + ' ' + escapeHtml(plan.fgUom || '')
+        : '';
+      banner.innerHTML = 'Max Producible: <b>' + plan.maxProducible + ' ' + escapeHtml(plan.fgUom || '') + '</b>' +
+        fgPack +
+        (short && plan.bottleneck ? ' &nbsp;⚠ Limited by ' + escapeHtml(plan.bottleneck.code + ' — ' + plan.bottleneck.desc) : '');
+
+      var body = document.getElementById('fgPlanBody');
+      body.innerHTML = plan.lines.map(function(l){
+        var redPossible = l.possibleFG < plan.fgQtyRequested;
+        var redShort = l.shortfall > 0;
+        var issueAs = (l.masterP > 0 && l.packsToIssue > 0)
+          ? '<b>' + l.packsToIssue + '</b> × ' + l.masterP + ' ' + escapeHtml(l.compUom) +
+            '<div style="font-size:10px;color:#666;">= ' + l.issueQtyRounded.toFixed(3) + ' ' + escapeHtml(l.compUom) + '</div>'
+          : '<span style="color:#999;">—</span>';
+        return '<tr style="border-bottom:1px solid #eee;">' +
+          '<td style="padding:6px 8px;">' + escapeHtml(l.compCode) + '<div style="font-size:10px;color:#777;">' + escapeHtml(l.compDesc) + '</div></td>' +
+          '<td style="padding:6px 8px;">' + escapeHtml(l.type) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;">' + l.qtyPerUnit + ' ' + escapeHtml(l.compUom) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;">' + l.required.toFixed(3) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;">' + (l.masterP > 0 ? l.masterP + ' ' + escapeHtml(l.compUom) + '/pack' : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;background:#f0f6ff;">' + issueAs + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;">' + l.available.toFixed(3) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;' + (redPossible ? 'color:#b32a2a;font-weight:700;' : '') + '">' + l.possibleFG + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;' + (redShort ? 'color:#b32a2a;font-weight:700;' : '') + '">' + l.shortfall.toFixed(3) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function renderIssueSlip(slip) {
+      var w = window.open('', '_blank', 'width=800,height=900');
+      if (!w) { showToast('Pop-up blocked. Allow pop-ups to print slip.', 'error'); return; }
+      var lines = slip.lines.map(function(l, i){
+        var issueAs = (l.masterP > 0 && l.packsToIssue > 0)
+          ? '<b>' + l.packsToIssue + '</b> × ' + l.masterP + ' ' + escapeHtml(l.compUom) +
+            ' &nbsp;<span style="color:#666;">(' + l.issueQtyRounded.toFixed(3) + ' ' + escapeHtml(l.compUom) + ')</span>'
+          : l.required.toFixed(3) + ' ' + escapeHtml(l.compUom);
+        return '<tr>' +
+          '<td>' + (i+1) + '</td>' +
+          '<td><b>' + escapeHtml(l.compCode) + '</b><br><small>' + escapeHtml(l.compDesc) + '</small></td>' +
+          '<td>' + escapeHtml(l.type) + '</td>' +
+          '<td style="text-align:right;">' + l.required.toFixed(3) + ' ' + escapeHtml(l.compUom) + '</td>' +
+          '<td style="text-align:right;background:#fffbe6;">' + issueAs + '</td>' +
+          '<td style="width:80px;border:1px dashed #999;">&nbsp;</td>' +
+          '</tr>';
+      }).join('');
+      var fgPack = slip.fgPerCarton > 0
+        ? slip.fgCartonsFull + ' carton(s) × ' + slip.fgPerCarton + (slip.fgLooseUnits > 0 ? ' + ' + slip.fgLooseUnits + ' loose' : '') + ' ' + escapeHtml(slip.fgUom)
+        : slip.fgQty + ' ' + escapeHtml(slip.fgUom);
+      var html = '<!doctype html><html><head><title>Issue Slip ' + escapeHtml(slip.jobId) + '</title>' +
+        '<style>body{font-family:Arial,sans-serif;padding:20px;color:#222;}' +
+        'h1{font-size:18px;margin:0 0 4px;}h2{font-size:13px;margin:14px 0 6px;color:#0B2A4A;}' +
+        '.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:12px;border:1px solid #ccc;padding:10px;border-radius:4px;}' +
+        '.meta b{color:#555;font-weight:600;}' +
+        'table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;}' +
+        'th,td{border:1px solid #999;padding:5px 7px;vertical-align:top;}' +
+        'th{background:#0B2A4A;color:#fff;text-align:left;}' +
+        '.sig{margin-top:30px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;font-size:11px;}' +
+        '.sig div{border-top:1px solid #333;padding-top:4px;text-align:center;}' +
+        '@media print{button{display:none;}}</style></head><body>' +
+        '<h1>PRODUCTION ISSUE SLIP</h1>' +
+        '<div style="font-size:11px;color:#666;margin-bottom:10px;">Job ' + escapeHtml(slip.jobId) + ' &nbsp;|&nbsp; ' + escapeHtml(slip.timestamp) + '</div>' +
+        '<div class="meta">' +
+          '<div><b>Client:</b> ' + escapeHtml(slip.client) + '</div>' +
+          '<div><b>PO No:</b> ' + escapeHtml(slip.poNo) + '</div>' +
+          '<div><b>FG Code:</b> ' + escapeHtml(slip.fgCode) + '</div>' +
+          '<div><b>FG Qty:</b> ' + slip.fgQty + ' ' + escapeHtml(slip.fgUom) + '</div>' +
+          '<div style="grid-column:1/3;"><b>FG Name:</b> ' + escapeHtml(slip.fgDesc) + '</div>' +
+          '<div style="grid-column:1/3;background:#eef5ff;padding:6px;border-radius:3px;"><b>Expected FG Output:</b> ' + fgPack + '</div>' +
+          '<div><b>Issued By:</b> ' + escapeHtml(slip.issuedBy) + '</div>' +
+        '</div>' +
+        '<h2>Materials to Issue</h2>' +
+        '<table><thead><tr><th>#</th><th>Component</th><th>Type</th><th style="text-align:right;">Required</th><th style="text-align:right;">Issue As (Packs)</th><th>Picked ✓</th></tr></thead>' +
+        '<tbody>' + lines + '</tbody></table>' +
+        '<div class="sig"><div>Issued By</div><div>Picked By (Stores)</div><div>Received By (Production)</div></div>' +
+        '<div style="margin-top:20px;text-align:right;"><button onclick="window.print()" style="padding:8px 16px;font-size:13px;background:#0B2A4A;color:#fff;border:none;border-radius:4px;cursor:pointer;">🖨 Print</button></div>' +
+        '</body></html>';
+      w.document.write(html);
+      w.document.close();
+    }
+
+    function issueFgPlan() {
+      if (!FG_PLAN || !FG_PLAN.success) { showToast('Load plan first.', 'error'); return; }
+      var issuedBy = document.getElementById('fgIssuedBy').value;
+      if (!issuedBy) { showToast('Pick Issued By.', 'error'); return; }
+      var poNo = document.getElementById('fgProdOrder').value;
+      var reqQty = FG_PLAN.fgQtyRequested;
+      var maxQ   = FG_PLAN.maxProducible;
+      var qtyToIssue = reqQty;
+      if (maxQ < reqQty) {
+        if (maxQ <= 0) { showToast('Nothing producible — stock empty.', 'error'); return; }
+        if (!confirm('Only ' + maxQ + ' ' + (FG_PLAN.fgUom || '') + ' producible (requested ' + reqQty + '). Issue ' + maxQ + '?')) return;
+        qtyToIssue = maxQ;
+      }
+      var btn = document.getElementById('btnIssueFG');
+      btn.disabled = true; btn.textContent = 'Issuing…';
+      google.script.run
+        .withSuccessHandler(function(r){
+          btn.disabled = false; btn.textContent = 'Issue Production Job';
+          if (!r || !r.success) { showToast(r && r.error || 'Issue failed.', 'error'); return; }
+          showToast('Job ' + r.jobId + ' issued — opening slip…');
+          google.script.run
+            .withSuccessHandler(function(slip){
+              if (slip && slip.success) renderIssueSlip(slip);
+            })
+            .buildIssueSlip(r.fgCode, r.fgQty, r.jobId, issuedBy, poNo);
+          FG_PLAN = null;
+          document.getElementById('fgPlanResult').style.display = 'none';
+          document.getElementById('fgQty').value = '';
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false; btn.textContent = 'Issue Production Job';
+          showToast('Issue error: ' + (e.message || e), 'error');
+        })
+        .issueProductionJob({
+          fgCode: FG_PLAN.fgCode,
+          fgQtyToIssue: qtyToIssue,
+          issuedBy: issuedBy,
+          productionOrderNo: poNo
+        });
+    }
+
+    // ===== Book Production tab =====
+    var BK_JOB = null;
+    var BK_LINES = [];
+
+    function loadOpenJobs() {
+      var sel = document.getElementById('bkJob');
+      sel.innerHTML = '<option value="">loading…</option>';
+      google.script.run
+        .withSuccessHandler(function(jobs){
+          console.log('[loadOpenJobs] received', jobs);
+          var meta = document.getElementById('bkJobMeta');
+          sel.innerHTML = '<option value="">— select job —</option>' +
+            (jobs || []).map(function(j){
+              return '<option value="' + escapeHtml(j.jobId) + '">' +
+                escapeHtml(j.jobId + ' — ' + j.fgCode + ' ' + j.fgDesc + ' (' + j.fgQty + ' ' + j.fgUom + ')') +
+                '</option>';
+            }).join('');
+          sel.onchange = function(){ onJobPicked(sel.value); };
+          if (!jobs || !jobs.length) {
+            meta.style.display = 'block';
+            meta.textContent = 'No BOOKED jobs. Issue an FG plan first.';
+          } else {
+            meta.style.display = 'none';
+            meta.textContent = '';
+          }
+        })
+        .withFailureHandler(function(e){
+          console.error('[loadOpenJobs] failed', e);
+          sel.innerHTML = '<option value="">— error —</option>';
+          showToast('Job load failed: ' + (e.message || e), 'error');
+        })
+        .getOpenProductionJobs();
+    }
+
+    function onJobPicked(jobId) {
+      document.getElementById('bkLinesWrap').style.display = 'none';
+      document.getElementById('bkIpqc').disabled = true;
+      document.getElementById('bkIpqc').innerHTML = '<option value="">loading…</option>';
+      if (!jobId) { document.getElementById('bkJobMeta').style.display = 'none'; return; }
+      google.script.run
+        .withSuccessHandler(function(r){
+          if (!r || !r.success) { showToast(r && r.error || 'Job detail failed', 'error'); return; }
+          BK_JOB = r.job;
+          BK_LINES = r.lines || [];
+          var meta = document.getElementById('bkJobMeta');
+          meta.style.display = 'block';
+          meta.innerHTML = '<b>' + escapeHtml(r.job.fgCode) + '</b> — ' + escapeHtml(r.job.fgDesc) +
+            ' &nbsp;|&nbsp; Plan: <b>' + r.job.fgQty + ' ' + escapeHtml(r.job.fgUom) + '</b>' +
+            ' &nbsp;|&nbsp; Client: ' + escapeHtml(r.job.client);
+          document.getElementById('bkPlannedNote').textContent = 'Planned: ' + r.job.fgQty + ' ' + r.job.fgUom;
+          document.getElementById('bkFgProduced').value = '';
+          document.getElementById('bkFgProduced').placeholder = r.job.fgQty;
+          loadIpqcForJob(r.job.fgCode);
+          renderBookingLines(BK_LINES);
+        })
+        .withFailureHandler(function(e){ showToast('Job detail error: ' + (e.message || e), 'error'); })
+        .getJobBookedDetail(jobId);
+    }
+
+    function loadIpqcForJob(fgCode) {
+      var sel = document.getElementById('bkIpqc');
+      google.script.run
+        .withSuccessHandler(function(list){
+          console.log('[loadIpqcForJob] received', list);
+          sel.disabled = false;
+          list = list || [];
+          if (!list.length) {
+            sel.innerHTML = '<option value="">— no CLOSED IPQC for ' + escapeHtml(String(fgCode)) + ' —</option>';
+            return;
+          }
+          sel.innerHTML = '<option value="">— select IPQC —</option>' +
+            list.map(function(s){
+              var dStr = s.dateLabel || (s.date ? new Date(s.date).toISOString().slice(0,10) : '');
+              return '<option value="' + escapeHtml(s.sessionId) + '">' +
+                escapeHtml(s.sessionId + ' — batch ' + s.batch + ' (' + dStr + ', ' + s.rounds + ' rounds)') +
+                '</option>';
+            }).join('');
+        })
+        .withFailureHandler(function(e){
+          console.error('[loadIpqcForJob] failed', e);
+          sel.innerHTML = '<option value="">— error —</option>';
+          showToast('IPQC load failed: ' + (e.message || e), 'error');
+        })
+        .getClosedIPQCSessionsForFG(String(fgCode), '');
+    }
+
+    function renderBookingLines(lines) {
+      var body = document.getElementById('bkLinesBody');
+      var planned = (BK_JOB && BK_JOB.fgQty) || 0;
+      var produced = Number(document.getElementById('bkFgProduced').value) || planned;
+      body.innerHTML = lines.map(function(L, i){
+        var consum = Number(L.consum) || 0;
+        var defaultConsumed = +(produced * consum).toFixed(3);
+        if (defaultConsumed > L.bookedQty) defaultConsumed = L.bookedQty;
+        if (defaultConsumed < 0) defaultConsumed = 0;
+        var defaultReturned = +(L.bookedQty - defaultConsumed).toFixed(3);
+        if (defaultReturned < 0) defaultReturned = 0;
+        return '<tr data-i="' + i + '" style="border-bottom:1px solid #eee;">' +
+          '<td style="padding:5px 6px;">' + escapeHtml(L.compCode) + '<div style="font-size:10px;color:#777;">' + escapeHtml(L.compName) + '</div></td>' +
+          '<td style="padding:5px 6px;">' + escapeHtml(L.batchOrLot) + '<div style="font-size:10px;color:#777;">' + escapeHtml(L.location) + '</div></td>' +
+          '<td style="padding:5px 6px;text-align:right;font-weight:700;">' + L.bookedQty.toFixed(3) + '<div style="font-size:10px;color:#777;">' + escapeHtml(L.uom) + '</div></td>' +
+          '<td style="padding:3px;background:#f0f6ff;"><input type="number" min="0" step="any" value="' + defaultConsumed + '" class="bk-in" data-i="' + i + '" data-k="consumed" style="width:75px;text-align:right;padding:3px;font-weight:700;font-size:16px;"></td>' +
+          '<td style="padding:3px;"><input type="number" min="0" step="any" value="' + defaultReturned + '" class="bk-in" data-i="' + i + '" data-k="returned" style="width:60px;text-align:right;padding:3px;font-size:16px;"></td>' +
+          '<td style="padding:3px;"><input type="number" min="0" step="any" value="0" class="bk-in" data-i="' + i + '" data-k="scrap"    style="width:60px;text-align:right;padding:3px;font-size:16px;"></td>' +
+          '<td style="padding:3px;"><input type="number" min="0" step="any" value="0" class="bk-in" data-i="' + i + '" data-k="wastage"  style="width:60px;text-align:right;padding:3px;font-size:16px;"></td>' +
+          '<td style="padding:3px;"><input type="number" min="0" step="any" value="0" class="bk-in" data-i="' + i + '" data-k="loss"     style="width:60px;text-align:right;padding:3px;font-size:16px;"></td>' +
+          '</tr>';
+      }).join('');
+      document.querySelectorAll('.bk-in').forEach(function(inp){
+        inp.addEventListener('input', rebalanceRow);
+      });
+      var fgInp = document.getElementById('bkFgProduced');
+      if (fgInp && !fgInp.dataset.boundRescale) {
+        fgInp.addEventListener('input', rescaleByProduced);
+        fgInp.dataset.boundRescale = '1';
+      }
+      document.getElementById('bkLinesWrap').style.display = '';
+    }
+
+    // FG-produced edited → Consumed = produced × BOM consum (per line); Returned absorbs slack.
+    function rescaleByProduced() {
+      if (!BK_JOB || !BK_LINES.length) return;
+      var produced = Number(document.getElementById('bkFgProduced').value);
+      if (!isFinite(produced) || produced < 0) return;
+      BK_LINES.forEach(function(L, i){
+        var row = document.querySelector('tr[data-i="' + i + '"]');
+        if (!row) return;
+        var consInp = row.querySelector('input[data-k="consumed"]');
+        var retInp  = row.querySelector('input[data-k="returned"]');
+        var scrap   = Number(row.querySelector('input[data-k="scrap"]').value)   || 0;
+        var wast    = Number(row.querySelector('input[data-k="wastage"]').value) || 0;
+        var loss    = Number(row.querySelector('input[data-k="loss"]').value)    || 0;
+        var consum  = Number(L.consum) || 0;
+        var newCons = +(produced * consum).toFixed(3);
+        if (newCons < 0) newCons = 0;
+        if (newCons > L.bookedQty) newCons = L.bookedQty;
+        consInp.value = newCons;
+        var slack = +(L.bookedQty - newCons - scrap - wast - loss).toFixed(3);
+        retInp.value = slack < 0 ? 0 : slack;
+        paintRow(row, L);
+      });
+    }
+
+    // Any cell edited in a row → Returned absorbs slack so Consumed+Returned+Scrap+Wastage+Loss = Booked.
+    function rebalanceRow(e) {
+      var row = e.target.closest('tr[data-i]');
+      if (!row) return;
+      var i = +row.dataset.i;
+      var L = BK_LINES[i];
+      var cons  = Number(row.querySelector('input[data-k="consumed"]').value) || 0;
+      var ret   = Number(row.querySelector('input[data-k="returned"]').value) || 0;
+      var scrap = Number(row.querySelector('input[data-k="scrap"]').value)    || 0;
+      var wast  = Number(row.querySelector('input[data-k="wastage"]').value)  || 0;
+      var loss  = Number(row.querySelector('input[data-k="loss"]').value)     || 0;
+      // If user edited any field other than Returned, Returned recomputes as slack.
+      if (e.target.dataset.k !== 'returned') {
+        var slack = +(L.bookedQty - cons - scrap - wast - loss).toFixed(3);
+        row.querySelector('input[data-k="returned"]').value = slack < 0 ? 0 : slack;
+      }
+      paintRow(row, L);
+    }
+
+    function paintRow(row, L) {
+      var cons  = Number(row.querySelector('input[data-k="consumed"]').value) || 0;
+      var ret   = Number(row.querySelector('input[data-k="returned"]').value) || 0;
+      var scrap = Number(row.querySelector('input[data-k="scrap"]').value)    || 0;
+      var wast  = Number(row.querySelector('input[data-k="wastage"]').value)  || 0;
+      var loss  = Number(row.querySelector('input[data-k="loss"]').value)     || 0;
+      var sum = cons + ret + scrap + wast + loss;
+      var diff = sum - L.bookedQty;
+      var bad = Math.abs(diff) > 0.001;
+      row.style.background = bad ? '#fdecec' : '';
+    }
+
+    function submitBooking() {
+      if (!BK_JOB) { showToast('Pick a job.', 'error'); return; }
+      var ipqcId = document.getElementById('bkIpqc').value;
+      if (!ipqcId) { showToast('Pick an IPQC session.', 'error'); return; }
+      var bookedBy = document.getElementById('bkBookedBy').value;
+      if (!bookedBy) { showToast('Pick Booked By.', 'error'); return; }
+      var fgProduced = Number(document.getElementById('bkFgProduced').value);
+      if (isNaN(fgProduced) || fgProduced < 0) { showToast('Enter FG produced (≥ 0).', 'error'); return; }
+
+      var splits = {};
+      document.querySelectorAll('.bk-in').forEach(function(inp){
+        var i = inp.dataset.i, k = inp.dataset.k;
+        if (!splits[i]) splits[i] = {};
+        splits[i][k] = Number(inp.value) || 0;
+      });
+      var lines = BK_LINES.map(function(L, i){
+        var s = splits[i] || {};
+        return {
+          compCode: L.compCode, batchOrLot: L.batchOrLot, location: L.location, uom: L.uom,
+          consumed: s.consumed || 0,
+          returned: s.returned || 0, scrap: s.scrap || 0, wastage: s.wastage || 0, loss: s.loss || 0
+        };
+      });
+      var negative = lines.filter(function(L){ return L.consumed < -0.001; });
+      if (negative.length) { showToast('Consumed cannot be negative on ' + negative.length + ' line(s).', 'error'); return; }
+      var mismatched = lines.filter(function(L, idx){
+        var sum = L.consumed + L.returned + L.scrap + L.wastage + L.loss;
+        return Math.abs(sum - BK_LINES[idx].bookedQty) > 0.001;
+      });
+      if (mismatched.length) {
+        showToast('Sum (Consumed+Returned+Scrap+Wastage+Loss) ≠ Booked on ' + mismatched.length + ' line(s). Fix highlighted rows.', 'error');
+        return;
+      }
+
+      if (!confirm('Submit booking? FG produced: ' + fgProduced + ' ' + BK_JOB.fgUom + ' across ' + lines.length + ' components.')) return;
+      var btn = document.getElementById('btnSubmitBooking');
+      btn.disabled = true; btn.textContent = 'Submitting…';
+      google.script.run
+        .withSuccessHandler(function(r){
+          btn.disabled = false; btn.textContent = 'Submit Production Booking';
+          if (!r || !r.success) { showToast(r && r.error || 'Booking failed.', 'error'); return; }
+          showToast('Booking ' + r.bookingId + ' submitted — ' + r.ledgerOps + ' ledger ops.');
+          BK_JOB = null; BK_LINES = [];
+          document.getElementById('bkLinesWrap').style.display = 'none';
+          document.getElementById('bkJobMeta').style.display = 'none';
+          loadOpenJobs();
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false; btn.textContent = 'Submit Production Booking';
+          showToast('Booking error: ' + (e.message || e), 'error');
+        })
+        .submitProductionBooking({
+          jobId: BK_JOB.jobId,
+          ipqcId: ipqcId,
+          fgProduced: fgProduced,
+          bookedBy: bookedBy,
+          remarks: document.getElementById('bkRemarks').value,
+          lines: lines
+        });
+    }
+
     window.addEventListener('load', loadInit);
   </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

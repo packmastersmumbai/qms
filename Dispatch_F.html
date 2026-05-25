@@ -4,9 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <?!= include('HtmlCache') ?>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
-    body { background: var(--bg); }
-    .dsp-wrap { max-width: 820px; margin: 0 auto; padding-bottom: 40px; }
+    body { background: var(--bg); font-family: 'Inter', sans-serif; }
+    .dsp-wrap { max-width: 430px; margin: 0 auto; padding-bottom: 100px; }
 
     .dsp-header {
       background: var(--navy); color: var(--white);
@@ -33,21 +38,38 @@
 
     .dsp-form {
       background: var(--white);
-      border: 1px solid #e0e0e0; border-radius: 8px;
-      padding: 14px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
-    .dsp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .dsp-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    .dsp-field { margin-bottom: 10px; }
-    .dsp-field label { display: block; font-size: 11px; color: #555; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .dsp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .dsp-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .dsp-field { margin-bottom: 14px; }
+    .dsp-field label { display: block; font-size: 14px; color: #374151; font-weight: 500; margin-bottom: 6px; }
     .dsp-field input, .dsp-field select, .dsp-field textarea {
       width: 100%; box-sizing: border-box;
-      padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 5px;
-      font-size: 13px; font-family: inherit; background: var(--white);
+      height: 52px; padding: 0 12px; border: 1.5px solid #d1d5db; border-radius: 8px;
+      font-size: 16px; font-family: inherit; background: var(--white); color: #0f172a;
+    }
+    .dsp-field input:focus, .dsp-field select:focus, .dsp-field textarea:focus {
+      outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.15);
     }
     .dsp-field input:disabled { background: #f5f5f5; color: #777; }
-    .dsp-field textarea { resize: vertical; min-height: 50px; }
+    .dsp-field textarea { resize: vertical; min-height: 80px; height: auto; padding: 10px 12px; }
+
+    /* Plan card list (fix #12) */
+    .dsp-plan-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+    .plan-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .plan-card.is-fifo { border-left: 4px solid #16a34a; }
+    .plan-card.is-over { border-left: 4px solid #d97706; }
+    .plan-card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .plan-card-lot { font-size: 14px; font-weight: 700; color: #1e3a5f; }
+    .plan-card-rank { font-size: 11px; color: #64748b; font-weight: 600; }
+    .plan-card-meta { font-size: 12px; color: #64748b; line-height: 1.5; }
+    .plan-card-meta b { color: #374151; font-weight: 600; }
+    .plan-card-foot { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f1f5f9; }
+    .plan-card-foot label { font-size: 12px; color: #64748b; font-weight: 600; }
+    .plan-card-foot input.alloc-input { flex: 1; height: 40px; padding: 0 10px; border: 1.5px solid #d1d5db; border-radius: 6px; font-size: 14px; }
 
     table.dsp-plan { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
     table.dsp-plan th, table.dsp-plan td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
@@ -114,7 +136,7 @@
       <button class="back-btn" id="backBtn" aria-label="Back" onclick="goHome()">
         <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
       </button>
-      <span class="page-title">Dispatch — FG Outbound (FIFO)</span>
+      <span class="page-title">New Dispatch</span>
       <span class="doc-badge" id="docNoPreview">DISP</span>
     </div>
 
@@ -164,28 +186,19 @@
             </div>
             <div class="dsp-field">
               <label>&nbsp;</label>
-              <button class="dsp-button amber" id="btnPreview" onclick="onPreview()" style="margin-top:0;">Preview FIFO</button>
+              <button class="dsp-button" id="btnPreview" onclick="onPreview()" style="margin-top:0;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">search</span>
+                Plan FIFO Allocation
+              </button>
             </div>
           </div>
 
           <div id="planArea" style="display:none;">
-            <table class="dsp-plan" id="planTable">
-              <thead>
-                <tr>
-                  <th>#</th><th>Lot ID</th><th>OQC Ref</th><th>OQC Date</th>
-                  <th>Batch</th><th>Location</th><th>Available</th>
-                  <th>Allocated</th><th>Skip</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="7" style="text-align:right;font-weight:700;">Total chosen:</td>
-                  <td id="planTotal" style="font-weight:700;color:var(--navy);">0</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+            <div id="planCards" class="dsp-plan-cards"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f8fafc;border-radius:8px;margin-top:10px;font-size:13px;font-weight:700;color:#1e3a5f;">
+              <span>Total chosen:</span>
+              <span id="planTotal">0</span>
+            </div>
             <div id="planBanner" class="dsp-banner info" style="display:none;"></div>
           </div>
 
@@ -196,38 +209,29 @@
 
           <hr style="margin:14px 0;border:0;border-top:1px solid #e0e0e0;">
 
-          <div class="dsp-grid3">
-            <div class="dsp-field">
-              <label>Vehicle No.</label>
-              <input id="fVehicle" />
-            </div>
-            <div class="dsp-field">
-              <label>Driver</label>
-              <input id="fDriver" />
-            </div>
-            <div class="dsp-field">
-              <label>Transporter</label>
-              <input id="fTransporter" />
-            </div>
-          </div>
-
-          <div class="dsp-grid2">
-            <div class="dsp-field">
-              <label>Authorized By</label>
-              <select id="fAuthorizedBy"><option value="">— select —</option></select>
-            </div>
-            <div class="dsp-field">
-              <label>Security Guard</label>
-              <input id="fGuard" />
-            </div>
+          <div class="dsp-field">
+            <label>Vehicle No.</label>
+            <input id="fVehicle" placeholder="MH-04-AB-1234" />
           </div>
 
           <div class="dsp-field">
-            <label>Remarks (optional)</label>
-            <input id="fRemarks" placeholder="e.g. urgent order, special instruction" />
+            <label>Driver</label>
+            <input id="fDriver" placeholder="Driver name" />
           </div>
 
-          <button class="dsp-button" id="btnConfirm" onclick="onConfirm()" disabled>Confirm Dispatch</button>
+          <!-- Removed: Transporter, Security Guard (fix #91) -->
+          <input type="hidden" id="fTransporter" value="" />
+          <input type="hidden" id="fGuard" value="" />
+
+          <div class="dsp-field">
+            <label>Authorized By</label>
+            <select id="fAuthorizedBy"><option value="">— select —</option></select>
+          </div>
+
+          <div class="dsp-field">
+            <label>Remarks</label>
+            <textarea id="fRemarks" rows="3" placeholder="Add any dispatch notes…"></textarea>
+          </div>
         </div>
       </div>
 
@@ -238,6 +242,14 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- Sticky footer CTA (fix #17) -->
+  <div id="dispStickyFooter" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:1px solid #e2e8f0;box-shadow:0 -4px 12px rgba(0,0,0,0.05);padding:12px 16px;z-index:50;">
+    <button class="dsp-button" id="btnConfirm" onclick="onConfirm()" disabled
+      style="background:#1e3a5f;color:#fff;height:56px;border-radius:10px;font-size:15px;margin-top:0;">
+      Create Gatepass
+    </button>
   </div>
 
   <div class="dsp-toast" id="toast"></div>
@@ -316,7 +328,8 @@
       CHOSEN_PLAN = [];
       SKIPPED = {};
       document.getElementById('planArea').style.display = 'none';
-      document.getElementById('planTable').querySelector('tbody').innerHTML = '';
+      var pc = document.getElementById('planCards');
+      if (pc) pc.innerHTML = '';
       document.getElementById('planTotal').textContent = '0';
       document.getElementById('overrideReasonField').style.display = 'none';
       document.getElementById('btnConfirm').disabled = true;
@@ -366,43 +379,41 @@
     }
 
     function renderPlan() {
-      var tbody = document.getElementById('planTable').querySelector('tbody');
-      tbody.innerHTML = '';
+      var cards = document.getElementById('planCards');
+      cards.innerHTML = '';
       CHOSEN_PLAN.forEach(function(p, idx){
-        var skipped = !!SKIPPED[p.lotId];
         var fifoIdx = CURRENT_FIFO_PLAN.findIndex(function(f){ return f.lotId === p.lotId; });
-        // Diff vs FIFO baseline: if the qty differs or order differs, mark amber
-        var isFifo = !skipped && fifoIdx === idx && Math.abs(Number(p.qty) - Number(CURRENT_FIFO_PLAN[fifoIdx].qty)) < 0.001;
-        var rowCls = skipped ? 'row-skip' : (isFifo ? 'row-fifo' : 'row-over');
+        var isFifo = fifoIdx === idx && Math.abs(Number(p.qty) - Number(CURRENT_FIFO_PLAN[fifoIdx].qty)) < 0.001;
+        var cardCls = isFifo ? 'is-fifo' : 'is-over';
         var dateStr = p.oqcDate ? String(p.oqcDate).substring(0, 10) : '';
-        var qtyVal = skipped ? 0 : Number(p.qty || 0);
-        tbody.innerHTML +=
-          '<tr class="' + rowCls + '" data-lot="' + escapeHtml(p.lotId) + '">' +
-            '<td>' + (idx + 1) + '</td>' +
-            '<td>' + escapeHtml(p.lotId) + '</td>' +
-            '<td>' + escapeHtml(p.oqcRef) + '</td>' +
-            '<td>' + escapeHtml(dateStr) + '</td>' +
-            '<td>' + escapeHtml(p.batch) + '</td>' +
-            '<td>' + escapeHtml(p.fgLocation) + '</td>' +
-            '<td>' + Number(p.qtyAvailable).toFixed(2) + '</td>' +
-            '<td><input type="number" class="alloc-input" min="0" step="any" value="' + qtyVal + '"' + (skipped ? ' disabled' : '') + '></td>' +
-            '<td><button class="skip-btn ' + (skipped ? 'is-skipped' : '') + '">' + (skipped ? 'Skipped' : 'Skip') + '</button></td>' +
-          '</tr>';
+        var qtyVal = Number(p.qty || 0);
+        cards.innerHTML +=
+          '<div class="plan-card ' + cardCls + '" data-lot="' + escapeHtml(p.lotId) + '">' +
+            '<div class="plan-card-head">' +
+              '<span class="plan-card-lot">' + escapeHtml(p.lotId) + '</span>' +
+              '<span class="plan-card-rank">#' + (idx + 1) + (isFifo ? ' · FIFO' : ' · OVERRIDE') + '</span>' +
+            '</div>' +
+            '<div class="plan-card-meta">' +
+              '<b>OQC:</b> ' + escapeHtml(p.oqcRef) + (dateStr ? ' · ' + escapeHtml(dateStr) : '') + '<br>' +
+              '<b>Batch:</b> ' + escapeHtml(p.batch) + ' · <b>Loc:</b> ' + escapeHtml(p.fgLocation) + '<br>' +
+              '<b>Available:</b> ' + Number(p.qtyAvailable).toFixed(2) +
+            '</div>' +
+            '<div class="plan-card-foot">' +
+              '<label>Allocate</label>' +
+              '<input type="number" class="alloc-input" min="0" step="any" value="' + qtyVal + '">' +
+            '</div>' +
+          '</div>';
       });
 
-      // Wire row events
-      Array.prototype.slice.call(tbody.querySelectorAll('tr')).forEach(function(tr){
-        var lotId = tr.getAttribute('data-lot');
-        tr.querySelector('.alloc-input').addEventListener('input', function(e){
+      // Wire card events
+      Array.prototype.slice.call(cards.querySelectorAll('.plan-card')).forEach(function(card){
+        var lotId = card.getAttribute('data-lot');
+        var inp = card.querySelector('.alloc-input');
+        inp.addEventListener('input', function(e){
           var v = Number(e.target.value) || 0;
           for (var i = 0; i < CHOSEN_PLAN.length; i++) {
             if (CHOSEN_PLAN[i].lotId === lotId) { CHOSEN_PLAN[i].qty = v; break; }
           }
-          recomputePlanState();
-        });
-        tr.querySelector('.skip-btn').addEventListener('click', function(){
-          SKIPPED[lotId] = !SKIPPED[lotId];
-          renderPlan();
           recomputePlanState();
         });
       });
@@ -588,5 +599,6 @@
       navigate('Landing');
     }
   </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>

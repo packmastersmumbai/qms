@@ -641,12 +641,15 @@ function getLandingBundleV2(persona) {
 
 // ── Diagnostics ─────────────────────────────────────────────────
 function diag_qmsKpis(persona) {
+  _diagRequireOwner_();
   return JSON.stringify(getQmsKpis(persona || 'Manager'), null, 2);
 }
 function diag_uiSettings(persona) {
+  _diagRequireOwner_();
   return JSON.stringify(getUISettings(persona || 'Manager'), null, 2);
 }
 function diag_stockLedgerTypes(){
+  _diagRequireOwner_();
   var ss = getSpreadsheet();
   var t = _pmGetRows_(ss, 'STOCK_LEDGER');
   var ciType = _pmCol_(t.idx, ['txn type','type']);
@@ -662,6 +665,7 @@ function diag_stockLedgerTypes(){
   return JSON.stringify({ typeCounts:typeCounts, inRows:inRows, outRows:outRows }, null, 2);
 }
 function diag_extraHeaders(){
+  _diagRequireOwner_();
   var ss = getSpreadsheet();
   var names = ['FG_DISPATCH_LOTS','PO_HEADER','IPQC_EVENTS','PROD_BOOK','STOCK_LEDGER'];
   var out = {};
@@ -676,6 +680,7 @@ function diag_extraHeaders(){
 
 // List every sheet with row count + headers — used to locate OQC/customer-order sheets.
 function diag_allSheets(){
+  _diagRequireOwner_();
   var ss = getSpreadsheet();
   var out = {};
   ss.getSheets().forEach(function(sh){

@@ -640,6 +640,7 @@ function raiseIPQCNCR(sessionId, paramCode, roundNo, remark) {
 
 // ---------- Diagnostic (one-shot, callable from clasp run) ----------
 function diag_IPQC_state() {
+  _diagRequireOwner_();
   var ss = getSpreadsheet();
   var sessWs = ss.getSheetByName('IPQC_Sessions');
   var logWs  = ss.getSheetByName('IPQC_LOG');
@@ -673,6 +674,7 @@ function diag_IPQC_state() {
 }
 
 function diag_getSessionRounds(sessionId) {
+  _diagRequireOwner_();
   var r = getSessionRounds(sessionId);
   // Strip Date objects to strings so clasp run can serialize
   if (r && r.rounds) {
@@ -686,6 +688,7 @@ function diag_getSessionRounds(sessionId) {
 // Diagnostic: dump up to 5 IPQC_LOG rows. Optional sessionFilter substring
 // narrows to a specific session; omit it to sample any rows.
 function diag_logSampleRows(sessionFilter) {
+  _diagRequireOwner_();
   var ss = getSpreadsheet();
   var logWs = ss.getSheetByName('IPQC_LOG');
   var lv = logWs.getDataRange().getValues();

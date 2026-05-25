@@ -84,6 +84,65 @@ function saveGatepass(data) {
   }
 }
 
+// Returns FIFO-ordered lot allocation plan for a material + requested qty.
+// Each lot = one released, un-dispatched OQC record for the material.
+// Allocates qty greedily oldest-first; returns lot rows with suggestedQty capped at available.
+function getFIFOAllocation(materialCode, qtyRequested) {
+  try {
+    var ss    = getSpreadsheet();
+    var oqcWs = ss.getSheetByName('OQC_LOG');
+    if (!oqcWs || oqcWs.getLastRow() < 2) return { lots: [], total: 0 };
+
+    var usedRefs = {};
+    var gpWs = ss.getSheetByName('GATEPASS_LOG');
+    if (gpWs && gpWs.getLastRow() > 1) {
+      gpWs.getRange(2, 4, gpWs.getLastRow() - 1, 1).getValues()
+        .forEach(function(r) { if (r[0]) usedRefs[String(r[0]).trim()] = true; });
+    }
+
+    var oqcData = oqcWs.getDataRange().getValues();
+    var lots = [];
+    for (var i = 1; i < oqcData.length; i++) {
+      var row      = oqcData[i];
+      var docNo    = String(row[0] || '').trim();
+      var date     = row[1];
+      var material = String(row[5] || '').trim();
+      var qty      = parseFloat(row[7]) || 0;
+      var unit     = String(row[8] || 'Pcs');
+      var decision = String(row[14] || '').toUpperCase();
+      if (!docNo) continue;
+      if (decision !== 'RELEASED' && decision !== 'ACCEPTED') continue;
+      if (usedRefs[docNo]) continue;
+      if (materialCode && material.toLowerCase().indexOf(materialCode.toLowerCase()) === -1 &&
+          materialCode.toLowerCase().indexOf(material.toLowerCase()) === -1) continue;
+      lots.push({ docNo: docNo, date: date, availableQty: qty, unit: unit });
+    }
+
+    // Sort oldest first (FIFO)
+    lots.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+
+    var remaining = parseFloat(qtyRequested) || 0;
+    var result = lots.map(function(lot, idx) {
+      var suggested = Math.min(lot.availableQty, Math.max(0, remaining));
+      remaining -= suggested;
+      return {
+        docNo:        lot.docNo,
+        date:         lot.date instanceof Date ? Utilities.formatDate(lot.date, 'Asia/Kolkata', 'dd/MM/yyyy') : String(lot.date || ''),
+        availableQty: lot.availableQty,
+        unit:         lot.unit,
+        suggestedQty: suggested,
+        isOldest:     idx === 0
+      };
+    });
+
+    var total = result.reduce(function(s, l) { return s + l.suggestedQty; }, 0);
+    return { lots: result, total: total };
+  } catch(e) {
+    Logger.log(e);
+    return { lots: [], total: 0, error: e.message };
+  }
+}
+
 function getReleasedOQCsForGatepass() {
   try {
     var ss = getSpreadsheet();

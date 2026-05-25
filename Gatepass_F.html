@@ -1,180 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html class="light" lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Gatepass</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* ── Gatepass-specific styles ── */
-    .gp-section-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.8);
-      padding: 5px 12px 4px;
-      background: var(--navy);
-    }
+    body { background-color: #f8fafc; font-family: 'Inter', sans-serif; min-height: max(884px, 100dvh); }
 
-    /* Disposition row */
-    .disp-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin: 10px 10px 0;
-    }
+    /* Disposition buttons */
     .disp-pick-btn {
       height: 52px;
-      border: 2px solid var(--border);
+      border: 2px solid #e2e8f0;
       border-radius: 8px;
-      background: var(--white);
+      background: #ffffff;
       font-size: 13px;
       font-weight: 700;
-      font-family: inherit;
-      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      color: #0f172a;
       cursor: pointer;
       letter-spacing: 0.5px;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
       transition: all 0.15s ease;
+      width: 100%;
     }
-    .disp-pick-btn:active {
-      transform: scale(0.97);
-      transition: transform 0.08s ease;
-    }
-    .disp-pick-btn.approved {
-      background: #F0FDF4;
-      border-color: var(--success);
-      color: var(--success);
-    }
-    .disp-pick-btn.rejected {
-      background: #FEF2F2;
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-    .disp-pick-btn.pulse-warn {
-      animation: disp-pulse 0.6s ease;
-    }
+    .disp-pick-btn:active { transform: scale(0.97); transition: transform 0.08s ease; }
+    .disp-pick-btn.approved { background: #F0FDF4; border-color: #16a34a; color: #16a34a; }
+    .disp-pick-btn.rejected { background: #FEF2F2; border-color: #dc2626; color: #dc2626; }
+    .disp-pick-btn.pulse-warn { animation: disp-pulse 0.6s ease; }
     @keyframes disp-pulse {
-      0%   { border-color: var(--amber); box-shadow: 0 0 0 0 rgba(232,160,32,0.5); }
-      50%  { border-color: var(--amber); box-shadow: 0 0 0 6px rgba(232,160,32,0); }
-      100% { border-color: var(--border); box-shadow: none; }
+      0%   { border-color: #e8a020; box-shadow: 0 0 0 0 rgba(232,160,32,0.5); }
+      50%  { border-color: #e8a020; box-shadow: 0 0 0 6px rgba(232,160,32,0); }
+      100% { border-color: #e2e8f0; box-shadow: none; }
     }
 
-    /* Sticky footer — navy bg per spec */
-    .gp-footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--navy);
-      padding: 10px 14px;
-      padding-bottom: calc(10px + env(safe-area-inset-bottom));
-      z-index: 90;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .gp-footer-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.7);
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .gp-save-btn {
-      background: var(--amber);
-      color: var(--navy);
-      border: none;
-      border-radius: 8px;
-      padding: 11px 18px;
-      font-size: 14px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      transition: opacity 0.15s;
-      flex-shrink: 0;
-    }
-    .gp-save-btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-    .gp-save-btn:not(:disabled):active {
-      transform: scale(0.97);
-      transition: transform 0.08s ease;
-    }
-
-    /* Warning chip */
-    .warn-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: #FEF3C7;
-      color: #92600A;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 20px;
-      padding: 4px 10px;
-      margin-top: 4px;
-    }
-
-    /* Confirmation screen */
-    .confirm-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 48px 20px 100px;
-      text-align: center;
-    }
-    .confirm-icon-circle {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: var(--amber);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-      animation: confirm-pop 0.3s ease forwards;
-    }
-    @keyframes confirm-pop {
-      from { transform: scale(0.5); opacity: 0; }
-      to   { transform: scale(1);   opacity: 1; }
-    }
-    .confirm-icon-circle svg {
-      width: 40px;
-      height: 40px;
-      stroke: var(--navy);
-      stroke-width: 3;
-      fill: none;
-    }
-    .confirm-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-    .confirm-doc {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--navy);
-      border-bottom: 3px solid var(--amber);
-      padding-bottom: 2px;
-      margin-bottom: 24px;
-      display: inline-block;
-    }
-    .confirm-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 32px;
-    }
+    /* Confirmation chips */
     .chip {
       display: inline-flex;
       align-items: center;
@@ -183,204 +45,317 @@
       font-weight: 600;
       border-radius: 20px;
       padding: 5px 12px;
-      background: var(--navy-light);
-      color: var(--navy);
+      background: #e0e7ef;
+      color: #1e3a5f;
     }
-    .chip.approved {
-      background: #DCFCE7;
-      color: #15803D;
-    }
-    .chip.rejected {
-      background: #FEE2E2;
-      color: #B91C1C;
-    }
-    .chip-label {
-      font-weight: 400;
-      opacity: 0.65;
-      margin-right: 2px;
-    }
-    .confirm-home-btn {
-      width: 100%;
-      max-width: 320px;
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 14px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-    .confirm-home-btn:active {
-      background: #0A1450;
-    }
+    .chip.approved { background: #DCFCE7; color: #15803D; }
+    .chip.rejected { background: #FEE2E2; color: #B91C1C; }
+    .chip-label { font-weight: 400; opacity: 0.65; margin-right: 2px; }
 
-    /* Force 16px on all text inputs per spec */
-    .field input[type="text"],
-    .field input[type="number"],
-    .field textarea {
-      font-size: 16px !important;
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e3a5f;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 20px;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      white-space: nowrap;
+      max-width: 90vw;
     }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #dc2626; }
+    .toast.success { background: #16a34a; }
+
+    /* Confirmation animation */
+    @keyframes confirm-pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .confirm-pop { animation: confirm-pop 0.3s ease forwards; }
+
+    /* Select arrow fix */
+    select { appearance: none; -webkit-appearance: none; }
+
+    /* Force 16px on inputs to prevent iOS zoom */
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select { font-size: 16px !important; }
   </style>
+  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('HtmlCache') ?>
 </head>
-<body>
+<body class="bg-surface text-[#0f172a] min-h-screen pb-[80px]">
 
 <!-- ── SCREEN 1: Entry Form ── -->
 <div id="screenForm">
 
-  <div class="pm-header">
-    <button class="back-btn" id="backBtn" aria-label="Back">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 4l-6 6 6 6"/>
-      </svg>
+  <!-- Header -->
+  <header class="fixed top-0 w-full z-50 h-[56px] bg-primary shadow-md flex items-center justify-between px-4">
+    <button id="backBtn" aria-label="Back"
+      class="text-white hover:bg-white/10 transition-colors rounded-full p-2 active:scale-95 duration-100 flex items-center justify-center min-w-[44px] min-h-[44px]">
+      <span class="material-symbols-outlined text-[24px]">chevron_left</span>
     </button>
-    <span class="page-title">Gatepass</span>
-    <span class="doc-badge" id="docBadge">GATE</span>
-  </div>
+    <h1 class="font-headline text-[20px] font-bold text-white tracking-tight absolute left-1/2 -translate-x-1/2">New Dispatch</h1>
+    <div class="bg-white/20 text-white text-[11px] font-bold font-headline px-3 py-1 rounded-badge tracking-wider" id="docBadge">GATE</div>
+  </header>
 
-  <!-- Section 1: MATERIAL -->
-  <div class="section">
-    <div class="gp-section-label">MATERIAL</div>
-    <div class="section-body">
+  <!-- Main content -->
+  <main class="pt-[72px] px-[16px] py-[12px] flex flex-col gap-[20px] max-w-md mx-auto">
 
-      <div class="field">
-        <label>Material Type</label>
-        <select id="materialType">
-          <option value="Finished Goods">Finished Goods</option>
-          <option value="Raw Material Return">Raw Material Return</option>
-          <option value="Waste">Waste</option>
-          <option value="Other">Other</option>
-        </select>
+    <!-- DOC ID CARD -->
+    <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] px-4 py-3 flex justify-between items-center">
+      <div>
+        <p id="gpDocNo" class="font-headline text-[16px] font-bold text-[#1e3a5f]">PM/GP/—</p>
+        <p class="text-[12px] text-[#94a3b8]">Auto-generated</p>
       </div>
-
-      <div class="field" id="fieldOqcRef">
-        <label>OQC Reference <span style="color:var(--danger)">*</span></label>
-        <select id="oqcRef">
-          <option value="">— Loading released OQCs… —</option>
-        </select>
-        <div class="hint">Select the released OQC batch being dispatched</div>
-        <div id="oqcRefWarn" style="display:none;font-size:11px;color:var(--amber);margin-top:4px;font-weight:600;">
-          ⚠ No released OQC records found. Proceed manually.
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Description <span style="color:var(--danger)">*</span></label>
-        <input type="text" id="description" placeholder="Material description" required>
-      </div>
-
-      <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div>
-          <label>Qty <span style="color:var(--danger)">*</span></label>
-          <input type="number" id="qty" min="0.01" step="any" inputmode="decimal"
-                 placeholder="0.00" required>
-        </div>
-        <div>
-          <label>Unit</label>
-          <select id="unit">
-            <option value="Pcs">Pcs</option>
-            <option value="Kg">Kg</option>
-            <option value="Ltrs">Ltrs</option>
-            <option value="Boxes">Boxes</option>
-            <option value="Rolls">Rolls</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-      </div>
-
+      <span id="gpDateLabel" class="text-[13px] text-[#64748b] font-medium"></span>
     </div>
-  </div>
 
-  <!-- Section 2: VEHICLE -->
-  <div class="section">
-    <div class="gp-section-label">VEHICLE</div>
-    <div class="section-body">
-
-      <div class="field">
-        <label>Vehicle No. <span style="color:var(--danger)">*</span></label>
-        <input type="text" id="vehicleNo" placeholder="e.g. MH04 AB 1234" required>
+    <!-- Section: MATERIAL -->
+    <div class="bg-card rounded-card shadow-card border border-border overflow-hidden">
+      <div class="bg-primary px-4 py-2">
+        <span class="text-[10px] font-bold tracking-[0.8px] uppercase text-white/80">Material</span>
       </div>
+      <div class="p-[16px] flex flex-col gap-4">
 
-      <div class="field">
-        <label>Driver Name <span style="color:var(--danger)">*</span></label>
-        <input type="text" id="driverName" placeholder="Driver's full name" required>
-      </div>
-
-      <div class="field">
-        <label>Purpose</label>
-        <input type="text" id="purpose"
-               placeholder="e.g. Customer delivery, return to supplier">
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Section 3: AUTHORIZATION -->
-  <div class="section">
-    <div class="gp-section-label">AUTHORIZATION</div>
-    <div class="section-body">
-
-      <div class="field">
-        <label>Authorized By <span style="color:var(--danger)">*</span></label>
-        <select id="authorizedBy" required>
-          <option value="">— Loading… —</option>
-        </select>
-        <div id="authWarn" style="display:none">
-          <span class="warn-chip">&#9888; No authorized users found.</span>
+        <div class="flex flex-col gap-[6px]">
+          <label class="font-label text-[14px] font-medium text-[#374151]">Material Type</label>
+          <div class="relative">
+            <select id="materialType"
+              class="w-full h-[52px] px-3 pr-10 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-accent focus:ring-4 focus:ring-[#0ea5e9]/15">
+              <option value="Finished Goods">Finished Goods</option>
+              <option value="Raw Material Return">Raw Material Return</option>
+              <option value="Waste">Waste</option>
+              <option value="Other">Other</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+          </div>
         </div>
-      </div>
 
-      <div class="field">
-        <label>Remarks</label>
-        <textarea id="remarks" rows="3" placeholder="Optional notes…"></textarea>
-      </div>
+        <div class="flex flex-col gap-[6px]" id="fieldOqcRef">
+          <label class="font-label text-[14px] font-medium text-[#374151]">
+            OQC Reference <span class="text-danger">*</span>
+          </label>
+          <div class="relative">
+            <select id="oqcRef"
+              class="w-full h-[52px] px-3 pr-10 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-accent focus:ring-4 focus:ring-[#0ea5e9]/15">
+              <option value="">— Loading released OQCs… —</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+          </div>
+          <p class="text-[13px] text-[#64748b]">Select the released OQC batch being dispatched</p>
+          <div id="oqcRefWarn" style="display:none"
+            class="text-[11px] font-semibold text-amber-600 mt-1">
+            ⚠ No released OQC records found. Proceed manually.
+          </div>
+        </div>
 
+        <div class="flex flex-col gap-[6px]">
+          <label class="font-label text-[14px] font-medium text-[#374151]">
+            Description <span class="text-[#dc2626]">*</span>
+          </label>
+          <input type="text" id="description" placeholder="Material description" required
+            class="w-full h-[52px] px-3 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15">
+        </div>
+
+        <div class="grid grid-cols-2 gap-[10px]">
+          <div class="flex flex-col gap-[6px]">
+            <label class="font-label text-[14px] font-medium text-[#374151]">
+              Qty <span class="text-[#dc2626]">*</span>
+            </label>
+            <input type="number" id="qty" min="0.01" step="any" inputmode="decimal" placeholder="0.00" required
+              class="w-full h-[52px] px-3 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15">
+          </div>
+          <div class="flex flex-col gap-[6px]">
+            <label class="font-label text-[14px] font-medium text-[#374151]">Unit</label>
+            <div class="relative">
+              <select id="unit"
+                class="w-full h-[52px] px-3 pr-10 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15">
+                <option value="Pcs">Pcs</option>
+                <option value="Kg">Kg</option>
+                <option value="Ltrs">Ltrs</option>
+                <option value="Boxes">Boxes</option>
+                <option value="Rolls">Rolls</option>
+                <option value="Other">Other</option>
+              </select>
+              <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
-  </div>
 
-  <!-- Disposition row -->
-  <div class="disp-row">
-    <button class="disp-pick-btn" id="btnApproved" type="button">APPROVED</button>
-    <button class="disp-pick-btn" id="btnRejected" type="button">REJECTED</button>
-  </div>
-  <!-- spacer so content clears sticky footer -->
-  <div style="height:72px;"></div>
+    <!-- Section: FIFO ALLOCATION (Finished Goods only) -->
+    <div class="bg-card rounded-card shadow-card border border-border overflow-hidden" id="fifoSection" style="display:none">
+      <div class="bg-primary px-4 py-2">
+        <span class="text-[10px] font-bold tracking-[0.8px] uppercase text-white/80">FIFO Allocation Plan</span>
+      </div>
+      <div class="p-[16px] flex flex-col gap-4">
 
+        <div class="flex flex-col gap-[6px]">
+          <label class="font-label text-[14px] font-medium text-[#374151]">Qty Requested</label>
+          <div class="relative flex items-center">
+            <input type="number" id="fifoQtyReq" min="1" step="any" inputmode="decimal" placeholder="0"
+              class="w-full h-[52px] pl-3 pr-12 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15">
+            <span class="absolute right-4 text-[13px] text-[#64748b] pointer-events-none" id="fifoUnit">pcs</span>
+          </div>
+        </div>
+
+        <button type="button" onclick="planFIFO()"
+          class="w-full h-[52px] bg-[#0ea5e9] text-white font-semibold text-[14px] rounded-button flex items-center justify-center gap-2 active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-[20px]">search</span>
+          Plan FIFO Allocation
+        </button>
+
+        <div id="fifoResult" style="display:none" class="flex flex-col gap-3">
+          <div class="flex justify-between items-center border-b border-border pb-3">
+            <span class="text-[14px] font-semibold text-[#0f172a]">Lot Allocation</span>
+            <span id="fifoLotCount" class="bg-[#f1f5f9] text-[#475569] px-3 py-1 rounded-full text-[11px] font-semibold">0 lots</span>
+          </div>
+          <div id="fifoLotRows"></div>
+          <div class="flex justify-end pt-1">
+            <span class="text-[16px] font-bold text-[#1e3a5f]">Total: <span id="fifoTotal">0</span> <span id="fifoTotalUnit">pcs</span></span>
+          </div>
+        </div>
+
+        <div id="fifoEmpty" style="display:none"
+          class="text-[13px] text-amber-600 font-semibold">⚠ No released OQC lots found for this material.</div>
+
+      </div>
+    </div>
+
+    <!-- Section: VEHICLE -->
+    <div class="bg-card rounded-card shadow-card border border-border overflow-hidden">
+      <div class="bg-primary px-4 py-2">
+        <span class="text-[10px] font-bold tracking-[0.8px] uppercase text-white/80">Vehicle</span>
+      </div>
+      <div class="p-[16px] flex flex-col gap-4">
+
+        <div class="flex flex-col gap-[6px]">
+          <label class="font-label text-[14px] font-medium text-[#374151]">
+            Vehicle No. <span class="text-[#dc2626]">*</span>
+          </label>
+          <input type="text" id="vehicleNo" placeholder="e.g. MH04 AB 1234" required
+            class="w-full h-[52px] px-3 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 uppercase font-medium">
+        </div>
+
+        <div class="flex flex-col gap-[6px]">
+          <label class="font-label text-[14px] font-medium text-[#374151]">
+            Driver Name <span class="text-[#dc2626]">*</span>
+          </label>
+          <input type="text" id="driverName" placeholder="Driver's full name" required
+            class="w-full h-[52px] px-3 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15">
+        </div>
+
+        <div class="flex flex-col gap-[6px]">
+          <label class="font-label text-[14px] font-medium text-[#374151]">Purpose</label>
+          <input type="text" id="purpose" placeholder="e.g. Customer delivery, return to supplier"
+            class="w-full h-[52px] px-3 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section: AUTHORIZATION -->
+    <div class="bg-card rounded-card shadow-card border border-border overflow-hidden">
+      <div class="bg-primary px-4 py-2">
+        <span class="text-[10px] font-bold tracking-[0.8px] uppercase text-white/80">Authorization</span>
+      </div>
+      <div class="p-[16px] flex flex-col gap-4">
+
+        <div class="flex flex-col gap-[6px]">
+          <label class="font-label text-[14px] font-medium text-[#374151]">
+            Authorized By <span class="text-[#dc2626]">*</span>
+          </label>
+          <div class="relative">
+            <select id="authorizedBy" required
+              class="w-full h-[52px] px-3 pr-10 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15">
+              <option value="">— Loading… —</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+          </div>
+          <div id="authWarn" style="display:none">
+            <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-800 text-[11px] font-semibold rounded-badge px-3 py-1 mt-1">
+              <span class="material-symbols-outlined text-[14px]">warning</span>
+              No authorized users found.
+            </span>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-[6px]">
+          <label class="font-label text-[14px] font-medium text-[#374151]">Remarks</label>
+          <textarea id="remarks" rows="3" placeholder="Optional notes…"
+            class="w-full p-3 border-[1.5px] border-[#d1d5db] rounded-input bg-white focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 resize-none"></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Disposition row -->
+    <div class="grid grid-cols-2 gap-[10px]">
+      <button class="disp-pick-btn" id="btnApproved" type="button">APPROVED</button>
+      <button class="disp-pick-btn" id="btnRejected" type="button">REJECTED</button>
+    </div>
+
+    <!-- Spacer so content clears sticky footer -->
+    <div class="h-[72px]"></div>
+
+  </main>
 </div><!-- #screenForm -->
 
 <!-- ── SCREEN 2: Confirmation ── -->
 <div id="screenConfirm" style="display:none">
-  <div class="pm-header">
-    <span class="page-title" style="text-align:center;flex:1">Gatepass Saved</span>
-  </div>
-  <div class="confirm-wrap">
-    <div class="confirm-icon-circle">
-      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <header class="fixed top-0 w-full z-50 h-[56px] bg-primary shadow-md flex items-center justify-center px-4">
+    <h1 class="font-headline text-[20px] font-bold text-white tracking-tight">Gatepass Saved</h1>
+  </header>
+  <main class="pt-[72px] px-[16px] pb-[100px] flex flex-col items-center text-center max-w-md mx-auto gap-4">
+    <div class="w-20 h-20 rounded-full bg-amber-400 flex items-center justify-center confirm-pop mt-8">
+      <svg viewBox="0 0 24 24" class="w-10 h-10 stroke-[#1e3a5f] fill-none stroke-[3]">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
     </div>
-    <div class="confirm-title">Gatepass Saved</div>
-    <div class="confirm-doc" id="confirmDocNo">#—</div>
-    <div class="confirm-chips" id="confirmChips"></div>
-    <button class="confirm-home-btn" id="btnHome">Back to Home</button>
-  </div>
+    <div class="text-[20px] font-bold text-[#0f172a]">Gatepass Saved</div>
+    <div class="text-[24px] font-bold text-primary border-b-[3px] border-amber-400 pb-1 inline-block" id="confirmDocNo">#—</div>
+    <div class="flex flex-wrap gap-2 justify-center" id="confirmChips"></div>
+    <button id="btnHome"
+      class="w-full max-w-xs bg-primary text-white font-headline text-[14px] font-bold rounded-button py-4 mt-4 active:bg-[#0a1450] transition-colors">
+      Back to Home
+    </button>
+  </main>
 </div>
 
 <!-- Sticky footer (only visible on screen 1) -->
-<div class="gp-footer" id="gpFooter">
-  <div class="gp-footer-label" id="footerLabel">Finished Goods</div>
-  <button class="gp-save-btn" id="btnSave" disabled>Save Gatepass &#8594;</button>
+<div class="fixed bottom-0 left-0 right-0 bg-primary z-40 px-[14px] flex items-center gap-3"
+     style="padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom));"
+     id="gpFooter">
+  <div class="text-[12px] font-medium text-white/70 flex-1 whitespace-nowrap overflow-hidden text-ellipsis"
+       id="footerLabel">Finished Goods</div>
+  <button id="btnSave" disabled
+    class="bg-amber-400 text-[#1e3a5f] border-none rounded-[8px] px-[18px] py-[11px] text-[14px] font-bold font-headline cursor-pointer whitespace-nowrap flex-shrink-0 transition-opacity disabled:opacity-45 disabled:cursor-not-allowed active:scale-[0.97]">
+    Save Gatepass &#8594;
+  </button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────
-var _today      = '';
-var _docNo      = '';
+var _today       = '';
+var _docNo       = '';
 var _disposition = '';   // 'APPROVED' | 'REJECTED'
-var _saved      = false;
+var _saved       = false;
+
 // ── Utility ────────────────────────────────────────────────────────────
 function escHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -400,8 +375,8 @@ function trunc(s, n) {
 
 // ── Validation / save-button state ────────────────────────────────────
 function refreshSaveBtn() {
-  var isFG    = document.getElementById('materialType').value === 'Finished Goods';
-  var oqcOk   = !isFG || document.getElementById('oqcRef').value !== '';
+  var isFG  = document.getElementById('materialType').value === 'Finished Goods';
+  var oqcOk = !isFG || document.getElementById('oqcRef').value !== '';
   var ok = (
     document.getElementById('description').value.trim() !== '' &&
     document.getElementById('qty').value.trim() !== '' &&
@@ -430,7 +405,6 @@ function pulseDispBtns() {
   var bR = document.getElementById('btnRejected');
   bA.classList.remove('pulse-warn');
   bR.classList.remove('pulse-warn');
-  // force reflow
   void bA.offsetWidth;
   bA.classList.add('pulse-warn');
   bR.classList.add('pulse-warn');
@@ -490,6 +464,10 @@ function onOqcRefsLoaded(refs) {
     if (opt && opt.dataset.material) {
       document.getElementById('description').value = opt.dataset.material;
     }
+    // Reset FIFO panel when OQC selection changes
+    document.getElementById('fifoResult').style.display = 'none';
+    document.getElementById('fifoEmpty').style.display  = 'none';
+    if (opt && opt.dataset.unit) document.getElementById('fifoUnit').textContent = opt.dataset.unit || 'pcs';
     refreshSaveBtn();
   });
   refreshSaveBtn();
@@ -499,6 +477,13 @@ function onInitData(data) {
   _today = (data && data.today) || new Date().toISOString().split('T')[0];
   _docNo = (data && data.docNumber) || '';
   document.getElementById('docBadge').textContent = _docNo || 'GATE';
+  var gpDocEl = document.getElementById('gpDocNo');
+  if (gpDocEl) gpDocEl.textContent = _docNo || 'PM/GP/—';
+  var gpDateEl = document.getElementById('gpDateLabel');
+  if (gpDateEl) {
+    var nd = new Date();
+    gpDateEl.textContent = nd.toLocaleDateString('en-IN', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
 
   var personnel = (data && data.personnel) || [];
   var users = personnel.map(function(p) { return { name: p.name || p.code || String(p) }; });
@@ -538,7 +523,6 @@ function showAuthWarn() {
 
 // ── Save ───────────────────────────────────────────────────────────────
 function doSave() {
-  // Validate required
   var desc    = document.getElementById('description').value.trim();
   var qtyRaw  = document.getElementById('qty').value.trim();
   var vehicle = document.getElementById('vehicleNo').value.trim();
@@ -618,8 +602,8 @@ function onSaveSuccess(res, matType, desc, qty, unit, vehicle) {
 
 // ── Confirmation screen ────────────────────────────────────────────────
 function showConfirmation(docNo, matType, desc, qty, unit, vehicle) {
-  document.getElementById('screenForm').style.display  = 'none';
-  document.getElementById('gpFooter').style.display    = 'none';
+  document.getElementById('screenForm').style.display    = 'none';
+  document.getElementById('gpFooter').style.display      = 'none';
   document.getElementById('screenConfirm').style.display = '';
 
   document.getElementById('confirmDocNo').textContent = '#' + (docNo || _docNo);
@@ -643,6 +627,80 @@ function showConfirmation(docNo, matType, desc, qty, unit, vehicle) {
   dispChip.className = 'chip ' + (_disposition === 'APPROVED' ? 'approved' : 'rejected');
   dispChip.textContent = _disposition;
   chips.appendChild(dispChip);
+}
+
+// ── FIFO Allocation ────────────────────────────────────────────────────
+function planFIFO() {
+  var qtyEl  = document.getElementById('fifoQtyReq');
+  var qty    = parseFloat(qtyEl.value);
+  if (!qty || qty <= 0) { showToast('Enter a valid Qty Requested first.', 'error'); return; }
+
+  // Get material code from selected OQC option
+  var oqcSel = document.getElementById('oqcRef');
+  var selOpt = oqcSel.options[oqcSel.selectedIndex];
+  var materialCode = selOpt ? (selOpt.dataset.material || '') : '';
+
+  document.getElementById('fifoResult').style.display = 'none';
+  document.getElementById('fifoEmpty').style.display  = 'none';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.lots || res.lots.length === 0) {
+        document.getElementById('fifoEmpty').style.display = '';
+        return;
+      }
+      renderFIFOLots(res.lots, res.total);
+    })
+    .withFailureHandler(function(e) {
+      showToast('FIFO error: ' + (e && e.message ? e.message : e), 'error');
+    })
+    .getFIFOAllocation(materialCode, qty);
+}
+
+function renderFIFOLots(lots, total) {
+  var unit = document.getElementById('fifoUnit').textContent || 'pcs';
+  var container = document.getElementById('fifoLotRows');
+  container.innerHTML = '';
+
+  lots.forEach(function(lot, idx) {
+    var row = document.createElement('div');
+    row.className = 'flex flex-col gap-2 pb-3' + (idx < lots.length - 1 ? ' border-b border-[#e2e8f0]' : '');
+    row.innerHTML =
+      '<div class="flex justify-between items-start">' +
+        '<div>' +
+          '<div class="flex items-center gap-2 mb-1">' +
+            '<span class="text-[15px] font-semibold text-[#0f172a]">' + lot.docNo + '</span>' +
+            (lot.isOldest ? '<span class="bg-[#dcfce7] text-[#16a34a] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Lot 1 (oldest)</span>' : '') +
+          '</div>' +
+          '<div class="flex items-center gap-3 text-[12px] text-[#64748b]">' +
+            '<span>OQC: ' + lot.date + '</span>' +
+            '<span class="w-1 h-1 bg-[#cbd5e1] rounded-full inline-block"></span>' +
+            '<span>Available: ' + lot.availableQty + ' ' + unit + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<input type="number" min="0" step="any" value="' + lot.suggestedQty + '"' +
+          ' data-lot="' + lot.docNo + '"' +
+          ' onchange="recalcFIFOTotal()"' +
+          ' class="w-[80px] h-10 px-2 text-center border-[1.5px] border-[#d1d5db] rounded-lg text-[14px] font-medium text-[#0f172a] focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 bg-white">' +
+      '</div>';
+    container.appendChild(row);
+  });
+
+  document.getElementById('fifoTotal').textContent = total;
+  document.getElementById('fifoTotalUnit').textContent = unit;
+  document.getElementById('fifoLotCount').textContent = lots.length + ' lot' + (lots.length !== 1 ? 's' : '');
+  document.getElementById('fifoResult').style.display = '';
+
+  // Sync qty field with total
+  document.getElementById('qty').value = total;
+}
+
+function recalcFIFOTotal() {
+  var inputs = document.querySelectorAll('#fifoLotRows input[type="number"]');
+  var total = 0;
+  inputs.forEach(function(inp) { total += parseFloat(inp.value) || 0; });
+  document.getElementById('fifoTotal').textContent = total;
+  document.getElementById('qty').value = total;
 }
 
 // ── Wire up events ─────────────────────────────────────────────────────
@@ -671,15 +729,17 @@ function bindEvents() {
     this.value = this.value.toUpperCase();
   });
 
-  // Footer label tracks material type
+  // Footer label tracks material type; show/hide OQC ref and FIFO section
   document.getElementById('materialType').addEventListener('change', function() {
     var isFG = this.value === 'Finished Goods';
     document.getElementById('fieldOqcRef').style.display = isFG ? '' : 'none';
+    document.getElementById('fifoSection').style.display  = isFG ? '' : 'none';
     syncFooterLabel();
     refreshSaveBtn();
   });
-  // Show OQC ref on initial load (default is Finished Goods)
+  // Show OQC ref and FIFO on initial load (default is Finished Goods)
   document.getElementById('fieldOqcRef').style.display = '';
+  document.getElementById('fifoSection').style.display  = '';
 
   // Refresh save state on any required field change
   var watchIds = ['description', 'qty', 'vehicleNo', 'driverName', 'authorizedBy'];
@@ -698,5 +758,6 @@ window.onload = function() {
   loadInit();
 };
 </script>
+<?!= include('BottomNav') ?>
 </body>
 </html>
