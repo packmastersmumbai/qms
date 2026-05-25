@@ -183,7 +183,7 @@
      Row B: time-period pills + search input + Custom-date toggle.
      The custom date range collapses below Row B; hidden until user
      taps the calendar icon. Total chrome ~94px sticky (down from ~130px). -->
-<div class="fixed top-[56px] w-full z-40 bg-[#f8fafc] shadow-sm">
+<div id="filterStrip" class="fixed top-[56px] left-0 right-0 z-40 bg-white border-b border-[#e5e7eb] shadow-[0_2px_8px_rgba(13,27,110,0.06)]">
 
   <!-- Row A: Module tab pills -->
   <div class="flex overflow-x-auto no-scrollbar gap-[6px] px-3 pt-2 pb-2 snap-x" id="tabBar">
@@ -265,9 +265,10 @@
   </div>
 </div>
 
-<!-- ── Main content ── -->
-<!-- offset = 56px topbar + ~130px filter strip -->
-<main class="pt-[226px] px-4 max-w-[640px] mx-auto w-full" id="mainContent">
+<!-- ── Main content ──
+     Sticky strip height is measured at runtime (filter pills + custom-date
+     expander toggle). We start with a safe baseline and let JS refine. -->
+<main class="pt-[150px] px-4 max-w-[640px] mx-auto w-full" id="mainContent">
 
   <!-- record count label -->
   <div class="flex justify-between items-center pb-2" id="countRow">
@@ -520,7 +521,24 @@
     var open = el.classList.toggle('is-open');
     if (open) { btn.style.background = '#0D1B6E'; btn.style.color = '#fff'; btn.style.borderColor = '#0D1B6E'; }
     else      { btn.style.background = '#fff';    btn.style.color = '#6B7280'; btn.style.borderColor = '#e2e8f0'; }
+    syncMainOffset();
   };
+
+  // Keep main content's top padding in sync with the actual sticky strip
+  // height (filter strip can grow when the custom-date drawer opens).
+  function syncMainOffset() {
+    var strip = document.getElementById('filterStrip');
+    var main  = document.getElementById('mainContent');
+    if (!strip || !main) return;
+    // 56px top bar + strip height + 8px breathing room.
+    var h = 56 + strip.offsetHeight + 8;
+    main.style.paddingTop = h + 'px';
+  }
+  window.addEventListener('resize', syncMainOffset);
+  // Run after first paint and after fonts load (icon font shifts row heights).
+  setTimeout(syncMainOffset, 0);
+  setTimeout(syncMainOffset, 300);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncMainOffset);
 
   // ── Status chip HTML ──
   function chipHtml(status) {
