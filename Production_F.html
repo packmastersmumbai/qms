@@ -38,7 +38,8 @@
       padding: 14px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    .prd-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    /* DESIGN.md: single-column form. Was 2-col; gloves + 6" phone = misfires. */
+    .prd-grid2 { display: flex; flex-direction: column; gap: 0; }
     .prd-field { margin-bottom: 10px; }
     .prd-field label { display: block; font-size: 11px; color: #555; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
     .prd-field input, .prd-field select, .prd-field textarea {
