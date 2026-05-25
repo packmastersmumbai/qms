@@ -484,6 +484,9 @@ function loadInit() {
           fgSel.appendChild(o);
         });
         fgSel.addEventListener('change', checkSaveReady);
+        if (!gFGLocations.length) {
+          showToast('No FG locations defined — Save will be blocked for ACCEPTED until a location is added to LOCATIONS sheet (Type=FG).', 'error');
+        }
       }
 
       document.getElementById('docBadge').textContent = d.docNumber || 'OQC';
@@ -829,6 +832,7 @@ function doSave() {
   var matSel  = document.getElementById('selMaterial');
   var matOpt  = matSel.options[matSel.selectedIndex];
   var matDesc = (matOpt && matOpt.dataset.desc) ? matOpt.dataset.desc : matSel.value;
+  var matCode = matSel.value; // option value carries the canonical material code
 
   var custSel  = document.getElementById('selCustomer');
   var custOpt  = custSel.options[custSel.selectedIndex];
@@ -849,6 +853,7 @@ function doSave() {
     fgLocation:    (document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : ''),
     items: [{
       batchPO:       batchNo,
+      materialCode:  matCode,
       materialDesc:  matDesc,
       sampleSize:    qty,
       fgLocation:    (document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : ''),

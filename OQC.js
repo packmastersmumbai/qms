@@ -6,13 +6,21 @@
 function getOQCFormInit() {
   var allMats = getMaterials();
   var fgMats  = allMats.filter(function(m) { return m.category && m.category.toUpperCase() === 'FG'; });
+  // Each lookup is best-effort: a missing or throwing helper must not block the
+  // entire form load. The UI surfaces empty dropdowns instead of a dead screen.
+  var fgLocs = [];
+  try { if (typeof getFGLocations === 'function') fgLocs = getFGLocations() || []; }
+  catch (eLoc) { Logger.log('getFGLocations failed: ' + eLoc.message); }
+  var ipqc = [];
+  try { if (typeof getClosedIPQCSessionsForOQC === 'function') ipqc = getClosedIPQCSessionsForOQC() || []; }
+  catch (eIp) { Logger.log('getClosedIPQCSessionsForOQC failed: ' + eIp.message); }
   return {
     docNumber:    peekNextDocNumber('oqc'),
     customers:    getCustomers(),
     materials:    fgMats,
     inspectors:   getInspectors(),
-    ipqcSessions: (typeof getClosedIPQCSessionsForOQC === 'function') ? getClosedIPQCSessionsForOQC() : [],
-    fgLocations:  (typeof getFGLocations === 'function') ? getFGLocations() : [],
+    ipqcSessions: ipqc,
+    fgLocations:  fgLocs,
     today:        Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
   };
 }
@@ -129,7 +137,10 @@ function saveOQC(data) {
       // P6 — mirror released OQCs into FG_DISPATCH_LOTS + write OQC_RELEASE ledger IN
       if (releasedThis && acceptedQty > 0 && fgLocation) {
         try {
-          var productCode = _resolveProductCodeFromDesc_(item.materialDesc || '');
+          // Prefer the materialCode the UI sent (canonical, no fuzzy match).
+          // Fall back to description resolution only when client predates this fix.
+          var productCode = String(item.materialCode || '').trim() ||
+                            _resolveProductCodeFromDesc_(item.materialDesc || '');
           var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
           var unit = '';
           for (var mi = 0; mi < mats.length; mi++) {
