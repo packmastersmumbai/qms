@@ -42,7 +42,15 @@
     .font-mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
     button { font-family: inherit; cursor: pointer; }
 
-    /* Shell */
+    /* ──────────────────────────────────────────────────────────────
+       LAYOUT BREAKPOINTS
+       Mobile  : <  768px — single 430px column, fixed top bar + bottom nav
+       Tablet  : 768-1023 — wider column 640px, no two-pane yet
+       Desktop : >= 1024px — two-pane (main 720, aside 320), no bottom nav,
+                 top bar spans full width.
+       ────────────────────────────────────────────────────────────── */
+
+    /* Shell — mobile */
     .pm-shell { max-width: 430px; margin: 0 auto; position: relative; }
 
     /* ── Top bar ── */
@@ -52,6 +60,7 @@
       background: var(--pm-navy);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 8px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.04);
     }
     .pm-top-btn {
       width: 36px; height: 36px; border-radius: 8px;
@@ -96,19 +105,40 @@
     .pm-bn-btn svg { width: 18px; height: 18px; stroke-width: 1.75; }
     .pm-bn-btn.is-active svg { stroke-width: 2.2; }
 
-    main { padding: 56px 12px 64px; }
+    main { padding: 56px 12px 72px; }
 
-    /* ── Date strip ── */
-    .pm-date {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 4px 4px 8px;
-      font-size: 11.5px; color: var(--pm-muted); font-weight: 500;
+    /* ── Hero band ──
+       Replaces the old flat date strip. Sits flush under the top bar,
+       carries date + shift + persona pill in a single navy-ink panel.
+       Gives the page an anchor without competing with the tiles. */
+    .pm-hero {
+      margin: 0 -12px 10px;
+      padding: 14px 14px 14px;
+      background: linear-gradient(180deg, #FFFFFF 0%, #F5F7FA 100%);
+      border-bottom: 1px solid var(--pm-rule);
     }
+    .pm-hero-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .pm-hero-date {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px; font-weight: 700;
+      color: var(--pm-text);
+      letter-spacing: -0.2px;
+      line-height: 1.15;
+    }
+    .pm-hero-day {
+      font-size: 11px; font-weight: 500;
+      color: var(--pm-muted);
+      margin-top: 2px;
+      letter-spacing: 0.2px;
+    }
+    .pm-hero-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .pm-shift {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 9.5px; font-weight: 700;
-      color: #fff; background: var(--pm-navy);
-      padding: 2px 8px; border-radius: 999px;
+      font-size: 10px; font-weight: 700;
+      color: var(--pm-navy);
+      background: #EEF1FA;
+      padding: 5px 10px;
+      border-radius: 999px;
       letter-spacing: 0.5px;
     }
 
@@ -119,19 +149,30 @@
       margin: 6px 0;
     }
 
-    /* ── Section label ── */
+    /* ── Section label ──
+       Slightly larger (10.5px) with a 4px navy dot prefix so groups
+       scan as separate phases (Receive / Make / Ship / Resolve / Manage)
+       without leaning on colored cards. */
     .pm-sec {
-      display: flex; align-items: baseline; justify-content: space-between;
-      margin: 10px 2px 4px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 14px 2px 6px;
     }
     .pm-sec-l {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 9.5px; font-weight: 700;
+      font-size: 10.5px; font-weight: 700;
       color: var(--pm-muted);
-      letter-spacing: 1.4px; text-transform: uppercase;
+      letter-spacing: 1.6px; text-transform: uppercase;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .pm-sec-l::before {
+      content: '';
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--pm-navy);
+      opacity: 0.85;
     }
     .pm-sec-link {
-      font-size: 11px; font-weight: 600; color: var(--pm-sky);
+      font-size: 11.5px; font-weight: 600; color: var(--pm-sky);
       background: transparent; border: 0; padding: 0;
     }
     .pm-sec-link:hover { text-decoration: underline; }
@@ -142,50 +183,81 @@
     .pm-collapse-body { overflow:hidden; transition:max-height .2s ease, opacity .15s ease; }
     .pm-collapse-body.collapsed { max-height:0 !important; opacity:0; }
 
-    /* ── Alert row ── */
-    .pm-alert-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
-    .pm-alert {
+    /* ── Alerts (compact stacked rows, NOT a wall) ──
+       Old design used 10 boxed amber cards stacking vertically — they ate
+       half the viewport. New rows are 36px hairline rows on the page
+       background with a single thin amber-left bar, separated by 1px
+       rules. Reads as a list, not a warning wall. */
+    .pm-alert-list {
+      display: flex; flex-direction: column;
+      margin: 0 0 6px;
+      background: #fff;
+      border: 1px solid #FDE9CF;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .pm-alert-list .pm-alert-head {
       display: flex; align-items: center; gap: 8px;
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
+      padding: 8px 12px;
+      background: #FFF7ED;
+      border-bottom: 1px solid #FDE9CF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 10.5px; font-weight: 700;
+      color: #9A3412;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .pm-alert-head svg { width: 13px; height: 13px; stroke-width: 2; }
+    .pm-alert-head-count {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      background: #FFEDD5; color: #9A3412;
+      padding: 2px 8px; border-radius: 999px;
+      letter-spacing: 0;
+    }
+    .pm-alert {
+      display: flex; align-items: center; gap: 10px;
+      background: transparent;
+      border: 0; border-bottom: 1px solid var(--pm-rule);
       border-left: 3px solid var(--pm-warn);
-      border-radius: 8px;
-      padding: 6px 8px 6px 10px;
-      min-height: 34px;
-      color: #7c2d12;
+      padding: 9px 12px;
+      min-height: 44px;
+      color: var(--pm-text);
       width: 100%; box-sizing: border-box;
       text-align: left;
-      transition: border-color .15s ease, box-shadow .15s ease;
+      cursor: pointer;
+      transition: background .12s ease;
     }
-    .pm-alert:hover { box-shadow: 0 2px 8px rgba(249,115,22,0.10); }
-    .pm-alert:active { transform: scale(0.99); }
-    .pm-alert-icon { flex-shrink: 0; width: 16px; height: 16px; color: var(--pm-warn); }
-    .pm-alert-icon svg { width: 100%; height: 100%; stroke-width: 1.8; }
+    .pm-alert:last-child { border-bottom: 0; }
+    .pm-alert:hover { background: #FFFBF5; }
+    .pm-alert:active { background: #FFF7ED; }
+    .pm-alert-icon { display: none; }  /* icon now lives in the header */
     .pm-alert-body { flex: 1; min-width: 0; }
     .pm-alert-text {
-      font-size: 11.5px; font-weight: 600; line-height: 1.25;
-      color: #7c2d12;
+      font-size: 12.5px; font-weight: 600; line-height: 1.3;
+      color: var(--pm-text);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .pm-alert-refs {
-      font-size: 10px; color: #9a3412;
+      font-size: 10.5px; color: var(--pm-muted);
       font-family: 'JetBrains Mono', monospace;
       margin-top: 1px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .pm-alert-chev { flex-shrink: 0; color: #9a3412; opacity: 0.6; }
-    .pm-alert-chev svg { width: 14px; height: 14px; }
-
+    .pm-alert-chev { flex-shrink: 0; color: var(--pm-faint); }
+    .pm-alert-chev svg { width: 14px; height: 14px; stroke-width: 2; }
     .pm-alert-more {
-      background: transparent; border: 0;
-      color: var(--pm-warn);
+      width: 100%;
+      background: #FFF7ED; border: 0;
+      border-top: 1px solid #FDE9CF;
+      color: #9A3412;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 11px; font-weight: 700;
-      letter-spacing: 0.3px;
-      padding: 4px 8px;
-      align-self: flex-start;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      padding: 9px;
       cursor: pointer;
     }
-    .pm-alert-more:hover { text-decoration: underline; }
+    .pm-alert-more:hover { background: #FFEDD5; }
 
     /* ── Stat strip ── */
     .pm-stats {
@@ -250,21 +322,32 @@
       transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
       overflow: hidden;
     }
-    .pm-tile:hover { border-color: var(--pm-navy); box-shadow: 0 1px 4px rgba(13,27,110,0.08), 0 2px 8px rgba(13,27,110,0.06); }
+    .pm-tile:hover {
+      border-color: var(--pm-navy);
+      box-shadow: 0 1px 4px rgba(13,27,110,0.08), 0 4px 12px rgba(13,27,110,0.07);
+      transform: translateY(-1px);
+    }
     .pm-tile:active { transform: scale(0.98); }
     .pm-tile-top {
       display: flex; align-items: center; justify-content: space-between;
       gap: 4px;
     }
     .pm-tile-icon {
-      width: 22px; height: 22px;
-      border-radius: 6px;
+      width: 26px; height: 26px;
+      border-radius: 7px;
       background: #EEF1FA;
       color: var(--pm-navy);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-    .pm-tile-icon svg { width: 13px; height: 13px; stroke-width: 1.9; }
+    .pm-tile-icon svg { width: 14px; height: 14px; stroke-width: 1.9; }
+    /* Group-tinted icon backgrounds. Subtle so the page stays neutral
+       but you can tell Receive from Ship from Resolve at a glance. */
+    .pm-tile[data-group="Receive"] .pm-tile-icon { background: #E0F2FE; color: #0369A1; }
+    .pm-tile[data-group="Make"]    .pm-tile-icon { background: #EDE9FE; color: #6D28D9; }
+    .pm-tile[data-group="Ship"]    .pm-tile-icon { background: #DCFCE7; color: #15803D; }
+    .pm-tile[data-group="Resolve"] .pm-tile-icon { background: #FEE2E2; color: #B91C1C; }
+    .pm-tile[data-group="Manage"]  .pm-tile-icon { background: #EEF1FA; color: var(--pm-navy); }
     .pm-tile-count {
       flex-shrink: 0;
       min-width: 22px; height: 20px;
@@ -562,8 +645,111 @@
     .pm-kpi-dval { font-family:'JetBrains Mono', monospace; font-size:17px; font-weight:800; color:var(--pm-navy); letter-spacing:-0.5px; line-height:1.1; }
     .pm-kpi-dval.is-good { color: var(--pm-pass); }
     .pm-kpi-dval.is-bad { color: var(--pm-fail); }
-    .pm-kpi-dval.is-good { color: var(--pm-pass); }
-    .pm-kpi-dval.is-bad { color: var(--pm-fail); }
+
+    /* ══════════════════════════════════════════════════════════════
+       TABLET (>= 640px) — wider column, no two-pane yet
+       ════════════════════════════════════════════════════════════ */
+    @media (min-width: 640px) and (max-width: 1023px) {
+      .pm-shell { max-width: 640px; }
+      .pm-top   { max-width: 640px; }
+      .pm-bn    { max-width: 640px; }
+      .pm-tiles { grid-template-columns: repeat(4, 1fr); }
+      .pm-kpi-hero { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       DESKTOP (>= 1024px) — two-pane, no bottom nav, hero is sidebar
+       ════════════════════════════════════════════════════════════ */
+    @media (min-width: 1024px) {
+      body { background: var(--pm-bg); }
+
+      /* Top bar spans full width with content centered */
+      .pm-top {
+        max-width: none;
+        left: 0; right: 0; transform: none;
+        padding: 0 24px;
+        height: 56px;
+        justify-content: flex-start;
+        gap: 16px;
+      }
+      .pm-top-title { font-size: 16px; flex: 0 0 auto; }
+      .pm-top > div:last-child { margin-left: auto; }
+      .pm-top-btn { width: 38px; height: 38px; }
+      .pm-top-btn svg { width: 20px; height: 20px; }
+
+      /* Bottom nav hidden on desktop */
+      .pm-bn { display: none !important; }
+
+      /* Shell becomes the two-pane grid */
+      .pm-shell {
+        max-width: 1180px;
+        padding: 0 24px;
+      }
+      main {
+        padding: 72px 0 32px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 28px;
+        align-items: start;
+      }
+      /* Hero spans full width above the two columns */
+      .pm-hero {
+        margin: 0 0 16px;
+        grid-column: 1 / -1;
+        padding: 22px 24px;
+        background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%);
+        border: 1px solid var(--pm-border);
+        border-radius: 14px;
+        box-shadow: 0 1px 4px rgba(13,27,110,0.04);
+      }
+      .pm-hero-date { font-size: 22px; }
+      .pm-hero-day  { font-size: 13px; }
+      .pm-shift     { font-size: 11px; padding: 6px 12px; }
+
+      /* Main column: alerts (when present), tile groups, recent */
+      .pm-main-col {
+        display: contents;  /* allow child blocks to land in main grid cell */
+      }
+      /* Group children into the two columns by explicit class. */
+      #moduleGroups, #recentSection {
+        grid-column: 1;
+      }
+      #alertList, #kpiSec, #kpiHeroBody, #kpiDrillSec {
+        grid-column: 2;
+      }
+
+      /* Tile grid breathes wider */
+      .pm-tiles { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .pm-tile { min-height: 96px; padding: 12px 14px 12px; }
+      .pm-tile-icon { width: 30px; height: 30px; }
+      .pm-tile-icon svg { width: 15px; height: 15px; }
+      .pm-tile-label { font-size: 13px; }
+      .pm-tile-meta { font-size: 10.5px; }
+      .pm-tile-count { height: 22px; font-size: 11px; min-width: 26px; }
+
+      /* KPI hero collapses to single column in the narrow sidebar */
+      .pm-kpi-hero { grid-template-columns: 1fr; gap: 8px; }
+      .pm-kpi-card { min-height: 70px; padding: 10px 12px; }
+      .pm-kpi-val  { font-size: 22px; }
+      .pm-kpi-drill { grid-template-columns: 1fr; gap: 6px; }
+
+      /* Section labels look heavier on desktop */
+      .pm-sec-l { font-size: 11px; }
+
+      /* Alerts list sits to the right; less aggressive cap */
+      .pm-alert-list { margin-bottom: 12px; }
+
+      /* Recent activity card */
+      .pm-act-card {
+        background: #fff;
+        border: 1px solid var(--pm-border);
+        border-radius: 12px;
+      }
+      .pm-act { padding-left: 12px; padding-right: 12px; }
+    }
+
+    /* Loader sits over everything regardless of viewport */
+    .pm-loader { width: 100vw; }
   </style>
 
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
@@ -634,9 +820,16 @@
 <!-- ══════════════ MAIN ══════════════ -->
 <main class="pm-shell">
 
-  <div class="pm-date">
-    <span id="dateLine"></span>
-    <span class="pm-shift" id="shiftPill">SHIFT A</span>
+  <div class="pm-hero">
+    <div class="pm-hero-row">
+      <div>
+        <div class="pm-hero-date" id="dateLine"></div>
+        <div class="pm-hero-day" id="dayLine"></div>
+      </div>
+      <div class="pm-hero-meta">
+        <span class="pm-shift" id="shiftPill">SHIFT A</span>
+      </div>
+    </div>
   </div>
 
   <!-- Alerts (only render if any pending) -->
@@ -671,14 +864,16 @@
   </div>
 
   <!-- Recent activity -->
-  <div class="pm-sec">
-    <span class="pm-sec-l">Recent</span>
-    <button class="pm-sec-link" onclick="navigateTo('Records')">View all</button>
-  </div>
-  <div class="pm-act-card" id="recentActivity">
-    <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
-    <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
-    <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
+  <div id="recentSection">
+    <div class="pm-sec">
+      <span class="pm-sec-l">Recent</span>
+      <button class="pm-sec-link" onclick="navigateTo('Records')">View all</button>
+    </div>
+    <div class="pm-act-card" id="recentActivity">
+      <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
+      <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
+      <div class="pm-act"><div class="pm-act-id pm-skel" style="width:90px;height:11px;">_</div><div class="pm-act-mid"><div class="pm-skel" style="width:60px;height:11px;">_</div></div></div>
+    </div>
   </div>
 
 </main>
@@ -713,13 +908,16 @@
     return 'C';
   }
 
-  /* ── Date + shift ── */
+  /* ── Date + shift (hero band) ── */
   (function () {
     var now = new Date();
-    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dayShort = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var dayLong  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var months   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     var dl = $('dateLine');
-    if (dl) dl.textContent = days[now.getDay()] + ' · ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+    if (dl) dl.textContent = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+    var dy = $('dayLine');
+    if (dy) dy.textContent = dayLong[now.getDay()];
     var sp = $('shiftPill');
     if (sp) sp.textContent = 'SHIFT ' + getShift(now.getHours());
   }());
@@ -976,6 +1174,24 @@
     return parts.slice(0, 3).join(' · ');
   }
 
+  function alertRowHtml(a, i) {
+    var r = alertRoute(a);
+    return '<button class="pm-alert pm-rise" style="animation-delay:' + (i * 30) + 'ms;" ' +
+      'onclick="navigateToRecord(\'' + r.module + '\',\'' + esc(r.docNo) + '\')" aria-label="' + esc(a.detail) + '">' +
+      '<div class="pm-alert-body">' +
+        '<div class="pm-alert-text">' + esc(shortenDetail(a.detail)) + '</div>' +
+      '</div>' +
+      '<span class="pm-alert-chev"><svg><use href="#i-chev"/></svg></span>' +
+      '</button>';
+  }
+  function alertHeadHtml(total) {
+    return '<div class="pm-alert-head">' +
+      '<svg><use href="#i-alert-tri"/></svg>' +
+      '<span>Action required</span>' +
+      '<span class="pm-alert-head-count">' + total + '</span>' +
+    '</div>';
+  }
+
   function renderAlerts(pendingActions) {
     var el = $('alertList');
     if (!el) return;
@@ -983,40 +1199,18 @@
     var total = pendingActions.length;
     var capped = total > ALERTS_VISIBLE;
     var visible = capped ? pendingActions.slice(0, ALERTS_VISIBLE) : pendingActions;
-    var html = visible.map(function (a, i) {
-      var r = alertRoute(a);
-      return '<button class="pm-alert pm-rise" style="animation-delay:' + (i * 40) + 'ms;" ' +
-        'onclick="navigateToRecord(\'' + r.module + '\',\'' + esc(r.docNo) + '\')" aria-label="' + esc(a.detail) + '">' +
-        '<span class="pm-alert-icon"><svg><use href="#i-alert-tri"/></svg></span>' +
-        '<div class="pm-alert-body">' +
-          '<div class="pm-alert-text">' + esc(shortenDetail(a.detail)) + '</div>' +
-        '</div>' +
-        '<span class="pm-alert-chev"><svg><use href="#i-chev"/></svg></span>' +
-        '</button>';
-    }).join('');
+    var html = alertHeadHtml(total) + visible.map(alertRowHtml).join('');
     if (capped) {
-      html += '<button class="pm-alert-more" onclick="window.PM.expandAlerts()">+ ' + (total - ALERTS_VISIBLE) + ' more alert' + ((total - ALERTS_VISIBLE) === 1 ? '' : 's') + '</button>';
+      html += '<button class="pm-alert-more" onclick="window.PM.expandAlerts()">Show ' + (total - ALERTS_VISIBLE) + ' more</button>';
     }
     el.innerHTML = html;
     el.style.display = '';
   }
-
   function expandAlerts() {
-    // Re-render with the full list by temporarily raising the cap
     var cached = readCache() || {};
     var full = cached.pendingActions || [];
     var el = $('alertList');
-    el.innerHTML = full.map(function (a, i) {
-      var r = alertRoute(a);
-      return '<button class="pm-alert pm-rise" style="animation-delay:' + (i * 20) + 'ms;" ' +
-        'onclick="navigateToRecord(\'' + r.module + '\',\'' + esc(r.docNo) + '\')" aria-label="' + esc(a.detail) + '">' +
-        '<span class="pm-alert-icon"><svg><use href="#i-alert-tri"/></svg></span>' +
-        '<div class="pm-alert-body">' +
-          '<div class="pm-alert-text">' + esc(shortenDetail(a.detail)) + '</div>' +
-        '</div>' +
-        '<span class="pm-alert-chev"><svg><use href="#i-chev"/></svg></span>' +
-        '</button>';
-    }).join('');
+    el.innerHTML = alertHeadHtml(full.length) + full.map(alertRowHtml).join('');
   }
 
   // renderStatStrip removed — stat strip retired in v2 (counts live on tiles now).
@@ -1028,6 +1222,7 @@
     var tiles = (SETTINGS && SETTINGS.tiles) || null;
     var idx = 0;
     var html = GROUPS.map(function (g) {
+      var groupName = g.label;
       var rows = g.modules.filter(function(m){
         if (!tiles || !m.countKey) return true;
         if (!tiles.hasOwnProperty(m.countKey)) return true;
@@ -1067,6 +1262,7 @@
         if (n != null && n > 0) stateCls = ' has-pending';
         var delay = (idx++) * 25;
         return '<div class="pm-tile' + stateCls + ' pm-rise" role="button" tabindex="0" ' +
+          'data-group="' + esc(groupName) + '" ' +
           'style="animation-delay:' + delay + 'ms;" ' +
           'onclick="' + tileClick + '" ' +
           'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();' + tileClick + '}" ' +
