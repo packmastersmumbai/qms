@@ -515,7 +515,18 @@
 
     /* ── boot ── */
     window.addEventListener('load', function(){
-      switchTab('triage');
+      var startTab = 'triage';
+      try {
+        var raw = sessionStorage.getItem('pmFormIntent');
+        if (raw) {
+          var intent = JSON.parse(raw);
+          if (intent && intent.form === 'CustomerReturn' && intent.mode === 'new') {
+            startTab = 'new';
+          }
+          sessionStorage.removeItem('pmFormIntent');
+        }
+      } catch (e) {}
+      switchTab(startTab);
       loadInit();
     });
   </script>

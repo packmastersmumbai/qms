@@ -286,6 +286,21 @@
     .pm-row-count:active { transform: scale(0.94); }
     .pm-row-count.is-zero { background: #f1f5f9; color: var(--pm-faint); }
     .pm-row-count.is-na { background: transparent; color: var(--pm-faint); }
+    .pm-row-add {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--pm-sky);
+      color: #fff;
+      border: 0; border-radius: 6px;
+      font-family: inherit;
+      font-size: 18px; font-weight: 600; line-height: 1;
+      cursor: pointer;
+      transition: background .12s ease, transform .08s ease;
+    }
+    .pm-row-add:hover { background: #0284c7; }
+    .pm-row-add:active { transform: scale(0.92); }
+    .pm-row-add svg { width: 14px; height: 14px; stroke-width: 2.5; }
     .pm-row-chev {
       width: 18px; height: 18px;
       color: var(--pm-faint);
@@ -716,7 +731,16 @@
 
   /* ═════════════ NAVIGATION + PREFETCH ═════════════ */
   var _prefetchCache = {};
-  function navigateTo(formName) {
+  function navigateTo(formName, opts) {
+    // Pass an intent hint (e.g. {mode:'new'}) to the target form via sessionStorage.
+    // Forms opt in by reading sessionStorage.pmFormIntent on boot.
+    try {
+      if (opts && opts.mode) {
+        sessionStorage.setItem('pmFormIntent', JSON.stringify({ form: formName, mode: opts.mode }));
+      } else {
+        sessionStorage.removeItem('pmFormIntent');
+      }
+    } catch (e) {}
     // Prefer shared sessionStorage-backed cache (survives across pages)
     if (window.PMHtmlCache && typeof window.PMHtmlCache.navigate === 'function') {
       window.PMHtmlCache.navigate(formName);
@@ -844,7 +868,7 @@
       { name: 'Dispatch',   form: 'Dispatch',   icon: 'i-truck',           countKey: 'Dispatch' }
     ]},
     { label: 'Resolve', modules: [
-      { name: 'NCR',        form: 'NCR',        icon: 'i-octagon-alert',   countKey: 'NCR' },
+      { name: 'NCR',        form: 'NCR',        icon: 'i-octagon-alert',   countKey: 'NCR', noNew: true },
       { name: 'Returns',    form: 'CustomerReturn', icon: 'i-undo',        countKey: 'CustomerReturn' },
       { name: 'Control Plan', form: 'ControlPlan', icon: 'i-ruler',        countKey: null }
     ]},
@@ -1051,6 +1075,12 @@
             'aria-label="View ' + esc(m.name) + ' records" ' +
             'onclick="event.stopPropagation();navigateToRecords(\'' + m.form + '\', {period:\'ALL\'})">' + n + '</button>';
         }
+        var addHtml = '';
+        if (m.countKey && !m.noNew) {
+          addHtml = '<button class="pm-row-add" ' +
+            'aria-label="New ' + esc(m.name) + '" title="New ' + esc(m.name) + '" ' +
+            'onclick="event.stopPropagation();navigateTo(\'' + m.form + '\',{mode:\'new\'})">+</button>';
+        }
         var delay = (idx++) * 25;
         return '<div class="pm-row pm-rise" role="button" tabindex="0" style="animation-delay:' + delay + 'ms;" ' +
           'onclick="' + rowClick + '" ' +
@@ -1059,6 +1089,7 @@
           '<span class="pm-row-icon"><svg><use href="#' + m.icon + '"/></svg></span>' +
           '<span class="pm-row-label">' + esc(m.name) + '</span>' +
           '<span class="pm-row-meta">' + esc(meta) + '</span>' +
+          addHtml +
           countHtml +
           '<span class="pm-row-chev"><svg><use href="#i-chev"/></svg></span>' +
           '</div>';
