@@ -274,7 +274,14 @@
       .withSuccessHandler(function(d) { DISPOSITIONS = d; })
       .getNCRDispositions();
 
-    try { WHO = (Session && Session.getActiveUser && Session.getActiveUser().getEmail()) || ''; } catch(e) {}
+    // Session.getActiveUser is server-only; in a web app client context it's
+    // undefined. Use the operator name set by OperatorPicker / QMS pill so
+    // the Disposition By / Closed By audit columns are not blank.
+    try {
+      if (window.QMS && typeof window.QMS.getOperatorName === 'function') {
+        WHO = window.QMS.getOperatorName() || '';
+      }
+    } catch(e) {}
 
     loadList();
   }
@@ -348,7 +355,11 @@
 
       /* Disposition buttons */
       var actionsHtml;
-      if (isInProgress) {
+      if (isClosed) {
+        // CLOSED records show neither disposition picker nor a Close button —
+        // closeNCR will reject any attempt server-side, so we hide it client-side too.
+        actionsHtml = '';
+      } else if (isInProgress) {
         actionsHtml =
           '<button class="w-full h-[44px] bg-[#1e3a5f] text-white ' +
                   'font-semibold text-[13px] rounded-lg hover:bg-[#162d4a] ' +

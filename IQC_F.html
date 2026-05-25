@@ -838,8 +838,10 @@ function doSaveIQC() {
     var d = itemData[i] || {};
     var pmap = d.params || {};
     return {
+      materialCode: ci.materialCode||'',
       materialDesc: ci.materialDesc||'',
       batchNo:      ci.batchNo||'',
+      qtyReceived:  ci.qtyReceived||0,
       sampleSize:   d.sampleSize||0,
       acceptedQty:  d.acceptedQty||0,
       rejectedQty:  d.rejectedQty||0,
@@ -861,7 +863,7 @@ function doSaveIQC() {
     inspector:    document.getElementById('inspector').value,
     aqlLevel:     document.getElementById('aqlLevel').value,
     sampleId:     document.getElementById('sampleId').value,
-    disposition:  overallDisp,
+    disposition:  (overallDisp === 'AWD' ? 'ACCEPTED WITH DEVIATION' : overallDisp),
     remarks:      document.getElementById('remarks').value,
     ncrRef:       document.getElementById('ncrRef').value,
     deviationRef: document.getElementById('deviationRef').value,

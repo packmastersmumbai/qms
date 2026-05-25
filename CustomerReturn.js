@@ -123,12 +123,17 @@ function ensureReturnExtraColumns_(ws) {
 
 // Upload a base64 image and attach to a customer return row.
 // data: { rtnNo, base64, filename, mimeType }
+var UPLOAD_CR_PHOTO_MIME_ALLOWLIST_ = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 function uploadCustomerReturnPhoto(data) {
   try {
     data = data || {};
     if (!data.rtnNo || !data.base64) return { success: false, error: 'rtnNo and base64 required' };
+    var mime = String(data.mimeType || '').toLowerCase();
+    if (!mime || UPLOAD_CR_PHOTO_MIME_ALLOWLIST_.indexOf(mime) < 0) {
+      return { success: false, error: 'Invalid mimeType. Allowed: ' + UPLOAD_CR_PHOTO_MIME_ALLOWLIST_.join(', ') };
+    }
     var bytes = Utilities.base64Decode(data.base64);
-    var blob  = Utilities.newBlob(bytes, data.mimeType || 'image/jpeg', data.filename || ('rtn-' + Date.now() + '.jpg'));
+    var blob  = Utilities.newBlob(bytes, mime, data.filename || ('rtn-' + Date.now() + '.jpg'));
     var folder = getOrCreateReturnPhotoFolder_();
     var file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
@@ -223,10 +228,9 @@ function disposeCustomerReturn(data) {
       var customer    = rows[i][3] || rows[i][2];
       var reason      = rows[i][10];
 
-      // Stamp disposition and close
+      // Stamp disposition (not CLOSED yet) and remarks.
       ws.getRange(row, 13).setValue('INSPECTED');
       ws.getRange(row, 14).setValue(data.disposition).setBackground('#E8F5E9');
-      ws.getRange(row, 16).setValue('CLOSED');
       if (data.remarks) {
         var existing = String(rows[i][16] || '');
         ws.getRange(row, 17).setValue(existing ? existing + ' | ' + data.remarks : data.remarks);
@@ -235,10 +239,11 @@ function disposeCustomerReturn(data) {
       var ncrNo = '';
       var ncrError = '';
       var disposeWarnings = [];
+      var ledgerFailed = false;
 
       if (data.disposition === 'RESTOCK') {
         // Pull from QUARANTINE, push back to FG-STORE.
-        // Disposition is already stamped — ledger failure is partial-commit → save-with-warning.
+        // Keep status OPEN if ledger fails so the return stays visible for retry.
         if (typeof writeStockLedger_ === 'function' && productCode && fgBatchNo && qty > 0) {
           try {
             writeStockLedger_('CUSTOMER_RETURN_RESTOCK_OUT', productCode, fgBatchNo, 'QUARANTINE',
@@ -247,7 +252,8 @@ function disposeCustomerReturn(data) {
               qty, 0, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Restocked from return ' + ref);
           } catch (ledgerErr) {
             Logger.log('CustomerReturn RESTOCK ledger failed: ' + ledgerErr.message);
-            disposeWarnings.push('Document saved but stock ledger update failed — contact admin.');
+            disposeWarnings.push('Stock ledger failed — return left OPEN for retry. Admin: ' + ledgerErr.message);
+            ledgerFailed = true;
           }
         }
       } else if (data.disposition === 'SCRAP') {
@@ -281,7 +287,7 @@ function disposeCustomerReturn(data) {
         }
       } else if (data.disposition === 'REWORK') {
         // Move out of QUARANTINE; rework area is FG_HOLD until re-released by OQC.
-        // Disposition is already stamped — ledger failure is partial-commit → save-with-warning.
+        // Keep status OPEN if ledger fails so retry stays possible.
         if (typeof writeStockLedger_ === 'function' && productCode && fgBatchNo && qty > 0) {
           try {
             writeStockLedger_('CUSTOMER_RETURN_REWORK_OUT', productCode, fgBatchNo, 'QUARANTINE',
@@ -290,7 +296,8 @@ function disposeCustomerReturn(data) {
               qty, 0, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'In rework pending re-inspection');
           } catch (ledgerErr) {
             Logger.log('CustomerReturn REWORK ledger failed: ' + ledgerErr.message);
-            disposeWarnings.push('Document saved but stock ledger update failed — contact admin.');
+            disposeWarnings.push('Stock ledger failed — return left OPEN for retry. Admin: ' + ledgerErr.message);
+            ledgerFailed = true;
           }
         }
         if (typeof raiseNCR_ === 'function') {
@@ -313,7 +320,16 @@ function disposeCustomerReturn(data) {
       }
 
       if (ncrNo) ws.getRange(row, 15).setValue(ncrNo);
-      return { success: true, ncrNo: ncrNo, ncrError: ncrError, warnings: disposeWarnings };
+      // Flip to CLOSED only when stock movement actually succeeded; otherwise
+      // keep the row OPEN so operators can retry. SCRAP path delegates to
+      // recordScrap which manages its own ledger, so we treat it as success.
+      if (!ledgerFailed) {
+        ws.getRange(row, 16).setValue('CLOSED');
+      } else {
+        // Drop the INSPECTED stamp back so the triage UI keeps showing this row.
+        ws.getRange(row, 13).setValue('PENDING_RETRY');
+      }
+      return { success: true, ncrNo: ncrNo, ncrError: ncrError, warnings: disposeWarnings, ledgerFailed: ledgerFailed };
     }
     return { success: false, error: 'Return ' + ref + ' not found.' };
   } catch(e) {

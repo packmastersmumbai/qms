@@ -258,20 +258,27 @@ function saveRound(sessionId, roundData) {
     var logWs  = _ensureIPQCLog();
     var sessWs = _ensureIPQCSessions();
 
-    // Find current rounds count in IPQC_Sessions
+    // Find current rounds count + status in IPQC_Sessions.
     var sessValues = sessWs.getDataRange().getValues();
     var sessRowIdx = -1;
     var currentRounds = 0;
+    var sessStatus = '';
     for (var i = 1; i < sessValues.length; i++) {
       if (String(sessValues[i][0]).trim() === String(sessionId).trim()) {
-        sessRowIdx   = i + 1; // 1-based sheet row
+        sessRowIdx    = i + 1; // 1-based sheet row
         currentRounds = sessValues[i][10] || 0;
+        sessStatus    = String(sessValues[i][9] || '').trim().toUpperCase();
         break;
       }
     }
 
     if (sessRowIdx < 0) {
       return { ok: false, error: 'Session not found: ' + sessionId };
+    }
+    // Don't write rounds to a session that was closed elsewhere — otherwise
+    // closed sessions can grow new rounds invisibly to the operator.
+    if (sessStatus && sessStatus !== 'OPEN') {
+      return { ok: false, error: 'Session ' + sessionId + ' is ' + sessStatus + '. Reload and start a new session.' };
     }
 
     var params = roundData.params || [];
