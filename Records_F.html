@@ -52,12 +52,60 @@
     .chip-fail, .chip-rejected    { background: #dc2626; color: #fff; }
     .chip-pending, .chip-open     { background: #d97706; color: #fff; }
     .chip-issued                  { background: #2563eb; color: #fff; }
-    .chip-default                 { background: #1e3a5f; color: #fff; }
+    .chip-default                 { background: #0D1B6E; color: #fff; }
 
-    /* ── Card row classes (status tinting) ── */
-    /* Override only the left border; keep top/right/bottom from Tailwind's border-[#e2e8f0]. */
-    .card-fail    { border-left: 4px solid #dc2626; border-top-color: #e2e8f0; border-right-color: #e2e8f0; border-bottom-color: #e2e8f0; }
-    .card-pending { border-left: 4px solid #d97706; border-top-color: #e2e8f0; border-right-color: #e2e8f0; border-bottom-color: #e2e8f0; }
+    /* ── Card row status (DESIGN.md: 3px left bar via pseudo so the 12px
+       border-radius doesn't soften the signal). The card itself keeps a
+       single 1px hairline; the bar sits flush at x=0. ── */
+    .rec-card { position: relative; }
+    .rec-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: transparent;
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+    .rec-card.card-fail::before    { background: #dc2626; }
+    .rec-card.card-pending::before { background: #d97706; }
+    .rec-card.card-pass::before    { background: #16a34a; }
+    .rec-card.card-prog::before    { background: #2563eb; }
+
+    /* ── Tab pills (legacy class .tab-btn lived on the row buttons here.
+       Theme.html owns a .tab-btn for in-page tab bars; scope ours so the
+       Theme version doesn't bleed in.) ── */
+    #tabBar .tab-btn { font-family: 'Inter', sans-serif; }
+    #tabBar .tab-btn.is-active {
+      background: #0D1B6E !important;
+      color: #fff !important;
+      border-color: #0D1B6E !important;
+    }
+    #tabBar .tab-btn.is-active .tab-count { background: rgba(255,255,255,0.22); color: #fff; }
+    .tab-count {
+      display: inline-block;
+      margin-left: 4px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 10px; font-weight: 700;
+      background: #EEF1FA;
+      color: #0D1B6E;
+      min-width: 18px; text-align: center;
+    }
+    .tab-count.is-loading {
+      background: #e2e8f0;
+      color: transparent;
+      animation: skeleton-pulse 1s ease-in-out infinite;
+    }
+
+    /* ── Custom date expander ── */
+    .date-expander {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .2s ease;
+    }
+    .date-expander.is-open { max-height: 90px; }
 
     /* ── Detail panel ── */
     .detail-inner {
@@ -117,7 +165,7 @@
 <body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px]">
 
 <!-- ── Top App Bar ── -->
-<header class="fixed top-0 w-full z-50 h-[56px] bg-[#1e3a5f] shadow-md flex items-center justify-between px-4">
+<header class="fixed top-0 w-full z-50 h-[56px] bg-[#0D1B6E] shadow-md flex items-center justify-between px-4">
   <div class="flex items-center gap-2">
     <span id="logoBtn"
           class="material-symbols-outlined text-white active:scale-95 duration-100 hover:bg-white/10 transition-colors p-1 rounded-full cursor-pointer"
@@ -126,71 +174,80 @@
   </div>
   <h1 class="font-headline text-[18px] font-bold text-white tracking-tight absolute left-1/2 -translate-x-1/2">Records</h1>
   <div class="flex items-center gap-1">
-    <div id="roleChip" class="hidden text-[11px] font-bold text-[#1e3a5f] bg-white rounded-full px-3 py-0.5"></div>
+    <div id="roleChip" class="hidden text-[11px] font-bold text-[#0D1B6E] bg-white rounded-full px-3 py-0.5"></div>
   </div>
 </header>
 
-<!-- ── Sticky filter strip ── -->
+<!-- ══════════════ STICKY FILTER STRIP (compact, 2 rows) ══════════════
+     Row A: module tab pills (horizontal scroll).
+     Row B: time-period pills + search input + Custom-date toggle.
+     The custom date range collapses below Row B; hidden until user
+     taps the calendar icon. Total chrome ~94px sticky (down from ~130px). -->
 <div class="fixed top-[56px] w-full z-40 bg-[#f8fafc] shadow-sm">
 
-  <!-- Row 1: Module tab pills -->
-  <div class="flex overflow-x-auto no-scrollbar gap-[10px] px-4 pt-3 pb-2 snap-x" id="tabBar">
-    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-[#1e3a5f] text-white font-body text-[13px] font-semibold border border-[#1e3a5f] active:scale-95 transition-transform whitespace-nowrap" data-module="ALL">
-      ALL <span class="ml-1 text-[10px] font-bold bg-white/20 rounded-full px-1.5 py-0.5" id="cnt-ALL">—</span>
+  <!-- Row A: Module tab pills -->
+  <div class="flex overflow-x-auto no-scrollbar gap-[6px] px-3 pt-2 pb-2 snap-x" id="tabBar">
+    <button class="tab-btn is-active shrink-0 snap-start h-[32px] px-3 rounded-[8px] bg-white text-[#374151] text-[13px] font-semibold border border-[#e2e8f0] active:scale-95 transition-transform whitespace-nowrap" data-module="ALL">
+      ALL <span class="tab-count is-loading" id="cnt-ALL">00</span>
     </button>
-    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="GRN">
-      GRN <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-GRN">—</span>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-3 rounded-[8px] bg-white text-[#374151] text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="GRN">
+      GRN <span class="tab-count is-loading" id="cnt-GRN">00</span>
     </button>
-    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="IQC">
-      IQC <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-IQC">—</span>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-3 rounded-[8px] bg-white text-[#374151] text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="IQC">
+      IQC <span class="tab-count is-loading" id="cnt-IQC">00</span>
     </button>
-    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="IPQC">
-      IPQC <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-IPQC">—</span>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-3 rounded-[8px] bg-white text-[#374151] text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="IPQC">
+      IPQC <span class="tab-count is-loading" id="cnt-IPQC">00</span>
     </button>
-    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="OQC">
-      OQC <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-OQC">—</span>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-3 rounded-[8px] bg-white text-[#374151] text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="OQC">
+      OQC <span class="tab-count is-loading" id="cnt-OQC">00</span>
     </button>
-    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="Gatepass">
-      GP <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-Gatepass">—</span>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-3 rounded-[8px] bg-white text-[#374151] text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="Gatepass">
+      GP <span class="tab-count is-loading" id="cnt-Gatepass">00</span>
     </button>
-    <button class="tab-btn shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="PO">
-      PO <span class="ml-1 text-[10px] font-bold text-[#64748b] rounded-full px-1.5 py-0.5" id="cnt-PO">—</span>
+    <button class="tab-btn shrink-0 snap-start h-[32px] px-3 rounded-[8px] bg-white text-[#374151] text-[13px] font-semibold border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform whitespace-nowrap" data-module="PO">
+      PO <span class="tab-count is-loading" id="cnt-PO">00</span>
     </button>
   </div>
 
-  <!-- Row 1b: Time-period quick pills -->
-  <div class="flex gap-2 px-4 pb-2" id="timePills">
+  <!-- Row B: Time pills + search + custom-date toggle -->
+  <div class="flex items-center gap-2 px-3 pb-2" id="timePills">
     <button onclick="setTimePeriod('TODAY')" data-period="TODAY"
-      class="time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all whitespace-nowrap active:scale-95">TODAY</button>
+      class="time-pill h-[30px] px-2.5 rounded-[6px] text-[11px] font-semibold border border-[#e2e8f0] bg-white text-[#6B7280] transition-all whitespace-nowrap active:scale-95">TODAY</button>
     <button onclick="setTimePeriod('WEEK')" data-period="WEEK"
-      class="time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all whitespace-nowrap active:scale-95">WEEK</button>
+      class="time-pill h-[30px] px-2.5 rounded-[6px] text-[11px] font-semibold border border-[#e2e8f0] bg-white text-[#6B7280] transition-all whitespace-nowrap active:scale-95">WEEK</button>
     <button onclick="setTimePeriod('MONTH')" data-period="MONTH"
-      class="time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#1e3a5f] bg-[#1e3a5f] text-white transition-all whitespace-nowrap active:scale-95">MONTH</button>
+      class="time-pill h-[30px] px-2.5 rounded-[6px] text-[11px] font-semibold border border-[#0D1B6E] bg-[#0D1B6E] text-white transition-all whitespace-nowrap active:scale-95">MONTH</button>
     <button onclick="setTimePeriod('ALL')" data-period="ALL"
-      class="time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all whitespace-nowrap active:scale-95">ALL</button>
+      class="time-pill h-[30px] px-2.5 rounded-[6px] text-[11px] font-semibold border border-[#e2e8f0] bg-white text-[#6B7280] transition-all whitespace-nowrap active:scale-95">ALL</button>
+
+    <!-- Search grows to fill -->
+    <div class="relative flex-1 min-w-0">
+      <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#94a3b8] text-[16px]" style="font-variation-settings:'FILL' 0;">search</span>
+      <input type="search" id="searchInput" placeholder="ID, item, supplier…"
+             class="w-full h-[30px] border border-[#e2e8f0] rounded-[6px] pl-7 pr-7 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#0D1B6E]">
+      <span class="search-clear" id="searchClear" style="right:8px;">&times;</span>
+    </div>
+
+    <!-- Custom date toggle -->
+    <button id="customDateBtn" onclick="toggleCustomDate()" aria-label="Custom date range"
+      class="h-[30px] w-[34px] flex items-center justify-center rounded-[6px] border border-[#e2e8f0] bg-white text-[#6B7280] active:scale-95 transition-transform">
+      <span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 0;">calendar_month</span>
+    </button>
   </div>
 
-  <!-- Row 2: Date range + search -->
-  <div class="flex items-end gap-2 px-4 pb-3">
-    <div class="flex gap-2 flex-1">
+  <!-- Custom date expander (hidden by default) -->
+  <div id="customDate" class="date-expander px-3 pb-2">
+    <div class="flex gap-2 pt-1">
       <div class="flex-1">
-        <label class="block text-[10px] font-semibold text-[#64748b] uppercase tracking-wide mb-1">From</label>
+        <label class="block text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide mb-1">From</label>
         <input type="date" id="fromDate"
-               class="w-full h-[34px] border border-[#e2e8f0] rounded-[8px] px-2 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]">
+               class="w-full h-[34px] border border-[#e2e8f0] rounded-[6px] px-2 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#0D1B6E]">
       </div>
       <div class="flex-1">
-        <label class="block text-[10px] font-semibold text-[#64748b] uppercase tracking-wide mb-1">To</label>
+        <label class="block text-[10px] font-semibold text-[#6B7280] uppercase tracking-wide mb-1">To</label>
         <input type="date" id="toDate"
-               class="w-full h-[34px] border border-[#e2e8f0] rounded-[8px] px-2 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]">
-      </div>
-    </div>
-    <div class="flex-1 search-wrap">
-      <label class="block text-[10px] font-semibold text-[#64748b] uppercase tracking-wide mb-1">Search</label>
-      <div class="relative">
-        <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#94a3b8] text-[16px]" style="font-variation-settings:'FILL' 0;">search</span>
-        <input type="search" id="searchInput" placeholder="ID, item, supplier…"
-               class="w-full h-[34px] border border-[#e2e8f0] rounded-[8px] pl-7 pr-7 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]">
-        <span class="search-clear" id="searchClear" style="right:8px;">×</span>
+               class="w-full h-[34px] border border-[#e2e8f0] rounded-[6px] px-2 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#0D1B6E]">
       </div>
     </div>
   </div>
@@ -200,7 +257,7 @@
 <div id="poDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:600;overflow-y:auto;padding:20px;box-sizing:border-box;">
   <div style="background:#fff;border-radius:12px;max-width:680px;margin:0 auto;padding:20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <div class="font-headline" style="font-size:16px;font-weight:700;color:#1e3a5f;" id="poModalTitle">PO Details</div>
+      <div class="font-headline" style="font-size:16px;font-weight:700;color:#0D1B6E;" id="poModalTitle">PO Details</div>
       <button onclick="document.getElementById('poDetailModal').style.display='none';"
               style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;">×</button>
     </div>
@@ -232,7 +289,7 @@
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">home</span>
     <span class="font-label text-[11px] font-semibold">Home</span>
   </button>
-  <button class="flex flex-col items-center justify-center text-[#1e3a5f] font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+  <button class="flex flex-col items-center justify-center text-[#0D1B6E] font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 1;">inventory</span>
     <span class="font-label text-[11px] font-semibold">Records</span>
   </button>
@@ -383,7 +440,7 @@
 
   function clearTimePill() {
     document.querySelectorAll('.time-pill').forEach(function(b) {
-      b.className = 'time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-all whitespace-nowrap active:scale-95';
+      b.className = 'time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#0D1B6E] hover:text-[#0D1B6E] transition-all whitespace-nowrap active:scale-95';
     });
   }
 
@@ -408,7 +465,7 @@
     document.querySelectorAll('.time-pill').forEach(function(b) {
       var isActive = b.dataset.period === period;
       b.className = 'time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border transition-all whitespace-nowrap active:scale-95 ' +
-        (isActive ? 'border-[#1e3a5f] bg-[#1e3a5f] text-white' : 'border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#1e3a5f] hover:text-[#1e3a5f]');
+        (isActive ? 'border-[#0D1B6E] bg-[#0D1B6E] text-white' : 'border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#0D1B6E] hover:text-[#0D1B6E]');
     });
     load();
   }
@@ -432,42 +489,38 @@
     load();
   });
 
-  // ── Tab bar ──
+  // ── Tab bar (single .is-active class; CSS in <style> owns the look) ──
+  function setActiveTab(mod) {
+    var all = document.querySelectorAll('#tabBar .tab-btn');
+    var hit = null;
+    all.forEach(function(b) {
+      if (b.getAttribute('data-module') === mod) { b.classList.add('is-active'); hit = b; }
+      else                                        { b.classList.remove('is-active'); }
+    });
+    if (hit) setTimeout(function () { hit.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, 60);
+  }
   document.getElementById('tabBar').addEventListener('click', function(e) {
     var btn = e.target.closest('.tab-btn');
     if (!btn) return;
     var mod = btn.getAttribute('data-module');
     if (mod === state.module) return;
     state.module = mod;
-    // Update active styles
-    document.querySelectorAll('.tab-btn').forEach(function(b) {
-      b.classList.remove('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
-      b.classList.add('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
-      var cnt = b.querySelector('span[id^="cnt-"]');
-      if (cnt) { cnt.classList.remove('bg-white/20'); cnt.classList.add('text-[#64748b]'); }
-    });
-    btn.classList.remove('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
-    btn.classList.add('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
-    var activeCnt = btn.querySelector('span[id^="cnt-"]');
-    if (activeCnt) { activeCnt.classList.add('bg-white/20'); activeCnt.classList.remove('text-[#64748b]'); }
-    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    setActiveTab(mod);
     state.openDocNo = null;
     load();
   });
+  // Apply initial active tab if Landing passed a module filter
+  setActiveTab(state.module);
 
-  // ── Apply initial active tab if Landing passed a module filter ──
-  (function applyInitialModule() {
-    if (state.module === 'ALL') return;
-    var btn = document.querySelector('.tab-btn[data-module="' + state.module + '"]');
-    if (!btn) return;
-    document.querySelectorAll('.tab-btn').forEach(function(b) {
-      b.classList.remove('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
-      b.classList.add('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
-    });
-    btn.classList.remove('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
-    btn.classList.add('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
-    setTimeout(function () { btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }, 80);
-  }());
+  // ── Custom date expander ──
+  window.toggleCustomDate = function () {
+    var el = document.getElementById('customDate');
+    var btn = document.getElementById('customDateBtn');
+    if (!el || !btn) return;
+    var open = el.classList.toggle('is-open');
+    if (open) { btn.style.background = '#0D1B6E'; btn.style.color = '#fff'; btn.style.borderColor = '#0D1B6E'; }
+    else      { btn.style.background = '#fff';    btn.style.color = '#6B7280'; btn.style.borderColor = '#e2e8f0'; }
+  };
 
   // ── Status chip HTML ──
   function chipHtml(status) {
@@ -499,14 +552,17 @@
     if (m === 'NCR') return '#dc2626';
     if (m === 'GATEPASS' || m === 'GP') return '#64748b';
     if (m === 'PO') return '#0ea5e9';
-    return '#1e3a5f';
+    return '#0D1B6E';
   }
 
-  // ── Card border tint ──
+  // ── Status bar class (via ::before, see .rec-card in <style>) ──
   function cardExtraClass(status) {
     var s = (status || '').toUpperCase();
-    if (s === 'FAIL' || s === 'REJECTED' || s === 'CANCELLED') return 'card-fail';
-    if (s.indexOf('PENDING') !== -1 || s === 'OPEN' || s === 'PARTIAL_RECEIVED') return 'card-pending'; // matches 'IQC PENDING' etc.
+    if (s === 'FAIL' || s === 'REJECTED' || s === 'CANCELLED')        return 'card-fail';
+    if (s === 'PASS' || s === 'ACCEPTED' || s === 'RELEASED' ||
+        s === 'CLOSED' || s === 'DELIVERED' || s === 'PRODUCED')      return 'card-pass';
+    if (s === 'IN_PROGRESS' || s === 'ISSUED')                        return 'card-prog';
+    if (s.indexOf('PENDING') !== -1 || s === 'OPEN' || s === 'PARTIAL_RECEIVED' || s.indexOf('HOLD') !== -1) return 'card-pending';
     return '';
   }
 
@@ -556,11 +612,32 @@
     }
 
     if (!records || records.length === 0) {
+      // Distinguish "no records ever" vs "no matches under current filter".
+      var hasAnyFilter =
+        (state.searchQuery && state.searchQuery.trim() !== '') ||
+        (state.fromDate && state.fromDate !== '') ||
+        (state.toDate && state.toDate !== '') ||
+        (state.period && state.period !== 'ALL') ||
+        (state.pendingOnly === true);
+      var moduleLabel = state.module === 'ALL' ? 'records' : state.module + ' records';
+      var headline, hint, action;
+      if (hasAnyFilter) {
+        headline = 'No ' + moduleLabel + ' match the current filter.';
+        hint     = 'Try TODAY/WEEK/MONTH/ALL, widen the date range, or clear search.';
+        action   = '<button onclick="clearAllFilters()" class="mt-3 h-[36px] px-4 rounded-[8px] bg-[#0D1B6E] text-white text-[12px] font-semibold active:scale-95">Clear filters</button>';
+      } else {
+        headline = 'No ' + moduleLabel + ' yet.';
+        hint     = (state.module === 'ALL')
+          ? 'Records will appear here once any module starts capturing data.'
+          : 'Open the ' + state.module + ' form from Home to create the first record.';
+        action   = '';
+      }
       cardList.innerHTML =
         '<div class="bg-white rounded-[12px] p-8 border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] text-center">'
-        + '<span class="material-symbols-outlined text-[48px] text-[#cbd5e1] block mb-3" style="font-variation-settings:\'FILL\' 0;">inbox</span>'
-        + '<p class="font-body text-[14px] font-medium text-[#64748b]">No records match your search.</p>'
-        + '<p class="font-body text-[12px] text-[#94a3b8] mt-1">Try adjusting the date range or clearing the search.</p>'
+        + '<span class="material-symbols-outlined text-[40px] text-[#cbd5e1] block mb-3" style="font-variation-settings:\'FILL\' 0;">inbox</span>'
+        + '<p class="font-body text-[14px] font-semibold text-[#0F172A]">' + esc(headline) + '</p>'
+        + '<p class="font-body text-[12px] text-[#6B7280] mt-1">' + esc(hint) + '</p>'
+        + action
         + '</div>';
       countLbl.textContent = '';
       return;
@@ -578,11 +655,11 @@
       }
       var borderCls = cardExtraClass(rec.status);
       var recType = rec.type || module;
-      html += '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] overflow-hidden fade-in ' + borderCls + '">'
+      html += '<div class="rec-card bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] overflow-hidden fade-in ' + borderCls + '">'
             + '<div class="p-[16px] cursor-pointer active:bg-gray-50 transition-colors data-row" '
             +      'data-docno="' + esc(rec.docNo) + '" data-rectype="' + esc(recType) + '">'
             +   '<div class="flex justify-between items-start mb-1.5">'
-            +     '<h2 class="font-headline text-[14px] font-bold text-[#1e3a5f]">' + esc(rec.docNo) + '</h2>'
+            +     '<h2 class="font-headline text-[14px] font-bold text-[#0D1B6E]">' + esc(rec.docNo) + '</h2>'
             +     '<div class="flex gap-2 items-center">'
             +       '<span style="background:' + moduleColor(recType) + ';color:#fff;" class="px-2 py-0.5 rounded-[4px] font-label text-[10px] font-bold tracking-wider">' + esc(recType) + '</span>'
             +       chipHtml(rec.status)
@@ -708,11 +785,11 @@
     var html = '';
     filtered.forEach(function(po) {
       var borderCls = cardExtraClass(po.status);
-      html += '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] p-[16px] cursor-pointer active:bg-gray-50 transition-colors po-row fade-in ' + borderCls + '" data-pono="' + esc(po.poNo) + '">'
+      html += '<div class="rec-card bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] p-[16px] cursor-pointer active:bg-gray-50 transition-colors po-row fade-in ' + borderCls + '" data-pono="' + esc(po.poNo) + '">'
             +   '<div class="flex justify-between items-start mb-2">'
-            +     '<h2 class="font-headline text-[14px] font-bold text-[#1e3a5f]">' + esc(po.poNo) + '</h2>'
+            +     '<h2 class="font-headline text-[14px] font-bold text-[#0D1B6E]">' + esc(po.poNo) + '</h2>'
             +     '<div class="flex gap-2 items-center">'
-            +       '<span style="background:#1e3a5f;color:#fff;" class="px-2 py-0.5 rounded-[4px] font-label text-[10px] font-bold tracking-wider">PO</span>'
+            +       '<span style="background:#0D1B6E;color:#fff;" class="px-2 py-0.5 rounded-[4px] font-label text-[10px] font-bold tracking-wider">PO</span>'
             +       poStatusChip(po.status)
             +     '</div>'
             +   '</div>'
@@ -782,16 +859,16 @@
     ];
     if (h.cancelledReason) hdrFields.push(['Cancelled Reason', h.cancelledReason]);
     hdrFields.forEach(function(f) {
-      html += '<div><div style="font-size:10px;font-weight:600;color:#1e3a5f;text-transform:uppercase;margin-bottom:2px;">' + esc(f[0]) + '</div>';
+      html += '<div><div style="font-size:10px;font-weight:600;color:#0D1B6E;text-transform:uppercase;margin-bottom:2px;">' + esc(f[0]) + '</div>';
       html += '<div style="font-size:12px;">' + esc(f[1] || '—') + '</div></div>';
     });
     html += '</div>';
 
-    html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#1e3a5f;margin-bottom:6px;">Lines</div>';
+    html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#0D1B6E;margin-bottom:6px;">Lines</div>';
     html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
     html += '<thead><tr style="background:#f0f4f8;">';
     ['#','Material','Qty Ord','Qty Rcvd','Qty Pend','Unit Price','Status','Promised'].forEach(function(c) {
-      html += '<th style="padding:5px 7px;text-align:left;font-size:10px;text-transform:uppercase;color:#1e3a5f;">' + esc(c) + '</th>';
+      html += '<th style="padding:5px 7px;text-align:left;font-size:10px;text-transform:uppercase;color:#0D1B6E;">' + esc(c) + '</th>';
     });
     html += '</tr></thead><tbody>';
     (result.lines || []).forEach(function(l) {
@@ -809,10 +886,10 @@
     html += '</tbody></table></div>';
 
     if (result.linkedGrns && result.linkedGrns.length > 0) {
-      html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#1e3a5f;margin:12px 0 6px;">Linked GRNs</div>';
+      html += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#0D1B6E;margin:12px 0 6px;">Linked GRNs</div>';
       html += '<div style="font-size:12px;">';
       result.linkedGrns.forEach(function(g) {
-        html += '<span style="display:inline-block;background:#e0f2fe;color:#1e3a5f;padding:3px 8px;border-radius:8px;margin:2px;font-weight:600;">' + esc(g.grnNo) + ' (' + esc(g.date) + ')</span>';
+        html += '<span style="display:inline-block;background:#e0f2fe;color:#0D1B6E;padding:3px 8px;border-radius:8px;margin:2px;font-weight:600;">' + esc(g.grnNo) + ' (' + esc(g.date) + ')</span>';
       });
       html += '</div>';
     }
@@ -847,13 +924,14 @@
         var map = { GRN: counts.grn, IQC: counts.iqc, IPQC: counts.ipqc, OQC: counts.oqc, Gatepass: counts.gp };
         Object.keys(map).forEach(function(mod) {
           var el = document.getElementById('cnt-' + mod);
-          if (el && map[mod] != null) el.textContent = map[mod];
+          if (el && map[mod] != null) { el.textContent = map[mod]; el.classList.remove('is-loading'); }
         });
         // ALL = sum of all pending
         var allEl = document.getElementById('cnt-ALL');
         if (allEl) {
           var sum = (counts.grn||0)+(counts.iqc||0)+(counts.ipqc||0)+(counts.oqc||0)+(counts.gp||0);
           allEl.textContent = sum;
+          allEl.classList.remove('is-loading');
         }
       })
       .withFailureHandler(function() {})
@@ -862,20 +940,43 @@
     google.script.run
       .withSuccessHandler(function(payload) {
         var el = document.getElementById('cnt-PO');
-        if (el && payload && payload.PO != null) el.textContent = payload.PO;
+        if (el && payload && payload.PO != null) { el.textContent = payload.PO; el.classList.remove('is-loading'); }
       })
       .withFailureHandler(function() {
         // Fallback to old behavior — total recent POs
         google.script.run
           .withSuccessHandler(function(poList) {
             var el = document.getElementById('cnt-PO');
-            if (el && poList) el.textContent = poList.length;
+            if (el && poList) { el.textContent = poList.length; el.classList.remove('is-loading'); }
           })
           .withFailureHandler(function() {})
           .getRecentPOs(500);
       })
       .getPendingCountsJSON();
   }
+
+  // ── Filter reset (used by empty-state action button) ──
+  window.clearAllFilters = function () {
+    state.searchQuery = '';
+    state.fromDate = '';
+    state.toDate = '';
+    state.period = 'ALL';
+    state.pendingOnly = false;
+    var s = document.getElementById('searchInput'); if (s) s.value = '';
+    var f = document.getElementById('fromDate');    if (f) f.value = '';
+    var t = document.getElementById('toDate');      if (t) t.value = '';
+    var sc = document.getElementById('searchClear');if (sc) sc.style.display = 'none';
+    document.querySelectorAll('.time-pill').forEach(function(b){
+      var on = b.getAttribute('data-period') === 'ALL';
+      b.classList.toggle('bg-[#0D1B6E]', on);
+      b.classList.toggle('text-white', on);
+      b.classList.toggle('border-[#0D1B6E]', on);
+      b.classList.toggle('bg-white', !on);
+      b.classList.toggle('text-[#6B7280]', !on);
+      b.classList.toggle('border-[#e2e8f0]', !on);
+    });
+    load();
+  };
 
   // ── URL param pre-population ──
   function setFiltersFromURL_() {
@@ -903,14 +1004,8 @@
         var tabBtn = document.querySelector('.tab-btn[data-module="' + mod + '"]');
         if (!tabBtn) tabBtn = document.querySelector('.tab-btn[data-module="' + type + '"]');
         if (tabBtn && mod !== state.module) {
-          // Simulate click to apply active styles
-          document.querySelectorAll('.tab-btn').forEach(function(b) {
-            b.classList.remove('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
-            b.classList.add('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
-          });
-          tabBtn.classList.remove('bg-white', 'text-[#374151]', 'border-[#e2e8f0]');
-          tabBtn.classList.add('bg-[#1e3a5f]', 'text-white', 'border-[#1e3a5f]');
           state.module = tabBtn.getAttribute('data-module');
+          setActiveTab(state.module);
         }
       }
 
