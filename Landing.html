@@ -239,9 +239,9 @@
     .pm-tile {
       position: relative;
       display: flex; flex-direction: column;
-      gap: 4px;
-      padding: 10px 10px 8px;
-      min-height: 76px;
+      gap: 6px;
+      padding: 9px 10px 9px;
+      min-height: 84px;
       background: #fff;
       border: 1px solid var(--pm-border);
       border-radius: 10px;
@@ -284,20 +284,23 @@
     .pm-tile-count.is-na { background: transparent; color: var(--pm-faint); }
     .pm-tile-label {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 12.5px; font-weight: 700;
+      font-size: 12px; font-weight: 700;
       color: var(--pm-text);
       letter-spacing: 0px;
-      line-height: 1.15;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .pm-tile-meta {
-      font-size: 10px; font-weight: 500;
-      color: var(--pm-muted);
-      line-height: 1.25;
+      line-height: 1.2;
+      /* allow up to 2 lines; truncate beyond that. Words like "Production"
+         and "Control Plan" must not be cut mid-word in a 3-col grid. */
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      word-break: break-word;
+    }
+    .pm-tile-meta {
+      font-size: 9.5px; font-weight: 500;
+      color: var(--pm-muted);
+      line-height: 1.25;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .pm-tile-add {
       position: absolute; top: 6px; right: 6px;
@@ -330,12 +333,13 @@
     .pm-act {
       display: flex; align-items: center;
       gap: 10px;
-      padding: 7px 8px 7px 0;
-      min-height: 36px;
+      padding: 9px 8px 9px 0;
+      min-height: 44px;
       background: transparent; border: 0; width: 100%;
       border-bottom: 1px solid var(--pm-rule);
       position: relative;
       text-align: left;
+      cursor: pointer;
       transition: background .12s ease;
     }
     .pm-act:last-child { border-bottom: 0; }
@@ -353,7 +357,7 @@
     .pm-act.s-prog::before { background: var(--pm-prog); }
     .pm-act-id {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11.5px; font-weight: 700;
+      font-size: 12px; font-weight: 700;
       color: var(--pm-navy);
       letter-spacing: -0.2px;
       flex-shrink: 0;
@@ -365,9 +369,9 @@
     .pm-act-status {
       flex-shrink: 0;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 8.5px; font-weight: 700;
-      padding: 2px 5px; border-radius: 3px;
-      letter-spacing: 0.4px;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 6px; border-radius: 3px;
+      letter-spacing: 0.3px;
     }
     .pm-act-status.s-pass { background: #dcfce7; color: #15803d; }
     .pm-act-status.s-fail { background: #fee2e2; color: #b91c1c; }
@@ -408,76 +412,58 @@
     }
     .pm-rise { animation: pm-rise .3s cubic-bezier(.22, 1, .36, 1) both; }
 
-    /* ── Conveyor loader ── */
+    /* ── Loader (clipboard aesthetic, per DESIGN.md) ─────────────
+       Flat canvas, small navy spinner, indeterminate progress hairline.
+       No gradients, no glow, no conveyor animation. */
     .pm-loader {
       position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(180deg, #1e3a5f 0%, #142844 100%);
+      background: var(--pm-bg);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 24px;
-      transition: opacity .35s ease, visibility .35s ease;
+      gap: 14px;
+      transition: opacity .25s ease, visibility .25s ease;
     }
     .pm-loader.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
     .pm-loader-logo {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      color: #fff;
-      font-size: 16px; font-weight: 800; letter-spacing: 0.4px;
+      color: var(--pm-text);
+      font-size: 14px; font-weight: 700; letter-spacing: 0.2px;
       display: flex; align-items: center; gap: 10px;
     }
     .pm-loader-logo .pm-logo-mark {
-      width: 30px; height: 30px;
-      border-radius: 7px;
-      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: var(--pm-navy);
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 6px 18px rgba(14,165,233,0.45);
     }
-    .pm-loader-logo svg { width: 16px; height: 16px; color: #fff; stroke-width: 2.2; }
+    .pm-loader-logo svg { width: 14px; height: 14px; color: #fff; stroke-width: 2; }
     .pm-loader-sub {
-      color: rgba(255,255,255,0.55);
-      font-size: 10px; font-weight: 600;
+      color: var(--pm-muted);
+      font-size: 10px; font-weight: 700;
       letter-spacing: 1.4px; text-transform: uppercase;
     }
     .pm-belt {
       position: relative;
-      width: 200px; height: 38px;
+      width: 160px; height: 2px;
       overflow: hidden;
-      border-radius: 4px;
+      background: var(--pm-border);
+      border-radius: 999px;
     }
-    .pm-belt-track {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      height: 5px;
-      background:
-        repeating-linear-gradient(90deg,
-          rgba(255,255,255,0.18) 0 8px,
-          rgba(255,255,255,0.06) 8px 16px);
-    }
-    .pm-belt-box {
-      position: absolute; bottom: 5px;
-      width: 20px; height: 20px;
-      border-radius: 3px;
-      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-      box-shadow: 0 2px 8px rgba(14,165,233,0.45);
-      animation: pm-belt-move 2.2s linear infinite;
-    }
-    .pm-belt-box::before, .pm-belt-box::after {
-      content: ''; position: absolute; background: rgba(255,255,255,0.35);
-    }
-    .pm-belt-box::before { left: 10%; right: 10%; top: 30%; height: 1.5px; }
-    .pm-belt-box::after  { left: 25%; right: 25%; top: 60%; height: 1.5px; }
-    .pm-belt-box:nth-child(2) { animation-delay: -0.55s; }
-    .pm-belt-box:nth-child(3) { animation-delay: -1.1s; }
-    .pm-belt-box:nth-child(4) { animation-delay: -1.65s; }
-    @keyframes pm-belt-move {
-      0%   { transform: translateX(-30px); opacity: 0; }
-      10%  { opacity: 1; }
-      90%  { opacity: 1; }
-      100% { transform: translateX(220px); opacity: 0; }
-    }
+    /* Suppress legacy belt boxes — keep nodes for backward DOM compat */
+    .pm-belt-track, .pm-belt-box { display: none !important; }
     .pm-belt-progress {
-      position: absolute; bottom: 0; left: 0;
-      height: 5px; width: 0%;
-      background: var(--pm-sky);
-      box-shadow: 0 0 8px rgba(14,165,233,0.8);
+      position: absolute; top: 0; left: 0;
+      height: 100%; width: 0%;
+      background: var(--pm-navy);
       transition: width .4s ease;
+    }
+    /* Indeterminate sweep when no explicit progress is set */
+    .pm-belt-progress.indeterminate {
+      width: 30% !important;
+      animation: pm-belt-sweep 1.4s ease-in-out infinite;
+    }
+    @keyframes pm-belt-sweep {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(360%); }
     }
 
     /* Toast */
@@ -512,35 +498,54 @@
     @media (prefers-reduced-motion: reduce) {
       .pm-rise, .pm-skel, .pm-belt-box, .pm-loader { animation: none !important; transition: none !important; }
     }
-    /* Hero KPI strip */
+    /* Hero KPI strip — single signal: left-edge color bar. No tinted icon
+       badge, no value re-coloring, no sparkline. Keeps the page clipboard-flat. */
     .pm-kpi-hero { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; }
-    .pm-kpi-card { background:#fff; border:1px solid var(--pm-border); border-left-width:3px; border-radius:10px; padding:7px 9px; display:flex; flex-direction:column; gap:1px; min-height:70px; cursor:pointer; transition: background .12s; position:relative; overflow:hidden; }
-    .pm-kpi-card:hover { background:#f8fafc; }
+    .pm-kpi-card {
+      background:#fff;
+      border:1px solid var(--pm-border);
+      border-left:3px solid var(--pm-border);
+      border-radius:10px;
+      padding:9px 10px 10px;
+      display:flex; flex-direction:column; gap:4px;
+      min-height:74px;
+      cursor:pointer;
+      transition: background .12s, border-color .12s;
+      position:relative; overflow:hidden;
+    }
+    .pm-kpi-card:hover { background:#fafbfc; border-color:var(--pm-muted); }
     .pm-kpi-card.is-err { border-color:#fed7aa; background:#fff7ed; }
     .pm-kpi-card.s-good { border-left-color:var(--pm-pass); }
     .pm-kpi-card.s-bad  { border-left-color:var(--pm-fail); }
     .pm-kpi-card.s-warn { border-left-color:#d97706; }
     .pm-kpi-card.s-na   { border-left-color:#cbd5e1; }
     .pm-kpi-top { display:flex; justify-content:space-between; align-items:center; gap:6px; }
-    .pm-kpi-label { font-size:9px; font-weight:700; color:var(--pm-muted); letter-spacing:0.6px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .pm-kpi-ic { width:18px; height:18px; border-radius:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .pm-kpi-ic svg { width:11px; height:11px; }
-    .pm-kpi-ic.s-good { background:#dcfce7; color:var(--pm-pass); }
-    .pm-kpi-ic.s-bad  { background:#fee2e2; color:var(--pm-fail); }
-    .pm-kpi-ic.s-warn { background:#fef3c7; color:#d97706; }
-    .pm-kpi-ic.s-na   { background:#f1f5f9; color:#64748b; }
-    .pm-kpi-mid { display:flex; align-items:baseline; gap:3px; }
-    .pm-kpi-val { font-family:'JetBrains Mono', monospace; font-size:20px; font-weight:800; color:var(--pm-navy); letter-spacing:-0.5px; line-height:1.05; }
-    .pm-kpi-val.is-good { color: var(--pm-pass); }
-    .pm-kpi-val.is-bad { color: var(--pm-fail); }
-    .pm-kpi-unit { font-size:10px; color:var(--pm-muted); font-weight:700; }
-    .pm-kpi-note { font-size:9px; font-weight:600; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pm-kpi-label {
+      font-family:'Plus Jakarta Sans', sans-serif;
+      font-size:9.5px; font-weight:700;
+      color:var(--pm-muted);
+      letter-spacing:1px; text-transform:uppercase;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .pm-kpi-mid { display:flex; align-items:baseline; gap:3px; margin-top:2px; }
+    .pm-kpi-val {
+      font-family:'JetBrains Mono', monospace;
+      font-size:21px; font-weight:700;
+      color:var(--pm-text);
+      letter-spacing:-0.5px; line-height:1.05;
+    }
+    .pm-kpi-unit { font-size:10px; color:var(--pm-muted); font-weight:600; }
+    .pm-kpi-note {
+      font-size:9.5px; font-weight:500;
+      color:var(--pm-muted);
+      line-height:1.25;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
     .pm-kpi-note.s-good { color:var(--pm-pass); }
     .pm-kpi-note.s-bad  { color:var(--pm-fail); }
-    .pm-kpi-note.s-warn { color:#d97706; }
+    .pm-kpi-note.s-warn { color:#b45309; }
     .pm-kpi-note.s-na   { color:var(--pm-faint); }
-    .pm-kpi-spark { margin-top:auto; height:13px; opacity:.55; }
-    .pm-kpi-empty { grid-column:1/-1; padding:14px; text-align:center; color:var(--pm-faint); font-size:11px; background:#fff; border:1px dashed var(--pm-border); border-radius:10px; }
+    .pm-kpi-empty { grid-column:1/-1; padding:14px; text-align:center; color:var(--pm-muted); font-size:11px; background:#fff; border:1px dashed var(--pm-border); border-radius:10px; }
     /* Drill tiles — same 3-col compact grid as hero */
     .pm-kpi-drill { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; }
     .pm-kpi-drow { background:#fff; border:1px solid var(--pm-border); border-left-width:3px; border-radius:10px; padding:7px 9px; display:flex; flex-direction:column; gap:1px; min-height:62px; overflow:hidden; }
@@ -634,14 +639,17 @@
     <span class="pm-shift" id="shiftPill">SHIFT A</span>
   </div>
 
-  <!-- Alerts -->
+  <!-- Alerts (only render if any pending) -->
   <div class="pm-alert-list" id="alertList" style="display:none;"></div>
 
-  <!-- Hero KPI strip -->
+  <!-- Module workflow groups (canonical action surface — first, per DESIGN.md) -->
+  <div id="moduleGroups"></div>
+
+  <!-- Hero KPI strip (metrics after actions) -->
   <div class="pm-sec" id="kpiSec">
     <button class="pm-sec-toggle" onclick="toggleSection('kpiSec','kpiHeroBody')" aria-label="Toggle KPIs">
       <svg class="pm-sec-chev"><use href="#i-chev"/></svg>
-      <span class="pm-sec-l" id="kpiSecLabel">KPIs · 30d</span>
+      <span class="pm-sec-l" id="kpiSecLabel">KPIs &middot; 30d</span>
     </button>
     <button class="pm-sec-link" onclick="navigateTo('Settings')">Configure</button>
   </div>
@@ -661,18 +669,6 @@
       <div id="kpiDrill" class="pm-kpi-drill"></div>
     </div>
   </div>
-
-  <!-- Stat strip -->
-  <div class="pm-sec"><span class="pm-sec-l">Today</span></div>
-  <div class="pm-stats" id="statStrip">
-    <button class="pm-stat"><span class="pm-stat-icon"><svg><use href="#i-package"/></svg></span><div><div class="pm-stat-label">GRN</div><div class="pm-stat-val pm-skel" style="width:24px;height:14px;">_</div></div></button>
-    <button class="pm-stat"><span class="pm-stat-icon"><svg><use href="#i-flask"/></svg></span><div><div class="pm-stat-label">IQC</div><div class="pm-stat-val pm-skel" style="width:24px;height:14px;">_</div></div></button>
-    <button class="pm-stat"><span class="pm-stat-icon"><svg><use href="#i-octagon-alert"/></svg></span><div><div class="pm-stat-label">NCR</div><div class="pm-stat-val pm-skel" style="width:24px;height:14px;">_</div></div></button>
-    <button class="pm-stat"><span class="pm-stat-icon"><svg><use href="#i-alert-tri"/></svg></span><div><div class="pm-stat-label">Alerts</div><div class="pm-stat-val pm-skel" style="width:24px;height:14px;">_</div></div></button>
-  </div>
-
-  <!-- Module workflow groups -->
-  <div id="moduleGroups"></div>
 
   <!-- Recent activity -->
   <div class="pm-sec">
@@ -1023,33 +1019,8 @@
     }).join('');
   }
 
-  function renderStatStrip(counts, alertCount) {
-    counts = counts || {};
-    var defs = [
-      { key: 'GRN', label: 'GRN', icon: 'i-package',         target: 'GRN' },
-      { key: 'IQC', label: 'IQC', icon: 'i-flask',           target: 'IQC' },
-      { key: 'NCR', label: 'NCR', icon: 'i-octagon-alert',   target: 'NCR', isFail: true },
-      { key: '_alerts', label: 'Alerts', icon: 'i-alert-tri', target: '_alerts', isWarn: true }
-    ];
-    var strip = $('statStrip');
-    strip.innerHTML = defs.map(function (d, i) {
-      var v = d.key === '_alerts' ? (alertCount || 0) : (counts[d.key] != null ? counts[d.key] : 0);
-      var cls = '';
-      if (d.isFail && v > 0) cls = ' is-fail';
-      if (d.isWarn && v > 0) cls = ' is-warn';
-      var click = d.key === '_alerts'
-        ? 'document.getElementById(\'alertList\').scrollIntoView({behavior:\'smooth\',block:\'center\'})'
-        : 'navigateToRecords(\'' + d.target + '\')';
-      return '<button class="pm-stat pm-rise' + cls + '" style="animation-delay:' + (i * 30) + 'ms;" ' +
-        'onclick="' + click + '">' +
-        '<span class="pm-stat-icon"><svg><use href="#' + d.icon + '"/></svg></span>' +
-        '<div>' +
-          '<div class="pm-stat-label">' + esc(d.label) + '</div>' +
-          '<div class="pm-stat-val">' + v + '</div>' +
-        '</div>' +
-        '</button>';
-    }).join('');
-  }
+  // renderStatStrip removed — stat strip retired in v2 (counts live on tiles now).
+  function renderStatStrip() { /* no-op */ }
 
   function renderGroups(counts, breakdowns) {
     var c = counts || {};
@@ -1140,12 +1111,14 @@
   }
 
   function renderError() {
-    var s = $('statStrip');
-    if (s) s.innerHTML =
-      '<div style="grid-column:1/-1;padding:12px 14px;display:flex;align-items:center;gap:10px;color:var(--pm-fail);background:#fef2f2;">' +
+    // Stat strip retired; show error inline before the module groups.
+    var host = $('moduleGroups');
+    if (!host) return;
+    host.innerHTML =
+      '<div style="margin:6px 2px 10px;padding:10px 12px;display:flex;align-items:center;gap:10px;color:var(--pm-fail);background:#fef2f2;border:1px solid #fee2e2;border-radius:10px;">' +
       '<svg width="16" height="16"><use href="#i-wifi-off"/></svg>' +
-      '<div><div style="font-weight:700;font-size:12px;">Could not load data</div>' +
-      '<button onclick="window.PM.loadState()" style="background:transparent;border:0;color:var(--pm-fail);font-size:11px;text-decoration:underline;padding:0;font-family:inherit;">Tap to retry</button></div></div>';
+      '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:12px;">Could not load data</div>' +
+      '<button onclick="window.PM.loadState()" style="background:transparent;border:0;color:var(--pm-fail);font-size:11px;text-decoration:underline;padding:0;font-family:inherit;cursor:pointer;">Tap to retry</button></div></div>';
   }
 
   /* ═════════════ LOADER ═════════════ */
@@ -1156,10 +1129,11 @@
   function showLoader(msg) {
     if (msg && loaderSub) loaderSub.textContent = msg;
     if (loaderEl) loaderEl.classList.remove('is-hidden');
+    if (loaderProg) loaderProg.classList.add('indeterminate');
   }
   function hideLoader() {
     if (loaderInterval) { clearInterval(loaderInterval); loaderInterval = null; }
-    if (loaderProg) loaderProg.style.width = '100%';
+    if (loaderProg) { loaderProg.classList.remove('indeterminate'); loaderProg.style.width = '100%'; }
     setTimeout(function () {
       if (loaderEl) loaderEl.classList.add('is-hidden');
       if (loaderProg) loaderProg.style.width = '0%';
@@ -1309,23 +1283,20 @@
     if (!hero.length) {
       box.innerHTML = '<div class="pm-kpi-empty">No KPIs visible for this persona. Tap Configure.</div>';
     } else {
+      // Single-signal cards: left-edge color bar is the only status cue.
+      // Value is always ink-black so numbers read fast; the note line
+      // carries the colored interpretation in 9.5px text.
       box.innerHTML = hero.map(function(k){
         var fv = fmtKpiVal(k);
         var err = (k.status === 'error');
         var st = kpiStatus(k);
-        var spark = (!err && k.sparkline) ? sparklineSvg(k.sparkline) : '';
         var note = kpiNote(k, st);
-        var icon = KPI_ICON[k.key] || 'i-gauge';
-        // Value colour follows status (direction-aware), not raw value≥target.
-        var valCls = st === 'good' ? 'is-good' : st === 'bad' ? 'is-bad' : '';
         var title = err ? ('KPI error: ' + (k.message || '')) : k.label;
         return '<div class="pm-kpi-card s-' + st + (err ? ' is-err' : '') + ' pm-rise" title="' + esc(title) + '" onclick="navigateTo(\'KPI\')">' +
-          '<div class="pm-kpi-top"><span class="pm-kpi-label">' + esc(k.label) + '</span>' +
-          '<span class="pm-kpi-ic s-' + st + '"><svg><use href="#' + icon + '"/></svg></span></div>' +
-          '<div class="pm-kpi-mid"><span class="pm-kpi-val ' + valCls + '">' + esc(fv.text) + '</span>' +
+          '<div class="pm-kpi-top"><span class="pm-kpi-label">' + esc(k.label) + '</span></div>' +
+          '<div class="pm-kpi-mid"><span class="pm-kpi-val">' + esc(fv.text) + '</span>' +
           '<span class="pm-kpi-unit">' + esc(k.unit || '') + '</span></div>' +
           (note ? '<div class="pm-kpi-note s-' + st + '">' + esc(note) + '</div>' : '') +
-          spark +
           '</div>';
       }).join('');
     }
@@ -1355,12 +1326,10 @@
       var note = kpiNote(k, st);
       var tgt = (k.target != null) ? ('Target ' + k.target + (k.unit || '')) : '';
       var sub = note || tgt;
-      var icon = KPI_ICON[k.key] || 'i-gauge';
       var title = err ? ('KPI error: ' + (k.message || '')) : k.label;
       return '<div class="pm-kpi-drow s-' + st + (err ? ' is-err' : '') + ' pm-rise" title="' + esc(title) + '">' +
-        '<div class="pm-kpi-top"><span class="pm-kpi-dlbl">' + esc(k.label) + '</span>' +
-        '<span class="pm-kpi-ic s-' + st + '"><svg><use href="#' + icon + '"/></svg></span></div>' +
-        '<div class="pm-kpi-mid"><span class="pm-kpi-dval ' + valCls + '">' + esc(valTxt) + '</span></div>' +
+        '<div class="pm-kpi-top"><span class="pm-kpi-dlbl">' + esc(k.label) + '</span></div>' +
+        '<div class="pm-kpi-mid"><span class="pm-kpi-dval">' + esc(valTxt) + '</span></div>' +
         (sub ? '<div class="pm-kpi-dsub s-' + st + '">' + esc(sub) + '</div>' : '') +
         '</div>';
     }).join('');
