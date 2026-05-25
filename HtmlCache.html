@@ -6,8 +6,18 @@
 -->
 <script>
 (function(){
-  var PFX = 'pmqms_html_v1_';
+  var PFX = 'pmqms_html_v2_'; // bump on breaking layout changes to force cache reset
   var TTL_MS = 5 * 60 * 1000; // 5 min — HTML is largely static; CacheService handles data freshness
+
+  // One-time sweep: remove any older-version cache keys lingering in sessionStorage.
+  try {
+    var stale = [];
+    for (var si = 0; si < sessionStorage.length; si++) {
+      var sk = sessionStorage.key(si);
+      if (sk && /^pmqms_html_v\d+_/.test(sk) && sk.indexOf(PFX) !== 0) stale.push(sk);
+    }
+    stale.forEach(function(k){ sessionStorage.removeItem(k); });
+  } catch (e) {}
 
   function readCache(form) {
     try {
