@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>New GRN - Pack Masters QMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a5f',
+                        accent: '#0ea5e9',
+                        surface: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0',
+                        status: {
+                            success: '#16a34a',
+                            danger: '#dc2626',
+                            warning: '#ca8a04',
+                            pending: '#d97706',
+                            progress: '#2563eb',
+                            closed: '#6b7280'
+                        }
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-[#0f172a] antialiased flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 h-[56px] bg-[#1e3a5f] dark:bg-[#1e3a5f] flex items-center justify-between px-4 shadow-md">
+<button class="text-white hover:bg-white/10 active:opacity-80 transition-all duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold leading-tight text-white">Pack Masters QMS</h1>
+<button class="text-white hover:bg-white/10 active:opacity-80 transition-all duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 mt-[56px] pb-[80px] p-4 flex flex-col gap-5 max-w-lg mx-auto w-full">
+<!-- GAS Sync Indicator -->
+<div class="flex items-center justify-center bg-card rounded-lg p-2 border border-border shadow-sm">
+<span class="material-symbols-outlined text-status-success text-sm mr-2" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+<span class="text-[13px] text-[#64748b]">Connected to Google Sheets Sync</span>
+</div>
+<!-- Header Info Card -->
+<section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
+<div class="flex justify-between items-center mb-4 pb-3 border-b border-border">
+<span class="text-[18px] font-bold text-primary font-headline">PM/GRN/2026-045</span>
+<span class="text-[14px] font-medium text-[#64748b]">14/05/2026</span>
+</div>
+<div class="flex flex-col gap-[6px] mb-4">
+<label class="font-label text-[14px] font-medium text-[#374151]" for="supplier">Supplier *</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all" id="supplier">
+<option disabled="" selected="" value="">Select Supplier</option>
+<option value="polymers-inc">Polymers Inc. (Supplier-012)</option>
+<option value="global-films">Global Films Ltd (Supplier-045)</option>
+<option value="ink-masters">Ink Masters (Supplier-088)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="font-label text-[14px] font-medium text-[#374151]" for="po-number">Purchase Order (Optional)</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all" id="po-number" placeholder="e.g. PO-2026-089" type="text"/>
+</div>
+</section>
+<!-- Material Item List -->
+<h2 class="font-headline text-[16px] font-semibold text-[#0f172a] mt-2">Material Items</h2>
+<!-- Single Material Item Card -->
+<section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4 relative">
+<div class="absolute top-4 right-4 text-[#64748b] text-[13px] font-medium">Item 1</div>
+<div class="flex flex-col gap-[6px] mt-2">
+<label class="font-label text-[14px] font-medium text-[#374151]">Material Code *</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+<option disabled="" selected="" value="">Select Material</option>
+<option value="rm-pe-01">PE Film 50mic (RM-PE-01)</option>
+<option value="rm-ink-b">Blue Ink Base (RM-INK-B)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="flex flex-col gap-[6px]">
+<label class="font-label text-[14px] font-medium text-[#374151]">Qty Ordered</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all bg-surface" placeholder="0" type="number"/>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="font-label text-[14px] font-medium text-[#374151]">Qty Received *</label>
+<div class="relative">
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] pl-3 pr-10 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all" placeholder="0" type="number"/>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] text-[14px]">kg</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="flex flex-col gap-[6px]">
+<label class="font-label text-[14px] font-medium text-[#374151]">Batch Number</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all" placeholder="B-" type="text"/>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="font-label text-[14px] font-medium text-[#374151]">Expiry Date</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all" type="date"/>
+</div>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="font-label text-[14px] font-medium text-[#374151]">Storage Location</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+<option disabled="" selected="" value="">Select Zone</option>
+<option value="z1">Zone A - Racks</option>
+<option value="z2">Zone B - Floor</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-3 border-t border-border mt-1">
+<span class="text-[14px] font-medium text-[#374151]">COA Received</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-[#d1d5db] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+</label>
+</div>
+</section>
+<!-- Add Item Button -->
+<button class="flex items-center justify-center gap-2 h-[52px] border-2 border-dashed border-[#cbd5e1] rounded-xl text-[#64748b] font-semibold text-[14px] hover:bg-white hover:border-accent hover:text-accent transition-colors" type="button">
+<span class="material-symbols-outlined">add</span>
+            Add Another Item
+        </button>
+<!-- Final Toggles -->
+<section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#16a34a]">chat</span>
+<span class="text-[14px] font-medium text-[#374151]">Send WhatsApp update to supplier</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-[#d1d5db] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16a34a]"></div>
+</label>
+</div>
+</section>
+</main>
+<!-- Bottom Actions / Nav Shell Avoidance -->
+<!-- Note: BottomNavBar suppressed as this is a transactional creation screen -->
+<div class="fixed bottom-0 left-0 w-full bg-white border-t border-border p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 md:static md:shadow-none md:bg-transparent md:border-none md:p-0 md:mt-4 md:max-w-lg md:mx-auto">
+<button class="w-full bg-primary text-white h-[56px] rounded-[10px] font-headline text-[16px] font-semibold flex items-center justify-center gap-2 active:bg-primary/90 transition-colors shadow-sm">
+<span class="material-symbols-outlined">save</span>
+            Save GRN
+        </button>
+</div>
+</body></html>

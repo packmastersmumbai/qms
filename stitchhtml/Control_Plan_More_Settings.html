@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Control Plan &amp; More</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1e3a5f",
+                        accent: "#0ea5e9",
+                        surface: "#f8fafc",
+                        card: "#ffffff",
+                        border: "#e2e8f0",
+                        status: {
+                            accepted: "#16a34a",
+                            rejected: "#dc2626",
+                            hold: "#ca8a04",
+                            pending: "#d97706",
+                            inprogress: "#2563eb",
+                            closed: "#6b7280"
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans", "sans-serif"],
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col pb-24 md:pb-0 relative">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full h-[56px] bg-[#1e3a5f] shadow-md flex items-center px-4 z-50 transition-all">
+<button class="w-10 h-10 flex items-center justify-center text-white hover:bg-white/10 active:opacity-80 rounded-full transition-colors mr-2 shrink-0">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline text-[20px] font-[700] text-white truncate flex-1 text-center pr-12">Control Plans</h1>
+</header>
+<main class="flex-1 w-full max-w-md mx-auto md:max-w-none md:grid md:grid-cols-2 md:gap-8 md:px-8 md:py-6 md:h-[calc(100vh-56px)] md:overflow-hidden">
+<!-- SECTION 1: CONTROL PLAN (Scrollable on Desktop) -->
+<div class="px-4 pt-3 pb-24 md:pb-4 md:overflow-y-auto hide-scrollbar space-y-5">
+<!-- Product Selector Card -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-[16px] border border-[#e2e8f0]">
+<label class="block text-[14px] font-[500] text-[#374151] mb-[6px]">Product (FG)</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] font-[400] text-[#0f172a] px-3 appearance-none focus:outline-none focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 bg-white transition-all">
+<option>BAG-FG-001 — PP Woven Bags 50kg</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+</div>
+<p class="text-[12px] font-[400] text-[#64748b] mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">info</span>
+                    22 standard parameters available
+                </p>
+</div>
+<!-- IPQC Parameters Card -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] overflow-hidden">
+<div class="p-[16px] border-b border-[#f1f5f9] flex justify-between items-center bg-slate-50/50">
+<h2 class="text-[16px] font-[600] text-[#0f172a] font-headline">IPQC Parameters</h2>
+<span class="bg-[#0ea5e9]/10 text-[#0ea5e9] px-3 py-1 rounded-[20px] text-[12px] font-[600]">12 enabled</span>
+</div>
+<div class="flex flex-col">
+<!-- Row 1 -->
+<div class="min-h-[60px] border-b border-[#f1f5f9] flex items-center px-4 py-3 gap-3 border-l-4 border-l-[#0ea5e9] bg-white">
+<input checked="" class="w-5 h-5 rounded text-[#0ea5e9] border-gray-300 focus:ring-[#0ea5e9]" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<div class="text-[14px] font-[500] text-[#374151] truncate">GSM Weight</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<input class="w-[50px] h-[36px] border border-gray-200 rounded px-2 text-center text-[14px] focus:outline-none focus:border-[#0ea5e9]" type="text" value="120"/>
+<span class="text-[13px] text-[#64748b] w-8">gsm</span>
+<input class="w-[45px] h-[36px] border border-gray-200 rounded px-2 text-center text-[14px] text-slate-500 focus:outline-none focus:border-[#0ea5e9]" type="text" value="±5"/>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="min-h-[60px] border-b border-[#f1f5f9] flex items-center px-4 py-3 gap-3 border-l-4 border-l-[#0ea5e9] bg-white">
+<input checked="" class="w-5 h-5 rounded text-[#0ea5e9] border-gray-300 focus:ring-[#0ea5e9]" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<div class="text-[14px] font-[500] text-[#374151] truncate">Bag Width</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<input class="w-[50px] h-[36px] border border-gray-200 rounded px-2 text-center text-[14px] focus:outline-none focus:border-[#0ea5e9]" type="text" value="450"/>
+<span class="text-[13px] text-[#64748b] w-8">mm</span>
+<input class="w-[45px] h-[36px] border border-gray-200 rounded px-2 text-center text-[14px] text-slate-500 focus:outline-none focus:border-[#0ea5e9]" type="text" value="±2"/>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="min-h-[60px] border-b border-[#f1f5f9] flex items-center px-4 py-3 gap-3 border-l-4 border-l-[#0ea5e9] bg-white">
+<input checked="" class="w-5 h-5 rounded text-[#0ea5e9] border-gray-300 focus:ring-[#0ea5e9]" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<div class="text-[14px] font-[500] text-[#374151] truncate">Seal Strength</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<input class="w-[50px] h-[36px] border border-gray-200 rounded px-2 text-center text-[14px] focus:outline-none focus:border-[#0ea5e9]" type="text" value="18"/>
+<span class="text-[13px] text-[#64748b] w-[40px] truncate">N/cm</span>
+<input class="w-[45px] h-[36px] border border-gray-200 rounded px-2 text-center text-[14px] text-slate-500 focus:outline-none focus:border-[#0ea5e9]" type="text" value="&gt;18"/>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="min-h-[60px] border-b border-[#f1f5f9] flex items-center px-4 py-3 gap-3 border-l-4 border-l-[#0ea5e9] bg-white">
+<input checked="" class="w-5 h-5 rounded text-[#0ea5e9] border-gray-300 focus:ring-[#0ea5e9]" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<div class="text-[14px] font-[500] text-[#374151] truncate">Print Quality</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="h-[36px] flex items-center px-2 text-[14px] text-slate-700 bg-slate-50 rounded border border-gray-100">Grade A</div>
+</div>
+</div>
+<!-- Row 5 -->
+<div class="min-h-[60px] border-b border-[#f1f5f9] flex items-center px-4 py-3 gap-3 border-l-4 border-l-[#0ea5e9] bg-white">
+<input checked="" class="w-5 h-5 rounded text-[#0ea5e9] border-gray-300 focus:ring-[#0ea5e9]" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<div class="text-[14px] font-[500] text-[#374151] truncate">Bottom Drop Test</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="h-[36px] flex items-center px-3 text-[13px] font-medium text-slate-500 bg-slate-50 rounded border border-gray-100 uppercase tracking-wider">Pass/Fail</div>
+</div>
+</div>
+<!-- Row 6 (Disabled) -->
+<div class="min-h-[60px] border-b border-[#f1f5f9] flex items-center px-4 py-3 gap-3 border-l-4 border-l-transparent bg-slate-50/50 opacity-60">
+<input class="w-5 h-5 rounded text-gray-400 border-gray-300" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<div class="text-[14px] font-[500] text-gray-500 truncate">Moisture Content</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="text-[13px] text-gray-400 w-8 text-center">%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Weight Matrix Toggle -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] p-4 flex items-center justify-between">
+<div>
+<div class="text-[14px] font-[500] text-[#374151]">Enable weight matrix capture</div>
+<div class="mt-1 flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
+<span class="material-symbols-outlined text-[14px] mr-1">grid_on</span>
+                            5 × 3 grid
+                        </span>
+</div>
+</div>
+<button aria-checked="true" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-[#16a34a] transition-colors duration-200 ease-in-out focus:outline-none" role="switch" type="button">
+<span aria-hidden="true" class="pointer-events-none inline-block h-5 w-5 translate-x-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+<!-- Save Button (Sticky bottom on mobile, inline on desktop) -->
+<div class="fixed md:relative bottom-[64px] md:bottom-0 left-0 w-full md:w-auto p-4 md:p-0 bg-white md:bg-transparent border-t md:border-t-0 border-[#e2e8f0] md:mt-6 z-40">
+<button class="w-full h-[56px] bg-[#1e3a5f] text-white rounded-[10px] text-[16px] font-[600] flex items-center justify-center gap-2 hover:bg-[#1e3a5f]/90 active:scale-[0.98] transition-all shadow-md md:shadow-none">
+<span class="material-symbols-outlined">save</span>
+                    Save Control Plan
+                </button>
+</div>
+</div>
+<!-- SECTION 2: MORE / SETTINGS -->
+<div class="hidden md:flex flex-col md:overflow-y-auto hide-scrollbar border-l border-slate-200 pl-8 pt-3 pb-4">
+<h2 class="text-[20px] font-bold text-[#0f172a] font-headline mb-4 px-2">More</h2>
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] overflow-hidden mb-6">
+<!-- System Setup -->
+<button class="w-full min-h-[60px] px-4 border-b border-[#f1f5f9] flex items-center justify-between hover:bg-slate-50 transition-colors bg-white">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+<span class="material-symbols-outlined">build</span>
+</div>
+<span class="text-[16px] font-[500] text-[#0f172a]">System Setup</span>
+</div>
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</button>
+<!-- Control Plans -->
+<button class="w-full min-h-[60px] px-4 border-b border-[#f1f5f9] flex items-center justify-between bg-blue-50/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#1e3a5f]">
+<span class="material-symbols-outlined">assignment</span>
+</div>
+<span class="text-[16px] font-[600] text-[#1e3a5f]">Control Plans</span>
+</div>
+<span class="material-symbols-outlined text-[#1e3a5f]">chevron_right</span>
+</button>
+<!-- Reconcile PO Receipts -->
+<button class="w-full min-h-[60px] px-4 border-b border-[#f1f5f9] flex items-center justify-between hover:bg-slate-50 transition-colors bg-white">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+<span class="material-symbols-outlined">sync</span>
+</div>
+<span class="text-[16px] font-[500] text-[#0f172a]">Reconcile PO Receipts</span>
+</div>
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</button>
+<!-- Export Records -->
+<button class="w-full min-h-[60px] px-4 border-b border-[#f1f5f9] flex items-center justify-between hover:bg-slate-50 transition-colors bg-white">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+<span class="material-symbols-outlined">download</span>
+</div>
+<span class="text-[16px] font-[500] text-[#0f172a]">Export Records</span>
+</div>
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</button>
+<!-- About -->
+<button class="w-full min-h-[60px] px-4 flex items-center justify-between hover:bg-slate-50 transition-colors bg-white">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+<span class="material-symbols-outlined">info</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="text-[16px] font-[500] text-[#0f172a]">About</span>
+<span class="text-[12px] text-[#64748b]">PM QMS v1.0</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</button>
+</div>
+<div class="mt-auto pt-8 text-center">
+<p class="text-[12px] text-[#94a3b8] font-body">PM QMS v1.0 · Build 2026-05-18</p>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full h-[64px] bg-white border-t border-[#e2e8f0] flex justify-around items-center px-2 z-50 md:hidden">
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] hover:bg-slate-50 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px] mb-1">home</span>
+<span class="font-label text-[12px] font-[600]">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] hover:bg-slate-50 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px] mb-1">assignment</span>
+<span class="font-label text-[12px] font-[600]">Records</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] hover:bg-slate-50 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px] mb-1">leaderboard</span>
+<span class="font-label text-[12px] font-[600]">KPIs</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] hover:bg-slate-50 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px] mb-1">settings_applications</span>
+<span class="font-label text-[12px] font-[600]">Masters</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#0ea5e9] hover:bg-slate-50 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px] mb-1" style="font-variation-settings: 'FILL' 1">more_horiz</span>
+<span class="font-label text-[12px] font-[600]">More</span>
+</button>
+</nav>
+</body></html>

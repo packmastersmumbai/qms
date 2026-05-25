@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Warehouse - Pack Masters QMS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a5f',
+                        accent: '#0ea5e9',
+                        surface: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0',
+                        status: {
+                            pass: '#16a34a',
+                            fail: '#dc2626',
+                            hold: '#ca8a04',
+                            pending: '#d97706',
+                            progress: '#2563eb',
+                            closed: '#6b7280'
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem", // Overridden for design system 12px
+                        "xl": "1.5rem",
+                        "full": "9999px",
+                        "input": "0.5rem",
+                        "button": "0.625rem",
+                        "badge": "1.25rem"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    },
+                    boxShadow: {
+                        card: '0 2px 8px rgba(0,0,0,0.08)'
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        h1, h2, h3, .font-headline {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface min-h-screen pb-[80px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 h-[56px] bg-[#1e3a5f] shadow-md flex items-center justify-between px-4 w-full">
+<button class="text-white hover:bg-white/10 transition-colors p-2 rounded-full active:scale-95 duration-100 flex items-center justify-center">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold text-white tracking-tight">Warehouse</h1>
+<button class="text-white hover:bg-white/10 transition-colors p-2 rounded-full active:scale-95 duration-100 flex items-center justify-center">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[56px] px-4 w-full max-w-md mx-auto">
+<!-- Tab Strip -->
+<div class="flex h-[44px] border-b border-[#e2e8f0] mb-4 mt-2">
+<button class="flex-1 flex items-center justify-center text-[#0ea5e9] font-semibold text-[14px] border-b-2 border-[#0ea5e9]">
+                Stock
+            </button>
+<button class="flex-1 flex items-center justify-center text-[#64748b] font-medium text-[14px] hover:text-primary transition-colors">
+                Locations
+            </button>
+<button class="flex-1 flex items-center justify-center text-[#64748b] font-medium text-[14px] hover:text-primary transition-colors">
+                Movements
+            </button>
+</div>
+<!-- Search Bar -->
+<div class="relative mb-4">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#94a3b8]">search</span>
+</div>
+<input class="w-full h-[52px] pl-10 pr-4 bg-white border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] placeholder-[#94a3b8] focus:outline-none focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9]/15 shadow-sm transition-all" placeholder="Search material or batch..." type="text"/>
+</div>
+<!-- Content Section -->
+<div class="flex flex-col gap-[12px]">
+<!-- Summary -->
+<div class="flex justify-end mb-1">
+<span class="text-[13px] font-normal text-[#64748b]">18 lots · ₹ 4,82,000 est. value</span>
+</div>
+<!-- Card 1 -->
+<div class="bg-card rounded-[12px] shadow-card p-[16px] border border-[#e2e8f0]">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-[16px] font-bold text-[#1e3a5f]">HDPE-001</h3>
+<span class="bg-[#2563eb] text-white text-[12px] font-semibold px-[8px] py-[2px] rounded-[4px]">RM-STORE-A</span>
+</div>
+<div class="flex justify-between items-center mb-3">
+<span class="text-[14px] text-[#374151] font-medium">HDPE Granules</span>
+<span class="bg-[#f1f5f9] text-[#64748b] text-[12px] px-2 py-1 rounded">B2026-118</span>
+</div>
+<div class="flex justify-between items-center mb-3">
+<span class="bg-status-pass text-white text-[12px] font-semibold px-[12px] py-[4px] rounded-[20px]">ACCEPTED</span>
+<span class="text-[24px] font-bold text-[#1e3a5f]">118 kg</span>
+</div>
+<div class="flex justify-between items-center mt-4 border-t border-[#f1f5f9] pt-3">
+<span class="text-[12px] text-[#64748b]">GRN: 16/05/2026</span>
+<a class="text-[#0ea5e9] text-[14px] font-semibold flex items-center hover:underline" href="#">
+                        → View Ledger
+                    </a>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-card rounded-[12px] shadow-card p-[16px] border border-[#e2e8f0]">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-[16px] font-bold text-[#1e3a5f]">PP-002</h3>
+<span class="bg-[#2563eb] text-white text-[12px] font-semibold px-[8px] py-[2px] rounded-[4px]">RM-STORE-B</span>
+</div>
+<div class="flex justify-between items-center mb-3">
+<span class="text-[14px] text-[#374151] font-medium">Polypropylene Film</span>
+<span class="bg-[#f1f5f9] text-[#64748b] text-[12px] px-2 py-1 rounded">B2026-119</span>
+</div>
+<div class="flex justify-between items-center mb-3">
+<span class="bg-status-pass text-white text-[12px] font-semibold px-[12px] py-[4px] rounded-[20px]">ACCEPTED</span>
+<span class="text-[24px] font-bold text-[#1e3a5f]">50 rolls</span>
+</div>
+<div class="flex justify-between items-center mt-4 border-t border-[#f1f5f9] pt-3">
+<span class="text-[12px] text-[#64748b]">GRN: 17/05/2026</span>
+<a class="text-[#0ea5e9] text-[14px] font-semibold flex items-center hover:underline" href="#">
+                        → View Ledger
+                    </a>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-card rounded-[12px] shadow-card p-[16px] border border-[#e2e8f0]">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-[16px] font-bold text-[#1e3a5f]">BAG-FG-001</h3>
+<span class="bg-status-pass text-white text-[12px] font-semibold px-[8px] py-[2px] rounded-[4px]">FG-STORE-1</span>
+</div>
+<div class="flex justify-between items-center mb-3">
+<span class="text-[14px] text-[#374151] font-medium">PP Woven Bags 50kg</span>
+<span class="bg-[#f1f5f9] text-[#64748b] text-[12px] px-2 py-1 rounded">B2026-117</span>
+</div>
+<div class="flex justify-between items-center mb-3">
+<span class="bg-status-pass text-white text-[12px] font-semibold px-[12px] py-[4px] rounded-[20px]">RELEASED</span>
+<span class="text-[24px] font-bold text-[#1e3a5f]">120 pcs</span>
+</div>
+<div class="flex justify-between items-center mt-4 border-t border-[#f1f5f9] pt-3">
+<span class="text-[12px] text-[#64748b]">OQC: 10/05/2026</span>
+<a class="text-[#0ea5e9] text-[14px] font-semibold flex items-center hover:underline" href="#">
+                        → View Ledger
+                    </a>
+</div>
+</div>
+<!-- Card 4 (QUARANTINE) -->
+<div class="bg-card rounded-[12px] shadow-card p-[16px] border border-[#e2e8f0]">
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-[16px] font-bold text-[#1e3a5f]">HDPE-002</h3>
+<span class="bg-status-fail text-white text-[12px] font-semibold px-[8px] py-[2px] rounded-[4px]">QUARANTINE</span>
+</div>
+<div class="flex justify-between items-center mb-3">
+<span class="text-[14px] text-[#374151] font-medium">HDPE Film 200 micron</span>
+<span class="bg-[#f1f5f9] text-[#64748b] text-[12px] px-2 py-1 rounded">B2026-104</span>
+</div>
+<div class="flex justify-between items-center mb-3">
+<span class="bg-status-hold text-white text-[12px] font-semibold px-[12px] py-[4px] rounded-[20px]">HOLD</span>
+<span class="text-[24px] font-bold text-[#1e3a5f]">35 kg</span>
+</div>
+<div class="flex justify-between items-center mt-4 border-t border-[#f1f5f9] pt-3">
+<span class="text-[12px] text-[#64748b]">Customer Return: 14/05/2026</span>
+<a class="text-[#0ea5e9] text-[14px] font-semibold flex items-center hover:underline" href="#">
+                        → View Ledger
+                    </a>
+</div>
+</div>
+<div class="h-4"></div> <!-- Extra bottom padding -->
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-white dark:bg-white border-t border-[#e2e8f0] fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-safe z-50 h-[64px] md:hidden">
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 p-2 flex-1 rounded-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label text-[12px] font-semibold mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 p-2 flex-1 rounded-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">inventory</span>
+<span class="font-label text-[12px] font-semibold mt-1">Records</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 p-2 flex-1 rounded-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">analytics</span>
+<span class="font-label text-[12px] font-semibold mt-1">KPIs</span>
+</button>
+<!-- Active Tab: Masters conceptually aligns with Warehouse/Inventory Masters -->
+<button class="flex flex-col items-center justify-center text-[#0ea5e9] font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 p-2 flex-1 rounded-lg bg-accent/5">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">database</span>
+<span class="font-label text-[12px] font-semibold mt-1">Masters</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 p-2 flex-1 rounded-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">more_horiz</span>
+<span class="font-label text-[12px] font-semibold mt-1">More</span>
+</button>
+</nav>
+</body></html>

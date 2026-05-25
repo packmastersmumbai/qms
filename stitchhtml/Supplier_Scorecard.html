@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Supplier Scorecard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a5f',
+                        accent: '#0ea5e9',
+                        surface: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0',
+                        status: {
+                            pass: '#16a34a',
+                            fail: '#dc2626',
+                            hold: '#ca8a04',
+                            pending: '#d97706',
+                            progress: '#2563eb',
+                            closed: '#6b7280'
+                        }
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "1rem",
+                        xl: "1.5rem",
+                        full: "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans"],
+                        display: ["Plus Jakarta Sans"],
+                        body: ["Inter"],
+                        label: ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-[#0f172a] min-h-screen flex flex-col md:hidden max-w-[428px] mx-auto relative shadow-2xl">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 h-[56px] bg-[#1e3a5f] shadow-md flex items-center justify-between px-4">
+<div class="flex items-center gap-3">
+<button aria-label="Menu" class="text-white hover:bg-white/10 active:opacity-80 transition-all duration-200 rounded-full p-1">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold text-white leading-tight">Supplier Scorecard</h1>
+</div>
+<button aria-label="Profile" class="text-white hover:bg-white/10 active:opacity-80 transition-all duration-200 rounded-full p-1">
+<span class="material-symbols-outlined text-[24px]">account_circle</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 pt-[56px] pb-[64px] px-[16px] overflow-y-auto">
+<!-- Filter Chips -->
+<div class="flex items-center gap-2 mt-[12px] mb-[20px] overflow-x-auto no-scrollbar py-1">
+<button class="whitespace-nowrap px-4 py-1.5 rounded-full text-[14px] font-semibold bg-primary text-white border border-primary transition-colors">
+                All
+            </button>
+<button class="whitespace-nowrap px-4 py-1.5 rounded-full text-[14px] font-medium bg-white text-[#64748b] border border-[#e2e8f0] hover:border-accent hover:text-accent transition-colors">
+                Active
+            </button>
+<button class="whitespace-nowrap px-4 py-1.5 rounded-full text-[14px] font-medium bg-white text-[#64748b] border border-[#e2e8f0] hover:border-accent hover:text-accent transition-colors">
+                Watch List
+            </button>
+</div>
+<!-- Supplier List -->
+<div class="flex flex-col gap-[12px]">
+<!-- Supplier Card 1 -->
+<article class="bg-card rounded-[12px] p-[16px] border border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden group">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h2 class="text-[16px] font-semibold text-[#0f172a] leading-tight mb-1">Apex Polymers Pvt Ltd</h2>
+<span class="inline-block bg-status-pass rounded-[20px] px-[12px] py-[4px] text-[12px] font-semibold text-white tracking-wide">PREMIUM</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[28px] font-bold text-status-pass leading-none">92</span>
+<span class="text-[12px] font-medium text-[#64748b] uppercase tracking-wider">Score</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<span class="block text-[13px] font-medium text-[#64748b]">Total POs</span>
+<span class="block text-[16px] font-semibold text-[#0f172a]">42</span>
+</div>
+<div>
+<span class="block text-[13px] font-medium text-[#64748b]">Rejection Rate</span>
+<span class="block text-[16px] font-semibold text-[#0f172a]">1.2%</span>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-border pt-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-status-pass">trending_up</span>
+<span class="text-[13px] font-medium text-[#64748b]">Trending Up (6mo)</span>
+</div>
+<span class="material-symbols-outlined text-[#94a3b8] group-active:text-accent transition-colors">chevron_right</span>
+</div>
+</article>
+<!-- Supplier Card 2 -->
+<article class="bg-card rounded-[12px] p-[16px] border border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden group">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h2 class="text-[16px] font-semibold text-[#0f172a] leading-tight mb-1">Globex Packaging</h2>
+<span class="inline-block bg-status-hold rounded-[20px] px-[12px] py-[4px] text-[12px] font-semibold text-white tracking-wide">STANDARD</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[28px] font-bold text-status-hold leading-none">68</span>
+<span class="text-[12px] font-medium text-[#64748b] uppercase tracking-wider">Score</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<span class="block text-[13px] font-medium text-[#64748b]">Total POs</span>
+<span class="block text-[16px] font-semibold text-[#0f172a]">18</span>
+</div>
+<div>
+<span class="block text-[13px] font-medium text-[#64748b]">Rejection Rate</span>
+<span class="block text-[16px] font-semibold text-[#0f172a]">4.5%</span>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-border pt-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-status-hold">trending_flat</span>
+<span class="text-[13px] font-medium text-[#64748b]">Stable (6mo)</span>
+</div>
+<span class="material-symbols-outlined text-[#94a3b8] group-active:text-accent transition-colors">chevron_right</span>
+</div>
+</article>
+<!-- Supplier Card 3 -->
+<article class="bg-card rounded-[12px] p-[16px] border border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden group">
+<div class="flex justify-between items-start mb-3">
+<div>
+<h2 class="text-[16px] font-semibold text-[#0f172a] leading-tight mb-1">Vanguard Inks Ltd</h2>
+<span class="inline-block bg-status-fail rounded-[20px] px-[12px] py-[4px] text-[12px] font-semibold text-white tracking-wide">AT RISK</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[28px] font-bold text-status-fail leading-none">45</span>
+<span class="text-[12px] font-medium text-[#64748b] uppercase tracking-wider">Score</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<span class="block text-[13px] font-medium text-[#64748b]">Total POs</span>
+<span class="block text-[16px] font-semibold text-[#0f172a]">12</span>
+</div>
+<div>
+<span class="block text-[13px] font-medium text-[#64748b]">Rejection Rate</span>
+<span class="block text-[16px] font-semibold text-[#0f172a]">12.8%</span>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-border pt-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-status-fail">trending_down</span>
+<span class="text-[13px] font-medium text-[#64748b]">Trending Down (6mo)</span>
+</div>
+<span class="material-symbols-outlined text-[#94a3b8] group-active:text-accent transition-colors">chevron_right</span>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 h-[64px] bg-white border-t border-[#e2e8f0] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] flex justify-around items-center px-2 pb-safe md:hidden rounded-t-none">
+<button aria-label="Home" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] scale-95 active:scale-90 transition-transform duration-150 p-2 w-[60px]">
+<span class="material-symbols-outlined text-[24px] mb-1">home</span>
+<span class="font-label text-[12px] font-semibold">Home</span>
+</button>
+<button aria-label="Records" class="flex flex-col items-center justify-center text-[#0ea5e9] font-semibold hover:bg-[#f8fafc] scale-95 active:scale-90 transition-transform duration-150 p-2 w-[60px]">
+<span class="material-symbols-outlined text-[24px] mb-1" style="font-variation-settings: 'FILL' 1;">description</span>
+<span class="font-label text-[12px] font-semibold">Records</span>
+</button>
+<button aria-label="KPIs" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] scale-95 active:scale-90 transition-transform duration-150 p-2 w-[60px]">
+<span class="material-symbols-outlined text-[24px] mb-1">insert_chart</span>
+<span class="font-label text-[12px] font-semibold">KPIs</span>
+</button>
+<button aria-label="Masters" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] scale-95 active:scale-90 transition-transform duration-150 p-2 w-[60px]">
+<span class="material-symbols-outlined text-[24px] mb-1">settings_suggest</span>
+<span class="font-label text-[12px] font-semibold">Masters</span>
+</button>
+<button aria-label="More" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] scale-95 active:scale-90 transition-transform duration-150 p-2 w-[60px]">
+<span class="material-symbols-outlined text-[24px] mb-1">more_horiz</span>
+<span class="font-label text-[12px] font-semibold">More</span>
+</button>
+</nav>
+</body></html>

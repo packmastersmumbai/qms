@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Pack Masters QMS - Error State</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a5f',
+                        accent: '#0ea5e9',
+                        surface: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0',
+                        status: {
+                            accepted: '#16a34a',
+                            rejected: '#dc2626',
+                            hold: '#ca8a04',
+                            pending: '#d97706',
+                            inprogress: '#2563eb',
+                            closed: '#6b7280'
+                        }
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    },
+                    spacing: {
+                        'page-x': '16px',
+                        'page-y': '12px',
+                        'card-p': '16px',
+                        'card-gap': '12px',
+                        'field-gap': '6px',
+                        'section-gap': '20px',
+                        'touch-min': '60px'
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px",
+                        "card": "12px",
+                        "input": "8px",
+                        "btn": "10px",
+                        "badge": "20px"
+                    },
+                    boxShadow: {
+                        'card': '0 2px 8px rgba(0,0,0,0.08)'
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #f8fafc;
+            /* Mocking mobile viewport for preview */
+            max-width: 428px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 64px; /* Space for BottomNavBar */
+        }
+        
+        /* Shimmer Animation for Skeleton Loading */
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        .skeleton {
+            background: #e2e8f0;
+            background-image: linear-gradient(to right, #e2e8f0 0%, #cbd5e1 20%, #e2e8f0 40%, #e2e8f0 100%);
+            background-repeat: no-repeat;
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite linear forwards;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body text-slate-900 bg-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full max-w-[428px] h-[56px] bg-[#1e3a5f] shadow-sm flex justify-between items-center px-4 z-50 transition-colors duration-200">
+<button aria-label="Menu" class="w-[40px] h-[40px] flex items-center justify-center text-white/70 hover:bg-white/10 rounded-full">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold text-white tracking-tight truncate px-2">Pack Masters QMS</h1>
+<button aria-label="Settings" class="w-[40px] h-[40px] flex items-center justify-center text-white/70 hover:bg-white/10 rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</header>
+<!-- Main Content Area (Error State Overlay & Skeletons) -->
+<main class="pt-[56px] px-page-x pb-[80px] h-full flex flex-col items-center justify-center min-h-[calc(100vh-64px)] relative">
+<!-- Background Skeletons (indicating loading failure) -->
+<div class="absolute inset-0 z-0 pt-[80px] px-page-x pointer-events-none opacity-40">
+<!-- Mock Header Skeleton -->
+<div class="w-1/2 h-6 skeleton rounded mb-6"></div>
+<!-- Mock KPI Tiles Skeleton Layout -->
+<div class="grid grid-cols-2 gap-card-gap mb-section-gap">
+<div class="bg-card border border-border rounded-card h-[100px] p-card-p flex flex-col justify-between shadow-card">
+<div class="w-8 h-8 skeleton rounded-full"></div>
+<div>
+<div class="w-3/4 h-4 skeleton rounded mb-2"></div>
+<div class="w-1/2 h-6 skeleton rounded"></div>
+</div>
+</div>
+<div class="bg-card border border-border rounded-card h-[100px] p-card-p flex flex-col justify-between shadow-card">
+<div class="w-8 h-8 skeleton rounded-full"></div>
+<div>
+<div class="w-3/4 h-4 skeleton rounded mb-2"></div>
+<div class="w-1/2 h-6 skeleton rounded"></div>
+</div>
+</div>
+</div>
+<!-- Mock List Skeletons -->
+<div class="w-1/3 h-5 skeleton rounded mb-4 mt-8"></div>
+<div class="space-y-card-gap">
+<div class="bg-card border border-border rounded-card h-[80px] w-full p-card-p flex items-center gap-4 shadow-card">
+<div class="w-12 h-12 skeleton rounded-input"></div>
+<div class="flex-1">
+<div class="w-full h-4 skeleton rounded mb-2"></div>
+<div class="w-1/2 h-3 skeleton rounded"></div>
+</div>
+</div>
+<div class="bg-card border border-border rounded-card h-[80px] w-full p-card-p flex items-center gap-4 shadow-card">
+<div class="w-12 h-12 skeleton rounded-input"></div>
+<div class="flex-1">
+<div class="w-full h-4 skeleton rounded mb-2"></div>
+<div class="w-1/2 h-3 skeleton rounded"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Foreground Error Message -->
+<div class="z-10 bg-white/80 backdrop-blur-sm p-6 rounded-2xl flex flex-col items-center text-center max-w-[320px] w-full border border-white shadow-xl">
+<div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-5 border-4 border-white shadow-sm">
+<span class="material-symbols-outlined text-[40px] text-red-500" data-icon="cloud_off" style="font-variation-settings: 'FILL' 1;">cloud_off</span>
+</div>
+<h2 class="font-headline text-[20px] font-bold text-slate-900 mb-2">Could not load data</h2>
+<p class="text-[14px] text-slate-500 mb-8 max-w-[240px]">Check your connection and try again to view your dashboard.</p>
+<button class="bg-[#0ea5e9] text-white h-[56px] w-full rounded-[10px] font-body text-[16px] font-semibold flex items-center justify-center gap-2 hover:bg-[#0284c7] active:bg-[#0369a1] transition-colors shadow-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="refresh">refresh</span>
+                Retry
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full max-w-[428px] h-[64px] bg-white border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] z-50 flex justify-around items-center">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center text-[#0ea5e9] w-[60px] h-[60px] hover:bg-slate-50 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label text-[12px] font-semibold">Home</span>
+</a>
+<!-- Records (Inactive) -->
+<a class="flex flex-col items-center justify-center text-[#94a3b8] w-[60px] h-[60px] hover:bg-slate-50 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="description">description</span>
+<span class="font-label text-[12px] font-semibold">Records</span>
+</a>
+<!-- KPIs (Inactive) -->
+<a class="flex flex-col items-center justify-center text-[#94a3b8] w-[60px] h-[60px] hover:bg-slate-50 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="leaderboard">leaderboard</span>
+<span class="font-label text-[12px] font-semibold">KPIs</span>
+</a>
+<!-- Masters (Inactive) -->
+<a class="flex flex-col items-center justify-center text-[#94a3b8] w-[60px] h-[60px] hover:bg-slate-50 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="settings_suggest">settings_suggest</span>
+<span class="font-label text-[12px] font-semibold">Masters</span>
+</a>
+<!-- More (Inactive) -->
+<a class="flex flex-col items-center justify-center text-[#94a3b8] w-[60px] h-[60px] hover:bg-slate-50 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="more_horiz">more_horiz</span>
+<span class="font-label text-[12px] font-semibold">More</span>
+</a>
+</nav>
+</body></html>

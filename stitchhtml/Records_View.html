@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Pack Masters QMS - Records</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {},
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    spacing: {},
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans", "sans-serif"],
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    },
+                    fontSize: {}
+                },
+            },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Mobile-first specific overrides */
+        html, body {
+            overflow-x: hidden;
+            background-color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px]">
+<!-- TopAppBar Semantic Shell -->
+<header class="fixed top-0 w-full z-50 h-[56px] bg-[#1e3a5f] shadow-md flex items-center justify-between px-4">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-white active:scale-95 duration-100 hover:bg-white/10 transition-colors p-1 rounded-full cursor-pointer" style="font-variation-settings: 'FILL' 0;">menu</span>
+</div>
+<h1 class="font-headline text-[20px] font-bold text-white tracking-tight flex-1 text-center">Records</h1>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white active:scale-95 duration-100 hover:bg-white/10 transition-colors p-1 rounded-full cursor-pointer" style="font-variation-settings: 'FILL' 0;">search</span>
+<span class="material-symbols-outlined text-white active:scale-95 duration-100 hover:bg-white/10 transition-colors p-1 rounded-full cursor-pointer" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="pt-[56px] px-[16px] max-w-[428px] mx-auto w-full">
+<!-- Filter Sections -->
+<div class="sticky top-[56px] bg-[#f8fafc] z-40 py-3 -mx-[16px] px-[16px] shadow-sm">
+<!-- Filter Row 1 (Module Type) -->
+<div class="flex overflow-x-auto no-scrollbar gap-[10px] pb-3 snap-x">
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-[#1e3a5f] text-white font-body text-[14px] font-medium border border-[#1e3a5f] active:scale-95 transition-transform">
+                    ALL
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    GRN
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    IQC
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    OQC
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    GP
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    IPQC
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    NCR
+                </button>
+</div>
+<!-- Filter Row 2 (Timeframe) -->
+<div class="flex overflow-x-auto no-scrollbar gap-[10px] snap-x">
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    TODAY
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    WEEK
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-[#1e3a5f] text-white font-body text-[14px] font-medium border border-[#1e3a5f] active:scale-95 transition-transform">
+                    MONTH
+                </button>
+<button class="shrink-0 snap-start h-[32px] px-4 rounded-[8px] bg-white text-[#374151] font-body text-[14px] font-medium border border-[#e2e8f0] active:bg-gray-50 active:scale-95 transition-transform">
+                    ALL
+                </button>
+</div>
+</div>
+<!-- List Header -->
+<div class="flex justify-end pt-[12px] pb-[8px]">
+<span class="font-body text-[13px] font-normal text-[#64748b]">Showing 23 records</span>
+</div>
+<!-- Record List -->
+<div class="flex flex-col gap-[12px]">
+<!-- Card 1: GRN -->
+<div class="bg-white rounded-[12px] p-[16px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] relative active:bg-gray-50 cursor-pointer transition-colors">
+<div class="flex justify-between items-start mb-2">
+<h2 class="font-body text-[16px] font-bold text-[#1e3a5f]">PM/GRN/2026-043</h2>
+<div class="flex gap-2">
+<span class="bg-[#1e3a5f] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">GRN</span>
+<span class="bg-[#ca8a04] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">PENDING_IQC</span>
+</div>
+</div>
+<div class="flex justify-between items-end mb-3">
+<p class="font-body text-[14px] font-medium text-[#374151]">Apex Polymers Pvt Ltd</p>
+<span class="font-body text-[13px] font-normal text-[#64748b]">18/05/2026</span>
+</div>
+<div class="flex justify-between items-center border-t border-[#e2e8f0] pt-3">
+<p class="font-body text-[13px] font-normal text-[#64748b] truncate pr-4">HDPE-001 · PP-002 — 2 materials</p>
+<span class="material-symbols-outlined text-[#94a3b8]" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</div>
+</div>
+<!-- Card 2: IQC -->
+<div class="bg-white rounded-[12px] p-[16px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] relative active:bg-gray-50 cursor-pointer transition-colors">
+<div class="flex justify-between items-start mb-2">
+<h2 class="font-body text-[16px] font-bold text-[#1e3a5f]">PM/IQC/2026-038</h2>
+<div class="flex gap-2">
+<span class="bg-[#1e3a5f] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">IQC</span>
+<span class="bg-[#16a34a] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">ACCEPTED</span>
+</div>
+</div>
+<div class="flex justify-between items-end mb-3">
+<p class="font-body text-[14px] font-medium text-[#374151]">Apex Polymers</p>
+<span class="font-body text-[13px] font-normal text-[#64748b]">17/05/2026</span>
+</div>
+<div class="flex justify-between items-center border-t border-[#e2e8f0] pt-3">
+<p class="font-body text-[13px] font-normal text-[#64748b] truncate pr-4">HDPE Granules · Polypropylene Film</p>
+<span class="material-symbols-outlined text-[#94a3b8]" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</div>
+</div>
+<!-- Card 3: OQC -->
+<div class="bg-white rounded-[12px] p-[16px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] relative active:bg-gray-50 cursor-pointer transition-colors">
+<div class="flex justify-between items-start mb-2">
+<h2 class="font-body text-[16px] font-bold text-[#1e3a5f]">PM/OQC/2026-021</h2>
+<div class="flex gap-2">
+<span class="bg-[#1e3a5f] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">OQC</span>
+<span class="bg-[#16a34a] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">RELEASED</span>
+</div>
+</div>
+<div class="flex justify-between items-end mb-3">
+<p class="font-body text-[14px] font-medium text-[#374151]">Raj Packaging Pvt Ltd</p>
+<span class="font-body text-[13px] font-normal text-[#64748b]">17/05/2026</span>
+</div>
+<div class="flex justify-between items-center border-t border-[#e2e8f0] pt-3">
+<p class="font-body text-[13px] font-normal text-[#64748b] truncate pr-4">PP Woven Bags 50kg — 500 pcs</p>
+<span class="material-symbols-outlined text-[#94a3b8]" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</div>
+</div>
+<!-- Card 4: NCR -->
+<div class="bg-white rounded-[12px] p-[16px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] relative active:bg-gray-50 cursor-pointer transition-colors">
+<div class="flex justify-between items-start mb-2">
+<h2 class="font-body text-[16px] font-bold text-[#1e3a5f]">PM/NCR/2026-009</h2>
+<div class="flex gap-2">
+<span class="bg-[#1e3a5f] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">NCR</span>
+<span class="bg-[#d97706] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">OPEN</span>
+</div>
+</div>
+<div class="flex justify-between items-end mb-3">
+<p class="font-body text-[14px] font-medium text-[#374151]">IQC Source: PM/IQC/2026-037</p>
+<span class="font-body text-[13px] font-normal text-[#64748b]">18/05/2026</span>
+</div>
+<div class="flex justify-between items-center border-t border-[#e2e8f0] pt-3">
+<p class="font-body text-[13px] font-normal text-[#64748b] truncate pr-4">HDPE-001 Dimensions OOS</p>
+<span class="material-symbols-outlined text-[#94a3b8]" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</div>
+</div>
+<!-- Card 5: GP -->
+<div class="bg-white rounded-[12px] p-[16px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] relative active:bg-gray-50 cursor-pointer transition-colors">
+<div class="flex justify-between items-start mb-2">
+<h2 class="font-body text-[16px] font-bold text-[#1e3a5f]">PM/GP/2026-017</h2>
+<div class="flex gap-2">
+<span class="bg-[#1e3a5f] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">GP</span>
+<span class="bg-[#6b7280] text-white px-[8px] py-[2px] rounded-[4px] font-body text-[10px] font-bold tracking-wider">DISPATCHED</span>
+</div>
+</div>
+<div class="flex justify-between items-end mb-3">
+<p class="font-body text-[14px] font-medium text-[#374151]">Raj Packaging Pvt Ltd</p>
+<span class="font-body text-[13px] font-normal text-[#64748b]">16/05/2026</span>
+</div>
+<div class="flex justify-between items-center border-t border-[#e2e8f0] pt-3">
+<p class="font-body text-[13px] font-normal text-[#64748b] truncate pr-4">PP Woven Bags — 300 pcs</p>
+<span class="material-symbols-outlined text-[#94a3b8]" style="font-variation-settings: 'FILL' 0;">chevron_right</span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Semantic Shell -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-safe z-50 h-[64px] bg-white border-t border-[#e2e8f0]">
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label text-[12px] font-semibold">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#0ea5e9] font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">inventory</span>
+<span class="font-label text-[12px] font-semibold">Records</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">analytics</span>
+<span class="font-label text-[12px] font-semibold">KPIs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">database</span>
+<span class="font-label text-[12px] font-semibold">Masters</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">more_horiz</span>
+<span class="font-label text-[12px] font-semibold">More</span>
+</button>
+</nav>
+</body></html>

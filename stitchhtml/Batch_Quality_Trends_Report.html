@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Quality Trends - Pack Masters QMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {},
+            "borderRadius": {
+                    "DEFAULT": "0.5rem",
+                    "lg": "1rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "display": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body": [
+                            "Inter"
+                    ],
+                    "label": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {}
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#f8fafc] font-body text-[#0f172a] antialiased pb-[80px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#1e3a5f] dark:bg-[#1e3a5f] shadow-md border-none">
+<div class="flex items-center justify-between px-4 h-[56px] w-full">
+<button class="text-white dark:text-white hover:bg-white/10 active:scale-95 transition-all p-2 -ml-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold tracking-tight text-white">Quality Trends</h1>
+<button class="text-white dark:text-white hover:bg-white/10 active:scale-95 transition-all p-2 -mr-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">calendar_month</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[56px] px-4 w-full max-w-3xl mx-auto space-y-5">
+<!-- Date Range Filter -->
+<div class="pt-3">
+<button class="flex items-center gap-2 bg-white border border-[#e2e8f0] px-3 py-2 rounded-lg shadow-sm text-[14px] font-medium text-[#374151] active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-[#64748b] text-[18px]">date_range</span>
+                Last 30 Days
+                <span class="material-symbols-outlined text-[#64748b] text-[18px]">arrow_drop_down</span>
+</button>
+</div>
+<!-- Hero Chart Placeholder -->
+<section class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] p-4 flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<h2 class="font-headline text-[16px] font-semibold text-[#0f172a]">Rejection Rate Trend</h2>
+<span class="text-[13px] text-[#64748b]">Oct 1 - Oct 30</span>
+</div>
+<!-- Faux Chart Graphic using Tailwind gradients and shapes to represent a line chart -->
+<div class="w-full h-[180px] relative mt-2 border-l border-b border-[#e2e8f0] flex items-end">
+<!-- Y-axis markers -->
+<div class="absolute left-[-24px] top-0 bottom-0 flex flex-col justify-between text-[10px] text-[#64748b]">
+<span>5%</span>
+<span>2.5%</span>
+<span>0%</span>
+</div>
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none w-full">
+<div class="w-full border-t border-dashed border-[#e2e8f0]"></div>
+<div class="w-full border-t border-dashed border-[#e2e8f0]"></div>
+<div class="w-full border-t border-transparent"></div>
+</div>
+<!-- Faux Line (SVG for precision, allowed to represent UI elements without external deps if simple inline, but strictly told to avoid inline SVG if possible. Using pure CSS borders/gradients is tricky for a line chart. We will use a simplified structural representation) -->
+<div class="relative w-full h-full flex items-end justify-between px-2 pb-2">
+<div class="w-[8%] h-[30%] bg-[#0ea5e9]/20 rounded-t-sm border-t-2 border-[#0ea5e9]"></div>
+<div class="w-[8%] h-[45%] bg-[#0ea5e9]/20 rounded-t-sm border-t-2 border-[#0ea5e9]"></div>
+<div class="w-[8%] h-[20%] bg-[#0ea5e9]/20 rounded-t-sm border-t-2 border-[#0ea5e9]"></div>
+<div class="w-[8%] h-[60%] bg-[#dc2626]/20 rounded-t-sm border-t-2 border-[#dc2626] relative">
+<!-- Anomaly Marker -->
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#dc2626] text-white text-[10px] font-bold px-1 rounded">FAIL</div>
+</div>
+<div class="w-[8%] h-[35%] bg-[#0ea5e9]/20 rounded-t-sm border-t-2 border-[#0ea5e9]"></div>
+<div class="w-[8%] h-[15%] bg-[#0ea5e9]/20 rounded-t-sm border-t-2 border-[#0ea5e9]"></div>
+<div class="w-[8%] h-[10%] bg-[#0ea5e9]/20 rounded-t-sm border-t-2 border-[#0ea5e9]"></div>
+</div>
+</div>
+<!-- X-axis markers -->
+<div class="w-full flex justify-between text-[10px] text-[#64748b] pt-1 pl-2">
+<span>Oct 1</span>
+<span>Oct 15</span>
+<span>Oct 30</span>
+</div>
+</section>
+<!-- KPI Grid -->
+<section class="grid grid-cols-2 gap-3">
+<!-- Pass Rate -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] p-4 flex flex-col justify-between">
+<span class="text-[13px] text-[#64748b] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                    Pass Rate
+                </span>
+<div class="mt-2 flex items-baseline gap-2">
+<span class="font-headline text-[24px] font-bold text-[#1e3a5f]">98.2%</span>
+<span class="text-[#16a34a] flex items-center text-[12px] font-bold">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> 0.5%
+                    </span>
+</div>
+</div>
+<!-- Total Batches -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] p-4 flex flex-col justify-between">
+<span class="text-[13px] text-[#64748b] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">inventory_2</span>
+                    Total Batches
+                </span>
+<div class="mt-2">
+<span class="font-headline text-[24px] font-bold text-[#1e3a5f]">145</span>
+</div>
+</div>
+<!-- Top Defect -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] p-4 flex flex-col justify-between">
+<span class="text-[13px] text-[#64748b] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+                    Top Defect
+                </span>
+<div class="mt-2">
+<span class="font-headline text-[16px] font-semibold text-[#dc2626] leading-tight">Dimensional OOS</span>
+<p class="text-[12px] text-[#64748b] mt-1">12 occurrences</p>
+</div>
+</div>
+<!-- Worst Supplier -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] p-4 flex flex-col justify-between">
+<span class="text-[13px] text-[#64748b] font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">local_shipping</span>
+                    Worst Supplier
+                </span>
+<div class="mt-2">
+<span class="font-headline text-[16px] font-semibold text-[#1e3a5f] leading-tight">Globex Pkg.</span>
+<p class="text-[12px] text-[#64748b] mt-1">3 rejected lots</p>
+</div>
+</div>
+</section>
+<!-- Recent Batches Table / List -->
+<section class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] overflow-hidden">
+<div class="p-4 border-b border-[#e2e8f0] flex justify-between items-center">
+<h2 class="font-headline text-[16px] font-semibold text-[#0f172a]">Recent Inspections</h2>
+<button class="text-[#0ea5e9] text-[13px] font-semibold">View All</button>
+</div>
+<div class="flex flex-col">
+<!-- Row 1 -->
+<div class="p-4 border-b border-[#e2e8f0] flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline text-[16px] font-bold text-[#1e3a5f]">B2026-118</span>
+<span class="bg-slate-100 text-[#374151] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">IQC</span>
+</div>
+<span class="text-[14px] text-[#374151]">HDPE Bags, 50kg</span>
+<span class="text-[12px] text-[#64748b]">30/10/2023 • 14:30</span>
+</div>
+<div>
+<span class="bg-[#16a34a] text-white text-[12px] font-semibold px-3 py-1 rounded-full uppercase">Pass</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="p-4 border-b border-[#e2e8f0] flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline text-[16px] font-bold text-[#1e3a5f]">B2026-117</span>
+<span class="bg-slate-100 text-[#374151] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">IPQC</span>
+</div>
+<span class="text-[14px] text-[#374151]">Corrugated Boxes</span>
+<span class="text-[12px] text-[#64748b]">30/10/2023 • 11:15</span>
+</div>
+<div>
+<span class="bg-[#dc2626] text-white text-[12px] font-semibold px-3 py-1 rounded-full uppercase">Fail</span>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline text-[16px] font-bold text-[#1e3a5f]">B2026-116</span>
+<span class="bg-slate-100 text-[#374151] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">OQC</span>
+</div>
+<span class="text-[14px] text-[#374151]">Shrink Film Rolls</span>
+<span class="text-[12px] text-[#64748b]">29/10/2023 • 09:45</span>
+</div>
+<div>
+<span class="bg-[#ca8a04] text-white text-[12px] font-semibold px-3 py-1 rounded-full uppercase">Pending</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom spacing for nav bar -->
+<div class="h-4"></div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-[64px] bg-white dark:bg-white border-t border-[#e2e8f0] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] md:hidden">
+<div class="flex justify-around items-center w-full px-2 h-full">
+<a class="flex flex-col items-center justify-center text-[#94a3b8] gap-1 hover:bg-slate-50 active:opacity-80 transition-opacity w-full h-full" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label text-[12px] font-semibold">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#94a3b8] gap-1 hover:bg-slate-50 active:opacity-80 transition-opacity w-full h-full" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">fact_check</span>
+<span class="font-label text-[12px] font-semibold">Checklist</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#0ea5e9] gap-1 hover:bg-slate-50 active:opacity-80 transition-opacity w-full h-full" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+<span class="font-label text-[12px] font-semibold">Trends</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#94a3b8] gap-1 hover:bg-slate-50 active:opacity-80 transition-opacity w-full h-full" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">inventory_2</span>
+<span class="font-label text-[12px] font-semibold">Inventory</span>
+</a>
+</div>
+</nav>
+</body></html>

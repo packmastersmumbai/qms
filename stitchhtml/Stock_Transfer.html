@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stock Transfer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {},
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    spacing: {},
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    fontSize: {}
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#f8fafc] text-[#0f172a] min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 h-[56px] bg-[#1e3a5f] shadow-sm flex items-center px-4 w-full">
+<button class="text-white hover:bg-white/10 active:scale-95 transition-transform p-2 rounded-full -ml-2 mr-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold text-white flex-1 text-center pr-8">Stock Transfer</h1>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 pt-[56px] pb-[80px] px-4 py-3">
+<div class="max-w-md mx-auto space-y-5">
+<!-- Transfer Form Card -->
+<div class="bg-white rounded-[12px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0]">
+<div class="space-y-4">
+<!-- Material Selection -->
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-medium text-[#374151]" for="material">Material</label>
+<div class="relative">
+<select class="w-full h-[52px] px-4 border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-[rgba(14,165,233,0.15)] focus:outline-none appearance-none bg-white font-body cursor-pointer transition-colors" id="material">
+<option>HDPE-001 — HDPE Granules</option>
+<option>LDPE-002 — LDPE Rolls</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none">expand_more</span>
+</div>
+<!-- Stock Status Info Box -->
+<div class="mt-2 bg-[#f0f9ff] border border-[#bae6fd] rounded-lg p-3 flex items-start gap-2">
+<span class="material-symbols-outlined text-[#0ea5e9] text-[20px] mt-0.5">info</span>
+<p class="text-[13px] text-[#0369a1] font-medium leading-tight">
+                                Current Stock at RM-STORE-A: <span class="font-bold text-[14px]">118 kg</span>
+</p>
+</div>
+</div>
+<hr class="border-[#e2e8f0] my-4"/>
+<!-- Location Routing -->
+<div class="grid grid-cols-1 gap-4">
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-medium text-[#374151]" for="from-location">From Location</label>
+<div class="relative">
+<select class="w-full h-[52px] px-4 border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-[rgba(14,165,233,0.15)] focus:outline-none appearance-none bg-white font-body cursor-pointer transition-colors" id="from-location">
+<option>RM-STORE-A</option>
+<option>WIP-AREA-1</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-medium text-[#374151]" for="to-location">To Location</label>
+<div class="relative">
+<select class="w-full h-[52px] px-4 border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-[rgba(14,165,233,0.15)] focus:outline-none appearance-none bg-white font-body cursor-pointer transition-colors" id="to-location">
+<option class="text-[#94a3b8]" disabled="" selected="" value="">Select destination</option>
+<option value="prod1">PROD-LINE-1</option>
+<option value="prod2">PROD-LINE-2</option>
+<option value="quar">QUARANTINE</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<hr class="border-[#e2e8f0] my-4"/>
+<!-- Transfer Details -->
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-medium text-[#374151]" for="quantity">Quantity</label>
+<div class="relative">
+<input class="w-full h-[52px] pl-4 pr-12 border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-[rgba(14,165,233,0.15)] focus:outline-none font-body transition-colors placeholder:text-[#94a3b8]" id="quantity" type="number" value="50"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-[#64748b] text-[14px] font-medium">kg</span>
+</div>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-medium text-[#374151]" for="reason">Reason</label>
+<div class="relative">
+<select class="w-full h-[52px] px-4 border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-[rgba(14,165,233,0.15)] focus:outline-none appearance-none bg-white font-body cursor-pointer transition-colors" id="reason">
+<option>Relocation</option>
+<option>Sampling</option>
+<option>Production Issue</option>
+<option>Other</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-medium text-[#374151]" for="remarks">Remarks <span class="text-[#94a3b8] font-normal">(Optional)</span></label>
+<textarea class="w-full p-4 border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-[rgba(14,165,233,0.15)] focus:outline-none font-body transition-colors resize-none placeholder:text-[#94a3b8]" id="remarks" placeholder="Add any specific notes about this transfer..." rows="3"></textarea>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Action Area -->
+<div class="fixed bottom-0 left-0 w-full bg-white p-4 border-t border-[#e2e8f0] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 pb-[max(1rem,env(safe-area-inset-bottom))]">
+<div class="max-w-md mx-auto">
+<button class="w-full h-[56px] bg-[#1e3a5f] text-white rounded-[10px] font-headline text-[16px] font-semibold flex items-center justify-center gap-2 hover:bg-[#162e4f] active:scale-[0.98] transition-all shadow-md">
+<span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+                Confirm Transfer
+            </button>
+</div>
+</div>
+</body></html>

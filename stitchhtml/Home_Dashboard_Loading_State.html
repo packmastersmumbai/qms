@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Pack Masters QMS - Loading</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a5f',
+                        accent: '#0ea5e9',
+                        surface: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0'
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "0.75rem", // Map 12px card border radius
+                        xl: "1.5rem",
+                        full: "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Implied shimmer effect via animation - requested not to use JS/CSS animation, 
+           but 'Implied shimmer effect' is in prompt. I will use a static gradient to imply it 
+           as per 'DO NOT add any animations in CSS or Javascript' constraint. */
+        .shimmer-bg {
+            background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+            background-size: 200% 100%;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#f8fafc] font-body text-[#0f172a] antialiased w-full mx-auto md:max-w-md min-h-screen relative pb-[80px] pt-[56px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 right-0 w-full md:max-w-md mx-auto h-[56px] bg-[#1e3a5f] shadow-sm z-50 flex flex-col items-center justify-center px-4">
+<div class="flex items-center justify-between w-full h-full absolute top-0 px-4">
+<span class="material-symbols-outlined text-white/50 text-[24px]" data-icon="menu">menu</span>
+<span class="material-symbols-outlined text-white/50 text-[24px]" data-icon="notifications">notifications</span>
+</div>
+<div class="flex flex-col items-center justify-center z-10">
+<h1 class="font-headline text-[20px] font-bold text-white tracking-tight">Pack Masters QMS</h1>
+<span class="text-[10px] text-white/70 font-medium -mt-1 uppercase tracking-wider">Loading...</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full px-4 pt-3 pb-6">
+<!-- KPI Tiles Skeleton (3 horizontal) -->
+<section class="flex space-x-3 mb-5 overflow-x-hidden pt-2">
+<!-- Tile 1 -->
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex-1 min-w-[140px] flex flex-col items-start h-[100px]">
+<div class="h-4 w-1/2 shimmer-bg rounded mb-3"></div>
+<div class="h-8 w-3/4 shimmer-bg rounded mb-2"></div>
+<div class="h-3 w-2/3 shimmer-bg rounded"></div>
+</div>
+<!-- Tile 2 -->
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex-1 min-w-[140px] flex flex-col items-start h-[100px]">
+<div class="h-4 w-2/3 shimmer-bg rounded mb-3"></div>
+<div class="h-8 w-1/2 shimmer-bg rounded mb-2"></div>
+<div class="h-3 w-3/4 shimmer-bg rounded"></div>
+</div>
+<!-- Tile 3 (partial visibility implication) -->
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex-1 min-w-[140px] flex flex-col items-start h-[100px]">
+<div class="h-4 w-1/2 shimmer-bg rounded mb-3"></div>
+<div class="h-8 w-2/3 shimmer-bg rounded mb-2"></div>
+<div class="h-3 w-1/2 shimmer-bg rounded"></div>
+</div>
+</section>
+<!-- Quick Action Buttons Skeleton (2 cols x 3 rows) -->
+<section class="mb-5">
+<div class="h-5 w-32 shimmer-bg rounded mb-4"></div> <!-- Section Title Placeholder -->
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex flex-col items-center justify-center h-[110px]">
+<div class="w-10 h-10 rounded-full shimmer-bg mb-3"></div>
+<div class="h-4 w-20 shimmer-bg rounded"></div>
+</div>
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex flex-col items-center justify-center h-[110px]">
+<div class="w-10 h-10 rounded-full shimmer-bg mb-3"></div>
+<div class="h-4 w-16 shimmer-bg rounded"></div>
+</div>
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex flex-col items-center justify-center h-[110px]">
+<div class="w-10 h-10 rounded-full shimmer-bg mb-3"></div>
+<div class="h-4 w-24 shimmer-bg rounded"></div>
+</div>
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex flex-col items-center justify-center h-[110px]">
+<div class="w-10 h-10 rounded-full shimmer-bg mb-3"></div>
+<div class="h-4 w-14 shimmer-bg rounded"></div>
+</div>
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex flex-col items-center justify-center h-[110px]">
+<div class="w-10 h-10 rounded-full shimmer-bg mb-3"></div>
+<div class="h-4 w-20 shimmer-bg rounded"></div>
+</div>
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 flex flex-col items-center justify-center h-[110px]">
+<div class="w-10 h-10 rounded-full shimmer-bg mb-3"></div>
+<div class="h-4 w-16 shimmer-bg rounded"></div>
+</div>
+</div>
+</section>
+<!-- Recent Activity List Skeleton (3 rows) -->
+<section>
+<div class="h-5 w-40 shimmer-bg rounded mb-4"></div> <!-- Section Title Placeholder -->
+<div class="bg-card rounded-lg border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] overflow-hidden">
+<!-- Row 1 -->
+<div class="p-4 border-b border-[#e2e8f0] flex items-center gap-3">
+<div class="w-10 h-10 rounded-full shimmer-bg flex-shrink-0"></div>
+<div class="flex-1 space-y-2">
+<div class="h-4 w-3/4 shimmer-bg rounded"></div>
+<div class="h-3 w-1/2 shimmer-bg rounded"></div>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="p-4 border-b border-[#e2e8f0] flex items-center gap-3">
+<div class="w-10 h-10 rounded-full shimmer-bg flex-shrink-0"></div>
+<div class="flex-1 space-y-2">
+<div class="h-4 w-2/3 shimmer-bg rounded"></div>
+<div class="h-3 w-1/3 shimmer-bg rounded"></div>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="p-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full shimmer-bg flex-shrink-0"></div>
+<div class="flex-1 space-y-2">
+<div class="h-4 w-5/6 shimmer-bg rounded"></div>
+<div class="h-3 w-2/5 shimmer-bg rounded"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 right-0 w-full md:max-w-md mx-auto h-[64px] bg-white border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.08)] z-50 flex justify-around items-center px-2 pb-safe">
+<!-- Tab: Home (Loading state - neutral) -->
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] opacity-70">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="home">home</span>
+<span class="font-label text-[10px] font-semibold">Home</span>
+</button>
+<!-- Tab: Records -->
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] opacity-70">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="assignment">assignment</span>
+<span class="font-label text-[10px] font-semibold">Records</span>
+</button>
+<!-- Tab: KPIs -->
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] opacity-70">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="leaderboard">leaderboard</span>
+<span class="font-label text-[10px] font-semibold">KPIs</span>
+</button>
+<!-- Tab: Masters -->
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] opacity-70">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="settings_applications">settings_applications</span>
+<span class="font-label text-[10px] font-semibold">Masters</span>
+</button>
+<!-- Tab: More -->
+<button class="flex flex-col items-center justify-center w-16 h-full text-[#94a3b8] opacity-70">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="more_horiz">more_horiz</span>
+<span class="font-label text-[10px] font-semibold">More</span>
+</button>
+</nav>
+</body></html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pack Masters QMS</title>
+  <script src="/stitchhtml/tw.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e3a5f',
+            accent:  '#0ea5e9',
+            surface: '#f8fafc',
+            card:    '#ffffff',
+            border:  '#e2e8f0',
+            status: {
+              pass:     '#16a34a',
+              fail:     '#dc2626',
+              hold:     '#ca8a04',
+              open:     '#d97706',
+              progress: '#2563eb',
+              closed:   '#6b7280'
+            }
+          },
+          borderRadius: {
+            DEFAULT: '0.5rem',
+            lg:   '1rem',
+            xl:   '1.5rem',
+            full: '9999px',
+            card:  '12px',
+            input: '8px',
+            btn:   '10px',
+            badge: '20px'
+          },
+          fontFamily: {
+            headline: ['Plus Jakarta Sans', 'sans-serif'],
+            display:  ['Plus Jakarta Sans', 'sans-serif'],
+            body:     ['Inter', 'sans-serif'],
+            label:    ['Inter', 'sans-serif']
+          },
+          boxShadow: {
+            card: '0 2px 8px rgba(0,0,0,0.08)',
+            nav:  '0 -2px 8px rgba(0,0,0,0.05)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; min-height: 100dvh; }
+    h1, h2, h3, .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes shimmer {
+      0%   { background-position: -600px 0; }
+      100% { background-position:  600px 0; }
+    }
+    .shimmer {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 600px 100%;
+      animation: shimmer 1.4s infinite linear;
+    }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .fade-in { animation: fade-in 0.2s ease forwards; }
+
+    /* Operator picker bottom sheet */
+    #opModal { position:fixed; inset:0; background:rgba(30,58,95,0.75); z-index:99999; display:flex; align-items:flex-end; justify-content:center; }
+    #opModal.hidden { display:none; }
+    .op-sheet { background:#fff; border-radius:16px 16px 0 0; width:100%; max-width:600px; padding:20px 16px 32px; }
+    .op-names-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:260px; overflow-y:auto; margin-bottom:14px; }
+    .op-name-btn { min-height:48px; border:1.5px solid #e2e8f0; border-radius:8px; background:#fff; font-size:13px; font-weight:600; color:#0f172a; font-family:inherit; cursor:pointer; text-align:left; padding:10px 12px; transition:background 0.12s,border-color 0.12s; }
+    .op-name-btn.op-selected, .op-name-btn:active { background:#eff6ff; border-color:#1e3a5f; color:#1e3a5f; }
+    .op-confirm-btn { width:100%; min-height:48px; background:#1e3a5f; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
+    .op-confirm-btn:disabled { background:#94a3b8; cursor:not-allowed; }
+
+    /* GAS banner suppressor */
+    #__gas_cover__ { position:fixed; bottom:0; left:0; right:0; height:30px; background:#f8fafc; z-index:2147483647; pointer-events:none; }
+  </style>
+</head>
+<body class="bg-surface pb-[80px]">
+
+<!-- ── Top App Bar ── -->
+<header class="fixed top-0 w-full h-[56px] bg-primary shadow-sm flex justify-between items-center px-4 z-50" style="max-width:600px;left:50%;transform:translateX(-50%);">
+  <button onclick="showSideMenu()" class="w-10 h-10 flex items-center justify-center text-white/70 hover:bg-white/10 rounded-full">
+    <span class="material-symbols-outlined text-[24px]">menu</span>
+  </button>
+  <h1 class="font-headline text-[20px] font-bold text-white tracking-tight">Pack Masters QMS</h1>
+  <button onclick="navigateTo('Settings')" class="w-10 h-10 flex items-center justify-center text-white/70 hover:bg-white/10 rounded-full">
+    <span class="material-symbols-outlined text-[24px]">settings</span>
+  </button>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="pt-[68px] px-4 pb-6 max-w-lg mx-auto">
+
+  <!-- Date line -->
+  <div class="mb-4">
+    <span id="dateLine" class="font-body text-[14px] text-[#64748b] font-medium tracking-wide"></span>
+  </div>
+
+  <!-- Alert strips (pending actions) -->
+  <div id="alertStrips" class="space-y-3 mb-6 hidden"></div>
+
+  <!-- Stat cards (horizontal scroll) -->
+  <div id="statCards" class="flex overflow-x-auto gap-3 pb-4 mb-6 no-scrollbar snap-x">
+    <!-- skeleton -->
+    <div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card border border-border p-3 shimmer h-[72px]"></div>
+    <div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card border border-border p-3 shimmer h-[72px]"></div>
+    <div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card border border-border p-3 shimmer h-[72px]"></div>
+    <div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card border border-border p-3 shimmer h-[72px]"></div>
+  </div>
+
+  <!-- Quick Actions -->
+  <h2 class="font-headline text-[16px] font-semibold text-[#0f172a] mb-3">Quick Actions</h2>
+  <div id="quickActions" class="grid grid-cols-2 gap-3 mb-8">
+    <!-- skeleton -->
+    <div class="bg-card border border-border rounded-card h-[60px] shimmer"></div>
+    <div class="bg-card border border-border rounded-card h-[60px] shimmer"></div>
+    <div class="bg-card border border-border rounded-card h-[60px] shimmer"></div>
+    <div class="bg-card border border-border rounded-card h-[60px] shimmer"></div>
+    <div class="bg-card border border-border rounded-card h-[60px] shimmer"></div>
+    <div class="bg-card border border-border rounded-card h-[60px] shimmer"></div>
+  </div>
+
+  <!-- All Modules -->
+  <h2 class="font-headline text-[16px] font-semibold text-[#0f172a] mb-3">Modules</h2>
+  <div id="moduleGroups" class="space-y-5 mb-8">
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-card border border-border rounded-card h-[72px] shimmer"></div>
+      <div class="bg-card border border-border rounded-card h-[72px] shimmer"></div>
+      <div class="bg-card border border-border rounded-card h-[72px] shimmer"></div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="font-headline text-[16px] font-semibold text-[#0f172a]">Recent Activity</h2>
+    <button onclick="navigateTo('Records')" class="text-accent text-[13px] font-medium hover:underline">View All</button>
+  </div>
+  <div id="recentActivity" class="space-y-3">
+    <div class="bg-card rounded-card border border-border shadow-card h-[80px] shimmer"></div>
+    <div class="bg-card rounded-card border border-border shadow-card h-[80px] shimmer"></div>
+    <div class="bg-card rounded-card border border-border shadow-card h-[80px] shimmer"></div>
+  </div>
+
+</main>
+
+<!-- ── Bottom Nav Bar ── -->
+<nav id="bottomNav" class="fixed bottom-0 left-0 w-full h-[64px] bg-white border-t border-[#e2e8f0] shadow-nav z-50 flex justify-around items-center" style="max-width:600px;left:50%;transform:translateX(-50%);">
+  <button onclick="navigateTo('Home')" data-tab="Home"   class="nav-tab flex flex-col items-center justify-center text-accent w-16 h-full hover:bg-slate-50">
+    <span class="material-symbols-outlined text-[24px] mb-1" style="font-variation-settings:'FILL' 1">home</span>
+    <span class="font-label text-[11px] font-semibold">Home</span>
+  </button>
+  <button onclick="navigateTo('Records')" data-tab="Records" class="nav-tab flex flex-col items-center justify-center text-[#94a3b8] w-16 h-full hover:bg-slate-50">
+    <span class="material-symbols-outlined text-[24px] mb-1">description</span>
+    <span class="font-label text-[11px] font-medium">Records</span>
+  </button>
+  <button onclick="navigateTo('KPI')" data-tab="KPI" class="nav-tab flex flex-col items-center justify-center text-[#94a3b8] w-16 h-full hover:bg-slate-50">
+    <span class="material-symbols-outlined text-[24px] mb-1">leaderboard</span>
+    <span class="font-label text-[11px] font-medium">KPIs</span>
+  </button>
+  <button onclick="navigateTo('Masters')" data-tab="Masters" class="nav-tab flex flex-col items-center justify-center text-[#94a3b8] w-16 h-full hover:bg-slate-50">
+    <span class="material-symbols-outlined text-[24px] mb-1">settings_suggest</span>
+    <span class="font-label text-[11px] font-medium">Masters</span>
+  </button>
+  <button onclick="showMoreMenu()" data-tab="More" class="nav-tab flex flex-col items-center justify-center text-[#94a3b8] w-16 h-full hover:bg-slate-50">
+    <span class="material-symbols-outlined text-[24px] mb-1">more_horiz</span>
+    <span class="font-label text-[11px] font-medium">More</span>
+  </button>
+</nav>
+
+<!-- ── Toast ── -->
+<div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-primary text-white px-5 py-3 rounded-btn text-[13px] font-semibold z-[9999] opacity-0 pointer-events-none transition-opacity duration-300 whitespace-nowrap max-w-[90vw] text-center"></div>
+
+<!-- ── GAS banner cover ── -->
+<div id="__gas_cover__"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── helpers ── */
+  var STATUS_COLOR = {
+    ACCEPTED: 'bg-status-pass', RELEASED: 'bg-status-pass', CLOSED: 'bg-[#6b7280]',
+    REJECTED: 'bg-status-fail',
+    HOLD: 'bg-status-hold', PENDING_IQC: 'bg-status-hold', PENDING_OQC: 'bg-status-hold',
+    OPEN: 'bg-status-open', IN_PROGRESS: 'bg-status-progress',
+    PENDING: 'bg-[#94a3b8]'
+  };
+  var LEFT_BAR_COLOR = {
+    ACCEPTED: 'bg-status-pass', RELEASED: 'bg-status-pass', CLOSED: 'bg-[#6b7280]',
+    REJECTED: 'bg-status-fail',
+    HOLD: 'bg-status-hold', PENDING_IQC: 'bg-status-hold',
+    OPEN: 'bg-status-open', IN_PROGRESS: 'bg-status-progress',
+    PENDING: 'bg-[#94a3b8]'
+  };
+
+  function badgeCls(status) {
+    return STATUS_COLOR[status] || 'bg-[#94a3b8]';
+  }
+  function barCls(status) {
+    return LEFT_BAR_COLOR[status] || 'bg-[#94a3b8]';
+  }
+
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+  function formatDate(d) {
+    return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
+  }
+
+  function getShift(h) {
+    if (h >= 6 && h < 14) return 'A';
+    if (h >= 14 && h < 22) return 'B';
+    return 'C';
+  }
+
+  /* ── date line ── */
+  (function () {
+    var now = new Date();
+    var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var el = document.getElementById('dateLine');
+    if (el) el.textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()] + ' · Shift ' + getShift(now.getHours());
+  }());
+
+  /* ── toast ── */
+  var _toastTimer = null;
+  var toastEl = document.getElementById('toast');
+  function showToast(msg, isError) {
+    toastEl.textContent = msg;
+    toastEl.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 text-white px-5 py-3 rounded-btn text-[13px] font-semibold z-[9999] opacity-100 pointer-events-auto transition-opacity duration-300 whitespace-nowrap max-w-[90vw] text-center ' + (isError ? 'bg-status-fail' : 'bg-primary');
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(function () {
+      toastEl.style.opacity = '0';
+      toastEl.style.pointerEvents = 'none';
+    }, 3000);
+  }
+
+  /* ── navigation ── */
+  function navigateTo(formName) {
+    google.script.run
+      .withSuccessHandler(function (html) { document.open(); document.write(html); document.close(); })
+      .withFailureHandler(function () { showToast('Could not open ' + formName + '. Tap to retry.', true); })
+      .getFormHtml(formName);
+  }
+  window.navigateTo = navigateTo;
+
+  function showMoreMenu() {
+    // More menu: Warehouse, CustomerReturn, Dispatch, ImportCSV
+    var items = [
+      { label: '🏭 Warehouse', form: 'Warehouse' },
+      { label: '↩️ Customer Return', form: 'CustomerReturn' },
+      { label: '🚚 Dispatch', form: 'Dispatch' },
+      { label: '📥 Import CSV', form: 'ImportCSV' }
+    ];
+    var html = items.map(function (i) {
+      return '<button class="w-full text-left px-4 py-3 text-[14px] font-medium hover:bg-slate-50 border-b border-[#e2e8f0] last:border-0" onclick="navigateTo(\'' + i.form + '\');this.closest(\'#moreSheet\').remove()">' + i.label + '</button>';
+    }).join('');
+    var sheet = document.createElement('div');
+    sheet.id = 'moreSheet';
+    sheet.className = 'fixed inset-0 z-[9998] flex items-end justify-center bg-primary/50';
+    sheet.innerHTML = '<div class="bg-white rounded-t-2xl w-full max-w-lg pb-safe"><div class="p-4 border-b border-[#e2e8f0] font-headline font-bold text-[16px] text-primary">More Modules</div>' + html + '</div>';
+    sheet.addEventListener('click', function (e) { if (e.target === sheet) sheet.remove(); });
+    document.body.appendChild(sheet);
+  }
+  window.showMoreMenu = showMoreMenu;
+
+  function showSideMenu() {
+    showToast('Menu coming soon');
+  }
+  window.showSideMenu = showSideMenu;
+
+  /* ── operator identity ── */
+  function getOperatorName() {
+    try { return sessionStorage.getItem('pmOperatorName') || ''; } catch (e) { return ''; }
+  }
+  function setOperatorName(name) {
+    try { sessionStorage.setItem('pmOperatorName', name); } catch (e) {}
+  }
+  function showOperatorPicker(list, onConfirm) {
+    var existing = document.getElementById('opModal');
+    if (existing) existing.remove();
+    var modal = document.createElement('div');
+    modal.id = 'opModal';
+    var btns = (list || []).map(function (n) {
+      var name = typeof n === 'string' ? n : (n.name || String(n));
+      return '<button class="op-name-btn" data-name="' + name.replace(/"/g, '&quot;') + '">' + name + '</button>';
+    }).join('');
+    modal.innerHTML = '<div class="op-sheet"><div style="font-size:16px;font-weight:700;color:#1e3a5f;margin-bottom:4px">Who are you?</div><div style="font-size:12px;color:#64748b;margin-bottom:16px">Select your name — required for the shift record</div><div class="op-names-grid" id="opNamesGrid">' + btns + '</div><button class="op-confirm-btn" id="opConfirmBtn" disabled>Confirm →</button></div>';
+    document.body.appendChild(modal);
+    var selected = '';
+    modal.querySelector('#opNamesGrid').addEventListener('click', function (e) {
+      var btn = e.target.closest('.op-name-btn');
+      if (!btn) return;
+      modal.querySelectorAll('.op-name-btn').forEach(function (b) { b.classList.remove('op-selected'); });
+      btn.classList.add('op-selected');
+      selected = btn.dataset.name;
+      modal.querySelector('#opConfirmBtn').disabled = false;
+    });
+    modal.querySelector('#opConfirmBtn').addEventListener('click', function () {
+      if (!selected) return;
+      setOperatorName(selected);
+      modal.remove();
+      if (typeof onConfirm === 'function') onConfirm(selected);
+    });
+  }
+  function requireOperator(list, cb) {
+    var name = getOperatorName();
+    if (name) { cb(name); return; }
+    showOperatorPicker(list, cb);
+  }
+  window.QMS = window.QMS || {};
+  window.QMS.getOperatorName = getOperatorName;
+  window.QMS.setOperatorName = setOperatorName;
+  window.QMS.requireOperator = requireOperator;
+  window.QMS.showOperatorPicker = showOperatorPicker;
+
+  /* ── render ── */
+
+  function renderAlerts(pendingActions) {
+    var el = document.getElementById('alertStrips');
+    if (!pendingActions || !pendingActions.length) { el.classList.add('hidden'); return; }
+    el.innerHTML = pendingActions.map(function (a) {
+      return '<div class="bg-[#fef3c7] border-l-4 border-l-[#d97706] rounded-r-lg p-3 shadow-sm flex items-start gap-3 fade-in">' +
+        '<span class="material-symbols-outlined text-[#d97706] text-[20px] mt-0.5" style="font-variation-settings:\'FILL\' 1">warning</span>' +
+        '<p class="font-body text-[14px] text-[#374151] font-medium leading-snug">' + a.detail + '</p></div>';
+    }).join('');
+    el.classList.remove('hidden');
+  }
+
+  function renderStatCards(counts) {
+    var defs = [
+      { key: 'GRN',  label: 'GRN Today',  failKey: false },
+      { key: 'IQC',  label: 'IQC Today',  failKey: false },
+      { key: 'OQC',  label: 'OQC Today',  failKey: false },
+      { key: 'NCR',  label: 'Open NCRs',  failKey: true  }
+    ];
+    var html = defs.map(function (d) {
+      var val = counts[d.key] != null ? String(counts[d.key]) : '0';
+      var valCls = d.failKey && parseInt(val) > 0 ? 'text-status-fail' : 'text-primary';
+      return '<div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card p-3 border border-border flex flex-col justify-between fade-in">' +
+        '<span class="font-label text-[13px] text-[#64748b] font-medium mb-1 line-clamp-1">' + d.label + '</span>' +
+        '<span class="font-headline text-[32px] font-bold ' + valCls + ' leading-none">' + val + '</span></div>';
+    }).join('');
+    var el = document.getElementById('statCards');
+    el.innerHTML = html;
+  }
+
+  var QUICK_ACTIONS = [
+    { label: 'New GRN',       icon: '📦', form: 'GRN' },
+    { label: 'New IQC',       icon: '🔬', form: 'IQC' },
+    { label: 'New OQC',       icon: '✅', form: 'OQC' },
+    { label: 'Dispatch',      icon: '🚚', form: 'Gatepass' },
+    { label: 'NCR',           icon: '⚠️', form: 'NCR' },
+    { label: 'Purchase Order',icon: '📋', form: 'PO' }
+  ];
+
+  function renderQuickActions() {
+    var html = QUICK_ACTIONS.map(function (a) {
+      return '<button onclick="navigateTo(\'' + a.form + '\')" class="bg-card border border-border rounded-card h-[60px] flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform fade-in">' +
+        '<span class="text-[20px]">' + a.icon + '</span>' +
+        '<span class="font-body text-[14px] font-semibold text-[#374151]">' + a.label + '</span></button>';
+    }).join('');
+    document.getElementById('quickActions').innerHTML = html;
+  }
+
+  var MODULE_GROUPS = [
+    { label: 'Inbound',    modules: [{ name: 'PO', form: 'PO', icon: '📋' }, { name: 'GRN', form: 'GRN', icon: '📦' }, { name: 'IQC', form: 'IQC', icon: '🔬' }] },
+    { label: 'In-Process', modules: [{ name: 'IPQC', form: 'IPQC', icon: '⚙️' }, { name: 'Production', form: 'Production', icon: '🏭' }] },
+    { label: 'Outbound',   modules: [{ name: 'OQC', form: 'OQC', icon: '✅' }, { name: 'Gatepass', form: 'Gatepass', icon: '🎫' }, { name: 'Dispatch', form: 'Dispatch', icon: '🚚' }] },
+    { label: 'Quality',    modules: [{ name: 'NCR', form: 'NCR', icon: '⚠️' }, { name: 'KPI', form: 'KPI', icon: '📊' }, { name: 'Control Plan', form: 'ControlPlan', icon: '📐' }] },
+    { label: 'Admin',      modules: [{ name: 'Warehouse', form: 'Warehouse', icon: '🏗️' }, { name: 'Masters', form: 'Masters', icon: '👤' }, { name: 'Returns', form: 'CustomerReturn', icon: '↩️' }] }
+  ];
+
+  function renderModuleGroups(counts) {
+    var c = counts || {};
+    var html = MODULE_GROUPS.map(function (g) {
+      var tiles = g.modules.map(function (m) {
+        var cnt = c[m.name];
+        var chip;
+        if (cnt == null || m.name === 'KPI' || m.name === 'Warehouse' || m.name === 'Masters' || m.name === 'Control Plan') {
+          chip = '<span class="text-[10px] font-semibold text-[#64748b] bg-[#f1f5f9] rounded-badge px-2 py-0.5">→</span>';
+        } else {
+          chip = '<span class="text-[10px] font-semibold ' + (cnt > 0 ? 'text-primary bg-[#eff6ff]' : 'text-[#94a3b8] bg-[#f1f5f9]') + ' rounded-badge px-2 py-0.5">' + cnt + '</span>';
+        }
+        return '<button onclick="navigateTo(\'' + m.form + '\')" class="bg-card border border-border rounded-card p-2 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition-transform fade-in min-h-[72px]">' +
+          '<span class="text-[22px]">' + m.icon + '</span>' +
+          '<span class="font-label text-[11px] font-bold text-primary uppercase tracking-tight">' + m.name + '</span>' +
+          chip + '</button>';
+      }).join('');
+      return '<div class="fade-in"><div class="text-[11px] font-bold text-[#94a3b8] uppercase tracking-wider mb-2">' + g.label + '</div><div class="grid grid-cols-3 gap-3">' + tiles + '</div></div>';
+    }).join('');
+    document.getElementById('moduleGroups').innerHTML = html;
+  }
+
+  function renderRecentActivity(records) {
+    if (!records || !records.length) {
+      document.getElementById('recentActivity').innerHTML = '<div class="text-center py-8 text-[#94a3b8] text-[13px]">No recent activity</div>';
+      return;
+    }
+    var html = records.slice(0, 8).map(function (r) {
+      var bar = barCls(r.status);
+      var badge = badgeCls(r.status);
+      return '<div class="bg-card rounded-card p-4 shadow-card border border-border flex flex-col gap-2 relative overflow-hidden fade-in">' +
+        '<div class="absolute left-0 top-0 bottom-0 w-1 ' + bar + '"></div>' +
+        '<div class="flex justify-between items-start pl-2">' +
+          '<div><span class="font-headline text-[17px] font-bold text-primary block leading-tight">' + (r.docNo || '') + '</span>' +
+          '<span class="font-body text-[12px] text-[#64748b]">' + (r.date || '') + '</span></div>' +
+          '<span class="bg-surface border border-border rounded-badge px-2 py-0.5 text-[11px] font-semibold text-[#374151]">' + (r.type || '') + '</span>' +
+        '</div>' +
+        '<div class="pl-2"><span class="' + badge + ' rounded-badge px-3 py-1 text-[11px] font-semibold text-white inline-block">' + (r.status || '') + '</span></div></div>';
+    }).join('');
+    document.getElementById('recentActivity').innerHTML = html;
+  }
+
+  /* ── error state ── */
+  function renderError(retryFn) {
+    document.getElementById('alertStrips').innerHTML = '';
+    document.getElementById('alertStrips').classList.add('hidden');
+    document.getElementById('statCards').innerHTML =
+      '<div class="w-full col-span-4 bg-[#fef2f2] border border-[#fca5a5] rounded-card p-4 flex items-center gap-3 text-status-fail">' +
+      '<span class="material-symbols-outlined text-[24px]" style="font-variation-settings:\'FILL\' 1">cloud_off</span>' +
+      '<div><div class="font-semibold text-[14px]">Could not load data</div>' +
+      '<button onclick="loadState()" class="text-[13px] underline mt-1">Tap to retry</button></div></div>';
+    document.getElementById('quickActions').innerHTML = '';
+    document.getElementById('moduleGroups').innerHTML = '';
+    document.getElementById('recentActivity').innerHTML = '';
+  }
+
+  /* ── main load ── */
+  function renderLanding(result) {
+    if (!result) { renderError(); return; }
+    renderAlerts(result.pendingActions || []);
+    renderStatCards(result.todayCounts || {});
+    renderQuickActions();
+    renderModuleGroups(result.todayCounts || {});
+    renderRecentActivity(result.recentActivity || []);
+  }
+
+  function loadState() {
+    google.script.run
+      .withSuccessHandler(renderLanding)
+      .withFailureHandler(function () { renderError(); showToast('Could not load data. Tap to retry.', true); })
+      .getQmsLandingState();
+  }
+
+  /* ── GAS banner suppressor ── */
+  (function () {
+    function kill(node) {
+      if (!node || node.nodeType !== 1 || node.id === '__gas_cover__') return;
+      var t = node.textContent || node.innerText || '';
+      if (t.indexOf('Google Apps Script') !== -1 || t.indexOf('created using Google') !== -1) {
+        node.style.cssText = 'display:none!important';
+      }
+    }
+    var obs = new MutationObserver(function (muts) { muts.forEach(function (m) { m.addedNodes.forEach(kill); }); });
+    function start() { obs.observe(document.body, { childList: true }); }
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+  }());
+
+  loadState();
+}());
+</script>
+
+</body>
+</html>

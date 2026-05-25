@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<script>
+// Inject mock google.script.run BEFORE Landing.html scripts run
+window.google = {
+  script: {
+    run: {
+      withSuccessHandler: function(fn) {
+        return {
+          withFailureHandler: function() {
+            return {
+              getQmsLandingState: function() {
+                setTimeout(function() {
+                  fn({
+                    pendingActions: [
+                      { module: 'IQC', detail: '3 GRNs awaiting IQC inspection' },
+                      { module: 'OQC', detail: '1 IPQC session ready for OQC' }
+                    ],
+                    todayCounts: { GRN: 8, IQC: 5, OQC: 3, NCR: 2, PO: 4, Dispatch: 1, Production: 2 },
+                    recentActivity: [
+                      { docNo: 'PM/GRN/2026-042', date: '18/05/2026', type: 'GRN',  status: 'ACCEPTED' },
+                      { docNo: 'PM/IQC/2026-038', date: '18/05/2026', type: 'IQC',  status: 'REJECTED' },
+                      { docNo: 'PM/OQC/2026-021', date: '17/05/2026', type: 'OQC',  status: 'RELEASED' },
+                      { docNo: 'PM/NCR/2026-009', date: '17/05/2026', type: 'NCR',  status: 'OPEN'     },
+                      { docNo: 'PM/GRN/2026-041', date: '17/05/2026', type: 'GRN',  status: 'PENDING_IQC' }
+                    ]
+                  });
+                }, 200);
+              },
+              getFormHtml: function() {}
+            };
+          }
+        };
+      }
+    }
+  }
+};
+</script>
+</head>
+<body>
+<script>
+// Dynamically load Landing.html content via fetch and inject
+fetch('/Landing.html').then(function(r){ return r.text(); }).then(function(html) {
+  // strip doctype/html/head/body wrappers, inject the body content
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(html, 'text/html');
+  // Copy head children (styles, scripts - except tailwind re-init)
+  Array.from(doc.head.children).forEach(function(el) {
+    if (el.tagName === 'SCRIPT' && el.id === 'tailwind-config') return; // skip duplicate tailwind config
+    document.head.appendChild(el.cloneNode(true));
+  });
+  // Inject body
+  document.body.innerHTML = doc.body.innerHTML;
+  // Re-run body scripts
+  Array.from(document.body.querySelectorAll('script')).forEach(function(s) {
+    var ns = document.createElement('script');
+    ns.textContent = s.textContent;
+    document.body.appendChild(ns);
+    s.remove();
+  });
+});
+</script>
+</body>
+</html>

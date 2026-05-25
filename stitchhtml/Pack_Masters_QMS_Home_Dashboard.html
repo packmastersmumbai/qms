@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pack Masters QMS - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1e3a5f",
+                        accent: "#0ea5e9",
+                        surface: "#f8fafc",
+                        card: "#ffffff",
+                        border: "#e2e8f0",
+                        status: {
+                            pass: "#16a34a",
+                            fail: "#dc2626",
+                            hold: "#ca8a04",
+                            open: "#d97706",
+                            progress: "#2563eb",
+                            closed: "#6b7280"
+                        }
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "1rem",
+                        xl: "1.5rem",
+                        full: "9999px",
+                        card: "12px",
+                        input: "8px",
+                        btn: "10px",
+                        badge: "20px"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    },
+                    boxShadow: {
+                        card: "0 2px 8px rgba(0,0,0,0.08)",
+                        nav: "0 -2px 8px rgba(0,0,0,0.05)"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        h1, h2, h3, .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        /* Hide scrollbar for horizontal scroll areas */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface pb-[80px]"> <!-- Padding bottom for nav bar -->
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full h-[56px] bg-[#1e3a5f] shadow-sm flex justify-between items-center px-4 z-50 transition-colors duration-200">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-white mr-3 text-[24px]" data-icon="menu">menu</span>
+</div>
+<h1 class="font-headline text-[20px] font-bold text-white tracking-tight">Pack Masters QMS</h1>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-white/70 hover:bg-white/10 p-1 rounded-full text-[24px]" data-icon="settings">settings</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[68px] px-4 pb-6 max-w-lg mx-auto">
+<!-- Date -->
+<div class="mb-4">
+<span class="font-body text-[14px] text-[#64748b] font-medium tracking-wide">18/05/2026</span>
+</div>
+<!-- Alert Strip -->
+<div class="space-y-3 mb-6">
+<div class="bg-[#fef3c7] border-l-4 border-l-[#d97706] rounded-r-lg p-3 shadow-sm flex items-start gap-3">
+<span class="material-symbols-outlined text-[#d97706] text-[20px] mt-0.5" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+<p class="font-body text-[14px] text-[#374151] font-medium leading-snug">3 GRNs awaiting IQC inspection</p>
+</div>
+<div class="bg-[#fef3c7] border-l-4 border-l-[#d97706] rounded-r-lg p-3 shadow-sm flex items-start gap-3">
+<span class="material-symbols-outlined text-[#d97706] text-[20px] mt-0.5" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+<p class="font-body text-[14px] text-[#374151] font-medium leading-snug">3 GRNs awaiting IQC inspection</p>
+</div>
+</div>
+<!-- Stats Row (Horizontal Scroll) -->
+<div class="flex overflow-x-auto gap-3 pb-4 mb-6 no-scrollbar snap-x">
+<div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card p-3 border border-border flex flex-col justify-between">
+<span class="font-label text-[13px] text-[#64748b] font-medium mb-1 line-clamp-1">GRN Today</span>
+<span class="font-headline text-[32px] font-bold text-primary leading-none">8</span>
+</div>
+<div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card p-3 border border-border flex flex-col justify-between">
+<span class="font-label text-[13px] text-[#64748b] font-medium mb-1 line-clamp-1">IQC Today</span>
+<span class="font-headline text-[32px] font-bold text-primary leading-none">5</span>
+</div>
+<div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card p-3 border border-border flex flex-col justify-between">
+<span class="font-label text-[13px] text-[#64748b] font-medium mb-1 line-clamp-1">OQC Today</span>
+<span class="font-headline text-[32px] font-bold text-primary leading-none">3</span>
+</div>
+<div class="snap-start shrink-0 w-[110px] bg-card rounded-card shadow-card p-3 border border-border flex flex-col justify-between">
+<span class="font-label text-[13px] text-[#64748b] font-medium mb-1 line-clamp-1">Open NCRs</span>
+<span class="font-headline text-[32px] font-bold text-status-fail leading-none">2</span>
+</div>
+</div>
+<!-- Quick Actions -->
+<h2 class="font-headline text-[16px] font-semibold text-[#0f172a] mb-3">Quick Actions</h2>
+<div class="grid grid-cols-2 gap-3 mb-8">
+<button class="bg-card border border-border rounded-card h-[60px] flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
+<span class="text-[20px]">📦</span>
+<span class="font-body text-[14px] font-semibold text-[#374151]">New GRN</span>
+</button>
+<button class="bg-card border border-border rounded-card h-[60px] flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
+<span class="text-[20px]">🔬</span>
+<span class="font-body text-[14px] font-semibold text-[#374151]">New IQC</span>
+</button>
+<button class="bg-card border border-border rounded-card h-[60px] flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
+<span class="text-[20px]">✅</span>
+<span class="font-body text-[14px] font-semibold text-[#374151]">New OQC</span>
+</button>
+<button class="bg-card border border-border rounded-card h-[60px] flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
+<span class="text-[20px]">🚚</span>
+<span class="font-body text-[14px] font-semibold text-[#374151]">Dispatch</span>
+</button>
+<button class="bg-card border border-border rounded-card h-[60px] flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
+<span class="text-[20px]">⚠️</span>
+<span class="font-body text-[14px] font-semibold text-[#374151]">NCR</span>
+</button>
+<button class="bg-card border border-border rounded-card h-[60px] flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
+<span class="text-[20px]">📋</span>
+<span class="font-body text-[14px] font-semibold text-[#374151]">Purchase Order</span>
+</button>
+</div>
+<!-- Recent Activity -->
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-headline text-[16px] font-semibold text-[#0f172a]">Recent Activity</h2>
+<button class="text-accent text-[13px] font-medium hover:underline">View All</button>
+</div>
+<div class="space-y-3">
+<!-- Item 1 -->
+<div class="bg-card rounded-card p-4 shadow-card border border-border flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-status-pass"></div>
+<div class="flex justify-between items-start pl-2">
+<div>
+<span class="font-headline text-[18px] font-bold text-primary block leading-tight">PM/GRN/2026-042</span>
+<span class="font-body text-[13px] text-[#64748b]">18/05/2026</span>
+</div>
+<span class="bg-surface border border-border rounded-badge px-2 py-0.5 text-[11px] font-semibold text-[#374151]">GRN</span>
+</div>
+<div class="pl-2 mt-1">
+<span class="bg-status-pass rounded-badge px-3 py-1 text-[12px] font-semibold text-white inline-block">ACCEPTED</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-card rounded-card p-4 shadow-card border border-border flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-status-fail"></div>
+<div class="flex justify-between items-start pl-2">
+<div>
+<span class="font-headline text-[18px] font-bold text-primary block leading-tight">PM/IQC/2026-038</span>
+<span class="font-body text-[13px] text-[#64748b]">18/05/2026</span>
+</div>
+<span class="bg-surface border border-border rounded-badge px-2 py-0.5 text-[11px] font-semibold text-[#374151]">IQC</span>
+</div>
+<div class="pl-2 mt-1">
+<span class="bg-status-fail rounded-badge px-3 py-1 text-[12px] font-semibold text-white inline-block">REJECTED</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="bg-card rounded-card p-4 shadow-card border border-border flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-status-pass"></div>
+<div class="flex justify-between items-start pl-2">
+<div>
+<span class="font-headline text-[18px] font-bold text-primary block leading-tight">PM/OQC/2026-021</span>
+<span class="font-body text-[13px] text-[#64748b]">17/05/2026</span>
+</div>
+<span class="bg-surface border border-border rounded-badge px-2 py-0.5 text-[11px] font-semibold text-[#374151]">OQC</span>
+</div>
+<div class="pl-2 mt-1">
+<span class="bg-status-pass rounded-badge px-3 py-1 text-[12px] font-semibold text-white inline-block">RELEASED</span>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="bg-card rounded-card p-4 shadow-card border border-border flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-status-open"></div>
+<div class="flex justify-between items-start pl-2">
+<div>
+<span class="font-headline text-[18px] font-bold text-primary block leading-tight">PM/NCR/2026-009</span>
+<span class="font-body text-[13px] text-[#64748b]">17/05/2026</span>
+</div>
+<span class="bg-surface border border-border rounded-badge px-2 py-0.5 text-[11px] font-semibold text-[#374151]">NCR</span>
+</div>
+<div class="pl-2 mt-1">
+<span class="bg-status-open rounded-badge px-3 py-1 text-[12px] font-semibold text-white inline-block">OPEN</span>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="bg-card rounded-card p-4 shadow-card border border-border flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-status-hold"></div>
+<div class="flex justify-between items-start pl-2">
+<div>
+<span class="font-headline text-[18px] font-bold text-primary block leading-tight">PM/GRN/2026-041</span>
+<span class="font-body text-[13px] text-[#64748b]">17/05/2026</span>
+</div>
+<span class="bg-surface border border-border rounded-badge px-2 py-0.5 text-[11px] font-semibold text-[#374151]">GRN</span>
+</div>
+<div class="pl-2 mt-1">
+<span class="bg-status-hold rounded-badge px-3 py-1 text-[12px] font-semibold text-white inline-block">PENDING_IQC</span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-[64px] bg-white border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] z-50 flex justify-around items-center active:scale-95 transition-transform duration-150">
+<div class="flex flex-col items-center justify-center text-[#0ea5e9] w-16 h-full cursor-pointer hover:bg-slate-50">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="home" data-weight="fill" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label text-[11px] font-semibold tracking-wide">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#94a3b8] w-16 h-full cursor-pointer hover:bg-slate-50">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="description">description</span>
+<span class="font-label text-[11px] font-medium tracking-wide">Records</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#94a3b8] w-16 h-full cursor-pointer hover:bg-slate-50">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="leaderboard">leaderboard</span>
+<span class="font-label text-[11px] font-medium tracking-wide">KPIs</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#94a3b8] w-16 h-full cursor-pointer hover:bg-slate-50">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="settings_suggest">settings_suggest</span>
+<span class="font-label text-[11px] font-medium tracking-wide">Masters</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#94a3b8] w-16 h-full cursor-pointer hover:bg-slate-50">
+<span class="material-symbols-outlined text-[24px] mb-1" data-icon="more_horiz">more_horiz</span>
+<span class="font-label text-[11px] font-medium tracking-wide">More</span>
+</div>
+</nav>
+</body></html>

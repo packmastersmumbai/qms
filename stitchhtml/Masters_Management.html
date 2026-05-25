@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Masters - Pack Masters QMS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            primary: '#1e3a5f',
+            accent: '#0ea5e9',
+            surface: '#f8fafc',
+            card: '#ffffff',
+            border: '#e2e8f0',
+          },
+          status: {
+            accepted: '#16a34a',
+            rejected: '#dc2626',
+            hold: '#ca8a04',
+            pending: '#d97706',
+            inprogress: '#2563eb',
+            closed: '#6b7280',
+          }
+        },
+        borderRadius: {
+                "DEFAULT": "0.5rem",
+                "lg": "1rem",
+                "xl": "1.5rem",
+                "full": "9999px"
+        },
+        fontFamily: {
+                "headline": [
+                        "Plus Jakarta Sans"
+                ],
+                "display": [
+                        "Plus Jakarta Sans"
+                ],
+                "body": [
+                        "Inter"
+                ],
+                "label": [
+                        "Inter"
+                ]
+        },
+        spacing: {
+          'safe': 'env(safe-area-inset-bottom)',
+        }
+      },
+    },
+  }
+</script>
+<style>
+  body {
+    background-color: #f8fafc;
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-brand-surface text-[#0f172a] antialiased pb-[64px] min-h-screen relative">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 h-[56px] shadow-md flex items-center justify-between px-4 bg-[#1e3a5f] text-white transition-colors">
+<button aria-label="Menu" class="flex items-center justify-center p-2 -ml-2 active:scale-95 duration-100 text-white hover:bg-white/10 transition-colors rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold text-white tracking-tight flex-1 text-center truncate px-2">Masters</h1>
+<button class="flex items-center justify-center gap-1 active:scale-95 duration-100 text-brand-accent hover:bg-white/10 transition-colors px-3 py-1.5 rounded-lg font-semibold text-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Add</span>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="pt-[56px] px-4 pb-[200px]">
+<!-- Tab Strip -->
+<div class="flex overflow-x-auto hide-scrollbar border-b border-brand-border h-[44px] -mx-4 px-4 mb-4 mt-2">
+<button class="whitespace-nowrap px-4 py-2 font-body text-[14px] font-medium text-[#64748b] border-b-2 border-transparent">Suppliers</button>
+<button class="whitespace-nowrap px-4 py-2 font-body text-[14px] font-medium text-[#0f172a] border-b-2 border-brand-accent text-brand-accent">Materials</button>
+<button class="whitespace-nowrap px-4 py-2 font-body text-[14px] font-medium text-[#64748b] border-b-2 border-transparent">Customers</button>
+<button class="whitespace-nowrap px-4 py-2 font-body text-[14px] font-medium text-[#64748b] border-b-2 border-transparent">Inspectors</button>
+<button class="whitespace-nowrap px-4 py-2 font-body text-[14px] font-medium text-[#64748b] border-b-2 border-transparent">Locations</button>
+</div>
+<!-- Search Bar -->
+<div class="relative mb-5">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]">search</span>
+<input class="w-full h-[52px] pl-[44px] pr-4 rounded-DEFAULT border-[1.5px] border-[#d1d5db] bg-white text-[16px] focus:outline-none focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15 transition-all" placeholder="Search materials..." type="text"/>
+</div>
+<!-- Materials List -->
+<div class="flex flex-col gap-[12px]">
+<!-- Row 1 -->
+<div class="bg-brand-card rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-brand-border p-4 flex items-center justify-between">
+<div class="flex-1 min-w-0 pr-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline font-bold text-[14px] text-brand-primary truncate">HDPE-001</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-status-inprogress/10 text-status-inprogress border border-status-inprogress/20">RM</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 truncate max-w-[80px]">RM-STORE-A</span>
+</div>
+<div class="text-[13px] text-[#64748b] truncate">HDPE Granules</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<button aria-pressed="true" class="w-10 h-6 bg-status-accepted rounded-full relative transition-colors duration-200 focus:outline-none">
+<span class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200"></span>
+</button>
+<button class="p-2 text-brand-accent hover:bg-brand-accent/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="bg-brand-card rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-brand-border p-4 flex items-center justify-between">
+<div class="flex-1 min-w-0 pr-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline font-bold text-[14px] text-brand-primary truncate">PP-002</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-status-inprogress/10 text-status-inprogress border border-status-inprogress/20">RM</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 truncate max-w-[80px]">RM-STORE-B</span>
+</div>
+<div class="text-[13px] text-[#64748b] truncate">Polypropylene Film</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<button aria-pressed="true" class="w-10 h-6 bg-status-accepted rounded-full relative transition-colors duration-200 focus:outline-none">
+<span class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200"></span>
+</button>
+<button class="p-2 text-brand-accent hover:bg-brand-accent/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="bg-brand-card rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-brand-border p-4 flex items-center justify-between">
+<div class="flex-1 min-w-0 pr-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline font-bold text-[14px] text-brand-primary truncate">LDPE-003</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-status-inprogress/10 text-status-inprogress border border-status-inprogress/20">RM</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 truncate max-w-[80px]">RM-STORE-A</span>
+</div>
+<div class="text-[13px] text-[#64748b] truncate">LDPE Sheets</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<button aria-pressed="true" class="w-10 h-6 bg-status-accepted rounded-full relative transition-colors duration-200 focus:outline-none">
+<span class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200"></span>
+</button>
+<button class="p-2 text-brand-accent hover:bg-brand-accent/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="bg-brand-card rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-brand-border p-4 flex items-center justify-between">
+<div class="flex-1 min-w-0 pr-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline font-bold text-[14px] text-brand-primary truncate">BAG-FG-001</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-status-accepted/10 text-status-accepted border border-status-accepted/20">FG</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 truncate max-w-[80px]">FG-STORE-1</span>
+</div>
+<div class="text-[13px] text-[#64748b] truncate">PP Woven Bags 50kg</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<button aria-pressed="true" class="w-10 h-6 bg-status-accepted rounded-full relative transition-colors duration-200 focus:outline-none">
+<span class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200"></span>
+</button>
+<button class="p-2 text-brand-accent hover:bg-brand-accent/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</div>
+</div>
+<!-- Row 5 -->
+<div class="bg-brand-card rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-brand-border p-4 flex items-center justify-between opacity-70">
+<div class="flex-1 min-w-0 pr-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-headline font-bold text-[14px] text-brand-primary truncate">BAG-FG-002</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-status-accepted/10 text-status-accepted border border-status-accepted/20">FG</span>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 truncate max-w-[80px]">FG-STORE-1</span>
+</div>
+<div class="text-[13px] text-[#64748b] truncate">HDPE Bags 25kg</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<button aria-pressed="false" class="w-10 h-6 bg-gray-300 rounded-full relative transition-colors duration-200 focus:outline-none">
+<span class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200"></span>
+</button>
+<button class="p-2 text-brand-accent hover:bg-brand-accent/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-safe bg-white dark:bg-white h-[64px] border-t border-[#e2e8f0] z-[40]">
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label text-[12px] font-semibold">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full">
+<span class="material-symbols-outlined mb-1">inventory</span>
+<span class="font-label text-[12px] font-semibold">Records</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full">
+<span class="material-symbols-outlined mb-1">analytics</span>
+<span class="font-label text-[12px] font-semibold">KPIs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#0ea5e9] font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full relative">
+<div class="absolute inset-x-0 top-0 h-0.5 bg-[#0ea5e9] rounded-b-full hidden"></div>
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">database</span>
+<span class="font-label text-[12px] font-semibold">Masters</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full">
+<span class="material-symbols-outlined mb-1">more_horiz</span>
+<span class="font-label text-[12px] font-semibold">More</span>
+</button>
+</nav>
+<!-- Bottom Sheet Overlay & Panel -->
+<div class="fixed inset-0 bg-black/40 z-[60] flex flex-col justify-end">
+<!-- Panel -->
+<div class="bg-brand-card w-full rounded-t-xl shadow-[0_-4px_16px_rgba(0,0,0,0.1)] flex flex-col max-h-[751px] transform transition-transform duration-300 translate-y-0">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center pt-3 pb-1">
+<div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+</div>
+<!-- Header -->
+<div class="px-4 pb-3 flex justify-between items-center border-b border-brand-border">
+<h2 class="font-headline font-bold text-[18px] text-brand-primary">Edit Material</h2>
+<button class="p-2 -mr-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Form Content (Scrollable) -->
+<div class="p-4 overflow-y-auto flex flex-col gap-5">
+<div class="flex flex-col gap-[6px]">
+<label class="font-body text-[14px] font-medium text-[#374151]">Material Code</label>
+<input class="h-[52px] w-full px-4 rounded-DEFAULT border-[1.5px] border-[#d1d5db] text-[16px] text-[#0f172a] bg-gray-50 focus:outline-none focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15 transition-all" type="text" value="HDPE-001"/>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="font-body text-[14px] font-medium text-[#374151]">Material Name</label>
+<input class="h-[52px] w-full px-4 rounded-DEFAULT border-[1.5px] border-[#d1d5db] text-[16px] text-[#0f172a] focus:outline-none focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15 transition-all" type="text" value="HDPE Granules"/>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="font-body text-[14px] font-medium text-[#374151]">Category</label>
+<div class="flex gap-3">
+<button class="flex-1 h-[52px] flex items-center justify-center rounded-DEFAULT border-[1.5px] border-brand-primary bg-brand-primary text-white font-medium text-[16px] transition-colors">RM</button>
+<button class="flex-1 h-[52px] flex items-center justify-center rounded-DEFAULT border-[1.5px] border-[#d1d5db] bg-white text-[#374151] font-medium text-[16px] hover:bg-gray-50 transition-colors">FG</button>
+</div>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="font-body text-[14px] font-medium text-[#374151]">Default Location</label>
+<div class="relative">
+<select class="appearance-none h-[52px] w-full px-4 pr-10 rounded-DEFAULT border-[1.5px] border-[#d1d5db] text-[16px] text-[#0f172a] bg-white focus:outline-none focus:border-brand-accent focus:ring-4 focus:ring-brand-accent/15 transition-all">
+<option selected="" value="RM-STORE-A">RM-STORE-A</option>
+<option value="RM-STORE-B">RM-STORE-B</option>
+<option value="FG-STORE-1">FG-STORE-1</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons Sticky Footer -->
+<div class="p-4 border-t border-brand-border bg-white flex flex-col gap-3 pb-safe">
+<button class="w-full h-[56px] bg-brand-primary text-white font-headline font-semibold text-[16px] rounded-[10px] active:scale-[0.98] transition-transform flex items-center justify-center">
+          Save
+        </button>
+<button class="w-full h-[56px] bg-white border border-status-rejected text-status-rejected font-headline font-semibold text-[16px] rounded-[10px] active:scale-[0.98] transition-transform flex items-center justify-center hover:bg-red-50">
+          Delete
+        </button>
+</div>
+</div>
+</div>
+</body></html>

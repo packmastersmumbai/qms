@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>New Dispatch</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1e3a5f",
+                        accent: "#0ea5e9",
+                        surface: "#f8fafc",
+                        card: "#ffffff",
+                        border: "#e2e8f0",
+                        status: {
+                            accepted: "#16a34a",
+                            rejected: "#dc2626",
+                            hold: "#ca8a04",
+                            pending: "#d97706",
+                            progress: "#2563eb",
+                            closed: "#6b7280"
+                        }
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "1rem",
+                        xl: "1.5rem",
+                        full: "9999px",
+                        card: "12px",
+                        input: "8px",
+                        button: "10px",
+                        badge: "20px"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    },
+                    fontSize: {
+                        title: ["20px", "1.2"],
+                        heading: ["16px", "1.5"],
+                        field: ["14px", "1.5"],
+                        input: ["16px", "1.5"],
+                        helper: ["13px", "1.5"],
+                        badge: ["12px", "1.5"],
+                        button: ["16px", "1.5"],
+                        doc: ["18px", "1.2"]
+                    },
+                    spacing: {
+                        pageX: "16px",
+                        pageY: "12px",
+                        cardP: "16px",
+                        cardGap: "12px",
+                        fieldGap: "6px",
+                        sectionGap: "20px",
+                        headerH: "56px",
+                        inputH: "52px",
+                        buttonH: "56px",
+                        touchMin: "60px"
+                    },
+                    boxShadow: {
+                        card: "0 2px 8px rgba(0,0,0,0.08)"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.surface'); font-family: theme('fontFamily.body'); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-[#0f172a] min-h-screen pb-[80px]">
+<!-- Header -->
+<header class="fixed top-0 w-full z-50 h-headerH bg-primary shadow-md flex items-center justify-between px-4 w-full">
+<button class="text-white hover:bg-white/10 transition-colors rounded-full p-2 active:scale-95 duration-100 flex items-center justify-center min-w-[44px] min-h-[44px]">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<h1 class="font-headline text-title font-bold text-white tracking-tight absolute left-1/2 -translate-x-1/2">New Dispatch</h1>
+<div class="w-11"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Content -->
+<main class="pt-headerH px-pageX py-pageY flex flex-col gap-sectionGap max-w-md mx-auto mt-4">
+<!-- GP Number Card -->
+<div class="bg-card rounded-card shadow-card p-cardP border border-border">
+<div class="flex justify-between items-center mb-1">
+<span class="font-headline text-doc font-bold text-primary">PM/GP/2026-018</span>
+<span class="font-body text-helper text-[#64748b]">18/05/2026</span>
+</div>
+<p class="font-body text-helper text-[#64748b]">Auto-generated</p>
+</div>
+<!-- Selection Section -->
+<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-fieldGap">
+<label class="font-label text-field font-medium text-[#374151]">Customer</label>
+<div class="relative">
+<select class="w-full h-inputH px-3 border-[1.5px] border-[#d1d5db] rounded-input text-input bg-white focus:border-accent focus:ring-4 focus:ring-accent/15 appearance-none">
+<option selected="">Raj Packaging Pvt Ltd</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex flex-col gap-fieldGap">
+<label class="font-label text-field font-medium text-[#374151]">Product</label>
+<div class="relative">
+<select class="w-full h-inputH px-3 border-[1.5px] border-[#d1d5db] rounded-input text-input bg-white focus:border-accent focus:ring-4 focus:ring-accent/15 appearance-none">
+<option selected="">PP Woven Bags 50kg</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex flex-col gap-fieldGap">
+<label class="font-label text-field font-medium text-[#374151]">Qty Requested</label>
+<div class="relative flex items-center">
+<input class="w-full h-inputH pl-3 pr-12 border-[1.5px] border-[#d1d5db] rounded-input text-input bg-white focus:border-accent focus:ring-4 focus:ring-accent/15" placeholder="0" type="number" value="500"/>
+<span class="absolute right-4 font-body text-input text-[#64748b] pointer-events-none">pcs</span>
+</div>
+</div>
+<button class="w-full h-[52px] bg-accent text-white font-headline text-button font-semibold rounded-button flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+                Plan FIFO Allocation
+            </button>
+</div>
+<!-- FIFO Allocation Card -->
+<div class="bg-card rounded-card shadow-card p-cardP border border-border flex flex-col gap-4">
+<div class="flex justify-between items-center border-b border-border pb-3">
+<h2 class="font-headline text-heading font-semibold text-[#0f172a]">FIFO Allocation Plan</h2>
+<span class="bg-[#f1f5f9] text-[#475569] px-3 py-1 rounded-badge text-badge font-semibold">3 lots</span>
+</div>
+<!-- Lot Row 1 -->
+<div class="flex flex-col gap-2 pb-3 border-b border-border/50">
+<div class="flex justify-between items-start">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-body text-[15px] font-semibold text-[#0f172a]">LOT-2026-041</span>
+<span class="bg-[#dcfce7] text-[#16a34a] px-2 py-0.5 rounded-[4px] text-[10px] font-bold uppercase tracking-wider">Lot 1 (oldest)</span>
+</div>
+<div class="flex items-center gap-3 font-body text-helper text-[#64748b]">
+<span>OQC: 02/05/2026</span>
+<span class="w-1 h-1 bg-[#cbd5e1] rounded-full"></span>
+<span>Available: 220 pcs</span>
+</div>
+</div>
+<input class="w-[80px] h-10 px-2 text-center border-[1.5px] border-[#d1d5db] rounded-input text-input font-medium text-[#0f172a] focus:border-accent focus:ring-4 focus:ring-accent/15 bg-white" type="number" value="220"/>
+</div>
+</div>
+<!-- Lot Row 2 -->
+<div class="flex flex-col gap-2 pb-3 border-b border-border/50">
+<div class="flex justify-between items-start">
+<div>
+<div class="font-body text-[15px] font-semibold text-[#0f172a] mb-1">LOT-2026-044</div>
+<div class="flex items-center gap-3 font-body text-helper text-[#64748b]">
+<span>OQC: 08/05/2026</span>
+<span class="w-1 h-1 bg-[#cbd5e1] rounded-full"></span>
+<span>Available: 180 pcs</span>
+</div>
+</div>
+<input class="w-[80px] h-10 px-2 text-center border-[1.5px] border-[#d1d5db] rounded-input text-input font-medium text-[#0f172a] focus:border-accent focus:ring-4 focus:ring-accent/15 bg-white" type="number" value="180"/>
+</div>
+</div>
+<!-- Lot Row 3 -->
+<div class="flex flex-col gap-2 pb-3 border-b border-border/50">
+<div class="flex justify-between items-start">
+<div>
+<div class="font-body text-[15px] font-semibold text-[#0f172a] mb-1">LOT-2026-047</div>
+<div class="flex items-center gap-3 font-body text-helper text-[#64748b]">
+<span>OQC: 15/05/2026</span>
+<span class="w-1 h-1 bg-[#cbd5e1] rounded-full"></span>
+<span>Available: 300 pcs</span>
+</div>
+</div>
+<input class="w-[80px] h-10 px-2 text-center border-[1.5px] border-[#d1d5db] rounded-input text-input font-medium text-[#0f172a] focus:border-accent focus:ring-4 focus:ring-accent/15 bg-white" type="number" value="100"/>
+</div>
+</div>
+<!-- Total -->
+<div class="flex justify-end pt-1">
+<span class="font-headline text-[16px] font-bold text-primary">Total: 500 pcs</span>
+</div>
+</div>
+<!-- Additional Details Card -->
+<div class="bg-card rounded-card shadow-card p-cardP border border-border flex flex-col gap-4 mb-4">
+<h2 class="font-headline text-heading font-semibold text-[#0f172a] border-b border-border pb-2">Dispatch Details</h2>
+<div class="flex flex-col gap-fieldGap">
+<label class="font-label text-field font-medium text-[#374151]">Inspector</label>
+<div class="relative">
+<select class="w-full h-inputH px-3 border-[1.5px] border-[#d1d5db] rounded-input text-input bg-white focus:border-accent focus:ring-4 focus:ring-accent/15 appearance-none">
+<option selected="">Suresh Patil</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex flex-col gap-fieldGap">
+<label class="font-label text-field font-medium text-[#374151]">Vehicle No.</label>
+<input class="w-full h-inputH px-3 border-[1.5px] border-[#d1d5db] rounded-input text-input bg-white focus:border-accent focus:ring-4 focus:ring-accent/15 uppercase font-medium" type="text" value="MH04 AB 1234"/>
+</div>
+<div class="flex flex-col gap-fieldGap">
+<label class="font-label text-field font-medium text-[#374151]">Driver Name</label>
+<input class="w-full h-inputH px-3 border-[1.5px] border-[#d1d5db] rounded-input text-input bg-white focus:border-accent focus:ring-4 focus:ring-accent/15" placeholder="Enter driver name" type="text" value="Ramkrishna Jadhav"/>
+</div>
+<div class="flex flex-col gap-fieldGap">
+<label class="font-label text-field font-medium text-[#374151]">Remarks</label>
+<textarea class="w-full h-[80px] p-3 border-[1.5px] border-[#d1d5db] rounded-input text-input bg-white focus:border-accent focus:ring-4 focus:ring-accent/15 resize-none" placeholder="Add any dispatch notes..."></textarea>
+</div>
+</div>
+</main>
+<!-- Bottom Action Button -->
+<div class="fixed bottom-0 left-0 w-full bg-white border-t border-border p-4 z-40 max-w-md mx-auto left-1/2 -translate-x-1/2">
+<button class="w-full h-buttonH bg-primary text-white font-headline text-button font-semibold rounded-button active:scale-95 transition-transform flex items-center justify-center">
+            Create Gatepass
+        </button>
+</div>
+</body></html>

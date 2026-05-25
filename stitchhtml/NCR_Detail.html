@@ -1,0 +1,178 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Pack Masters QMS - NCR Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#1e3a5f",
+                        "accent": "#0ea5e9",
+                        "surface": "#f8fafc",
+                        "status-open": "#d97706",
+                        "text-main": "#0f172a",
+                        "text-muted": "#64748b",
+                        "border-color": "#e2e8f0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans", "sans-serif"],
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface antialiased">
+<!-- TopAppBar -->
+<header class="bg-[#1e3a5f] text-white fixed top-0 w-full h-[56px] shadow-sm flex items-center justify-between px-4 z-50">
+<div class="flex items-center gap-3">
+<button class="hover:bg-white/10 active:scale-95 transition-transform p-1 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold">PM/NCR/2026-009</h1>
+</div>
+<div class="flex items-center">
+<span class="bg-status-open text-white font-semibold text-[12px] px-3 py-1 rounded-full">OPEN</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-[68px] px-4 max-w-lg mx-auto">
+<!-- Info Card -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border-color p-4 mb-5">
+<h2 class="text-[16px] font-semibold text-text-main font-headline mb-4">NCR Details</h2>
+<div class="grid grid-cols-1 gap-3">
+<div class="flex justify-between items-start border-b border-gray-100 pb-2">
+<span class="text-[14px] font-medium text-text-muted">Source</span>
+<span class="text-[16px] font-normal text-text-main text-right">IQC</span>
+</div>
+<div class="flex justify-between items-start border-b border-gray-100 pb-2">
+<span class="text-[14px] font-medium text-text-muted">Source Ref</span>
+<span class="text-[16px] font-normal text-accent font-medium text-right">PM/IQC/2026-037</span>
+</div>
+<div class="flex justify-between items-start border-b border-gray-100 pb-2">
+<span class="text-[14px] font-medium text-text-muted">Material</span>
+<span class="text-[16px] font-normal text-text-main text-right">HDPE-001 — HDPE Granules</span>
+</div>
+<div class="flex justify-between items-start border-b border-gray-100 pb-2">
+<span class="text-[14px] font-medium text-text-muted">Batch</span>
+<span class="text-[16px] font-normal text-text-main text-right">B2026-118</span>
+</div>
+<div class="flex justify-between items-start border-b border-gray-100 pb-2">
+<span class="text-[14px] font-medium text-text-muted">Qty Affected</span>
+<span class="text-[16px] font-normal text-text-main text-right font-medium">118 kg</span>
+</div>
+<div class="flex justify-between items-start border-b border-gray-100 pb-2">
+<span class="text-[14px] font-medium text-text-muted w-1/3">Defect</span>
+<span class="text-[15px] font-normal text-text-main text-right w-2/3">Dimensions outside specification — length 152mm vs standard 150mm ±1mm tolerance</span>
+</div><div class="flex flex-col gap-2 pt-1 border-b border-gray-100 pb-3 mt-1">
+  <div class="flex justify-between items-center">
+    <span class="text-[14px] font-medium text-text-muted">Defect Photos</span>
+    <button class="flex items-center gap-1 px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent/20 transition-colors">
+      <span class="material-symbols-outlined text-[18px]">add_a_photo</span>
+      <span class="text-[13px] font-semibold">Upload Photo</span>
+    </button>
+  </div>
+  <div class="flex items-center justify-center p-4 border-2 border-dashed border-gray-200 rounded-lg flex-col">
+    <p class="text-[13px] text-text-muted italic">No photos attached</p><p class="text-xs text-gray-400 mt-1">18/05/2026 10:30 AM</p>
+  </div>
+</div>
+<div class="flex justify-between items-start pt-3">
+<span class="text-[14px] font-medium text-text-muted">Raised</span>
+<span class="text-[15px] font-normal text-text-main text-right">18/05/2026 by Ramesh Kumar</span>
+</div>
+</div>
+</div>
+<!-- Disposition Card -->
+<div class="bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border-color p-4 mb-6">
+<h2 class="text-[16px] font-semibold text-text-main font-headline mb-4">Set Disposition</h2>
+<!-- Toggle Buttons -->
+<div class="space-y-3 mb-5">
+<div class="grid grid-cols-3 gap-2">
+<button class="h-10 rounded-lg border-2 border-[#d1d5db] text-text-main font-medium text-[14px] transition-colors hover:border-accent hover:text-accent">
+                        Rework-RM
+                    </button>
+<button class="h-10 rounded-lg border-2 border-[#d1d5db] text-text-main font-medium text-[14px] transition-colors hover:border-accent hover:text-accent">
+                        Rework-FG
+                    </button>
+<button class="h-10 rounded-lg border-2 border-[#d1d5db] text-text-main font-medium text-[14px] transition-colors hover:border-accent hover:text-accent">
+                        Scrap
+                    </button>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<button class="h-10 rounded-lg border-2 border-[#d1d5db] text-text-main font-medium text-[14px] transition-colors hover:border-accent hover:text-accent">
+                        Use-as-is
+                    </button>
+<button class="h-10 rounded-lg border-2 border-[#d1d5db] text-text-main font-medium text-[14px] transition-colors hover:border-accent hover:text-accent">
+                        Supplier-Return
+                    </button>
+</div>
+</div>
+<!-- Input -->
+<div class="mb-5">
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]">Disposition By</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] px-3 text-[16px] text-text-main focus:border-accent focus:ring-4 focus:ring-[#0ea5e9]/15 outline-none transition-all" placeholder="Enter assigned personnel..." type="text">
+</div>
+<!-- Action Button -->
+<button class="w-full h-[52px] border-2 border-primary text-primary font-semibold text-[16px] rounded-[10px] hover:bg-primary hover:text-white transition-colors active:scale-[0.98]">
+                Set Disposition
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-safe bg-white dark:bg-[#1e3a5f] border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.08)] h-[64px]">
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 active:scale-90 transition-all w-16 h-full rounded-lg">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="home">home</span>
+<span class="font-label text-[12px] font-semibold">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#0ea5e9] font-bold hover:bg-slate-50 active:scale-90 transition-all w-16 h-full rounded-lg">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="assignment" data-weight="fill" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label text-[12px] font-semibold">Records</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 active:scale-90 transition-all w-16 h-full rounded-lg">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="leaderboard">leaderboard</span>
+<span class="font-label text-[12px] font-semibold">KPIs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 active:scale-90 transition-all w-16 h-full rounded-lg">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="settings_applications">settings_applications</span>
+<span class="font-label text-[12px] font-semibold">Masters</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 active:scale-90 transition-all w-16 h-full rounded-lg">
+<span class="material-symbols-outlined text-2xl mb-1" data-icon="more_horiz">more_horiz</span>
+<span class="font-label text-[12px] font-semibold">More</span>
+</button>
+</nav>
+
+
+
+
+</body></html>

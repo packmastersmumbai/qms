@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>New IQC Inspection</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1e3a5f",
+                        accent: "#0ea5e9",
+                        surface: "#f8fafc",
+                        card: "#ffffff",
+                        border: "#e2e8f0",
+                        status: {
+                            pass: "#16a34a",
+                            fail: "#dc2626",
+                            hold: "#ca8a04",
+                            pending: "#d97706",
+                            progress: "#2563eb",
+                            closed: "#6b7280"
+                        },
+                        text: {
+                            heading: "#0f172a",
+                            field: "#374151",
+                            value: "#0f172a",
+                            helper: "#64748b"
+                        }
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "1rem",
+                        xl: "1.5rem",
+                        full: "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        h1, h2, h3, .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-text-value antialiased min-h-screen pb-[88px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full h-[56px] bg-primary shadow-md flex items-center justify-between px-4 z-50">
+<button aria-label="Go Back" class="text-white active:scale-95 transition-transform p-2 -ml-2">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold text-white text-center flex-1 pr-6">New IQC Inspection</h1>
+</header>
+<main class="pt-[68px] px-4 space-y-[20px] max-w-md mx-auto">
+<!-- GRN Selector Card -->
+<section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
+<label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Select GRN to Inspect</label>
+<div class="relative mb-3">
+<select aria-label="Select GRN" class="w-full h-[52px] border-[1.5px] border-accent rounded-lg text-[16px] text-text-value px-3 appearance-none focus:outline-none focus:ring-0 bg-white">
+<option>PM/GRN/2026-043 — Apex Polymers — 18/05/2026</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center px-3 py-1.5 rounded-md bg-slate-100 text-text-field text-[13px] font-medium">
+<span class="material-symbols-outlined text-[16px] mr-1 text-slate-500" data-icon="category">category</span>
+                    HDPE-001 HDPE Granules
+                </span>
+<span class="inline-flex items-center px-3 py-1.5 rounded-md bg-slate-100 text-text-field text-[13px] font-medium">
+<span class="material-symbols-outlined text-[16px] mr-1 text-slate-500" data-icon="category">category</span>
+                    PP-002 Polypropylene Film
+                </span>
+</div>
+</section>
+<!-- Inspector Row -->
+<section class="grid grid-cols-2 gap-3">
+<div>
+<label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Inspector</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+<option>Ramesh Kumar</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<div>
+<label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">AQL Level</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+<option>2.5</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+</section>
+<p class="text-[14px] text-text-helper text-right font-medium">IQC No. PM/IQC/2026-039</p>
+<!-- Material Tab Strip -->
+<nav aria-label="Material Tabs" class="flex border-b border-border mb-2">
+<button class="flex-1 pb-3 text-center text-[15px] font-semibold text-accent border-b-2 border-accent">
+                HDPE-001
+            </button>
+<button class="flex-1 pb-3 text-center text-[15px] font-medium text-text-helper hover:text-text-field transition-colors">
+                PP-002
+            </button>
+</nav>
+<!-- Inspection Card (for HDPE-001) -->
+<section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border border-l-4 border-l-accent flex flex-col gap-[12px]">
+<!-- Material Info Row -->
+<div class="flex flex-wrap gap-2">
+<span class="bg-slate-100 text-text-field px-2.5 py-1 rounded text-[13px] font-medium">HDPE-001</span>
+<span class="bg-slate-100 text-text-field px-2.5 py-1 rounded text-[13px] font-medium">HDPE Granules</span>
+<span class="bg-slate-100 text-text-field px-2.5 py-1 rounded text-[13px] font-medium">Batch: B2026-118</span>
+<span class="bg-slate-100 text-text-field px-2.5 py-1 rounded text-[13px] font-medium">118 kg</span>
+</div>
+<!-- Sample Size -->
+<div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200 mt-1">
+<span class="text-[14px] font-semibold text-primary">Sample Size: 32 pcs</span>
+<button aria-label="Calculate Sample Size" class="text-accent hover:opacity-80 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="calculate">calculate</span>
+</button>
+</div>
+<!-- 12-Parameter Pass/Fail Grid -->
+<div class="mt-2 space-y-3">
+<h3 class="font-headline text-[16px] font-semibold text-text-heading mb-3">Inspection Parameters</h3>
+<!-- Parameter Rows -->
+<div class="grid grid-cols-1 gap-3">
+<!-- Row 1 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">1. Quantity</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">2. Packaging</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">3. Colour</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">4. Shape/Form</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 5 (FAIL) -->
+<div class="flex items-center justify-between h-[52px] bg-red-50 border border-red-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-status-fail truncate pr-2">5. Dimensions</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-white text-text-helper border border-slate-200">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-fail text-white shadow-sm">FAIL</button>
+</div>
+</div>
+<!-- Row 6 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">6. Net Weight</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 7 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">7. Cleanliness</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 8 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">8. Odour</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 9 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">9. Label Accuracy</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 10 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">10. MSDS/SDS</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 11 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">11. Shelf Life</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+<!-- Row 12 -->
+<div class="flex items-center justify-between h-[52px] bg-white border border-slate-200 rounded-lg px-3">
+<span class="text-[14px] font-medium text-text-field truncate pr-2">12. COA/Test Rpt</span>
+<div class="flex gap-1 shrink-0">
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-status-pass text-white">PASS</button>
+<button class="px-4 py-1.5 rounded-md text-[13px] font-semibold bg-slate-100 text-text-helper border border-slate-200">FAIL</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Disposition Section -->
+<section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border mb-6 flex flex-col gap-[20px]">
+<h3 class="font-headline text-[16px] font-semibold text-text-heading">Final Disposition</h3>
+<!-- Action Buttons -->
+<div class="grid grid-cols-3 gap-2">
+<button class="h-[56px] rounded-[10px] bg-status-pass text-white font-semibold text-[14px] flex flex-col items-center justify-center active:scale-95 transition-transform shadow-sm">
+<span class="material-symbols-outlined text-[20px] mb-0.5" data-icon="check_circle">check_circle</span>
+                    ACCEPTED
+                </button>
+<button class="h-[56px] rounded-[10px] bg-white border-[1.5px] border-status-fail text-status-fail font-semibold text-[14px] flex flex-col items-center justify-center active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px] mb-0.5" data-icon="cancel">cancel</span>
+                    REJECTED
+                </button>
+<button class="h-[56px] rounded-[10px] bg-white border-[1.5px] border-status-hold text-status-hold font-semibold text-[14px] flex flex-col items-center justify-center active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px] mb-0.5" data-icon="pause_circle">pause_circle</span>
+                    HOLD
+                </button>
+</div>
+<!-- Qty Inputs -->
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty Accepted</label>
+<input class="w-full h-[52px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:ring-0 focus:outline-none bg-white" type="number" value="118"/>
+</div>
+<div>
+<label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty Rejected</label>
+<input class="w-full h-[52px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:ring-0 focus:outline-none bg-white" type="number" value="0"/>
+</div>
+</div>
+<!-- Remarks -->
+<div>
+<label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Remarks</label>
+<textarea class="w-full h-[80px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value p-3 focus:border-accent focus:ring-0 focus:outline-none bg-white resize-none" placeholder="Enter inspection notes...">Dimensions slightly off — within tolerance</textarea>
+</div>
+</section>
+</main>
+<!-- Sticky Footer -->
+<footer class="fixed bottom-0 w-full bg-white border-t border-border p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+<div class="max-w-md mx-auto">
+<button class="w-full h-[56px] bg-primary text-white rounded-[10px] font-semibold text-[16px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="save">save</span>
+                Save IQC Result
+            </button>
+</div>
+</footer>
+</body></html>

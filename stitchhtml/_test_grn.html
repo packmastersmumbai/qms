@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>GRN Receipt — Pack Masters QMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script src="/stitchhtml/tw.js"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1e3a5f',
+            accent: '#0ea5e9',
+            surface: '#f8fafc',
+            card: '#ffffff',
+            border: '#e2e8f0',
+            status: {
+              success: '#16a34a',
+              danger: '#dc2626',
+              warning: '#ca8a04',
+              pending: '#d97706',
+              progress: '#2563eb',
+              closed: '#6b7280'
+            }
+          },
+          fontFamily: {
+            headline: ["Plus Jakarta Sans", "sans-serif"],
+            display:  ["Plus Jakarta Sans", "sans-serif"],
+            body:     ["Inter", "sans-serif"],
+            label:    ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            DEFAULT: "0.5rem",
+            lg: "1rem",
+            xl: "1.5rem",
+            full: "9999px"
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { min-height: max(884px, 100dvh); }
+    input, select, textarea { font-size: 16px !important; }
+    button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button:active { transform: scale(0.97); transition: transform 0.08s ease; }
+
+    /* Disposition buttons */
+    .disp-btn {
+      min-height: 64px;
+      border: 2px solid #e2e8f0;
+      border-radius: 0.75rem;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      color: #0f172a;
+      letter-spacing: 0.4px;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      width: 100%;
+      padding: 10px 6px;
+    }
+    .disp-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .disp-btn.sel-acc { background: #16A34A; border-color: #16A34A; color: #fff; }
+    .disp-btn.sel-rej { background: #DC2626; border-color: #DC2626; color: #fff; }
+    .disp-btn.sel-hld { background: #D97706; border-color: #D97706; color: #fff; }
+    .disp-btn.sel-awd { background: #EA580C; border-color: #EA580C; color: #fff; }
+
+    /* Field error */
+    .field-error-msg { font-size: 11px; font-weight: 500; color: #dc2626; margin-top: 3px; display: none; }
+    .field-err input, .field-err select, .field-err textarea { border-color: #dc2626 !important; }
+    .field-err .field-error-msg { display: block; }
+
+    /* Spinner */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 6px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1e3a5f; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s ease; z-index: 9999; pointer-events: none; white-space: nowrap; max-width: 90vw; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #dc2626; }
+    .toast.success { background: #16a34a; }
+
+    /* Hidden */
+    .hidden { display: none !important; }
+
+    /* PO multi table */
+    #po-multi-section { border: 1px solid #e0c080; background: #fffbeb; border-radius: 0.75rem; padding: 12px; margin-top: 8px; }
+    #po-multi-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    #po-multi-table th { padding: 4px 6px; background: #fef3c7; text-align: left; }
+    #po-multi-table td { padding: 4px 6px; }
+    .po-multi-qty, .po-multi-batch { padding: 3px 5px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px; }
+    .po-multi-qty { width: 70px; text-align: right; }
+    .po-multi-batch { width: 95px; }
+
+    /* Confirm screen */
+    #confirmScreen { display: none; opacity: 0; transition: opacity 0.3s ease; text-align: center; padding: 40px 20px 120px; }
+    #confirmScreen.visible { display: block; }
+    #confirmScreen.fade-in { opacity: 1; }
+    .confirm-badge { display: inline-block; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 28px; }
+    .confirm-badge.ACCEPT { background: #DCFCE7; color: #15803D; }
+    .confirm-badge.REJECT { background: #FEE2E2; color: #B91C1C; }
+    .confirm-badge.HOLD   { background: #FEF3C7; color: #B45309; }
+    .confirm-badge.AWD    { background: #FFEDD5; color: #C2410C; }
+  </style>
+</head>
+<body class="bg-surface font-body text-[#0f172a] antialiased flex flex-col min-h-screen">
+
+<!-- ── Top App Bar ── -->
+<header class="fixed top-0 left-0 w-full z-50 h-[56px] bg-primary flex items-center justify-between px-4 shadow-md">
+  <button id="backBtn" class="text-white hover:bg-white/10 active:opacity-80 transition-all p-2 rounded-full flex items-center justify-center" aria-label="Back">
+    <span class="material-symbols-outlined">arrow_back</span>
+  </button>
+  <h1 class="font-headline text-[18px] font-bold text-white">GRN Receipt</h1>
+  <span id="docBadge" class="text-[13px] font-semibold text-white/70 bg-white/10 px-3 py-1 rounded-full">GRN</span>
+</header>
+
+<!-- ── Main ── -->
+<main id="formWrap" class="flex-1 mt-[56px] pb-[88px] p-4 flex flex-col gap-4 max-w-lg mx-auto w-full">
+
+  <!-- GAS Sync Indicator -->
+  <div class="flex items-center justify-center bg-card rounded-lg p-2 border border-border shadow-sm">
+    <span class="material-symbols-outlined text-status-success text-sm mr-2" style="font-variation-settings:'FILL' 1">cloud_done</span>
+    <span class="text-[13px] text-[#64748b]">Connected to Google Sheets Sync</span>
+  </div>
+
+  <!-- Section 1: Header / Supplier -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+
+    <!-- Doc number row -->
+    <div class="flex justify-between items-center pb-3 border-b border-border">
+      <span id="docBadgeInline" class="text-[18px] font-bold text-primary font-headline">GRN</span>
+      <span class="text-[14px] font-medium text-[#64748b]" id="todayDate"></span>
+    </div>
+
+    <!-- Supplier -->
+    <div id="f-supplier" class="flex flex-col gap-[6px]">
+      <label class="font-label text-[14px] font-medium text-[#374151]" for="supplier">Supplier <span class="text-status-danger">*</span></label>
+      <div class="relative">
+        <select id="supplier" onchange="onSupplierChange()" class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+          <option value="">Select Supplier</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+      </div>
+      <div class="field-error-msg" id="err-supplier">Supplier is required</div>
+    </div>
+
+    <!-- PO Reference (optional) -->
+    <div class="flex flex-col gap-[6px]">
+      <label class="font-label text-[14px] font-medium text-[#374151]">Purchase Order <span class="text-[12px] font-normal text-[#64748b]">(Optional)</span></label>
+      <div class="relative">
+        <select id="poRefSelect" onchange="onPORefChange()" class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+          <option value="">— no PO — (free GRN)</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+      </div>
+      <div id="clearPOLink" style="display:none" class="text-[11px] text-primary cursor-pointer underline" onclick="clearPORef()">✕ Clear PO reference (unlock fields)</div>
+    </div>
+
+  </section>
+
+  <!-- Material Items heading -->
+  <h2 class="font-headline text-[16px] font-semibold text-[#0f172a] mt-1">Material Items</h2>
+
+  <!-- Section 1b: Material card -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4 relative">
+    <div class="absolute top-4 right-4 text-[#64748b] text-[13px] font-medium">Item 1</div>
+
+    <!-- Item -->
+    <div id="f-item" class="flex flex-col gap-[6px] mt-1">
+      <label class="font-label text-[14px] font-medium text-[#374151]" for="item">Material Code <span class="text-status-danger">*</span></label>
+      <div class="relative">
+        <select id="item" disabled onchange="onItemChange()" class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+          <option value="">Select Material</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+      </div>
+      <div class="field-error-msg" id="err-item">Item is required</div>
+    </div>
+
+    <!-- PO Multi-line table -->
+    <div id="po-multi-section" style="display:none">
+      <div style="font-size:11px;color:#92400E;font-weight:700;margin-bottom:6px;letter-spacing:0.4px;">PO LINES — enter qty received per line</div>
+      <table id="po-multi-table">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th style="text-align:right;width:60px">Ordered</th>
+            <th style="text-align:right;width:60px;color:#b45309">Pending</th>
+            <th style="text-align:right;width:80px">Receive</th>
+            <th style="width:100px">Batch</th>
+          </tr>
+        </thead>
+        <tbody id="po-multi-body"></tbody>
+      </table>
+      <div style="font-size:10px;color:#92400E;margin-top:6px">All receipts share supplier, disposition, vehicle no, and date. Leave Receive blank to skip a line.</div>
+    </div>
+
+    <!-- Batch + Vehicle grid (inside material card, matching Stitch) -->
+    <div class="grid grid-cols-2 gap-3">
+      <div id="f-batchNo" class="flex flex-col gap-[6px]">
+        <label class="font-label text-[14px] font-medium text-[#374151]">Batch Number <span class="text-status-danger">*</span></label>
+        <input id="batchNo" type="text" placeholder="B-" autocomplete="off"
+          class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+        <div class="field-error-msg" id="err-batchNo">Batch / Lot No is required</div>
+      </div>
+      <div class="flex flex-col gap-[6px]">
+        <label class="font-label text-[14px] font-medium text-[#374151]">Vehicle No</label>
+        <input id="vehicleNo" type="text" placeholder="MH-04-AB-1234" autocomplete="off"
+          class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+      </div>
+    </div>
+
+    <!-- Storage Location -->
+    <div id="f-storage-loc" class="flex flex-col gap-[6px]">
+      <label class="font-label text-[14px] font-medium text-[#374151]">Storage Location</label>
+      <input id="storageLocation" type="text" disabled placeholder="Pick a material…"
+        class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 bg-surface outline-none">
+      <span id="hint-storage-loc" class="text-[11px] text-[#64748b]">Auto-assigned from the material's default location.</span>
+    </div>
+
+  </section>
+
+  <!-- Section 3: Quantity -->
+  <section id="qty-section" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+    <h2 class="font-headline text-[15px] font-semibold text-primary tracking-wide uppercase">Quantity</h2>
+    <div class="grid grid-cols-2 gap-3">
+
+      <div id="f-qtyReceived" class="flex flex-col gap-[6px]">
+        <label class="font-label text-[14px] font-medium text-[#374151]">Qty Received <span class="text-status-danger">*</span></label>
+        <input id="qtyReceived" type="number" min="0" step="1" placeholder="0"
+          class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+        <div class="field-error-msg" id="err-qtyReceived">Must be &gt; 0</div>
+      </div>
+
+      <div class="flex flex-col gap-[6px]">
+        <label class="font-label text-[14px] font-medium text-[#374151]">Qty Accepted</label>
+        <input id="qtyAccepted" type="number" min="0" step="1" placeholder="0"
+          class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+        <span class="text-[11px] text-[#64748b]">Reduce if partial reject</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 4: Disposition -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+    <h2 class="font-headline text-[15px] font-semibold text-primary tracking-wide uppercase">Disposition <span class="text-status-danger">*</span></h2>
+    <div class="grid grid-cols-2 gap-3">
+      <button type="button" class="disp-btn" id="d-ACCEPT" data-disp="ACCEPT">ACCEPT</button>
+      <button type="button" class="disp-btn" id="d-REJECT" data-disp="REJECT">REJECT</button>
+      <button type="button" class="disp-btn" id="d-HOLD"   data-disp="HOLD">HOLD</button>
+      <button type="button" class="disp-btn" id="d-AWD"    data-disp="AWD">AWD</button>
+    </div>
+    <div class="field-error-msg" id="err-disp" style="display:none">Please select a disposition</div>
+  </section>
+
+  <!-- Section 5: Remarks -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+    <h2 class="font-headline text-[15px] font-semibold text-primary tracking-wide uppercase">Remarks</h2>
+    <textarea id="remarks" rows="3" placeholder="Deviations, observations, or notes"
+      class="w-full border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 py-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all resize-none"></textarea>
+  </section>
+
+</main><!-- /#formWrap -->
+
+<!-- ── Confirmation screen ── -->
+<div id="confirmScreen">
+  <svg class="mx-auto mb-5 text-status-success" width="72" height="72" viewBox="0 0 72 72" fill="none">
+    <circle cx="36" cy="36" r="33" stroke="currentColor" stroke-width="3" fill="none"/>
+    <path d="M22 37l10 10 18-20" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div class="text-[22px] font-bold font-headline text-[#0f172a] mb-1">GRN Saved</div>
+  <div class="text-[13px] font-medium text-[#64748b] mb-1" id="confGrnId"></div>
+  <div class="text-[14px] font-semibold text-[#0f172a] mb-1" id="confItem"></div>
+  <div class="text-[13px] text-[#64748b] mb-4" id="confBatch"></div>
+  <div id="confBadge" class="confirm-badge mb-8"></div>
+  <button id="btnIqc"
+    class="w-full max-w-sm mx-auto block h-[52px] bg-amber-400 text-[#1e3a5f] rounded-[10px] font-headline text-[15px] font-bold mb-3 transition-colors hover:bg-amber-300">
+    PROCEED TO IQC &#8594;
+  </button>
+  <button id="btnHome"
+    class="w-full max-w-sm mx-auto block h-[52px] bg-primary text-white rounded-[10px] font-headline text-[15px] font-bold transition-colors hover:bg-primary/90">
+    BACK TO HOME
+  </button>
+</div>
+
+<!-- ── Sticky footer ── -->
+<div id="stickyFooter" class="fixed bottom-0 left-0 w-full bg-white border-t border-border p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40">
+  <button id="btnSubmit" disabled
+    class="w-full max-w-lg mx-auto flex items-center justify-center gap-2 h-[56px] bg-primary text-white rounded-[10px] font-headline text-[16px] font-semibold transition-colors disabled:opacity-40 shadow-sm">
+    <span class="material-symbols-outlined">save</span>
+    SAVE GRN RECORD
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+var SUPPLIERS        = [];
+var ALL_MATS         = [];
+var LOCATIONS        = [];
+
+var _inspectorNames  = [];
+var formSaved    = false;
+var disposition  = '';
+var supplierObj  = {};
+var itemObj      = {};
+var savedGrn     = {};
+var qtyManuallyEdited = false;
+
+// ── Toast ──────────────────────────────────────────────────────────
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+function showErr(msg) { showToast(msg, 'error'); }
+
+// ── Field error helpers ────────────────────────────────────────────
+function setFieldErr(fieldId, errId, show) {
+  var f = document.getElementById(fieldId);
+  var e = document.getElementById(errId);
+  if (!f || !e) return;
+  if (show) { f.classList.add('field-err'); e.style.display = 'block'; }
+  else       { f.classList.remove('field-err'); e.style.display = 'none'; }
+}
+
+function clearAllErrors() {
+  ['f-supplier','f-item','f-batchNo','f-qtyReceived'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('field-err');
+  });
+  ['err-supplier','err-item','err-batchNo','err-qtyReceived','err-disp'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+// ── Save button enable/disable ─────────────────────────────────────
+function refreshSaveBtn() {
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section') &&
+                   document.getElementById('po-multi-section').style.display !== 'none');
+  if (isMulti) {
+    var anyQty = false;
+    document.querySelectorAll('#po-multi-body .po-multi-qty').forEach(function(inp) {
+      if ((parseFloat(inp.value) || 0) > 0) anyQty = true;
+    });
+    document.getElementById('btnSubmit').disabled = !(document.getElementById('supplier').value && disposition && anyQty);
+    return;
+  }
+  var ok = document.getElementById('supplier').value &&
+           document.getElementById('item').value &&
+           document.getElementById('batchNo').value.trim() &&
+           parseFloat(document.getElementById('qtyReceived').value) > 0 &&
+           disposition;
+  document.getElementById('btnSubmit').disabled = !ok;
+}
+
+// ── Disposition ────────────────────────────────────────────────────
+var DISP_CLASS = { ACCEPT: 'sel-acc', REJECT: 'sel-rej', HOLD: 'sel-hld', AWD: 'sel-awd' };
+
+function selectDisp(val) {
+  disposition = val;
+  ['ACCEPT','REJECT','HOLD','AWD'].forEach(function(d) {
+    var btn = document.getElementById('d-' + d);
+    if (!btn) return;
+    btn.className = 'disp-btn' + (d === val ? ' ' + DISP_CLASS[d] : '');
+  });
+  document.getElementById('err-disp').style.display = 'none';
+  refreshSaveBtn();
+}
+
+// ── Material list helpers ──────────────────────────────────────────
+function buildItemSelect(mats) {
+  var sel = document.getElementById('item');
+  sel.innerHTML = '';
+  if (!mats.length) {
+    var none = document.createElement('option');
+    none.value = '';
+    none.textContent = 'No items found';
+    sel.appendChild(none);
+    sel.disabled = true;
+    return;
+  }
+  var ph = document.createElement('option');
+  ph.value = '';
+  ph.textContent = 'Select item...';
+  sel.appendChild(ph);
+  mats.forEach(function(m) {
+    var opt = document.createElement('option');
+    opt.value = m.code;
+    opt.textContent = '[' + m.code + '] ' + m.desc + (m.unit ? ' (' + m.unit + ')' : '');
+    opt.dataset.obj = JSON.stringify(m);
+    sel.appendChild(opt);
+  });
+  sel.disabled = false;
+}
+
+// ── Supplier change ────────────────────────────────────────────────
+function onSupplierChange() {
+  var code = document.getElementById('supplier').value;
+  itemObj = {};
+  qtyManuallyEdited = false;
+  if (!code) {
+    supplierObj = {};
+    document.getElementById('item').innerHTML = '<option value="">Select supplier first...</option>';
+    document.getElementById('item').disabled = true;
+    refreshSaveBtn();
+    return;
+  }
+  for (var i = 0; i < SUPPLIERS.length; i++) {
+    if (SUPPLIERS[i].code === code) { supplierObj = SUPPLIERS[i]; break; }
+  }
+  setFieldErr('f-supplier', 'err-supplier', false);
+  buildItemSelect(ALL_MATS);
+  refreshSaveBtn();
+}
+
+// ── Item change ────────────────────────────────────────────────────
+function onItemChange() {
+  var sel = document.getElementById('item');
+  var opt = sel.options[sel.selectedIndex];
+  itemObj = (opt && opt.dataset.obj) ? JSON.parse(opt.dataset.obj) : {};
+  setFieldErr('f-item', 'err-item', false);
+  var locInput = document.getElementById('storageLocation');
+  var hint = document.getElementById('hint-storage-loc');
+  if (locInput) {
+    var loc = (itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '';
+    if (loc) {
+      locInput.value = loc;
+      if (hint) hint.textContent = 'From master record for ' + (itemObj.code || '');
+    } else {
+      locInput.value = '';
+      if (hint) hint.textContent = 'No default location in master — fallback (first RM bay) will be used.';
+    }
+  }
+  refreshSaveBtn();
+}
+
+// ── Qty inputs ─────────────────────────────────────────────────────
+function onQtyReceivedInput() {
+  var r = parseFloat(document.getElementById('qtyReceived').value) || 0;
+  if (!qtyManuallyEdited) {
+    document.getElementById('qtyAccepted').value = r > 0 ? r : '';
+  }
+  setFieldErr('f-qtyReceived', 'err-qtyReceived', false);
+  refreshSaveBtn();
+}
+
+function onQtyAcceptedInput() {
+  qtyManuallyEdited = true;
+  var r = parseFloat(document.getElementById('qtyReceived').value) || 0;
+  var a = parseFloat(document.getElementById('qtyAccepted').value) || 0;
+  if (a < 0) document.getElementById('qtyAccepted').value = 0;
+  if (a > r)  document.getElementById('qtyAccepted').value = r;
+}
+
+// ── Validate ───────────────────────────────────────────────────────
+function validate() {
+  var ok = true;
+  if (!document.getElementById('supplier').value) { setFieldErr('f-supplier', 'err-supplier', true); ok = false; }
+  if (!document.getElementById('item').value)     { setFieldErr('f-item',     'err-item',     true); ok = false; }
+  if (!document.getElementById('batchNo').value.trim()) { setFieldErr('f-batchNo', 'err-batchNo', true); ok = false; }
+  if ((parseFloat(document.getElementById('qtyReceived').value) || 0) <= 0) {
+    setFieldErr('f-qtyReceived', 'err-qtyReceived', true); ok = false;
+  }
+  if (!disposition) { document.getElementById('err-disp').style.display = 'block'; ok = false; }
+  return ok;
+}
+
+// ── Navigate ───────────────────────────────────────────────────────
+function navigate(page) {
+  google.script.run
+    .withSuccessHandler(function(html) { document.open(); document.write(html); document.close(); })
+    .withFailureHandler(function() {})
+    .getFormHtml(page);
+}
+
+function goHome() {
+  if (!formSaved) {
+    var hasData = document.getElementById('supplier').value || document.getElementById('batchNo').value || disposition;
+    if (hasData && !confirm('Unsaved changes. Leave?')) return;
+  }
+  navigate('Landing');
+}
+
+// ── PO Reference logic ─────────────────────────────────────────────
+var _activePO = null;
+
+function loadPODropdown() {
+  google.script.run
+    .withSuccessHandler(function(poList) {
+      var sel = document.getElementById('poRefSelect');
+      (poList || []).forEach(function(po) {
+        var o = document.createElement('option');
+        o.value = po.poNo;
+        o.textContent = po.poNo + ' — ' + po.supplierName + ' (Due: ' + (po.dueDate || '?') + ')';
+        o.setAttribute('data-po', JSON.stringify(po));
+        sel.appendChild(o);
+      });
+    })
+    .withFailureHandler(function() {})
+    .getOpenPOsForSupplier(null);
+}
+
+function onPORefChange() {
+  var sel = document.getElementById('poRefSelect');
+  var poNo = sel.value;
+  if (!poNo) { clearPORef(); return; }
+  var opt = sel.options[sel.selectedIndex];
+  var poData = null;
+  try { poData = JSON.parse(opt.getAttribute('data-po') || 'null'); } catch(e) {}
+  if (!poData) { clearPORef(); return; }
+  _activePO = poData;
+
+  var suppSel = document.getElementById('supplier');
+  for (var i = 0; i < suppSel.options.length; i++) {
+    if (suppSel.options[i].value === poData.supplierCode) { suppSel.selectedIndex = i; break; }
+  }
+  suppSel.disabled = true;
+  suppSel.dispatchEvent(new Event('change'));
+  document.getElementById('clearPOLink').style.display = 'block';
+
+  var lines = (poData.lines || []).filter(function(l) { return Number(l.qtyPending) > 0; });
+  if (lines.length > 1) {
+    renderPOMultiTable(lines);
+    setMultiMode(true);
+  } else {
+    setMultiMode(false);
+    if (lines.length === 1) {
+      var iSel = document.getElementById('item');
+      for (var j = 0; j < iSel.options.length; j++) {
+        if (iSel.options[j].value === lines[0].materialCode) { iSel.selectedIndex = j; iSel.dispatchEvent(new Event('change')); break; }
+      }
+    }
+  }
+}
+
+function renderPOMultiTable(lines) {
+  var tbody = document.getElementById('po-multi-body');
+  tbody.innerHTML = lines.map(function(l) {
+    var mat = l.materialCode + (l.materialDesc ? ' — ' + l.materialDesc : '');
+    return '<tr data-line="' + l.lineNo + '" data-mat="' + l.materialCode + '">' +
+      '<td>' + mat + '</td>' +
+      '<td style="text-align:right">' + l.qtyOrdered + '</td>' +
+      '<td style="text-align:right;color:#b45309;font-weight:600">' + l.qtyPending + '</td>' +
+      '<td><input type="number" class="po-multi-qty" min="0" step="any" placeholder="0" oninput="refreshSaveBtn()"></td>' +
+      '<td><input type="text" class="po-multi-batch" placeholder="batch"></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function setMultiMode(on) {
+  document.getElementById('po-multi-section').style.display = on ? 'block' : 'none';
+  ['f-item','f-storage-loc'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = on ? 'none' : '';
+  });
+  var batchField = document.getElementById('f-batchNo');
+  if (batchField) batchField.style.display = on ? 'none' : '';
+  var qtySection = document.getElementById('qty-section');
+  if (qtySection) qtySection.style.display = on ? 'none' : '';
+  refreshSaveBtn();
+}
+
+function clearPORef() {
+  _activePO = null;
+  document.getElementById('poRefSelect').value = '';
+  document.getElementById('clearPOLink').style.display = 'none';
+  document.getElementById('supplier').disabled = false;
+  setMultiMode(false);
+}
+
+function getPendingQtyForCurrentItem() {
+  if (!_activePO || !_activePO.lines) return null;
+  var itemCode = document.getElementById('item').value;
+  if (!itemCode) return null;
+  var match = null;
+  _activePO.lines.forEach(function(l) {
+    if (l.materialCode === itemCode && (match === null || l.qtyPending > match)) match = l.qtyPending;
+  });
+  return match;
+}
+
+function checkOverReceiptWarning() {
+  var pending = getPendingQtyForCurrentItem();
+  if (pending === null) return;
+  var qtyR = parseFloat(document.getElementById('qtyReceived').value) || 0;
+  var warn = document.getElementById('po-pending-warn');
+  if (!warn) {
+    warn = document.createElement('div');
+    warn.id = 'po-pending-warn';
+    warn.style.cssText = 'font-size:11px;color:#c65c00;font-weight:600;margin-top:4px;';
+    document.getElementById('qtyReceived').parentNode.appendChild(warn);
+  }
+  warn.textContent = qtyR > pending
+    ? 'Warning: qty received (' + qtyR + ') > PO pending (' + pending + ')'
+    : (pending !== null ? 'PO pending: ' + pending : '');
+}
+
+// ── Save ───────────────────────────────────────────────────────────
+function doSave() {
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section').style.display !== 'none');
+
+  if (!isMulti) {
+    clearAllErrors();
+    if (!validate()) { showErr('Please fill all required fields.'); return; }
+  } else {
+    var rows = document.querySelectorAll('#po-multi-body tr');
+    var anyFilled = false;
+    for (var k = 0; k < rows.length; k++) {
+      if ((parseFloat(rows[k].querySelector('.po-multi-qty').value) || 0) > 0) { anyFilled = true; break; }
+    }
+    if (!anyFilled) { showErr('Enter a qty for at least one PO line.'); return; }
+    if (!disposition) { showErr('Pick a disposition.'); return; }
+
+    var btn0 = document.getElementById('btnSubmit');
+    var origLabel = btn0.innerHTML;
+    btn0.disabled = true;
+    btn0.innerHTML = '<span class="spinner"></span>Checking PO…';
+
+    google.script.run
+      .withSuccessHandler(function(freshPO) {
+        btn0.disabled = false;
+        btn0.innerHTML = origLabel;
+        var linesSrc = (freshPO && freshPO.lines && freshPO.lines.length) ? freshPO.lines : ((_activePO && _activePO.lines) || []);
+        if (freshPO && freshPO.lines) _activePO.lines = freshPO.lines;
+        var overRcpt = [];
+        document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
+          var qq = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
+          var matCC = tr.getAttribute('data-mat');
+          var ln = linesSrc.filter(function(l){ return l.materialCode === matCC; })[0] || {};
+          if (qq > (Number(ln.qtyPending) || 0)) overRcpt.push(matCC + ': receiving ' + qq + ' but only ' + ln.qtyPending + ' pending');
+        });
+        if (overRcpt.length && !confirm('Over-receipt detected:\n\n' + overRcpt.join('\n') + '\n\nProceed anyway?')) return;
+        _doSaveProceed();
+      })
+      .withFailureHandler(function() {
+        btn0.disabled = false;
+        btn0.innerHTML = origLabel;
+        var overRcpt = [];
+        document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
+          var qq = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
+          var matCC = tr.getAttribute('data-mat');
+          var ln = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCC; })[0] || {};
+          if (qq > (Number(ln.qtyPending) || 0)) overRcpt.push(matCC + ': receiving ' + qq + ' but only ' + ln.qtyPending + ' pending');
+        });
+        if (overRcpt.length && !confirm('Over-receipt (cached):\n\n' + overRcpt.join('\n') + '\n\nProceed anyway?')) return;
+        _doSaveProceed();
+      })
+      .getPOById(_activePO ? _activePO.poNo : '');
+    return;
+  }
+  _doSaveProceed();
+}
+
+function _doSaveProceed() {
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display !== 'none');
+  var btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving&hellip;';
+
+  var qtyR = parseFloat(document.getElementById('qtyReceived').value) || 0;
+  var qtyA = parseFloat(document.getElementById('qtyAccepted').value);
+  if (isNaN(qtyA) || qtyA > qtyR) qtyA = qtyR;
+  if (qtyA < 0) qtyA = 0;
+
+  var data = {
+    date:        new Date().toISOString().split('T')[0],
+    supplierCode: supplierObj.code || document.getElementById('supplier').value,
+    supplierName: supplierObj.name || '',
+    poRef:        _activePO ? _activePO.poNo : '',
+    poNo:         _activePO ? _activePO.poNo : '',
+    invoiceNo:    '',
+    coaReceived:  'N/A',
+    remarks:      document.getElementById('remarks').value,
+    storageZone:  disposition === 'ACCEPT' ? 'Approved Zone' :
+                  disposition === 'REJECT' ? 'Rejected Zone' : 'Quarantine Zone',
+    locationId:   (function() {
+      if (disposition !== 'ACCEPT') {
+        for (var i = 0; i < LOCATIONS.length; i++) {
+          if (String(LOCATIONS[i].type || '').toUpperCase() === 'QUARANTINE') return LOCATIONS[i].id;
+        }
+      }
+      return (itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '';
+    })(),
+    items: isMulti ? (function() {
+      var arr = [];
+      document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
+        var q = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
+        if (q <= 0) return;
+        var matCode = tr.getAttribute('data-mat');
+        var lineNo  = Number(tr.getAttribute('data-line')) || null;
+        var batch   = (tr.querySelector('.po-multi-batch').value || '').trim();
+        var matInfo = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCode; })[0] || {};
+        var matMaster = (ALL_MATS || []).filter(function(m){ return m.code === matCode; })[0] || {};
+        arr.push({
+          materialCode: matCode,
+          materialDesc: matInfo.materialDesc || matMaster.desc || '',
+          unit:         matMaster.unit || '',
+          qtyOrdered:   q,
+          qtyReceived:  q,
+          batchNo:      batch || ('PO-' + (_activePO.poNo || '').split('/').pop() + '-L' + lineNo),
+          expiryDate:   '',
+          vehicleNo:    document.getElementById('vehicleNo').value.trim(),
+          qtyAccepted:  q,
+          disposition:  disposition,
+          locationId:   (disposition === 'ACCEPT' && matMaster.defaultLocation) ? matMaster.defaultLocation : '',
+          poLineNo:     lineNo
+        });
+      });
+      return arr;
+    })() : [{
+      materialCode: itemObj.code || document.getElementById('item').value,
+      materialDesc: itemObj.desc || '',
+      unit:         itemObj.unit || '',
+      qtyOrdered:   qtyR,
+      qtyReceived:  qtyR,
+      batchNo:      document.getElementById('batchNo').value.trim(),
+      expiryDate:   '',
+      vehicleNo:    document.getElementById('vehicleNo').value.trim(),
+      qtyAccepted:  qtyA,
+      disposition:  disposition,
+      locationId:   (disposition === 'ACCEPT' && itemObj && itemObj.defaultLocation) ? itemObj.defaultLocation : '',
+      poLineNo:     (function() {
+        if (!_activePO || !_activePO.lines) return null;
+        var code = itemObj.code || document.getElementById('item').value;
+        var match = _activePO.lines.filter(function(l){ return l.materialCode === code; });
+        return match.length === 1 ? match[0].lineNo : null;
+      })()
+    }]
+  };
+
+  function afterStop(operatorName) {
+    data.operatorName = operatorName || '';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          formSaved = true;
+          savedGrn = {
+            grnId:       res.docNo,
+            supplierCode: supplierObj.code || '',
+            supplierName: supplierObj.name || '',
+            itemCode:     isMulti ? '' : (itemObj.code || ''),
+            itemName:     isMulti ? (data.items.length + ' lines from ' + (_activePO ? _activePO.poNo : 'PO')) : (itemObj.desc || ''),
+            batchNo:      isMulti ? ('multi: ' + data.items.map(function(i){return i.batchNo;}).join(', ')) : data.items[0].batchNo,
+            qtyReceived:  isMulti ? data.items.reduce(function(s,i){return s+i.qtyReceived;},0) : qtyR,
+            qtyAccepted:  isMulti ? data.items.reduce(function(s,i){return s+i.qtyAccepted;},0) : qtyA,
+            disposition:  disposition
+          };
+          showConfirm(savedGrn);
+          if (res.warnings && res.warnings.length) {
+            setTimeout(function(){ showErr('Saved with warnings: ' + res.warnings.join('; ')); }, 600);
+          }
+        } else {
+          showErr('Save failed: ' + ((res && res.error) ? res.error : 'Unknown error'));
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
+        }
+      })
+      .withFailureHandler(function(e) {
+        showErr('Save failed: ' + (e.message || String(e)));
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
+      })
+      .saveGRN(data);
+  }
+
+  if (window.QMS) {
+    window.QMS.requireOperator(_inspectorNames, afterStop);
+  } else {
+    afterStop('');
+  }
+}
+
+// ── Confirm screen ─────────────────────────────────────────────────
+function showConfirm(g) {
+  document.getElementById('formWrap').classList.add('hidden');
+  document.getElementById('stickyFooter').classList.add('hidden');
+
+  document.getElementById('confGrnId').textContent = '#' + g.grnId;
+  document.getElementById('confItem').textContent  = g.itemName + ' — ' + g.supplierName;
+  document.getElementById('confBatch').textContent = 'Batch ' + g.batchNo + ' · ' + g.qtyReceived + ' units';
+
+  var badge = document.getElementById('confBadge');
+  badge.textContent = g.disposition;
+  badge.className = 'confirm-badge ' + g.disposition;
+
+  var cs = document.getElementById('confirmScreen');
+  cs.style.display = 'block';
+  cs.offsetHeight;
+  cs.classList.add('visible');
+  setTimeout(function() { cs.classList.add('fade-in'); }, 10);
+}
+
+// ── IQC navigation ─────────────────────────────────────────────────
+function goToIqc() {
+  try {
+    sessionStorage.setItem('grnPrefill', JSON.stringify({
+      supplierId:   savedGrn.supplierCode,
+      supplierName: savedGrn.supplierName,
+      itemCode:     savedGrn.itemCode,
+      itemName:     savedGrn.itemName,
+      batchNo:      savedGrn.batchNo,
+      grnId:        savedGrn.grnId
+    }));
+  } catch(e) {}
+  navigate('IQC');
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+function init() {
+  google.script.run
+    .withSuccessHandler(function(d) {
+      SUPPLIERS       = d.suppliers  || [];
+      ALL_MATS        = d.materials  || [];
+      LOCATIONS       = d.locations  || [];
+      _inspectorNames = (d.inspectors || []).map(function(i) {
+        return typeof i === 'string' ? i : (i.name || '');
+      }).filter(Boolean);
+
+      if (d.docNumber) {
+        document.getElementById('docBadge').textContent = d.docNumber;
+        var il = document.getElementById('docBadgeInline');
+        if (il) il.textContent = d.docNumber;
+      }
+
+      var sSel = document.getElementById('supplier');
+      SUPPLIERS.forEach(function(s) {
+        var opt = document.createElement('option');
+        opt.value = s.code;
+        opt.textContent = s.name;
+        sSel.appendChild(opt);
+      });
+    })
+    .withFailureHandler(function(e) {
+      showErr('Failed to load form data: ' + (e.message || String(e)));
+    })
+    .getGRNFormInit();
+}
+
+// ── Event wiring ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Set today's date in header card
+  var td = document.getElementById('todayDate');
+  if (td) {
+    var d = new Date();
+    td.textContent = d.toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+  document.getElementById('backBtn').addEventListener('click', goHome);
+  document.getElementById('supplier').addEventListener('change', onSupplierChange);
+  document.getElementById('item').addEventListener('change', onItemChange);
+  document.getElementById('qtyReceived').addEventListener('input', function() { onQtyReceivedInput(); checkOverReceiptWarning(); });
+  document.getElementById('qtyAccepted').addEventListener('input', onQtyAcceptedInput);
+  document.getElementById('batchNo').addEventListener('input', refreshSaveBtn);
+  document.getElementById('btnSubmit').addEventListener('click', doSave);
+  document.getElementById('btnIqc').addEventListener('click', goToIqc);
+  document.getElementById('btnHome').addEventListener('click', function() { navigate('Landing'); });
+
+  document.querySelectorAll('.disp-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { selectDisp(btn.getAttribute('data-disp')); });
+  });
+
+  init();
+  loadPODropdown();
+});
+</script>
+</body>
+</html>

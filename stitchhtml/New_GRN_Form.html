@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>New GRN - Pack Masters QMS</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a5f',
+                        accent: '#0ea5e9',
+                        surface: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0',
+                        status: {
+                            success: '#16a34a',
+                            danger: '#dc2626',
+                            warning: '#ca8a04',
+                            pending: '#d97706',
+                            progress: '#2563eb',
+                            closed: '#6b7280'
+                        }
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "0.75rem", // 12px
+                        xl: "1rem"
+                    },
+                    boxShadow: {
+                        card: "0 2px 8px rgba(0,0,0,0.08)"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Base touch targets */
+        button, a, input, select {
+            min-height: 44px;
+        }
+        
+        /* Custom form elements matching design system */
+        .qms-input {
+            @apply w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] font-normal text-[#0f172a] px-3 bg-white focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all;
+        }
+        
+        .qms-label {
+            @apply block text-[14px] font-medium text-[#374151] mb-[6px];
+        }
+
+        .qms-card {
+            @apply bg-card rounded-lg shadow-card p-4 border border-border;
+        }
+
+        .qms-section-title {
+            @apply text-[16px] font-semibold text-[#0f172a] tracking-wide uppercase;
+        }
+        
+        /* Toggle Switch styling */
+        .toggle-checkbox:checked {
+            @apply right-0 border-status-success;
+            right: 0;
+            border-color: #16a34a;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            @apply bg-status-success;
+            background-color: #16a34a;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-[#0f172a] antialiased pb-24">
+<!-- Header (Shared Component Mapping) -->
+<header class="fixed top-0 w-full h-[56px] bg-[#1e3a5f] text-white flex items-center justify-between px-4 z-50 shadow-md">
+<button aria-label="Back" class="material-symbols-outlined text-white hover:opacity-80 active:scale-95 transition-transform">
+            arrow_back
+        </button>
+<h1 class="font-headline text-[20px] font-bold text-center flex-1">New GRN</h1>
+<div class="w-6 h-6"></div> <!-- Spacer for center alignment -->
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[68px] px-4 flex flex-col gap-3">
+<!-- Document Number Card -->
+<div class="qms-card flex flex-col">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="text-[18px] font-bold text-primary font-headline">PM/GRN/2026-043</h2>
+<span class="text-[12px] text-[#64748b]">Auto-generated</span>
+</div>
+<span class="text-[13px] text-[#64748b]">18/05/2026</span>
+</div>
+</div>
+<!-- Supplier Section -->
+<section class="mt-2 flex flex-col gap-3">
+<h3 class="qms-section-title">SUPPLIER</h3>
+<div class="qms-card flex flex-col gap-4">
+<div>
+<label class="qms-label">Select Supplier</label>
+<div class="relative">
+<select class="qms-input appearance-none">
+<option disabled="" selected="" value="">Select Supplier</option>
+<option value="polymat">PolyMat Industries</option>
+<option value="chempack">ChemPack Solutions</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div>
+<label class="qms-label">Invoice Number</label>
+<input class="qms-input" placeholder="e.g. INV-2026-892" type="text"/>
+</div>
+<div>
+<label class="qms-label">Link to PO (optional)</label>
+<div class="relative">
+<select class="qms-input appearance-none">
+<option selected="" value="">None</option>
+<option value="po123">PO-2026-123</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Materials Section -->
+<section class="mt-2 flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<h3 class="qms-section-title">MATERIALS</h3>
+<button class="text-accent font-semibold flex items-center gap-1 active:scale-95 transition-transform">
+                    Add Item <span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<!-- Item Card 1 -->
+<div class="bg-card rounded-lg shadow-card p-4 border border-border border-l-4 border-l-accent flex flex-col gap-4">
+<div>
+<label class="qms-label">Material Code</label>
+<div class="relative mb-1">
+<select class="qms-input appearance-none">
+<option selected="" value="HDPE-001">HDPE-001</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+</div>
+<span class="text-[13px] text-[#64748b]">HDPE-001 — HDPE Granules</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div class="col-span-1">
+<label class="qms-label truncate">Qty Ordered</label>
+<input class="qms-input px-2 text-center" type="number" value="120"/>
+</div>
+<div class="col-span-1">
+<label class="qms-label truncate">Qty Rcvd</label>
+<input class="qms-input px-2 text-center" type="number" value="118"/>
+</div>
+<div class="col-span-1">
+<label class="qms-label">Unit</label>
+<select class="qms-input px-2 appearance-none">
+<option selected="" value="kg">kg</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="qms-label">Batch No.</label>
+<input class="qms-input" type="text" value="B2026-118"/>
+</div>
+<div>
+<label class="qms-label">Expiry</label>
+<input class="qms-input" type="text" value="12/2027"/>
+</div>
+</div>
+<div>
+<label class="qms-label">Storage Location</label>
+<div class="relative">
+<select class="qms-input appearance-none">
+<option selected="" value="RM-STORE-A">RM-STORE-A</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-between py-2 border-t border-border mt-1">
+<span class="text-[14px] font-medium text-[#374151]">COA Received</span>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out right-0 border-status-success" id="toggle1" name="toggle1" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-status-success cursor-pointer" for="toggle1"></label>
+</div>
+</div>
+</div>
+<!-- Item Card 2 -->
+<div class="bg-card rounded-lg shadow-card p-4 border border-border border-l-4 border-l-[#94a3b8] flex flex-col gap-4 opacity-90">
+<div>
+<label class="qms-label">Material Code</label>
+<div class="relative mb-1">
+<select class="qms-input appearance-none">
+<option selected="" value="PP-002">PP-002</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+</div>
+<span class="text-[13px] text-[#64748b]">PP-002 — Polypropylene Film</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div class="col-span-1">
+<label class="qms-label truncate">Qty Ordered</label>
+<input class="qms-input px-2 text-center" type="number" value="50"/>
+</div>
+<div class="col-span-1">
+<label class="qms-label truncate">Qty Rcvd</label>
+<input class="qms-input px-2 text-center" type="number" value="50"/>
+</div>
+<div class="col-span-1">
+<label class="qms-label">Unit</label>
+<select class="qms-input px-2 appearance-none">
+<option selected="" value="rolls">rolls</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="qms-label">Batch No.</label>
+<input class="qms-input" type="text" value="B2026-119"/>
+</div>
+<div>
+<label class="qms-label">Expiry</label>
+<input class="qms-input" placeholder="MM/YYYY" type="text"/>
+</div>
+</div>
+<div class="flex justify-end">
+<button class="material-symbols-outlined text-[#dc2626] active:scale-95 p-2">delete</button>
+</div>
+</div>
+</section>
+<!-- WhatsApp Toggle -->
+<div class="qms-card flex items-center justify-between mt-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#16a34a]">smartphone</span>
+<span class="text-[14px] font-medium text-[#374151]">Send WhatsApp update to supplier</span>
+</div>
+<div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-[#d1d5db] appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" id="toggle2" name="toggle2" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-[#e2e8f0] cursor-pointer" for="toggle2"></label>
+</div>
+</div>
+</main>
+<!-- Sticky Submit Button -->
+<div class="fixed bottom-0 w-full p-4 bg-surface/90 backdrop-blur border-t border-border z-40">
+<button class="w-full h-[56px] bg-primary text-white font-semibold text-[16px] rounded-[10px] active:scale-95 transition-transform shadow-lg">
+            Save GRN
+        </button>
+</div>
+<!-- Toggle Interaction Script -->
+<script>
+        document.querySelectorAll('.toggle-checkbox').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                if(this.checked) {
+                    this.style.borderColor = '#16a34a';
+                    this.style.right = '0';
+                    this.nextElementSibling.style.backgroundColor = '#16a34a';
+                } else {
+                    this.style.borderColor = '#d1d5db';
+                    this.style.right = '24px';
+                    this.nextElementSibling.style.backgroundColor = '#e2e8f0';
+                }
+            });
+            
+            // Init visual state based on checked attribute
+            if(!toggle.checked) {
+                 toggle.style.right = '24px';
+            }
+        });
+    </script>
+</body></html>

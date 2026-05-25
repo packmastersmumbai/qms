@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pack Masters QMS - Non-Conformances</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@700&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config from Design System -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {},
+            "borderRadius": {
+                    "DEFAULT": "0.5rem",
+                    "lg": "1rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "display": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body": [
+                            "Inter"
+                    ],
+                    "label": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {}
+    },
+        },
+      }
+    </script>
+<style>
+        /* Custom Status Badge Colors as per Design System Factory Convention */
+        .status-open { background-color: #d97706; }
+        .status-in-progress { background-color: #2563eb; }
+        .status-closed { background-color: #6b7280; }
+        
+        .source-iqc, .source-oqc { background-color: #2563eb; }
+        
+        /* Typography overrides based on Brand anchors */
+        .text-brand-primary { color: #1e3a5f; }
+        .bg-brand-primary { background-color: #1e3a5f; }
+        .bg-brand-surface { background-color: #f8fafc; }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-brand-surface font-body text-[#0f172a] antialiased min-h-screen pb-[64px] pb-safe flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-[#1e3a5f] text-white fixed top-0 w-full h-[56px] shadow-sm flex items-center justify-between px-4 z-50">
+<button class="text-white hover:bg-white/10 active:scale-95 transition-transform p-1 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold text-white tracking-tight">Non-Conformances</h1>
+<button class="text-white hover:bg-white/10 active:scale-95 transition-transform p-1 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-[56px] pt-3 px-4 pb-6 overflow-y-auto">
+<!-- Filter Chips (Horizontal Scroll) -->
+<div class="flex overflow-x-auto gap-2 pb-4 hide-scrollbar snap-x">
+<button class="snap-start flex-shrink-0 bg-[#1e3a5f] text-white px-4 py-1.5 rounded-full text-[13px] font-semibold tracking-wide transition-all shadow-sm border border-transparent">
+                ALL
+            </button>
+<button class="snap-start flex-shrink-0 bg-white text-[#64748b] border border-[#e2e8f0] px-4 py-1.5 rounded-full text-[13px] font-semibold tracking-wide hover:bg-slate-50 transition-all shadow-sm">
+                OPEN
+            </button>
+<button class="snap-start flex-shrink-0 bg-white text-[#64748b] border border-[#e2e8f0] px-4 py-1.5 rounded-full text-[13px] font-semibold tracking-wide hover:bg-slate-50 transition-all shadow-sm">
+                IN_PROGRESS
+            </button>
+<button class="snap-start flex-shrink-0 bg-white text-[#64748b] border border-[#e2e8f0] px-4 py-1.5 rounded-full text-[13px] font-semibold tracking-wide hover:bg-slate-50 transition-all shadow-sm">
+                CLOSED
+            </button>
+</div>
+<!-- NCR List (Bento-style stacked cards) -->
+<div class="flex flex-col gap-3">
+<!-- Card 1 (Open) -->
+<div class="bg-white rounded-[12px] p-4 border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.99] transition-transform cursor-pointer relative overflow-hidden">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col gap-1">
+<span class="font-headline text-[18px] font-bold text-brand-primary tracking-tight">PM/NCR/2026-009</span>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="rounded-[20px] px-3 py-1 text-[12px] font-semibold text-white source-iqc leading-none">IQC</span>
+<span class="rounded-[20px] px-3 py-1 text-[12px] font-semibold text-white status-open leading-none">OPEN</span>
+</div>
+</div>
+<span class="text-[13px] text-[#64748b] font-medium">18/05/2026</span>
+</div>
+<div class="mt-4 flex flex-col gap-1.5">
+<p class="text-[14px] font-medium text-[#374151]">HDPE-001 — HDPE Granules</p>
+<div class="flex items-center gap-1.5 text-[12px] text-[#64748b]">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span>
+<span>Batch: <span class="font-medium text-[#374151]">B2026-118</span></span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex items-start gap-2">
+<span class="material-symbols-outlined text-[#ef4444] text-[16px] mt-0.5">error</span>
+<p class="text-[13px] text-[#64748b] line-clamp-1 leading-relaxed">Dimensions out of spec — 3 lots affected</p>
+</div>
+</div>
+<!-- Card 2 (In Progress) -->
+<div class="bg-white rounded-[12px] p-4 border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.99] transition-transform cursor-pointer relative overflow-hidden">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col gap-1">
+<span class="font-headline text-[18px] font-bold text-brand-primary tracking-tight">PM/NCR/2026-008</span>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="rounded-[20px] px-3 py-1 text-[12px] font-semibold text-white source-oqc leading-none">OQC</span>
+<span class="rounded-[20px] px-3 py-1 text-[12px] font-semibold text-white status-in-progress leading-none">IN_PROGRESS</span>
+</div>
+</div>
+<span class="text-[13px] text-[#64748b] font-medium">16/05/2026</span>
+</div>
+<div class="mt-4 flex flex-col gap-1.5">
+<p class="text-[14px] font-medium text-[#374151]">PP Bags — Lot 22B</p>
+<div class="flex items-center gap-1.5 text-[12px] text-[#64748b]">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span>
+<span>Batch: <span class="font-medium text-[#374151]">B2026-112</span></span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex items-start gap-2">
+<span class="material-symbols-outlined text-[#f59e0b] text-[16px] mt-0.5">warning</span>
+<p class="text-[13px] text-[#64748b] line-clamp-1 leading-relaxed">Seal strength failure on 15% sample</p>
+</div>
+</div>
+<!-- Card 3 (Closed) -->
+<div class="bg-white rounded-[12px] p-4 border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] active:scale-[0.99] transition-transform cursor-pointer relative overflow-hidden opacity-80 hover:opacity-100">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col gap-1">
+<span class="font-headline text-[18px] font-bold text-brand-primary tracking-tight">PM/NCR/2026-007</span>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="rounded-[20px] px-3 py-1 text-[12px] font-semibold text-white source-iqc leading-none">IQC</span>
+<span class="rounded-[20px] px-3 py-1 text-[12px] font-semibold text-white status-closed leading-none">CLOSED</span>
+</div>
+</div>
+<span class="text-[13px] text-[#64748b] font-medium">14/05/2026</span>
+</div>
+<div class="mt-4 flex flex-col gap-1.5">
+<p class="text-[14px] font-medium text-[#374151]">LDPE Film</p>
+<div class="flex items-center gap-1.5 text-[12px] text-[#64748b]">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span>
+<span>Batch: <span class="font-medium text-[#374151]">B2026-099</span></span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-100 flex items-start gap-2">
+<span class="material-symbols-outlined text-[#6b7280] text-[16px] mt-0.5">check_circle</span>
+<p class="text-[13px] text-[#64748b] line-clamp-1 leading-relaxed">Print quality deviation — supplier return</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-white fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-safe border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.08)] h-[64px]">
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label text-[12px] font-semibold">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#0ea5e9] font-bold hover:bg-slate-50 active:scale-90 transition-all w-16 h-full relative">
+<div class="absolute -top-1 w-8 h-1 bg-[#0ea5e9] rounded-b-full"></div>
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label text-[12px] font-bold">Records</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
+<span class="material-symbols-outlined mb-1">leaderboard</span>
+<span class="font-label text-[12px] font-semibold">KPIs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
+<span class="material-symbols-outlined mb-1">settings_applications</span>
+<span class="font-label text-[12px] font-semibold">Masters</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
+<span class="material-symbols-outlined mb-1">more_horiz</span>
+<span class="font-label text-[12px] font-semibold">More</span>
+</button>
+</nav>
+</body></html>

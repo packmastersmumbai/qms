@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Customer Returns &amp; Triage - Pack Masters QMS</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {},
+            "borderRadius": {
+                    "DEFAULT": "0.5rem",
+                    "lg": "1rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "spacing": {},
+            "fontFamily": {
+                    "headline": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "display": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body": [
+                            "Inter"
+                    ],
+                    "label": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {}
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            color: #0f172a;
+        }
+        h1, h2, h3, h4, h5, h6, .font-headline {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="pb-[80px]"> <!-- Padding bottom for NavBar -->
+<!-- TopAppBar -->
+<header class="bg-[#1e3a5f] text-white font-headline text-[20px] font-[700] sticky top-0 w-full h-[56px] shadow-none flex items-center justify-between px-4 w-full z-40 transition-colors duration-200">
+<div class="flex items-center gap-2">
+<button aria-label="Back" class="hover:bg-white/10 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<span class="text-[20px] font-[700] text-white">Returns Management</span>
+</div>
+<button aria-label="Filter" class="hover:bg-white/10 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[24px]">filter_list</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="p-4 flex flex-col gap-[20px] max-w-2xl mx-auto">
+<!-- PENDING TRIAGE Section -->
+<section class="flex flex-col gap-[12px]">
+<div class="flex items-center gap-3">
+<h2 class="text-[16px] font-[600] text-[#0f172a] font-headline">PENDING TRIAGE</h2>
+<span class="bg-[#d97706] text-white text-[12px] font-[600] px-[12px] py-[4px] rounded-[20px]">2 pending</span>
+</div>
+<!-- Return Card -->
+<div class="bg-[#ffffff] rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] border-l-[4px] border-l-[#ca8a04] p-[16px] flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<span class="text-[14px] font-[700] text-[#1e3a5f]">PM/RTN/2026-004</span>
+<span class="bg-[#d97706] text-white text-[12px] font-[600] px-[12px] py-[4px] rounded-[20px]">PENDING_TRIAGE</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-[14px] font-[500] text-[#374151]">Raj Packaging Pvt Ltd</span>
+<span class="text-[12px] font-[400] text-[#64748b]">GP Ref: PM/GP/2026-015</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-[13px] font-[400] text-[#64748b]">PP Woven Bags 50kg · 25 pcs</span>
+<span class="text-[12px] font-[400] text-[#64748b]">14/05/2026</span>
+</div>
+<div class="flex justify-end mt-1">
+<button class="h-[40px] px-4 border border-[#0ea5e9] text-[#0ea5e9] font-[600] text-[14px] rounded-[8px] hover:bg-[#0ea5e9]/5 transition-colors flex items-center gap-1">
+                        Triage Now
+                        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- TRIAGE PANEL (Expanded State) -->
+<div class="bg-[#ffffff] rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] p-[16px] flex flex-col gap-[20px] mt-2 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[4px] bg-[#d97706]"></div>
+<h3 class="text-[16px] font-[600] text-[#0f172a] font-headline mt-1">Set Disposition — PM/RTN/2026-004</h3>
+<!-- Reason Summary -->
+<div class="bg-slate-100 rounded-[12px] p-3 border border-slate-200">
+<p class="text-[14px] font-[400] text-[#374151] italic">"Customer complaint: bags splitting at seam during filling"</p>
+</div>
+<!-- Disposition Buttons -->
+<div class="flex flex-col gap-[12px]">
+<button class="w-full h-[64px] bg-[#16a34a] text-white rounded-[10px] flex flex-col justify-center items-center px-4 hover:brightness-110 transition-all shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">recycling</span>
+<span class="text-[16px] font-[600]">RESTOCK</span>
+</div>
+<span class="text-[12px] font-[400] text-white/90">Pull from quarantine → FG-STORE</span>
+</button>
+<button class="w-full h-[64px] bg-[#2563eb] text-white rounded-[10px] flex flex-col justify-center items-center px-4 hover:brightness-110 transition-all shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">build</span>
+<span class="text-[16px] font-[600]">REWORK</span>
+</div>
+<span class="text-[12px] font-[400] text-white/90">Move to FG-HOLD + NCR raised</span>
+</button>
+<button class="w-full h-[64px] bg-[#dc2626] text-white rounded-[10px] flex flex-col justify-center items-center px-4 hover:brightness-110 transition-all shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+<span class="text-[16px] font-[600]">SCRAP</span>
+</div>
+<span class="text-[12px] font-[400] text-white/90">Log scrap + NCR raised</span>
+</button>
+</div>
+<!-- Action Button -->
+<button class="w-full h-[56px] bg-[#1e3a5f] text-white rounded-[10px] text-[16px] font-[600] hover:bg-[#1e3a5f]/90 transition-colors shadow-sm mt-2">
+                    Apply Disposition
+                </button>
+</div>
+</section>
+<!-- Divider -->
+<hr class="border-[#e2e8f0] my-2"/>
+<!-- NEW RETURN Section -->
+<section class="flex flex-col gap-[12px]">
+<div class="flex items-center justify-between">
+<h2 class="text-[16px] font-[600] text-[#0f172a] font-headline">NEW RETURN</h2>
+<button class="text-[#0ea5e9] font-[600] text-[14px] flex items-center gap-1 hover:underline">
+                    Capture New Return 
+                    <span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<!-- Collapsed Form Card -->
+<div class="bg-[#ffffff] rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-[#e2e8f0] p-[16px] flex flex-col gap-[16px]">
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-[500] text-[#374151]">Customer</label>
+<select class="h-[52px] w-full border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] font-[400] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 px-3 bg-white">
+<option disabled="" selected="" value="">Select Customer</option>
+<option>Raj Packaging Pvt Ltd</option>
+<option>Supreme Industries</option>
+</select>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-[500] text-[#374151]">Gatepass Reference</label>
+<input class="h-[52px] w-full border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] font-[400] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 px-3" placeholder="e.g. PM/GP/..." type="text"/>
+</div>
+<div class="flex gap-3">
+<div class="flex flex-col gap-[6px] flex-1">
+<label class="text-[14px] font-[500] text-[#374151]">Qty Returned</label>
+<input class="h-[52px] w-full border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] font-[400] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 px-3" placeholder="0" type="number"/>
+</div>
+<div class="flex flex-col gap-[6px] w-[100px]">
+<label class="text-[14px] font-[500] text-[#374151]">Unit</label>
+<select class="h-[52px] w-full border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] font-[400] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 px-2 bg-white">
+<option>pcs</option>
+<option>kg</option>
+<option>rolls</option>
+<option>bags</option>
+</select>
+</div>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-[500] text-[#374151]">Material (FG)</label>
+<select class="h-[52px] w-full border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] font-[400] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 px-3 bg-white">
+<option disabled="" selected="" value="">Select Material</option>
+<option>PP Woven Bags 50kg</option>
+<option>LDPE Film Roll 200mm</option>
+</select>
+</div>
+<div class="flex flex-col gap-[6px]">
+<label class="text-[14px] font-[500] text-[#374151]">Reason</label>
+<textarea class="h-[80px] w-full border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] font-[400] text-[#0f172a] focus:border-[#0ea5e9] focus:ring-4 focus:ring-[#0ea5e9]/15 p-3 resize-none" placeholder="Describe the issue..."></textarea>
+</div>
+<button class="w-full h-[52px] bg-[#1e3a5f] text-white rounded-[10px] text-[16px] font-[600] hover:bg-[#1e3a5f]/90 transition-colors shadow-sm mt-2">
+                    Save Return
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-white dark:bg-slate-900 font-label text-[12px] font-[600] fixed bottom-0 w-full h-[64px] z-50 border-t border-[#e2e8f0] dark:border-slate-800 shadow-none flex justify-around items-center w-full pb-safe">
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 dark:hover:bg-slate-800 scale-95 active:scale-90 transition-transform w-[64px] h-[64px]">
+<span class="material-symbols-outlined text-[24px] mb-1">dashboard</span>
+<span>Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#0ea5e9] hover:bg-slate-50 dark:hover:bg-slate-800 scale-95 active:scale-90 transition-transform w-[64px] h-[64px]">
+<span class="material-symbols-outlined text-[24px] mb-1" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span>Records</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 dark:hover:bg-slate-800 scale-95 active:scale-90 transition-transform w-[64px] h-[64px]">
+<span class="material-symbols-outlined text-[24px] mb-1">inventory_2</span>
+<span>Inventory</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-slate-50 dark:hover:bg-slate-800 scale-95 active:scale-90 transition-transform w-[64px] h-[64px]">
+<span class="material-symbols-outlined text-[24px] mb-1">settings</span>
+<span>Settings</span>
+</button>
+</nav>
+</body></html>

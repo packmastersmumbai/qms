@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Goods Receipt Note (GRN)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#1e3a5f",
+            "background-light": "#f6f7f8",
+            "background-dark": "#14181e",
+          },
+          fontFamily: {
+            "display": ["Public Sans", "sans-serif"]
+          },
+          borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light font-display text-gray-900">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden max-w-2xl mx-auto shadow-md bg-white">
+<!-- Minimal Header for Form -->
+<header class="flex items-center p-4 border-b border-gray-200">
+<button aria-label="Go back" class="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors">
+<span class="material-symbols-outlined text-gray-700">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold flex-1 text-center pr-8">New GRN</h1>
+</header>
+<!-- Form Container -->
+<main class="flex-1 overflow-y-auto">
+<form class="p-4 space-y-6" id="grn-form">
+<!-- Section: GRN Details -->
+<section class="space-y-4">
+<h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">GRN Details</h2>
+<div class="space-y-4">
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">PO Number</span>
+<input class="form-input w-full rounded-xl border-gray-300 focus:border-primary focus:ring-primary h-12" id="po-number" name="poNumber" placeholder="e.g. PO-2023-001" required="" type="text"/>
+</label>
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">Supplier Name</span>
+<input class="form-input w-full rounded-xl border-gray-300 focus:border-primary focus:ring-primary h-12" id="supplier-name" name="supplierName" placeholder="e.g. Acme Corp" required="" type="text"/>
+</label>
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">Date Received</span>
+<input class="form-input w-full rounded-xl border-gray-300 focus:border-primary focus:ring-primary h-12 text-gray-700" id="date-received" name="dateReceived" required="" type="date"/>
+</label>
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">Delivery Note Reference</span>
+<input class="form-input w-full rounded-xl border-gray-300 focus:border-primary focus:ring-primary h-12" id="delivery-note" name="deliveryNote" placeholder="Optional" type="text"/>
+</label>
+</div>
+</section>
+<!-- Section: Items Received -->
+<section class="space-y-4">
+<div class="flex items-center justify-between border-b border-gray-100 pb-2">
+<h2 class="text-lg font-bold text-gray-900">Items Received</h2>
+<button class="text-primary text-sm font-medium flex items-center hover:bg-gray-50 px-2 py-1 rounded" type="button">
+<span class="material-symbols-outlined text-[18px] mr-1">add</span> Add Item
+                </button>
+</div>
+<!-- Item Card (Dynamic in real app) -->
+<div class="bg-gray-50 rounded-xl p-4 border border-gray-200 relative">
+<button class="absolute top-2 right-2 text-gray-400 hover:text-red-500" type="button">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<label class="flex flex-col md:col-span-2">
+<span class="text-sm font-medium text-gray-700 mb-1">Item Description</span>
+<input class="form-input w-full rounded-lg border-gray-300 focus:border-primary focus:ring-primary h-10 text-sm" name="itemDesc[]" placeholder="Item name or code" type="text"/>
+</label>
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">Quantity Received</span>
+<input class="form-input w-full rounded-lg border-gray-300 focus:border-primary focus:ring-primary h-10 text-sm" name="itemQty[]" placeholder="0" type="number"/>
+</label>
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">Unit of Measure</span>
+<select class="form-select w-full rounded-lg border-gray-300 focus:border-primary focus:ring-primary h-10 text-sm text-gray-700" name="itemUom[]">
+<option>pcs</option>
+<option>kg</option>
+<option>liters</option>
+<option>boxes</option>
+</select>
+</label>
+</div>
+</div>
+<div class="bg-gray-50 rounded-xl p-4 border border-gray-200 relative">
+<button class="absolute top-2 right-2 text-gray-400 hover:text-red-500" type="button">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<label class="flex flex-col md:col-span-2">
+<span class="text-sm font-medium text-gray-700 mb-1">Item Description</span>
+<input class="form-input w-full rounded-lg border-gray-300 focus:border-primary focus:ring-primary h-10 text-sm" name="itemDesc[]" placeholder="Item name or code" type="text"/>
+</label>
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">Quantity Received</span>
+<input class="form-input w-full rounded-lg border-gray-300 focus:border-primary focus:ring-primary h-10 text-sm" name="itemQty[]" placeholder="0" type="number"/>
+</label>
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">Unit of Measure</span>
+<select class="form-select w-full rounded-lg border-gray-300 focus:border-primary focus:ring-primary h-10 text-sm text-gray-700" name="itemUom[]">
+<option>pcs</option>
+<option>kg</option>
+<option>liters</option>
+<option>boxes</option>
+</select>
+</label>
+</div>
+</div>
+</section>
+<!-- Section: Notes & Status -->
+<section class="space-y-4">
+<h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">Additional Info</h2>
+<label class="flex flex-col">
+<span class="text-sm font-medium text-gray-700 mb-1">Condition/Remarks</span>
+<textarea class="form-textarea w-full rounded-xl border-gray-300 focus:border-primary focus:ring-primary min-h-[100px] resize-y" name="remarks" placeholder="Note any damages or discrepancies here..."></textarea>
+</label>
+<!-- Draft Indicator UI -->
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center text-sm text-gray-500">
+<span class="material-symbols-outlined text-[16px] mr-1 text-green-500">cloud_done</span>
+<span id="sync-status">Draft saved locally (Online)</span>
+</div>
+</div>
+</section>
+</form>
+</main>
+<!-- Fixed Bottom Actions -->
+<div class="border-t border-gray-200 bg-white p-4 sticky bottom-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors" type="button">
+                Cancel
+            </button>
+<button class="flex-[2] py-3 px-4 rounded-xl font-bold text-white bg-primary hover:bg-opacity-90 transition-colors flex items-center justify-center" id="save-btn" type="button">
+<span class="material-symbols-outlined mr-2 text-[20px]">save</span>
+                Save GRN
+            </button>
+</div>
+</div>
+<!-- Toast Notification (Hidden by default, shown via CSS for demo if needed, but requested no JS) -->
+<!-- Added as UI element only -->
+<div class="hidden fixed top-4 right-4 left-4 max-w-sm mx-auto bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg z-50 transition-opacity duration-300" id="toast-error">
+<div class="flex items-start">
+<span class="material-symbols-outlined mr-2">error</span>
+<div>
+<h3 class="font-bold text-sm">Submission Failed</h3>
+<p class="text-xs mt-1">Network error occurred while saving to Sheet. Please try again.</p>
+</div>
+<button class="ml-auto focus:outline-none">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+<div class="hidden fixed top-4 right-4 left-4 max-w-sm mx-auto bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg z-50 transition-opacity duration-300" id="toast-success">
+<div class="flex items-start">
+<span class="material-symbols-outlined mr-2">check_circle</span>
+<div>
+<h3 class="font-bold text-sm">Success</h3>
+<p class="text-xs mt-1">GRN has been successfully saved.</p>
+</div>
+<button class="ml-auto focus:outline-none">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

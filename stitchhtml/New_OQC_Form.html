@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>New OQC - Pack Masters QMS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a5f',
+                        accent: '#0ea5e9',
+                        surface: '#f8fafc',
+                        card: '#ffffff',
+                        border: '#e2e8f0',
+                        status: {
+                            pass: '#16a34a',
+                            fail: '#dc2626',
+                            hold: '#ca8a04',
+                            pending: '#d97706',
+                            inprogress: '#2563eb',
+                            closed: '#6b7280'
+                        }
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "0.75rem", // 12px for cards
+                        xl: "1.25rem", // 20px for badges
+                        full: "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans", "sans-serif"],
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    },
+                    boxShadow: {
+                        card: '0 2px 8px rgba(0,0,0,0.08)'
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .input-base { height: 52px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; padding: 0 12px; width: 100%; background-color: white; color: #0f172a; transition: all 0.2s; }
+        .input-base:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14,165,233,0.15); }
+        .label-base { font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 6px; display: block; }
+        select.input-base { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 40px; }
+        .textarea-base { min-height: 80px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 16px; padding: 12px; width: 100%; background-color: white; color: #0f172a; resize: vertical; transition: all 0.2s; }
+        .textarea-base:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14,165,233,0.15); }
+        
+        .toggle-btn { height: 52px; border-radius: 8px; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex: 1; transition: all 0.2s; }
+        .toggle-btn-outline { border: 1.5px solid #d1d5db; color: #64748b; background: white; }
+        .toggle-btn-pass { border: 1.5px solid #16a34a; background: #16a34a; color: white; }
+        .toggle-btn-fail { border: 1.5px solid #dc2626; background: #dc2626; color: white; }
+        
+        .segmented-control { display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px; height: 52px; gap: 4px; }
+        .seg-btn { flex: 1; border-radius: 6px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: #64748b; }
+        .seg-btn-active-green { background: #16a34a; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        
+        .decision-btn { height: 56px; border-radius: 8px; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; transition: all 0.2s; border: 1.5px solid transparent; }
+        .decision-released { background: #16a34a; color: white; }
+        .decision-rejected { border-color: #dc2626; color: #dc2626; background: white; }
+        .decision-hold { border-color: #ca8a04; color: #ca8a04; background: white; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-[#0f172a] pb-[100px] antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 h-[56px] bg-[#1e3a5f] text-white shadow-md flex items-center justify-between px-4">
+<button aria-label="Back" class="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors active:scale-95 duration-100 -ml-2">
+<span class="material-symbols-outlined text-[24px]">chevron_left</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold text-white tracking-tight text-center flex-1">New OQC</h1>
+<div class="w-10 h-10"></div> <!-- Spacer for center alignment -->
+</header>
+<main class="pt-[68px] px-4 space-y-[20px] max-w-md mx-auto">
+<!-- Document Header Card -->
+<div class="bg-card rounded-lg shadow-card p-4 border border-border">
+<div class="flex justify-between items-start mb-1">
+<h2 class="font-headline text-[18px] font-bold text-primary">PM/OQC/2026-022</h2>
+<span class="text-[13px] font-body text-[#64748b]">18/05/2026</span>
+</div>
+<p class="text-[12px] font-body text-[#64748b]">Auto-generated</p>
+</div>
+<!-- Setup Section -->
+<div class="space-y-[12px]">
+<div>
+<label class="label-base">IPQC Session</label>
+<select class="input-base text-ellipsis whitespace-nowrap overflow-hidden">
+<option selected="">SESS-2026-031 — PP Woven Bags 50kg — Batch B2026-119 — Closed 17/05</option>
+</select>
+</div>
+<div>
+<label class="label-base">Customer</label>
+<select class="input-base">
+<option selected="">Raj Packaging Pvt Ltd</option>
+</select>
+</div>
+<div>
+<label class="label-base">Customer PO / Ref</label>
+<input class="input-base" type="text" value="RPL/PO/2026-044"/>
+</div>
+</div>
+<!-- ITEMS Section Header -->
+<div class="flex items-center justify-between mt-6 mb-2">
+<h3 class="font-headline text-[16px] font-semibold text-[#0f172a]">ITEMS</h3>
+<button class="text-accent font-semibold text-[14px] flex items-center gap-1 active:opacity-70 transition-opacity">
+                Add Item <span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+<!-- Item Card 1 -->
+<div class="bg-card rounded-lg shadow-card p-4 border-l-4 border-l-accent border-t border-r border-b border-border space-y-4">
+<div>
+<label class="label-base">Material (FG only)</label>
+<select class="input-base text-ellipsis whitespace-nowrap overflow-hidden">
+<option selected="">BAG-FG-001 — PP Woven Bags 50kg</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="label-base">Sample Size</label>
+<input class="input-base" type="text" value="25 pcs"/>
+</div>
+<div>
+<label class="label-base">Batch</label>
+<input class="input-base" type="text" value="B2026-119"/>
+</div>
+</div>
+<div class="pt-2 border-t border-border mt-4">
+<h4 class="font-label text-[14px] font-semibold text-[#374151] mb-3">Quality Parameters</h4>
+<div class="grid grid-cols-2 gap-x-3 gap-y-4">
+<!-- Check 1 -->
+<div class="flex flex-col gap-2">
+<label class="text-[13px] text-[#374151] font-medium leading-tight h-8 flex items-end">Dimensions</label>
+<div class="flex gap-2">
+<button class="toggle-btn toggle-btn-pass">PASS</button>
+<button class="toggle-btn toggle-btn-outline text-[12px]">FAIL</button>
+</div>
+</div>
+<!-- Check 2 -->
+<div class="flex flex-col gap-2">
+<label class="text-[13px] text-[#374151] font-medium leading-tight h-8 flex items-end">Print Quality</label>
+<div class="flex gap-2">
+<button class="toggle-btn toggle-btn-pass">PASS</button>
+<button class="toggle-btn toggle-btn-outline text-[12px]">FAIL</button>
+</div>
+</div>
+<!-- Check 3 -->
+<div class="flex flex-col gap-2">
+<label class="text-[13px] text-[#374151] font-medium leading-tight h-8 flex items-end">Seal Strength</label>
+<div class="flex gap-2">
+<button class="toggle-btn toggle-btn-pass">PASS</button>
+<button class="toggle-btn toggle-btn-outline text-[12px]">FAIL</button>
+</div>
+</div>
+<!-- Check 4 -->
+<div class="flex flex-col gap-2">
+<label class="text-[13px] text-[#374151] font-medium leading-tight h-8 flex items-end">Qty Count</label>
+<div class="flex gap-2">
+<button class="toggle-btn toggle-btn-pass">PASS</button>
+<button class="toggle-btn toggle-btn-outline text-[12px]">FAIL</button>
+</div>
+</div>
+<!-- Check 5 -->
+<div class="flex flex-col gap-2 col-span-2">
+<label class="text-[13px] text-[#374151] font-medium leading-tight mb-1">Packaging Condition</label>
+<div class="flex gap-2 w-1/2 pr-1.5">
+<button class="toggle-btn toggle-btn-pass">PASS</button>
+<button class="toggle-btn toggle-btn-outline text-[12px]">FAIL</button>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-border flex items-center justify-between">
+<label class="label-base mb-0">IPQC Reviewed</label>
+<div class="segmented-control w-[140px]">
+<button class="seg-btn seg-btn-active-green">YES</button>
+<button class="seg-btn">NO</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 pt-2">
+<div>
+<label class="label-base">Qty Accepted</label>
+<input class="input-base text-status-pass font-semibold" type="number" value="500"/>
+</div>
+<div>
+<label class="label-base">Qty Rejected</label>
+<input class="input-base" type="number" value="0"/>
+</div>
+</div>
+<div class="pt-4 border-t border-border">
+<label class="label-base mb-3">Release Decision</label>
+<div class="flex gap-2">
+<button class="decision-btn decision-released">RELEASED</button>
+<button class="decision-btn decision-rejected">REJECTED</button>
+<button class="decision-btn decision-hold">HOLD</button>
+</div>
+</div>
+<!-- Conditional FG Location -->
+<div class="pt-2">
+<label class="label-base flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-accent">location_on</span>
+                    FG Location
+                </label>
+<select class="input-base border-accent ring-1 ring-accent/20 bg-accent/5">
+<option selected="">FG-STORE-1</option>
+</select>
+</div>
+<div class="pt-2">
+<label class="label-base">Remarks</label>
+<textarea class="textarea-base">All parameters within spec. Approved for dispatch.</textarea>
+</div>
+</div>
+</main>
+<!-- Footer Action -->
+<div class="fixed bottom-0 w-full z-40 bg-white border-t border-border p-4 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<button class="w-full h-[56px] bg-primary text-white font-headline font-bold text-[16px] rounded-[10px] active:scale-[0.98] transition-transform shadow-md">
+            Save OQC
+        </button>
+</div>
+</body></html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>New Purchase Order - Pack Masters QMS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {},
+        "borderRadius": {
+                "DEFAULT": "0.5rem",
+                "lg": "1rem",
+                "xl": "1.5rem",
+                "full": "9999px"
+        },
+        "spacing": {},
+        "fontFamily": {
+                "headline": [
+                        "Plus Jakarta Sans",
+                        "sans-serif"
+                ],
+                "display": [
+                        "Plus Jakarta Sans",
+                        "sans-serif"
+                ],
+                "body": [
+                        "Inter",
+                        "sans-serif"
+                ],
+                "label": [
+                        "Inter",
+                        "sans-serif"
+                ]
+        },
+        "fontSize": {}
+      },
+    },
+  }
+</script>
+<style>
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0;
+  }
+</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#f8fafc] font-body text-[#0f172a] antialiased min-h-screen pb-[100px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full h-[56px] z-50 bg-[#1e3a5f] shadow-sm flex items-center justify-between px-4 transition-transform">
+<button aria-label="Go back" class="text-white hover:bg-white/10 transition-colors p-2 -ml-2 rounded-full active:scale-95 flex items-center justify-center w-10 h-10">
+<span class="material-symbols-outlined text-[24px]">chevron_left</span>
+</button>
+<h1 class="font-headline text-[20px] font-bold leading-tight text-white flex-1 text-center truncate px-2">New Purchase Order</h1>
+<div class="w-10"></div> <!-- Placeholder for layout balance if trailing icon is omitted by user spec, though standard has account_circle. Spec says "leading icon back chevron, title". -->
+</header>
+<!-- Main Content Canvas -->
+<main class="mt-[56px] px-4 pt-3 space-y-5">
+<!-- Document Status Card -->
+<div class="bg-[#ffffff] rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-[#e2e8f0]">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h2 class="text-[18px] font-bold text-[#1e3a5f] font-headline">PM/PO/2026-019</h2>
+<p class="text-[12px] text-[#64748b] mt-0.5">Auto-generated</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="bg-[#6b7280] text-white text-[12px] font-semibold px-[12px] py-[4px] rounded-[20px]">DRAFT</span>
+<span class="text-[13px] text-[#64748b] mt-1.5">18/05/2026</span>
+</div>
+</div>
+</div>
+<!-- SUPPLIER Section -->
+<section class="space-y-3">
+<div>
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]" for="supplier">Supplier</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white px-4 appearance-none focus:border-[#0ea5e9] focus:ring-0 focus:shadow-[0_0_0_2px_rgba(14,165,233,0.15)] outline-none transition-all" id="supplier">
+<option>Apex Polymers Pvt Ltd</option>
+<option>Global Plastics Inc</option>
+<option>Vanguard Packaging</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">expand_more</span>
+</div>
+</div>
+<div>
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]" for="dueDate">Due Date</label>
+<div class="relative">
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white px-4 pl-11 focus:border-[#0ea5e9] focus:ring-0 focus:shadow-[0_0_0_2px_rgba(14,165,233,0.15)] outline-none transition-all" id="dueDate" type="text" value="30/05/2026"/>
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none text-[20px]">calendar_today</span>
+</div>
+</div>
+</section>
+<!-- MATERIALS / LINES Section -->
+<section class="space-y-[12px]">
+<div class="flex justify-between items-center pb-1">
+<h3 class="text-[16px] font-semibold text-[#0f172a]">MATERIALS / LINES</h3>
+<button class="text-[#0ea5e9] text-[14px] font-semibold flex items-center gap-1 active:opacity-70 transition-opacity" type="button">
+          Add Line <span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<!-- Line Card 1 -->
+<div class="bg-[#ffffff] rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-[#e2e8f0] border-l-[4px] border-l-[#0ea5e9]">
+<div class="mb-3">
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]">Material</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white px-4 appearance-none focus:border-[#0ea5e9] focus:ring-0 focus:shadow-[0_0_0_2px_rgba(14,165,233,0.15)] outline-none transition-all">
+<option>HDPE-001 — HDPE Granules</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3 mb-3">
+<div>
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]">Qty</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] focus:ring-0 outline-none" type="number" value="200"/>
+</div>
+<div>
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]">Unit</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white pl-3 pr-8 appearance-none focus:border-[#0ea5e9] focus:ring-0 outline-none">
+<option>kg</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<div>
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px] truncate">Unit Price ₹</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] focus:ring-0 outline-none" type="number" value="85"/>
+</div>
+</div>
+<div class="border-t border-[#e2e8f0] pt-2 text-right">
+<p class="text-[13px] text-[#64748b]">Line Value: <span class="font-semibold text-[#0f172a]">₹ 17,000</span></p>
+</div>
+</div>
+<!-- Line Card 2 -->
+<div class="bg-[#ffffff] rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-[#e2e8f0] border-l-[4px] border-l-[#0ea5e9]">
+<div class="mb-3">
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]">Material</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white px-4 appearance-none focus:border-[#0ea5e9] focus:ring-0 focus:shadow-[0_0_0_2px_rgba(14,165,233,0.15)] outline-none transition-all">
+<option>PP-002 — Polypropylene Film</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3 mb-3">
+<div>
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]">Qty</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] focus:ring-0 outline-none" type="number" value="100"/>
+</div>
+<div>
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px]">Unit</label>
+<div class="relative">
+<select class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white pl-3 pr-8 appearance-none focus:border-[#0ea5e9] focus:ring-0 outline-none">
+<option>rolls</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<div>
+<label class="block text-[14px] font-medium text-[#374151] mb-[6px] truncate">Unit Price ₹</label>
+<input class="w-full h-[52px] border-[1.5px] border-[#d1d5db] rounded-[8px] text-[16px] text-[#0f172a] bg-white px-3 focus:border-[#0ea5e9] focus:ring-0 outline-none" type="number" value="240"/>
+</div>
+</div>
+<div class="border-t border-[#e2e8f0] pt-2 text-right">
+<p class="text-[13px] text-[#64748b]">Line Value: <span class="font-semibold text-[#0f172a]">₹ 24,000</span></p>
+</div>
+</div>
+</section>
+<!-- Summary Card -->
+<div class="bg-[#ffffff] rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-[#e2e8f0] flex justify-between items-center bg-gradient-to-br from-white to-[#f0f9ff]/30">
+<div>
+<p class="text-[14px] font-medium text-[#374151]">Estimated Total</p>
+<p class="text-[12px] text-[#64748b] mt-1">2 line items · Due 30/05/2026</p>
+</div>
+<div class="text-right">
+<p class="text-[24px] font-bold text-[#1e3a5f] font-headline">₹ 41,000</p>
+</div>
+</div>
+<!-- Recent POs Section (Collapsible) -->
+<section class="mt-6 mb-8">
+<button class="w-full flex items-center justify-between text-[14px] font-medium text-[#374151] pb-3 border-b border-[#e2e8f0] active:bg-[#f1f5f9] transition-colors rounded-t-sm px-1" type="button">
+        Recent POs — Apex Polymers
+        <span class="material-symbols-outlined text-[#64748b]">arrow_drop_down</span>
+</button>
+<div class="divide-y divide-[#e2e8f0] bg-white border border-[#e2e8f0] border-t-0 rounded-b-[8px] shadow-sm">
+<!-- Row 1 -->
+<div class="p-3 flex justify-between items-center hover:bg-[#f8fafc] transition-colors">
+<div class="space-y-1">
+<p class="text-[14px] font-semibold text-[#0f172a]">PM/PO/2026-014</p>
+<div class="flex items-center gap-2">
+<span class="bg-[#6b7280] text-white text-[10px] font-semibold px-[8px] py-[2px] rounded-[20px]">CLOSED</span>
+<span class="text-[12px] text-[#64748b]">15/05/2026</span>
+</div>
+</div>
+<p class="text-[14px] font-medium text-[#0f172a]">₹ 38,500</p>
+</div>
+<!-- Row 2 -->
+<div class="p-3 flex justify-between items-center hover:bg-[#f8fafc] transition-colors">
+<div class="space-y-1">
+<p class="text-[14px] font-semibold text-[#0f172a]">PM/PO/2026-009</p>
+<div class="flex items-center gap-2">
+<span class="bg-[#d97706] text-white text-[10px] font-semibold px-[8px] py-[2px] rounded-[20px]">PARTIAL_RECEIVED</span>
+<span class="text-[12px] text-[#64748b]">02/05/2026</span>
+</div>
+</div>
+<p class="text-[14px] font-medium text-[#0f172a]">₹ 22,000</p>
+</div>
+<!-- Row 3 -->
+<div class="p-3 flex justify-between items-center hover:bg-[#f8fafc] transition-colors">
+<div class="space-y-1">
+<p class="text-[14px] font-semibold text-[#0f172a]">PM/PO/2026-003</p>
+<div class="flex items-center gap-2">
+<span class="bg-[#6b7280] text-white text-[10px] font-semibold px-[8px] py-[2px] rounded-[20px]">CLOSED</span>
+<span class="text-[12px] text-[#64748b]">10/04/2026</span>
+</div>
+</div>
+<p class="text-[14px] font-medium text-[#0f172a]">₹ 51,200</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Actions (Sticky) -->
+<div class="fixed bottom-0 left-0 w-full bg-white border-t border-[#e2e8f0] p-4 flex gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40">
+<button class="flex-1 h-[52px] border-[1.5px] border-[#1e3a5f] text-[#1e3a5f] bg-transparent rounded-[10px] text-[16px] font-semibold flex items-center justify-center hover:bg-[#f1f5f9] active:scale-[0.98] transition-all" type="button">
+      Save as Draft
+    </button>
+<button class="flex-1 h-[52px] bg-[#1e3a5f] text-white rounded-[10px] text-[16px] font-semibold flex items-center justify-center shadow-md hover:bg-[#152e4d] active:scale-[0.98] transition-all" type="button">
+      Submit PO
+    </button>
+</div>
+</body></html>
