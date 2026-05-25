@@ -757,6 +757,133 @@
 
     /* Loader sits over everything regardless of viewport */
     .pm-loader { width: 100vw; }
+
+    /* ══════════════════════════════════════════════════════════════
+       SIDE MENU DRAWER (mobile + desktop)
+       Triggered by the hamburger button in the top bar.
+       Mobile: slides in from the left, full 280px width.
+       Desktop: same drawer, used when user explicitly opens it.
+       ════════════════════════════════════════════════════════════ */
+    .pm-menu-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(13,27,110,0.45);
+      z-index: 9990;
+      opacity: 0; visibility: hidden;
+      transition: opacity .2s ease, visibility .2s ease;
+    }
+    .pm-menu-backdrop.is-open { opacity: 1; visibility: visible; }
+    .pm-menu {
+      position: fixed; top: 0; bottom: 0; left: 0;
+      width: 284px; max-width: 84vw;
+      background: #fff;
+      z-index: 9991;
+      transform: translateX(-100%);
+      transition: transform .25s cubic-bezier(.22,1,.36,1);
+      display: flex; flex-direction: column;
+      box-shadow: 4px 0 24px rgba(13,27,110,0.18);
+    }
+    .pm-menu.is-open { transform: translateX(0); }
+    .pm-menu-head {
+      padding: 18px 18px 14px;
+      background: var(--pm-navy);
+      color: #fff;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .pm-menu-head-mark {
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.20);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pm-menu-head-mark svg { width: 18px; height: 18px; color: #fff; }
+    .pm-menu-head-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px; font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .pm-menu-head-sub {
+      font-size: 10px; font-weight: 600;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .pm-menu-body {
+      flex: 1; overflow-y: auto;
+      padding: 8px 0 16px;
+    }
+    .pm-menu-section {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 10px; font-weight: 700;
+      color: var(--pm-muted);
+      letter-spacing: 1.4px; text-transform: uppercase;
+      padding: 14px 18px 6px;
+    }
+    .pm-menu-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 18px;
+      background: transparent; border: 0;
+      width: 100%; text-align: left;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 13.5px; font-weight: 600;
+      color: var(--pm-text);
+      transition: background .12s ease;
+    }
+    .pm-menu-item:hover { background: var(--pm-bg); }
+    .pm-menu-item.is-current { background: #EEF1FA; color: var(--pm-navy); }
+    .pm-menu-item-icon {
+      width: 18px; height: 18px;
+      color: var(--pm-muted);
+      flex-shrink: 0;
+    }
+    .pm-menu-item.is-current .pm-menu-item-icon { color: var(--pm-navy); }
+    .pm-menu-item-icon svg { width: 100%; height: 100%; stroke-width: 1.9; }
+    .pm-menu-item-meta {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      color: var(--pm-muted);
+      background: var(--pm-bg);
+      padding: 2px 7px; border-radius: 999px;
+    }
+    .pm-menu-foot {
+      padding: 12px 18px;
+      border-top: 1px solid var(--pm-rule);
+      font-size: 10.5px; color: var(--pm-muted);
+      font-family: 'JetBrains Mono', monospace;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       DESKTOP TOP-NAV LINKS
+       Inline nav in the top bar (replaces bottom nav, hidden < 1024px).
+       ════════════════════════════════════════════════════════════ */
+    .pm-topnav { display: none; }
+    @media (min-width: 1024px) {
+      .pm-topnav {
+        display: flex; align-items: center; gap: 2px;
+        margin-left: 24px;
+      }
+      .pm-topnav-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        height: 36px; padding: 0 14px;
+        background: transparent; border: 0;
+        color: rgba(255,255,255,0.75);
+        font-family: 'Inter', sans-serif;
+        font-size: 13px; font-weight: 600;
+        letter-spacing: 0.1px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background .12s ease, color .12s ease;
+      }
+      .pm-topnav-btn:hover { background: rgba(255,255,255,0.10); color: #fff; }
+      .pm-topnav-btn.is-active {
+        background: rgba(255,255,255,0.15);
+        color: #fff;
+      }
+      .pm-topnav-btn svg { width: 16px; height: 16px; stroke-width: 1.9; }
+    }
   </style>
 
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
@@ -815,6 +942,16 @@
     <svg><use href="#i-menu"/></svg>
   </button>
   <div class="pm-top-title">Pack Masters<small>QMS</small></div>
+
+  <!-- Desktop inline nav (hidden < 1024px). Mirror of bottom nav. -->
+  <nav class="pm-topnav" aria-label="Primary">
+    <button class="pm-topnav-btn is-active" aria-current="page"><svg><use href="#i-home"/></svg>Home</button>
+    <button class="pm-topnav-btn" onclick="navigateTo('Records')"><svg><use href="#i-records"/></svg>Records</button>
+    <button class="pm-topnav-btn" onclick="navigateTo('KPI')"><svg><use href="#i-trending"/></svg>KPIs</button>
+    <button class="pm-topnav-btn" onclick="navigateTo('Masters')"><svg><use href="#i-users-cog"/></svg>Masters</button>
+    <button class="pm-topnav-btn" onclick="showMoreMenu()"><svg><use href="#i-more"/></svg>More</button>
+  </nav>
+
   <div style="display:flex;align-items:center;gap:4px;">
   <button id="personaPill" onclick="cyclePersona()" aria-label="Switch persona"
     style="background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.20);border-radius:999px;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;cursor:pointer;">…</button>
@@ -895,6 +1032,87 @@
   <button class="pm-bn-btn" onclick="navigateTo('Masters')" aria-label="Masters"><svg><use href="#i-users-cog"/></svg><span>Masters</span></button>
   <button class="pm-bn-btn" onclick="showMoreMenu()" aria-label="More"><svg><use href="#i-more"/></svg><span>More</span></button>
 </nav>
+
+<!-- ══════════════ SIDE MENU DRAWER ══════════════ -->
+<div class="pm-menu-backdrop" id="pmMenuBackdrop" onclick="closeSideMenu()"></div>
+<aside class="pm-menu" id="pmMenu" aria-hidden="true">
+  <div class="pm-menu-head">
+    <div class="pm-menu-head-mark"><svg><use href="#i-package"/></svg></div>
+    <div>
+      <div class="pm-menu-head-title">Pack Masters</div>
+      <div class="pm-menu-head-sub">QMS &middot; <span id="pmMenuPersona">Manager</span></div>
+    </div>
+  </div>
+  <div class="pm-menu-body" id="pmMenuBody">
+    <div class="pm-menu-section">Navigate</div>
+    <button class="pm-menu-item is-current" onclick="closeSideMenu()">
+      <span class="pm-menu-item-icon"><svg><use href="#i-home"/></svg></span>Home
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('Records')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-records"/></svg></span>Records
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('KPI')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-trending"/></svg></span>KPIs
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('Masters')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-users-cog"/></svg></span>Masters
+    </button>
+
+    <div class="pm-menu-section">Modules</div>
+    <button class="pm-menu-item" onclick="navigateTo('PO')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-clipboard-list"/></svg></span>Purchase Orders
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('GRN')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-package"/></svg></span>Goods Receipt
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('IQC')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-flask"/></svg></span>Incoming QC
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('IPQC')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-gauge"/></svg></span>In-Process QC
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('Production')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-factory"/></svg></span>Production
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('OQC')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-shield-check"/></svg></span>Outgoing QC
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('Gatepass')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-qr"/></svg></span>Gatepass
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('Dispatch')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-truck"/></svg></span>Dispatch
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('NCR')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-octagon-alert"/></svg></span>NCR
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('CustomerReturn')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-undo"/></svg></span>Customer Returns
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('Warehouse')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-boxes"/></svg></span>Warehouse
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('ControlPlan')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-ruler"/></svg></span>Control Plan
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('ImportCSV')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-records"/></svg></span>Import CSV
+    </button>
+
+    <div class="pm-menu-section">Account</div>
+    <button class="pm-menu-item" onclick="closeSideMenu();cyclePersona();">
+      <span class="pm-menu-item-icon"><svg><use href="#i-users-cog"/></svg></span>Switch role
+      <span class="pm-menu-item-meta" id="pmMenuPersonaMeta">Mgr</span>
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('Settings')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-settings"/></svg></span>Settings
+    </button>
+  </div>
+  <div class="pm-menu-foot">
+    <span>Pack Masters QMS</span>
+    <span>v1</span>
+  </div>
+</aside>
 
 <div id="toast"></div>
 <div id="__gas_cover__"></div>
@@ -1029,8 +1247,36 @@
     document.body.appendChild(sheet);
   }
   window.showMoreMenu = showMoreMenu;
-  function showSideMenu() { showToast('Menu coming soon'); }
+  function showSideMenu() {
+    var menu = $('pmMenu');
+    var back = $('pmMenuBackdrop');
+    if (!menu || !back) return;
+    menu.classList.add('is-open');
+    back.classList.add('is-open');
+    menu.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    // refresh persona label inside the menu
+    try {
+      var p = (localStorage.getItem('pmqms_persona') || 'Manager');
+      var pl = $('pmMenuPersona'); if (pl) pl.textContent = p;
+      var pm = $('pmMenuPersonaMeta'); if (pm) pm.textContent = p.slice(0,3);
+    } catch (e) {}
+  }
+  function closeSideMenu() {
+    var menu = $('pmMenu');
+    var back = $('pmMenuBackdrop');
+    if (!menu || !back) return;
+    menu.classList.remove('is-open');
+    back.classList.remove('is-open');
+    menu.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+  // ESC closes the drawer
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSideMenu();
+  });
   window.showSideMenu = showSideMenu;
+  window.closeSideMenu = closeSideMenu;
 
   /* ═════════════ OPERATOR PICKER ═════════════ */
   function getOperatorName() { try { return sessionStorage.getItem('pmOperatorName') || ''; } catch (e) { return ''; } }
