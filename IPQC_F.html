@@ -525,6 +525,18 @@ document.addEventListener('DOMContentLoaded', function() {
       if (d.loadWarnings && d.loadWarnings.length) {
         showToast('⚠ ' + d.loadWarnings.join(' | '), 'warning');
       }
+      // Records → IPQC navigation passes session id via sessionStorage.
+      // Highlight the matching open-session card if present.
+      try {
+        var auto = sessionStorage.getItem('pmAutoOpenDoc');
+        if (auto) {
+          sessionStorage.removeItem('pmAutoOpenDoc');
+          setTimeout(function(){
+            var card = document.querySelector('[data-ipqc-session="' + auto + '"]');
+            if (card) card.scrollIntoView({behavior:'smooth', block:'center'});
+          }, 600);
+        }
+      } catch (e) {}
     })
     .withFailureHandler(function(e) {
       hideLoading();

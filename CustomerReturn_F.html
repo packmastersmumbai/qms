@@ -528,6 +528,17 @@
       } catch (e) {}
       switchTab(startTab);
       loadInit();
+      // Records → CR with a specific docNo: scroll to the triage card on render.
+      try {
+        var auto = sessionStorage.getItem('pmAutoOpenDoc');
+        if (auto) {
+          sessionStorage.removeItem('pmAutoOpenDoc');
+          setTimeout(function(){
+            var card = document.querySelector('[data-cr-doc="' + auto + '"]');
+            if (card) card.scrollIntoView({behavior:'smooth', block:'center'});
+          }, 800);
+        }
+      } catch (e) {}
     });
   </script>
 </body>

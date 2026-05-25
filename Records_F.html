@@ -637,7 +637,10 @@
         .withFailureHandler(function (e) { showToast('Could not open ' + docNo); })
         .getDocViewHtml(type, docNo);
     } else {
-      // NCR / IPQC / CustomerReturn — open the form (has list + detail sheet)
+      // NCR / IPQC / CustomerReturn — open the module form. These forms read
+      // sessionStorage.pmAutoOpenDoc on boot and auto-expand the matching
+      // record detail sheet (see NCR_F.html maybeAutoOpen pattern).
+      try { sessionStorage.setItem('pmAutoOpenDoc', docNo); } catch (e) {}
       google.script.run
         .withSuccessHandler(function (html) { document.open(); document.write(html); document.close(); })
         .withFailureHandler(function (e) { showToast('Could not open ' + type); })

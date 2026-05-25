@@ -565,13 +565,21 @@ function updateDraftPO(poNo, data) {
     hdrWs.getRange(rowIdx + 1, 5).setNumberFormat('dd-MMM-yyyy');
     hdrWs.getRange(rowIdx + 1, 15).setNumberFormat('dd-MMM-yyyy HH:mm');
 
-    // Wipe existing lines for this poNo, then re-append
+    // Wipe existing lines for this poNo, then re-append.
+    // Collect 1-based row indices first (matching the snapshot), then delete in
+    // strictly descending order — the snapshot's column [0] stays correct only
+    // when we map snapshot index -> sheet row via the 1-based offset, and we
+    // never reference the snapshot after the first delete.
     var lnData = lnWs.getDataRange().getValues();
-    for (var j = lnData.length - 1; j >= 1; j--) {
+    var rowsToDelete = [];
+    for (var j = 1; j < lnData.length; j++) {
       if (String(lnData[j][0]).trim() === String(poNo).trim()) {
-        lnWs.deleteRow(j + 1);
+        rowsToDelete.push(j + 1); // 1-based sheet row
       }
     }
+    // Descending so each delete leaves earlier indices unchanged.
+    rowsToDelete.sort(function(a, b){ return b - a; });
+    rowsToDelete.forEach(function(r){ lnWs.deleteRow(r); });
     var headerDueDate = dueDate;
     result.lines.forEach(function(line) {
       var linePromised = (line.promised_date ? new Date(line.promised_date) : '') || headerDueDate || '';

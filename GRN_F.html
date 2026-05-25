@@ -433,6 +433,7 @@ function onSupplierChange() {
   }
   setFieldErr('f-supplier', 'err-supplier', false);
   buildItemSelect(ALL_MATS);
+  loadPODropdown(code);
   refreshSaveBtn();
 }
 
@@ -511,10 +512,15 @@ function goHome() {
 // ── PO Reference logic ─────────────────────────────────────────────
 var _activePO = null;
 
-function loadPODropdown() {
+function loadPODropdown(supplierCode) {
+  var sel = document.getElementById('poRefSelect');
+  if (!sel) return;
+  // Reset to placeholder before re-populating to avoid showing stale POs from
+  // a previously selected supplier.
+  sel.innerHTML = '<option value="">— no PO —</option>';
+  if (!supplierCode) return;  // wait until supplier is chosen
   google.script.run
     .withSuccessHandler(function(poList) {
-      var sel = document.getElementById('poRefSelect');
       (poList || []).forEach(function(po) {
         var o = document.createElement('option');
         o.value = po.poNo;
@@ -523,8 +529,10 @@ function loadPODropdown() {
         sel.appendChild(o);
       });
     })
-    .withFailureHandler(function() {})
-    .getOpenPOsForSupplier(null);
+    .withFailureHandler(function(e) {
+      showToast('Could not load POs: ' + (e && e.message || e), 'error');
+    })
+    .getOpenPOsForSupplier(supplierCode);
 }
 
 function onPORefChange() {
@@ -721,6 +729,10 @@ function _doSaveProceed() {
         var batch   = (tr.querySelector('.po-multi-batch').value || '').trim();
         var matInfo = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCode; })[0] || {};
         var matMaster = (ALL_MATS || []).filter(function(m){ return m.code === matCode; })[0] || {};
+        // For REJECT/HOLD dispositions, accepted qty must be zero. Setting it
+        // equal to received qty (the old behavior) would write incorrect ledger
+        // entries that release stock into RM that hasn't passed IQC.
+        var lineAccepted = (disposition === 'ACCEPT') ? q : 0;
         arr.push({
           materialCode: matCode,
           materialDesc: matInfo.materialDesc || matMaster.desc || '',
@@ -730,7 +742,7 @@ function _doSaveProceed() {
           batchNo:      batch || ('PO-' + (_activePO.poNo || '').split('/').pop() + '-L' + lineNo),
           expiryDate:   (document.getElementById('expiryDate') && document.getElementById('expiryDate').value) || '',
           vehicleNo:    '',
-          qtyAccepted:  q,
+          qtyAccepted:  lineAccepted,
           disposition:  disposition,
           locationId:   (disposition === 'ACCEPT' && matMaster.defaultLocation) ? matMaster.defaultLocation : '',
           poLineNo:     lineNo
@@ -775,10 +787,25 @@ function _doSaveProceed() {
         });
       } else if (topCode && qtyR <= 0) {
         showErr('Top item is selected but qty is 0 — fix or clear the top fields before saving.');
+        window.__grnAbortSave = true;
       }
       return rows.concat(collectExtraItems(disposition));
     })()
   };
+
+  if (window.__grnAbortSave) {
+    window.__grnAbortSave = false;
+    var b = document.getElementById('btnSubmit');
+    if (b) { b.disabled = false; b.innerHTML = 'Save GRN'; }
+    return;
+  }
+  // Also bail if items array is empty after extras collection (no rows = blank save).
+  if (!Array.isArray(data.items) || !data.items.length) {
+    showErr('Add at least one received item before saving.');
+    var bb = document.getElementById('btnSubmit');
+    if (bb) { bb.disabled = false; bb.innerHTML = 'Save GRN'; }
+    return;
+  }
 
   function afterStop(operatorName) {
     data.operatorName = operatorName || '';
@@ -952,7 +979,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   init();
-  loadPODropdown();
+  // PO dropdown stays empty until a supplier is selected; onSupplierChange
+  // refreshes it. Avoids showing POs from all suppliers at once.
 });
 
 // ===== Multi-item manual mode (+ Add Item) =====

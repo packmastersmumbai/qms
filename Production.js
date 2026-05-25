@@ -748,10 +748,20 @@ function issueProductionJob(data) {
                    (line.masterP > 0 ? ' (' + line.packsToIssue + ' pack × ' + line.masterP + ' ' + line.compUom + ')' : '')
         });
         if (!res.success) {
+          // Partial-issue: prior components have ALREADY been debited inside the
+          // same lock. Without a true rollback we surface the issue IDs that
+          // need manual reversal. Operator should run reverseProductionIssue
+          // for each id in `partial` to restore stock.
+          Logger.log('issueProductionJob PARTIAL FAILURE — manual reversal required for: ' +
+            perCompResults.map(function(r){ return r.issueId; }).join(', '));
           return {
             success: false,
-            error: 'Failed on component ' + line.compCode + ': ' + res.error,
-            partial: perCompResults
+            error: 'PARTIAL ISSUE — failed on ' + line.compCode + ': ' + res.error +
+                   '. Already-debited components: ' +
+                   perCompResults.map(function(r){ return r.compCode + '(' + r.issueId + ')'; }).join(', ') +
+                   '. Contact admin to reverse these IDs.',
+            partial: perCompResults,
+            requiresReversal: true
           };
         }
         issueIds.push(res.issueId);

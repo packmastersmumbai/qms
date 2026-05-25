@@ -193,7 +193,15 @@ function upsertMasterRow(name, code, fields) {
         return { ok:true, mode:'updated', code:code };
       }
     }
-    // Append
+    // Append. We already looped through every row above and confirmed no
+    // existing match — so a true duplicate is impossible here. But because
+    // Personnel uses the name column as its code, a different-case spelling
+    // of an existing name slips through. Catch it case-insensitively.
+    for (var dr = 1; dr < data.length; dr++) {
+      if (String(data[dr][s.codeCol] || '').trim().toLowerCase() === String(code).trim().toLowerCase()) {
+        return { ok:false, error: 'A row with code "' + data[dr][s.codeCol] + '" already exists (case-insensitive match).' };
+      }
+    }
     ws.appendRow(newRow);
     var lastRow = ws.getLastRow();
     if (auditModIdx >= 0) ws.getRange(lastRow, auditModIdx + 1).setNumberFormat('dd-MMM-yyyy HH:mm');
