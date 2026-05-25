@@ -62,7 +62,7 @@ function saveGatepass(data) {
         data.authorizedBy  || '',
         data.securityGuard || '',
         data.remarks       || '',
-        'ISSUED',
+        String(data.disposition || 'ISSUED').toUpperCase(),
         user,
         now,
         data.dispatchZone  || '',
@@ -111,7 +111,7 @@ function getFIFOAllocation(materialCode, qtyRequested) {
       var unit     = String(row[8] || 'Pcs');
       var decision = String(row[14] || '').toUpperCase();
       if (!docNo) continue;
-      if (decision !== 'RELEASED' && decision !== 'ACCEPTED') continue;
+      if (decision !== 'RELEASED' && decision !== 'ACCEPTED' && decision !== 'ACCEPTED WITH DEVIATION') continue;
       if (usedRefs[docNo]) continue;
       if (materialCode && material.toLowerCase().indexOf(materialCode.toLowerCase()) === -1 &&
           materialCode.toLowerCase().indexOf(material.toLowerCase()) === -1) continue;
@@ -171,7 +171,7 @@ function getReleasedOQCsForGatepass() {
       var decision = String(row[14] || '').toUpperCase();
 
       if (!docNo) continue;
-      if (decision !== 'RELEASED' && decision !== 'ACCEPTED') continue;
+      if (decision !== 'RELEASED' && decision !== 'ACCEPTED' && decision !== 'ACCEPTED WITH DEVIATION') continue;
       if (usedRefs[docNo]) continue;
       if (date && new Date(date) < cutoff) continue;
 

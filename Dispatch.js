@@ -61,9 +61,10 @@ function canonicalizePlan_(plan) {
   // We also accept legacy `qty` for backwards compat with older Dispatch_F.html
   // payloads that still send the un-renamed field. New writers MUST emit
   // qtyFromThisLot (see planFGDispatchAllocation below).
-  return (plan || []).slice().sort(function(a, b) {
-    return String(a.lotId || '').localeCompare(String(b.lotId || ''));
-  }).map(function(p) {
+  // Preserve insertion order — FIFO order is meaningful. If the operator
+  // swaps the dispatch sequence of two lots, that IS an override and the
+  // canonical form must reflect the order change.
+  return (plan || []).map(function(p) {
     return {
       lotId: String(p.lotId || '').trim(),
       qty: Number(Number(p.qtyFromThisLot != null ? p.qtyFromThisLot : (p.qty || 0)).toFixed(3))
@@ -354,14 +355,25 @@ function saveDispatchWithFIFO(payload) {
     }
 
     // Hoist LOCATIONS read out of the per-lot loop (MED-1 from code review).
-    // Build locId → type map once instead of N reads while holding the lock.
+    // Build locId → type map once. Column position is resolved from the header
+    // row so a re-ordered LOCATIONS sheet still works.
     var locTypeByLocId = {};
     var locWs = ss.getSheetByName('LOCATIONS');
     if (locWs && locWs.getLastRow() > 1) {
-      var ld = locWs.getRange(2, 1, locWs.getLastRow() - 1, 12).getValues();
+      var lastCol = locWs.getLastColumn();
+      var locHeaders = locWs.getRange(1, 1, 1, lastCol).getValues()[0];
+      var locIdCol = 0;     // 0-based index into the row array
+      var locTypeCol = -1;
+      for (var lhi = 0; lhi < locHeaders.length; lhi++) {
+        var hn = String(locHeaders[lhi] || '').trim().toLowerCase();
+        if (hn === 'location id') locIdCol = lhi;
+        if (hn === 'type') locTypeCol = lhi;
+      }
+      if (locTypeCol < 0) locTypeCol = 8; // legacy fallback to column 9
+      var ld = locWs.getRange(2, 1, locWs.getLastRow() - 1, lastCol).getValues();
       for (var li = 0; li < ld.length; li++) {
-        var lKey = String(ld[li][0] || '').trim();
-        if (lKey) locTypeByLocId[lKey] = String(ld[li][8] || '').toUpperCase();
+        var lKey = String(ld[li][locIdCol] || '').trim();
+        if (lKey) locTypeByLocId[lKey] = String(ld[li][locTypeCol] || '').toUpperCase();
       }
     }
 

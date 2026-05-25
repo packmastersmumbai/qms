@@ -517,11 +517,9 @@
 
       var btn = document.getElementById('btnConfirm');
       btn.disabled = true; btn.textContent = 'Saving…';
-      console.log('[Dispatch] saveDispatchWithFIFO payload', payload);
       google.script.run
         .withSuccessHandler(function(res){
           btn.disabled = false; btn.textContent = 'Confirm Dispatch';
-          console.log('[Dispatch] saveDispatchWithFIFO response', res);
           if (!res || !res.success) {
             showToast('Failed: ' + (res && res.error || 'unknown'), 'error');
             return;
@@ -536,7 +534,6 @@
         })
         .withFailureHandler(function(e){
           btn.disabled = false; btn.textContent = 'Confirm Dispatch';
-          console.error('[Dispatch] saveDispatchWithFIFO failure', e);
           showToast('Error: ' + (e.message || e), 'error');
         })
         .saveDispatchWithFIFO(payload);

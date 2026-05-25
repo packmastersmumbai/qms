@@ -357,6 +357,17 @@ var _disposition = '';   // 'APPROVED' | 'REJECTED'
 var _saved       = false;
 
 // ── Utility ────────────────────────────────────────────────────────────
+function goHome() {
+  if (window.PMHtmlCache && typeof window.PMHtmlCache.navigate === 'function') {
+    window.PMHtmlCache.navigate('Landing');
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+    .withFailureHandler(function(){ window.location.reload(); })
+    .getFormHtml('Landing');
+}
+
 function escHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -552,9 +563,13 @@ function doSave() {
   var remarks = document.getElementById('remarks').value.trim();
 
   var oqcRefVal = document.getElementById('oqcRef') ? document.getElementById('oqcRef').value : '';
+  // Server-side OQC-replay guard fires only when type === 'OUTBOUND' (Gatepass.js).
+  // Map UI's friendly label to the canonical type tag the server expects.
+  var serverType = (matType === 'Finished Goods') ? 'OUTBOUND' : matType;
   var data = {
     date:         _today,
-    type:         matType,
+    type:         serverType,
+    materialType: matType,
     oqcRef:       oqcRefVal,
     partyName:    '',
     vehicleNo:    vehicle,
