@@ -46,24 +46,8 @@
 
 <script>
 (function(){
-  // BottomNav is only useful on shell pages (Landing/Records/KPI/Masters/Dashboard).
-  // Inside a transactional form (GRN, IQC, Dispatch, NCR, …) the operator is
-  // mid-task and the nav steals vertical space + covers sticky save buttons.
-  // Identify shell pages by exact title; everything else hides the nav.
-  var SHELL_TITLES = {
-    'Pack Masters QMS': 1,                       // Landing
-    'Pack Masters QMS - Records': 1,             // Records
-    'KPI Dashboard — Pack Masters': 1,           // KPI
-    'Masters - Pack Masters QMS': 1,             // Masters
-    'Dashboard - Pack Masters QMS': 1            // Dashboard (if present)
-  };
-  var title = (document.title || '').trim();
-  var isShell = !!SHELL_TITLES[title];
-  var navEl = document.getElementById('pmBnav');
-  if (!isShell) {
-    if (navEl) navEl.style.display = 'none';
-    return;  // skip body padding + prefetch when nav is hidden
-  }
+  // BottomNav is included ONLY by shell pages now (Records, KPI, Masters, Dashboard).
+  // Transactional forms removed their include directly — no runtime detection.
   document.body.classList.add('has-pm-bnav');
   // Idle-prefetch the 5 bottom-nav targets so future taps are instant.
   // Each page loaded gets its sibling nav targets warmed automatically.
