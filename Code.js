@@ -220,13 +220,28 @@ function doGet(e) {
   var page = e && e.parameter && e.parameter.page ? String(e.parameter.page).toLowerCase() : '';
   var template;
   // Canonical lowercase keys → { file, title }
+  // Pages that require owner mode (pm.ui.ownerMode = 'true' in Script Properties).
+  // Anonymous/non-owner callers get redirected to the landing page.
+  var ADMIN_PAGES_ = { settings: true, masterscrud: true };
+
   var pageMap = {
     masters:        { file: 'Masters_F',        title: 'Masters' },
     records:        { file: 'Records_F',        title: 'Records' },
     ncr:            { file: 'NCR_F',            title: 'NCR' },
     customerreturn: { file: 'CustomerReturn_F', title: 'Customer Return' },
-    warehouse:      { file: 'Warehouse_F',      title: 'Warehouse' }
+    warehouse:      { file: 'Warehouse_F',      title: 'Warehouse' },
+    settings:       { file: 'Settings_F',       title: 'Settings' },
+    masterscrud:    { file: 'MastersCrud_F',    title: 'Masters CRUD' }
   };
+  if (pageMap[page]) {
+    // Guard admin pages — same owner check used by _mastersRequireOwner_()
+    if (ADMIN_PAGES_[page]) {
+      var ownerOn = String(PropertiesService.getScriptProperties().getProperty('pm.ui.ownerMode') || 'false') === 'true';
+      if (!ownerOn) {
+        page = ''; // fall through to landing
+      }
+    }
+  }
   if (pageMap[page]) {
     var pgTpl = HtmlService.createTemplateFromFile(pageMap[page].file);
     pgTpl.scriptUrl = ScriptApp.getService().getUrl();
@@ -247,11 +262,32 @@ function include(filename) {
 // ── Called by client to inject sub-pages ─────────────────────
 
 function getFormHtml(type) {
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', Landing:'Landing' };
+  // Guard admin forms — Settings and MastersCrud must not be served to non-owners
+  // even via google.script.run (which bypasses the doGet URL-level guard).
+  var ADMIN_FORMS_ = { Settings: true, MastersCrud: true };
+  if (ADMIN_FORMS_[type]) {
+    var ownerOn = String(PropertiesService.getScriptProperties().getProperty('pm.ui.ownerMode') || 'false') === 'true';
+    if (!ownerOn) throw new Error('Owner mode required');
+  }
+  // Server-side HTML cache: forms are templates, only change on deploy.
+  // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
+  var cacheKey = 'pmqms_formhtml_v5_' + String(type || 'Landing');
+  try {
+    var hit = CacheService.getScriptCache().get(cacheKey);
+    if (hit) return hit;
+  } catch (e) {}
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Landing:'Landing' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();
-  return tpl.evaluate().getContent();
+  var html = tpl.evaluate().getContent();
+  try {
+    // Chunk if needed — CacheService per-key cap is 100KB; many forms exceed
+    if (html.length < 100000) {
+      CacheService.getScriptCache().put(cacheKey, html, 21600); // 6 hours
+    }
+  } catch (e) {}
+  return html;
 }
 
 function getScriptUrl() {
@@ -301,16 +337,274 @@ function sendWhatsAppSelected() {
 }
 
 
+// Returns true PENDING counts per module (not today-only).
+// Each module defines its own "pending" semantic:
+//   PO            = PO_LOG rows with status OPEN / PARTIAL (not CLOSED/CANCELLED)
+//   GRN           = GRN_LOG rows whose disposition not finalized (PENDING_INSPECTION)
+//                   AND no IQC session yet matched
+//   IQC           = IQC sessions OPEN (not COMPLETE/CLOSED) or GRNs awaiting IQC
+//   IPQC          = IPQC_Sessions with status OPEN
+//   Production    = PROD_JOBS with Status = BOOKED (not yet PRODUCED)
+//   OQC           = OQC_LOG rows with disposition pending (not RELEASED/REJECTED)
+//   Gatepass      = GATEPASS_LOG rows status OPEN / IN_TRANSIT (not RETURNED)
+//   Dispatch     = DISPATCH_LOG rows not delivered (status anything except DELIVERED)
+//   NCR          = NCR_LOG rows with status OPEN / IN_PROGRESS (not CLOSED)
+//   CustomerReturn = CR_LOG rows with status OPEN / IN_PROGRESS (not CLOSED)
+function computePendingCounts_(ss) {
+  var c = { PO:0, GRN:0, IQC:0, IPQC:0, Production:0, OQC:0, Gatepass:0, Dispatch:0, NCR:0, CustomerReturn:0 };
+  // Side-channel: breakdown per module — { GRN: {PENDING:5, HOLD:3}, ... }
+  var brk = {};
+
+  function countWhere(modKey, sheetName, statusCol, isPendingFn) {
+    var sh = ss.getSheetByName(sheetName);
+    if (!sh || sh.getLastRow() < 2) { brk[modKey] = {}; return 0; }
+    var data = sh.getDataRange().getValues();
+    var hdr = data[0];
+    var idx = (typeof statusCol === 'number') ? statusCol :
+      hdr.findIndex(function(h){ return String(h).toLowerCase().trim() === String(statusCol).toLowerCase().trim(); });
+    if (idx < 0) { brk[modKey] = {}; return 0; }
+    var seen = {};
+    var n = 0;
+    var dist = {};
+    for (var r = 1; r < data.length; r++) {
+      var st = String(data[r][idx] || '').toUpperCase().trim();
+      if (!isPendingFn(st)) continue;
+      var docNo = data[r][0];
+      if (seen[docNo]) continue;
+      seen[docNo] = true;
+      n++;
+      var label = st || 'PENDING';
+      dist[label] = (dist[label] || 0) + 1;
+    }
+    brk[modKey] = dist;
+    return n;
+  }
+  // expose breakdowns on c (consumed by caller)
+  c.__breakdowns = brk;
+
+  // PO_HEADER status column index 11 (after PO_NO, Date, Supplier, etc.) — we use header lookup instead
+  try {
+    c.PO = countWhere('PO', 'PO_HEADER', 'status', function(s){
+      return s === 'OPEN' || s === 'PARTIAL' || s === 'PARTIAL_RECEIVED' || s === 'SUBMITTED' || s === 'DRAFT';
+    });
+  } catch(e) { Logger.log('PO count: ' + e); }
+
+  // GRN: rows where IQC Status is still PENDING (header = "IQC Status")
+  try {
+    c.GRN = countWhere('GRN', 'GRN_LOG', 'IQC Status', function(s){
+      return s === '' || s === 'PENDING' || s === 'PENDING_INSPECTION' || s === 'AWAITING_IQC';
+    });
+  } catch(e) { Logger.log('GRN count: ' + e); }
+
+  // IQC: rows where Disposition is still pending (not ACCEPTED/REJECTED)
+  try {
+    c.IQC = countWhere('IQC', 'IQC_LOG', 'Disposition', function(s){
+      return s === '' || s === 'PENDING' || s === 'PENDING_DISPOSITION' || s === 'IN_PROGRESS' || s === 'HOLD' || s === 'ON_HOLD';
+    });
+  } catch(e) { Logger.log('IQC count: ' + e); }
+
+  // IPQC: sessions where status is OPEN
+  try {
+    c.IPQC = countWhere('IPQC', 'IPQC_Sessions', 'status', function(s){
+      return s === 'OPEN' || s === 'IN_PROGRESS';
+    });
+  } catch(e) { Logger.log('IPQC count: ' + e); }
+
+  // Production: PROD_JOBS where Status = BOOKED
+  try {
+    c.Production = countWhere('Production', 'PROD_JOBS', 'Status', function(s){ return s === 'BOOKED'; });
+  } catch(e) { Logger.log('Production count: ' + e); }
+
+  // OQC: rows where Release Decision is still pending
+  try {
+    c.OQC = countWhere('OQC', 'OQC_LOG', 'Release Decision', function(s){
+      return s === '' || s === 'PENDING' || s === 'PENDING_DISPOSITION' || s === 'OPEN' || s === 'HOLD';
+    });
+  } catch(e) { Logger.log('OQC count: ' + e); }
+
+  // Gatepass: STATUS = OPEN / IN_TRANSIT / ISSUED (not RETURNED / CLOSED / CANCELLED)
+  try {
+    c.Gatepass = countWhere('Gatepass', 'GATEPASS_LOG', 'STATUS', function(s){
+      return s === 'OPEN' || s === 'IN_TRANSIT' || s === 'ISSUED' || s === '';
+    });
+  } catch(e) { Logger.log('Gatepass count: ' + e); }
+
+  // Dispatch: FG_DISPATCH_LOTS — undelivered rows
+  try {
+    var fg = ss.getSheetByName('FG_DISPATCH_LOTS');
+    if (fg && fg.getLastRow() >= 2) {
+      var fgData = fg.getDataRange().getValues();
+      var fgHdr = fgData[0];
+      // Look for a Status / Delivered field
+      var stIdx = fgHdr.findIndex(function(h){ var x = String(h).toLowerCase(); return x === 'status' || x === 'delivery status' || x === 'dispatch status'; });
+      var n = 0;
+      if (stIdx >= 0) {
+        for (var r = 1; r < fgData.length; r++) {
+          var s = String(fgData[r][stIdx] || '').toUpperCase().trim();
+          if (s !== 'DELIVERED' && s !== 'CLOSED' && s !== 'CANCELLED') n++;
+        }
+      } else {
+        // No status column → assume any row = active dispatch
+        n = fgData.length - 1;
+      }
+      c.Dispatch = n;
+      brk.Dispatch = { 'NOT DELIVERED': n };
+    }
+  } catch(e) { Logger.log('Dispatch count: ' + e); }
+
+  try {
+    c.NCR = countWhere('NCR', 'NCR_LOG', 'Status', function(s){
+      return s === 'OPEN' || s === 'IN_PROGRESS' || s === 'PENDING' || s === '';
+    });
+  } catch(e) { Logger.log('NCR count: ' + e); }
+
+  try {
+    c.CustomerReturn = countWhere('CustomerReturn', 'CUSTOMER_RETURN_LOG', 'Status', function(s){
+      return s === 'OPEN' || s === 'IN_PROGRESS' || s === 'PENDING' || s === '';
+    });
+  } catch(e) { Logger.log('CR count: ' + e); }
+
+  return c;
+}
+
+// Guard for diagnostic functions. Passes when:
+//   (a) the caller is authenticated — Session.getActiveUser().getEmail() returns a non-empty
+//       string (reliable for clasp run and signed-in owner browser sessions); OR
+//   (b) pm.ui.ownerMode Script Property is 'true' (fallback for edge cases).
+// Throws for anonymous google.script.run callers (email is '' for unauthenticated sessions).
+function _diagRequireOwner_() {
+  var email = '';
+  try { email = Session.getActiveUser().getEmail() || ''; } catch(e) {}
+  if (email) return; // authenticated (clasp run as owner, or signed-in owner session)
+  var on = String(PropertiesService.getScriptProperties().getProperty('pm.ui.ownerMode') || 'false') === 'true';
+  if (!on) throw new Error('Owner mode required for diagnostic functions.');
+}
+
+function diag_pendingCounts() {
+  _diagRequireOwner_();
+  return JSON.stringify(computePendingCounts_(getSpreadsheet()), null, 2);
+}
+
+// Public callable: returns the pending counts object (without breakdowns)
+// for frontends that need just the numbers.
+function getPendingCountsJSON() {
+  var c = computePendingCounts_(getSpreadsheet());
+  delete c.__breakdowns;
+  return c;
+}
+
+function diag_statusValues() {
+  _diagRequireOwner_();
+  var ss = getSpreadsheet();
+  var probes = [
+    ['PO_HEADER', 'status'],
+    ['IQC_LOG', 'Disposition'],
+    ['OQC_LOG', 'Release Decision'],
+    ['CUSTOMER_RETURN_LOG', 'Status']
+  ];
+  var out = {};
+  probes.forEach(function(p){
+    var sh = ss.getSheetByName(p[0]);
+    if (!sh) { out[p[0]] = '(missing)'; return; }
+    var data = sh.getDataRange().getValues();
+    var hdr = data[0];
+    var idx = hdr.findIndex(function(h){ return String(h).toLowerCase().trim() === p[1].toLowerCase().trim(); });
+    if (idx < 0) { out[p[0]] = 'col "' + p[1] + '" not found; headers=' + hdr.join('|'); return; }
+    var values = {};
+    for (var r = 1; r < data.length; r++) {
+      var v = String(data[r][idx] || '(empty)').trim();
+      values[v] = (values[v] || 0) + 1;
+    }
+    out[p[0]] = { col: p[1], idx: idx, distribution: values };
+  });
+  return JSON.stringify(out, null, 2);
+}
+
+function diag_sheetHeaders() {
+  _diagRequireOwner_();
+  var ss = getSpreadsheet();
+  var names = ['PO_LOG','GRN_LOG','IQC_LOG','IQC_Sessions','IPQC_Sessions','PROD_JOBS','OQC_LOG','GATEPASS_LOG','DISPATCH_LOG','NCR_LOG','CR_LOG','CUSTOMER_RETURN_LOG'];
+  var out = {};
+  names.forEach(function(n){
+    var sh = ss.getSheetByName(n);
+    if (!sh) { out[n] = '(missing)'; return; }
+    if (sh.getLastRow() < 1) { out[n] = '(empty)'; return; }
+    out[n] = {
+      rows: sh.getLastRow() - 1,
+      headers: sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0]
+    };
+  });
+  return JSON.stringify(out, null, 2);
+}
+
+// ─── Shared cache helpers ──────────────────────────────────────────
+// CacheService is per-script, 6 hours max. We use 60s TTL for hot reads;
+// writes call invalidatePmCache_() to clear stale entries.
+var PMQMS_CACHE_TTL_S_ = 60;
+
+// Auto-invalidating cache: stores cache entries with a sheet-mtime fingerprint.
+// On read, compares current sheet mtime to cached fingerprint; cache miss if sheet has been edited.
+// Avoids manual invalidation in every write path.
+function _pmSheetFingerprint_() {
+  try {
+    var ss = getSpreadsheet();
+    // Use the file's last-modified ms as fingerprint. Cheap.
+    return String(DriveApp.getFileById(ss.getId()).getLastUpdated().getTime());
+  } catch (e) { return '0'; }
+}
+function _pmCacheGet_(key) {
+  try {
+    var raw = CacheService.getScriptCache().get(key);
+    if (!raw) return null;
+    var obj = JSON.parse(raw);
+    // Fingerprint mismatch => sheet changed; cache stale
+    if (obj.fp !== _pmSheetFingerprint_()) return null;
+    return obj.data;
+  } catch (e) { return null; }
+}
+function _pmCachePut_(key, val) {
+  try {
+    var obj = { fp: _pmSheetFingerprint_(), data: val };
+    var s = JSON.stringify(obj);
+    if (s.length < 100000) {
+      CacheService.getScriptCache().put(key, s, PMQMS_CACHE_TTL_S_);
+    }
+  } catch (e) {}
+}
+function invalidatePmCache_() {
+  try {
+    CacheService.getScriptCache().removeAll([
+      'pmqms_landing_v1', 'pmqms_records_counts_v1', 'pmqms_pending_v1',
+      'pmqms_records_list_GRN', 'pmqms_records_list_IQC', 'pmqms_records_list_OQC',
+      'pmqms_records_list_IPQC', 'pmqms_records_list_Gatepass', 'pmqms_records_list_ALL'
+    ]);
+  } catch (e) {}
+}
+
 function getQmsLandingState() {
+  var cached = _pmCacheGet_('pmqms_landing_v1');
+  if (cached) return cached;
+  var result = _computeQmsLandingState_();
+  _pmCachePut_('pmqms_landing_v1', result);
+  return result;
+}
+
+function _computeQmsLandingState_() {
   var ss = getSpreadsheet();
   var today = new Date().toDateString();
-  var counts = { GRN: 0, IQC: 0, IPQC: 0, OQC: 0, Gatepass: 0 };
+  // Start with TRUE pending counts per module
+  var counts = computePendingCounts_(ss);
   var schemaFallback = {
     GRN_LOG:      { tsIdx: 17, docIdx: 0, dedup: true  },
     IQC_LOG:      { tsIdx: 28, docIdx: 0, dedup: false },
     OQC_LOG:      { tsIdx: 18, docIdx: 0, dedup: false },
     GATEPASS_LOG: { tsIdx: 17, docIdx: 0, dedup: true  }
   };
+  // NOTE: counts is now driven by computePendingCounts_(ss) above (true pending).
+  // The legacy today-only adders below have been DISABLED — they were inflating
+  // the pending counts with date-filtered numbers, producing wrong totals.
+  // If today-only counts are needed elsewhere, expose them via a separate field.
+  /* DISABLED — legacy today-only counters
   var sheetMap = { GRN: 'GRN_LOG', IQC: 'IQC_LOG', OQC: 'OQC_LOG', Gatepass: 'GATEPASS_LOG' };
   Object.keys(sheetMap).forEach(function(type) {
     var shName = sheetMap[type];
@@ -346,6 +640,7 @@ function getQmsLandingState() {
       if (rowDate === todayYmd) counts.IPQC++;
     }
   })();
+  END DISABLED */
 
   // ── Real pending actions ──────────────────────────────────────────
   var pendingActions = [];
@@ -461,7 +756,56 @@ function getQmsLandingState() {
     counts.PO = poPartial;
   } catch(e) { Logger.log('getQmsLandingState PO count: ' + e); }
 
-  return { name: 'Team', role: 'user', todayCounts: counts, pendingActions: pendingActions };
+  // ── Recent activity ───────────────────────────────────────────────
+  // Pulls last few rows from each top-level log, merges, sorts newest-first.
+  var recentActivity = [];
+  try {
+    var TZ = 'Asia/Kolkata';
+    function fmtDate(v) { return v instanceof Date ? Utilities.formatDate(v, TZ, 'dd MMM · HH:mm') : String(v || ''); }
+    var logs = [
+      { name: 'GRN_LOG',      type: 'GRN',      tsIdx: 17, docIdx: 0, statusIdx: 15 },
+      { name: 'IQC_LOG',      type: 'IQC',      tsIdx: 28, docIdx: 0, statusIdx: 17 },
+      { name: 'IPQC_Rounds',  type: 'IPQC',     tsIdx: 11, docIdx: 0, statusIdx: -1 },
+      { name: 'OQC_LOG',      type: 'OQC',      tsIdx: 18, docIdx: 0, statusIdx: 14 },
+      { name: 'GATEPASS_LOG', type: 'Gatepass', tsIdx: 17, docIdx: 0, statusIdx: 14 },
+      { name: 'NCR_LOG',      type: 'NCR',      tsIdx: 16, docIdx: 0, statusIdx: 14 }
+    ];
+    logs.forEach(function(L) {
+      try {
+        var sh = ss.getSheetByName(L.name);
+        if (!sh || sh.getLastRow() < 2) return;
+        var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+        // Resolve common header names if present
+        var tsIdx = hdr.indexOf('timestamp') >= 0 ? hdr.indexOf('timestamp') : L.tsIdx;
+        var statusIdx = hdr.indexOf('Status') >= 0 ? hdr.indexOf('Status') : L.statusIdx;
+        // Read only the last ~30 rows to keep this cheap
+        var lastRow = sh.getLastRow();
+        var start = Math.max(2, lastRow - 30 + 1);
+        var rng = sh.getRange(start, 1, lastRow - start + 1, sh.getLastColumn()).getValues();
+        rng.forEach(function(row) {
+          var docNo = row[L.docIdx];
+          if (!docNo) return;
+          var ts = tsIdx >= 0 ? row[tsIdx] : null;
+          var st = statusIdx >= 0 ? row[statusIdx] : '';
+          recentActivity.push({
+            docNo:  String(docNo),
+            type:   L.type,
+            status: String(st || ''),
+            date:   fmtDate(ts),
+            _ts:    ts instanceof Date ? ts.getTime() : 0
+          });
+        });
+      } catch(e) { Logger.log('recentActivity ' + L.name + ': ' + e); }
+    });
+    recentActivity.sort(function(a, b) { return b._ts - a._ts; });
+    recentActivity = recentActivity.slice(0, 8).map(function(r) {
+      delete r._ts; return r;
+    });
+  } catch(e) { Logger.log('recentActivity: ' + e); }
+
+  var breakdowns = counts.__breakdowns || {};
+  delete counts.__breakdowns;
+  return { name: 'Team', role: 'user', todayCounts: counts, pendingBreakdowns: breakdowns, pendingActions: pendingActions, recentActivity: recentActivity };
 }
 
 // ============================================================

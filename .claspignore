@@ -9,3 +9,12 @@ docs/**
 .claude/**
 .git/**
 .playwright-cli/**
+stitchhtml/**
+node_modules/**
+package.json
+package-lock.json
+tailwind.config.cjs
+tailwind-input.css
+tailwind-generated.css
+_swap-tailwind.js
+PM-QMS-PROJECT-BRIEF.md
