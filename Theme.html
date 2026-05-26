@@ -669,20 +669,19 @@
     }
   }
   @media (min-width: 1024px) {
-    body.pm-wide   { max-width: 1280px; margin-left: auto; margin-right: auto; padding-left: 0; padding-right: 0; }
-    /* Headers and filter bars on wide pages stay FULL viewport width.
-       Centering them to 1280px while the body is 1280px (centered) makes
-       them appear to float in a smaller box than the page edges — and
-       any non-.pm-header form chrome that spans full width visually
-       collides at the gutters. Easier: full-bleed top chrome, centered
-       content underneath. */
-    body.pm-wide .pm-header,
-    body.pm-wide .filter-bar,
-    body.pm-wide .tab-bar,
-    body.pm-wide #filterStrip {
-      max-width: none;
-      left: 0; right: 0; transform: none;
-      width: 100%;
+    /* Wide pages: body stays full-viewport (so fixed top chrome and the
+       bottom nav can span edge to edge). Any element with .pm-page-wrap
+       becomes the centered 1280px content container.
+       Pages that don't add .pm-page-wrap fall back to full-bleed content;
+       this is intentional — pages with their own grid systems (Landing,
+       full-bleed tables) shouldn't be constrained twice. */
+    body.pm-wide { max-width: none; margin: 0; }
+    body.pm-wide .pm-page-wrap {
+      max-width: 1280px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 16px;
+      padding-right: 16px;
     }
   }
 
