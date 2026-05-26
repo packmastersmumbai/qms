@@ -652,11 +652,11 @@
     color: var(--pm-on-primary);
   }
 
-  /* ── Desktop center ─────────────────────────────────────────────
-     Opt-in centering only. Pages that want the legacy "narrow form
-     in a centered column" look add the .pm-narrow class to <body>.
-     Without it, the page gets full viewport width — required for
-     Landing's two-pane desktop grid and any future wide layouts.
+  /* ── Centering width modes ─────────────────────────────────────
+     Three opt-in modes; body picks one via class:
+       .pm-narrow  (forms): 600px max at >=640px viewport.
+       .pm-wide    (tables/dashboards): 1280px max at >=1024px viewport.
+       (no class) (Landing): full viewport, page owns its own layout.
      ─────────────────────────────────────────────────────────────── */
   @media (min-width: 640px) {
     body.pm-narrow { max-width: 600px; margin-left: auto; margin-right: auto; }
@@ -665,6 +665,23 @@
     body.pm-narrow .tab-bar {
       max-width: 600px;
       left: 50%; transform: translateX(-50%);
+      width: 100%;
+    }
+  }
+  @media (min-width: 1024px) {
+    body.pm-wide   { max-width: 1280px; margin-left: auto; margin-right: auto; padding-left: 0; padding-right: 0; }
+    /* Headers and filter bars on wide pages stay FULL viewport width.
+       Centering them to 1280px while the body is 1280px (centered) makes
+       them appear to float in a smaller box than the page edges — and
+       any non-.pm-header form chrome that spans full width visually
+       collides at the gutters. Easier: full-bleed top chrome, centered
+       content underneath. */
+    body.pm-wide .pm-header,
+    body.pm-wide .filter-bar,
+    body.pm-wide .tab-bar,
+    body.pm-wide #filterStrip {
+      max-width: none;
+      left: 0; right: 0; transform: none;
       width: 100%;
     }
   }
@@ -798,27 +815,41 @@
   window.QMS.requireOperator    = requireOperator;
   window.QMS.showOperatorPicker = showOperatorPicker;
 
-  // Suppress Google Apps Script footer banner
+  // Suppress Google Apps Script "Report abuse / Learn more / created using
+  // Google" chrome. GAS now renders this at BOTH top and bottom of the
+  // iframe in some embed contexts, so we cover both edges and kill any
+  // matching DOM node we can find.
   (function() {
-    var COVER_ID = '__gas_cover__';
-    function addCover() {
-      if (document.getElementById(COVER_ID)) return;
-      var d = document.createElement('div');
-      d.id = COVER_ID;
-      d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:30px;' +
-        'background:#F5F7FA;z-index:2147483647;pointer-events:none;';
-      document.body.appendChild(d);
+    var COVER_BOTTOM = '__gas_cover_bottom__';
+    var COVER_TOP    = '__gas_cover_top__';
+    function addCovers() {
+      if (!document.getElementById(COVER_BOTTOM)) {
+        var b = document.createElement('div');
+        b.id = COVER_BOTTOM;
+        b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:30px;' +
+          'background:#F5F7FA;z-index:2147483647;pointer-events:none;';
+        document.body.appendChild(b);
+      }
+      // No top cover here — GAS "Report abuse" bar that appears at the
+      // top of some embeds lives in the parent frame, outside our DOM.
+      // We CAN'T hide it from inside the iframe. The user has to access
+      // the app via the bare /exec URL (not the GAS preview wrapper) to
+      // avoid that chrome. The killBanner scan below still tries to nuke
+      // any in-document instances.
     }
     function killBanner(node) {
-      if (!node || node.nodeType !== 1 || node.id === COVER_ID) return;
+      if (!node || node.nodeType !== 1) return;
+      if (node.id === COVER_BOTTOM || node.id === COVER_TOP) return;
       var t = (node.textContent || node.innerText || '');
       if (t.indexOf('Google Apps Script') !== -1 ||
-          t.indexOf('created using Google') !== -1) {
+          t.indexOf('created using Google') !== -1 ||
+          t.indexOf('Report abuse') !== -1 ||
+          t.indexOf('Learn more') !== -1) {
         node.style.cssText = 'display:none!important';
       }
     }
     function scan() {
-      addCover();
+      addCovers();
       var kids = document.body.children;
       for (var i = 0; i < kids.length; i++) killBanner(kids[i]);
     }

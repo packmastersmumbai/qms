@@ -162,10 +162,10 @@
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('HtmlCache') ?>
 </head>
-<body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px] pm-narrow">
+<body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px]  pm-wide">
 
 <!-- ── Top App Bar ── -->
-<header class="fixed top-0 w-full z-50 h-[56px] bg-[#0D1B6E] shadow-md flex items-center justify-between px-4">
+<header class="fixed top-0 left-0 right-0 w-full max-w-none z-50 h-[56px] bg-[#0D1B6E] shadow-md flex items-center justify-between px-4">
   <div class="flex items-center gap-2">
     <span id="logoBtn"
           class="material-symbols-outlined text-white active:scale-95 duration-100 hover:bg-white/10 transition-colors p-1 rounded-full cursor-pointer"
@@ -285,7 +285,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ── Bottom nav ── -->
-<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-safe z-50 h-[64px] bg-white border-t border-[#e2e8f0]">
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-2 pb-safe z-50 h-[64px] bg-white border-t border-[#e2e8f0]">
   <button id="navHome" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">home</span>
     <span class="font-label text-[11px] font-semibold">Home</span>
