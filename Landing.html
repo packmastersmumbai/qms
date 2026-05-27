@@ -548,6 +548,7 @@
       0%   { transform: translateX(-100%); }
       100% { transform: translateX(360%); }
     }
+    @keyframes pm-spin { to { transform: rotate(360deg); } }
 
     /* Toast */
     #toast {
@@ -960,6 +961,7 @@
   <button class="pm-top-btn" aria-label="Settings" onclick="navigateTo('Settings')">
     <svg><use href="#i-settings"/></svg>
   </button>
+  <span id="topRefreshSpinner" aria-hidden="true" style="display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:pm-spin 0.7s linear infinite;flex-shrink:0;"></span>
   </div>
 </header>
 
@@ -1583,10 +1585,16 @@
   var loaderProg = $('pmLoaderProgress');
   var loaderSub = $('pmLoaderSub');
   var loaderProgress = 0, loaderInterval = null;
+  var _topSpinner = null;
+  function _getTopSpinner() { return _topSpinner || (_topSpinner = document.getElementById('topRefreshSpinner')); }
+  function showTopSpinner() { var s = _getTopSpinner(); if (s) s.style.display = 'inline-block'; }
+  function hideTopSpinner() { var s = _getTopSpinner(); if (s) s.style.display = 'none'; }
+
   function showLoader(msg) {
     if (msg && loaderSub) loaderSub.textContent = msg;
     if (loaderEl) loaderEl.classList.remove('is-hidden');
     if (loaderProg) loaderProg.classList.add('indeterminate');
+    showTopSpinner();
   }
   function hideLoader() {
     if (loaderInterval) { clearInterval(loaderInterval); loaderInterval = null; }
@@ -1596,6 +1604,7 @@
       if (loaderProg) loaderProg.style.width = '0%';
       loaderProgress = 0;
     }, 220);
+    hideTopSpinner();
   }
   function startLoaderProgress() {
     loaderProgress = 8;
@@ -1832,15 +1841,17 @@
     if (fullCached) {
       applyBundle(fullCached);
       hideLoader();
-      // Background refresh — update counts silently, don't block UI
+      // Background refresh — update counts silently, spinner in top bar
+      showTopSpinner();
       google.script.run
         .withSuccessHandler(function (bundle) {
+          hideTopSpinner();
           if (!bundle) return;
           applyBundle(bundle);
           writeFullCache(bundle);
           schedulePrefetch();
         })
-        .withFailureHandler(function () {})
+        .withFailureHandler(function () { hideTopSpinner(); })
         .getLandingBundleV2(getPersona());
       schedulePrefetch();
       return;
