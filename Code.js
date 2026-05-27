@@ -599,11 +599,11 @@ function getQmsLandingState() {
   return result;
 }
 
-function _computeQmsLandingState_() {
-  var ss = getSpreadsheet();
+function _computeQmsLandingState_(ss, counts) {
+  if (!ss) ss = getSpreadsheet();
   var today = new Date().toDateString();
   // Start with TRUE pending counts per module
-  var counts = computePendingCounts_(ss);
+  if (!counts) counts = computePendingCounts_(ss);
   var schemaFallback = {
     GRN_LOG:      { tsIdx: 17, docIdx: 0, dedup: true  },
     IQC_LOG:      { tsIdx: 28, docIdx: 0, dedup: false },

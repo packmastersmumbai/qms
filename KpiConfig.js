@@ -628,9 +628,34 @@ function _kpi_coq_(ss, from, to) {
 // ── Bundle for Landing v2 — one round-trip ─────────────────────
 function getLandingBundleV2(persona) {
   persona = _pmNormPersona_(persona);
+  // Compute pending counts once and share across landing + recordsCounts
+  // to avoid double sheet reads on cold start.
+  var ss, pending;
+  try { ss = getSpreadsheet(); pending = computePendingCounts_(ss); } catch(e) { pending = null; }
+
+  var landing = null, recordsCounts = null;
+  try {
+    var cached = _pmCacheGet_('pmqms_landing_v1');
+    if (cached) {
+      landing = cached;
+    } else {
+      landing = _computeQmsLandingState_(ss, pending);
+      _pmCachePut_('pmqms_landing_v1', landing);
+    }
+  } catch(e) {}
+  try {
+    var cachedRc = _pmCacheGet_('pmqms_records_counts_v1');
+    if (cachedRc) {
+      recordsCounts = cachedRc;
+    } else {
+      recordsCounts = _computeRecordsCounts_(pending);
+      _pmCachePut_('pmqms_records_counts_v1', recordsCounts);
+    }
+  } catch(e) {}
+
   return {
-    landing: (function(){ try { return getQmsLandingState(); } catch(e){ return null; } })(),
-    recordsCounts: (function(){ try { return getRecordsCounts(); } catch(e){ return null; } })(),
+    landing: landing,
+    recordsCounts: recordsCounts,
     settings: getUISettings(persona),
     kpis: getQmsKpis(persona),
     registry: KPI_REGISTRY.map(function(r){ return {key:r.key, label:r.label, group:r.group, format:r.format, unit:r.unit, sparkline:r.sparkline, defaultTarget:r.target}; }),

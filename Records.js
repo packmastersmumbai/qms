@@ -11,7 +11,9 @@ var SHEET_MAP = {
   Gatepass:       'GATEPASS_LOG',
   IPQC:           'IPQC_Sessions',
   NCR:            'NCR_LOG',
-  CustomerReturn: 'CUSTOMER_RETURN_LOG'
+  CustomerReturn: 'CUSTOMER_RETURN_LOG',
+  Production:     'PROD_JOBS',
+  Dispatch:       'FG_DISPATCH_LOTS'
 };
 
 // Column indices (1-based) per sheet type
@@ -126,6 +128,21 @@ function _computeRecordsList_(type, filters) {
       var crProd = row[6] ? String(row[6]).trim() : '';
       name   = crCust + (crProd ? ' · ' + crProd : '');
       status = row[15] ? String(row[15]).trim() : 'OPEN';
+    } else if (type === 'Production') {
+      // PROD_JOBS cols: 0 Job ID · 1 Timestamp · 2 Client · 3 FG Code · 4 FG Description · 5 FG Qty Issued · 6 UoM · 8 Status · 9 IPQC ID · 10 Booking ID · 11 Closed At
+      var prdClient = row[2] ? String(row[2]).trim() : '';
+      var prdFg     = row[4] ? String(row[4]).trim() : (row[3] ? String(row[3]).trim() : '');
+      var prdQty    = row[5] != null && row[5] !== '' ? String(row[5]).trim() : '';
+      var prdUom    = row[6] ? String(row[6]).trim() : '';
+      name   = (prdClient ? prdClient + ' · ' : '') + prdFg + (prdQty ? ' · ' + prdQty + (prdUom ? ' ' + prdUom : '') : '');
+      status = row[8] ? String(row[8]).trim() : (row[10] ? 'BOOKED' : 'ISSUED');
+    } else if (type === 'Dispatch') {
+      // FG_DISPATCH_LOTS cols: 0 Lot ID · 1 Timestamp · 5 Customer Name · 7 Product Desc · 8 FG Batch · 10 Qty Released · 11 Qty Dispatched · 14 Status
+      var dspCust = row[5] ? String(row[5]).trim() : '';
+      var dspProd = row[7] ? String(row[7]).trim() : (row[6] ? String(row[6]).trim() : '');
+      var dspBatch = row[8] ? String(row[8]).trim() : '';
+      name   = (dspCust ? dspCust + ' · ' : '') + dspProd + (dspBatch ? ' · ' + dspBatch : '');
+      status = row[14] ? String(row[14]).trim() : 'AVAILABLE';
     }
 
     // Search filter (docNo or name)
@@ -175,7 +192,7 @@ function _computeRecordsList_(type, filters) {
  * Tagged with `type` so the UI can render colored badges.
  */
 function _getRecordsAll(filters) {
-  var types = ['GRN', 'IQC', 'IPQC', 'OQC', 'Gatepass', 'NCR', 'CustomerReturn'];
+  var types = ['GRN', 'IQC', 'IPQC', 'Production', 'OQC', 'Gatepass', 'Dispatch', 'NCR', 'CustomerReturn'];
   var combined = [];
   types.forEach(function(t) {
     try {
@@ -205,14 +222,13 @@ function getRecordsCounts() {
   return result;
 }
 
-function _computeRecordsCounts_() {
+function _computeRecordsCounts_(pending) {
   // Switched to PENDING counts (matches Landing tile semantics).
   // Total record counts retained as `.total*` for any caller that needs them.
   var ss = getSpreadsheet();
-  var pending = {};
-  try {
-    pending = computePendingCounts_(ss);
-  } catch(e) { Logger.log('Pending count error: ' + e); }
+  if (!pending) {
+    try { pending = computePendingCounts_(ss); } catch(e) { Logger.log('Pending count error: ' + e); pending = {}; }
+  }
   return {
     grn:  pending.GRN  || 0,
     iqc:  pending.IQC  || 0,
