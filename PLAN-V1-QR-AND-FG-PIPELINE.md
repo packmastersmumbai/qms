@@ -1,7 +1,7 @@
 # Plan v1 — QR Traceability + FG Batch Pipeline View
 
 **Saved:** 2026-05-19
-**Status:** Approved direction, deferred for later implementation
+**Status:** Superseded by [PLAN-V3.3-QR-QMS-PROJECT.md](PLAN-V3.3-QR-QMS-PROJECT.md) — retained for reference only
 **Project:** Pack Masters QMS (PM QMS)
 
 ---

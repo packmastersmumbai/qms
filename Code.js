@@ -217,6 +217,15 @@ function doGet(e) {
     }
   } catch(ex) {}
 
+  // Diagnostic JSON endpoint — bypasses HTML rendering for headless smoke tests
+  var diag = e && e.parameter && e.parameter.diag ? String(e.parameter.diag) : '';
+  if (diag === 'trace') {
+    var out;
+    try { out = (typeof diagTraceSmoke === 'function') ? diagTraceSmoke() : 'diagTraceSmoke missing'; }
+    catch (er) { out = 'ERROR: ' + er.message + '\n' + (er.stack||''); }
+    return ContentService.createTextOutput(String(out)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   var page = e && e.parameter && e.parameter.page ? String(e.parameter.page).toLowerCase() : '';
   var template;
   // Canonical lowercase keys → { file, title }
@@ -231,7 +240,8 @@ function doGet(e) {
     customerreturn: { file: 'CustomerReturn_F', title: 'Customer Return' },
     warehouse:      { file: 'Warehouse_F',      title: 'Warehouse' },
     settings:       { file: 'Settings_F',       title: 'Settings' },
-    masterscrud:    { file: 'MastersCrud_F',    title: 'Masters CRUD' }
+    masterscrud:    { file: 'MastersCrud_F',    title: 'Masters CRUD' },
+    scan:           { file: 'Scan_F',           title: 'Scan' }
   };
   if (pageMap[page]) {
     // Guard admin pages — same owner check used by _mastersRequireOwner_()
@@ -271,12 +281,12 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v5_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v6_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;
   } catch (e) {}
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Landing:'Landing' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();

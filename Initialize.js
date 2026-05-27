@@ -269,6 +269,8 @@ function initializeProject() {
     createLogSheet_(ss, 'FG_DISPATCH_LOTS',   FG_DISPATCH_HEADERS);
     createLogSheet_(ss, 'FG_FIFO_OVERRIDE_LOG', FG_OVERRIDE_HEADERS);
     createLogSheet_(ss, 'CONTROL_FG',         CONTROL_FG_HEADERS);
+    // Chokepoint pilot (PLAN-V3.3) — idempotent ensure on init.
+    try { if (typeof ensurePilotSheets === 'function') ensurePilotSheets(); } catch(e) {}
     createMasterSheet_(ss, 'MASTERS_Parameters', MASTERS_PARAMETERS_HEADERS, []);
     createDashboardSheet_(ss);
     createReadmeSheet_(ss);
