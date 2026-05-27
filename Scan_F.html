@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Scan — Pack Masters QMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:#0f172a; color:#f8fafc; margin:0; min-height:100dvh; -webkit-tap-highlight-color:transparent; }
+    .wrap { max-width:520px; margin:0 auto; padding:16px; }
+    .card { background:#1e293b; border-radius:12px; padding:16px; margin-bottom:12px; }
+    h1 { font-size:18px; margin:0 0 8px 0; font-weight:700; }
+    h2 { font-size:14px; margin:0 0 8px 0; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; }
+    .pin-display { font-size:36px; letter-spacing:18px; text-align:center; padding:16px; background:#0f172a; border-radius:8px; margin-bottom:12px; min-height:48px; font-weight:700; color:#f8fafc; }
+    .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .key { background:#334155; color:#f8fafc; border:none; border-radius:10px; padding:18px 0; font-size:24px; font-weight:600; cursor:pointer; touch-action:manipulation; }
+    .key:active { background:#475569; transform:scale(0.97); }
+    .key.action { background:#0ea5e9; }
+    .key.danger { background:#7f1d1d; }
+    .who { display:flex; justify-content:space-between; align-items:center; padding:12px; background:#0f172a; border-radius:8px; margin-bottom:12px; }
+    .who-name { font-weight:700; font-size:16px; }
+    .who-meta { font-size:12px; color:#94a3b8; }
+    .logout { background:#7f1d1d; color:#fee2e2; border:none; padding:8px 14px; border-radius:6px; font-size:13px; cursor:pointer; }
+    .chokepoint-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .chokepoint { background:#334155; padding:18px 12px; text-align:center; border-radius:10px; border:none; color:#f8fafc; font-weight:600; cursor:pointer; touch-action:manipulation; }
+    .chokepoint:active { transform:scale(0.97); }
+    .chokepoint.active { background:#0ea5e9; box-shadow:0 0 0 3px rgba(14,165,233,0.3); }
+    .chokepoint .verb { display:block; font-size:18px; margin-bottom:4px; }
+    .chokepoint .label { display:block; font-size:11px; opacity:0.7; }
+    .lot-input { width:100%; box-sizing:border-box; padding:14px; font-size:18px; background:#0f172a; border:2px solid #334155; border-radius:8px; color:#f8fafc; margin-bottom:12px; font-family:inherit; }
+    .lot-input:focus { outline:none; border-color:#0ea5e9; }
+    .btn-primary { width:100%; padding:16px; font-size:16px; font-weight:700; background:#10b981; color:#fff; border:none; border-radius:10px; cursor:pointer; }
+    .btn-primary:active { background:#059669; }
+    .btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
+    .recent { font-size:13px; }
+    .recent-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #334155; }
+    .recent-row:last-child { border-bottom:none; }
+    .recent-row .verb { font-weight:700; color:#10b981; }
+    .recent-row .lot { color:#cbd5e1; }
+    .recent-row .ts { font-size:11px; color:#64748b; }
+    .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#10b981; color:#fff; padding:12px 20px; border-radius:8px; font-weight:600; z-index:50; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+    .toast.show { opacity:1; }
+    .toast.error { background:#dc2626; }
+    .toast.warn  { background:#f59e0b; }
+    .wifi-pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; background:#0f172a; border-radius:999px; font-size:11px; color:#94a3b8; }
+    .wifi-dot { width:8px; height:8px; border-radius:50%; background:#10b981; }
+    .wifi-dot.warn { background:#f59e0b; }
+    .wifi-dot.bad  { background:#dc2626; }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- PIN GATE -->
+    <div id="gate" class="card">
+      <h1>Pack Masters Scan</h1>
+      <h2>Enter your PIN</h2>
+      <div id="pinDisplay" class="pin-display"></div>
+      <div class="keypad">
+        <button class="key" data-d="1">1</button>
+        <button class="key" data-d="2">2</button>
+        <button class="key" data-d="3">3</button>
+        <button class="key" data-d="4">4</button>
+        <button class="key" data-d="5">5</button>
+        <button class="key" data-d="6">6</button>
+        <button class="key" data-d="7">7</button>
+        <button class="key" data-d="8">8</button>
+        <button class="key" data-d="9">9</button>
+        <button class="key danger" id="pinClr">clr</button>
+        <button class="key" data-d="0">0</button>
+        <button class="key action" id="pinOk">OK</button>
+      </div>
+    </div>
+
+    <!-- MAIN UI (hidden until login) -->
+    <div id="main" class="hidden">
+      <div class="card">
+        <div class="who">
+          <div>
+            <div class="who-name" id="whoName">—</div>
+            <div class="who-meta" id="whoMeta">—</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="wifi-pill"><span id="wifiDot" class="wifi-dot"></span><span id="wifiText">Wi-Fi</span></span>
+            <button class="logout" id="logoutBtn">Logout</button>
+          </div>
+        </div>
+
+        <h2>Step 1 — Tap the chokepoint sticker name</h2>
+        <div class="chokepoint-grid">
+          <button class="chokepoint" data-loc="LOC|GATE-IN"><span class="verb">RECEIVE</span><span class="label">Gate-In</span></button>
+          <button class="chokepoint" data-loc="LOC|GATE-OUT"><span class="verb">SHIP</span><span class="label">Gate-Out</span></button>
+          <button class="chokepoint" data-loc="LOC|FLOOR-1-IN"><span class="verb">UP-1</span><span class="label">1st-Floor-In</span></button>
+          <button class="chokepoint" data-loc="LOC|FLOOR-2-IN"><span class="verb">UP-2</span><span class="label">2nd-Floor-In</span></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Step 2 — Type/scan the lot ID</h2>
+        <input type="text" id="lotInput" class="lot-input" placeholder="e.g. PM/GRN/2026-0123  or supplier batch" autocomplete="off" autocapitalize="characters">
+        <button id="submitBtn" class="btn-primary" disabled>Record scan</button>
+      </div>
+
+      <div class="card">
+        <h2>Recent scans (last 5)</h2>
+        <div id="recent" class="recent"><div style="color:#64748b;padding:8px 0;">No scans yet.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    var operator = null;       // {pin, displayName, role, shift}
+    var selectedLoc = null;
+    var recent = [];
+
+    // ---------- PIN flow ----------
+    var pinBuf = '';
+    var pinDisplay = document.getElementById('pinDisplay');
+    function renderPin(){ pinDisplay.textContent = pinBuf.replace(/./g,'•'); }
+    document.querySelectorAll('.key[data-d]').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (pinBuf.length >= 6) return;
+        pinBuf += b.getAttribute('data-d');
+        renderPin();
+      });
+    });
+    document.getElementById('pinClr').addEventListener('click', function(){ pinBuf=''; renderPin(); });
+    document.getElementById('pinOk').addEventListener('click', tryLogin);
+
+    function tryLogin(){
+      if (pinBuf.length < 3) { toast('PIN too short','error'); return; }
+      google.script.run
+        .withSuccessHandler(function(op){
+          if (!op) { toast('Unknown PIN','error'); pinBuf=''; renderPin(); return; }
+          operator = op;
+          document.getElementById('whoName').textContent = op.displayName;
+          document.getElementById('whoMeta').textContent = (op.role||'') + ' · ' + (op.shift||'') + ' shift';
+          document.getElementById('gate').classList.add('hidden');
+          document.getElementById('main').classList.remove('hidden');
+          startWifiHeartbeat();
+        })
+        .withFailureHandler(function(e){ toast('Login error: '+e.message,'error'); })
+        .resolveOperator(pinBuf);
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', function(){
+      operator = null; selectedLoc = null; pinBuf=''; renderPin();
+      document.getElementById('main').classList.add('hidden');
+      document.getElementById('gate').classList.remove('hidden');
+      stopWifiHeartbeat();
+    });
+
+    // ---------- Chokepoint selection ----------
+    document.querySelectorAll('.chokepoint').forEach(function(b){
+      b.addEventListener('click', function(){
+        document.querySelectorAll('.chokepoint').forEach(function(x){ x.classList.remove('active'); });
+        b.classList.add('active');
+        selectedLoc = b.getAttribute('data-loc');
+        refreshSubmitState();
+      });
+    });
+
+    // ---------- Lot input + submit ----------
+    var lotInput = document.getElementById('lotInput');
+    lotInput.addEventListener('input', refreshSubmitState);
+    function refreshSubmitState(){
+      document.getElementById('submitBtn').disabled = !(operator && selectedLoc && lotInput.value.trim().length);
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', function(){
+      if (!operator || !selectedLoc) return;
+      var lotId = lotInput.value.trim();
+      if (!lotId) return;
+      var btn = this; btn.disabled = true; btn.textContent='Saving…';
+      var t0 = Date.now();
+      google.script.run
+        .withSuccessHandler(function(res){
+          var dt = Date.now() - t0;
+          recordWifi('OK', dt);
+          addRecent(res);
+          toast('Scanned: ' + res.verb + ' · ' + lotId, 'ok');
+          lotInput.value=''; btn.disabled=false; btn.textContent='Record scan';
+          // Keep chokepoint selected — typical use is multiple scans at the same doorway
+        })
+        .withFailureHandler(function(e){
+          recordWifi('ERROR', Date.now()-t0);
+          toast('Scan failed: '+(e.message||e),'error');
+          btn.disabled=false; btn.textContent='Record scan';
+        })
+        .recordScan({ pin: operator.pin, locationId: selectedLoc, lotId: lotId });
+    });
+
+    function addRecent(res){
+      recent.unshift(res);
+      if (recent.length > 5) recent.pop();
+      var html = recent.map(function(r){
+        var t = (r.ts || '').slice(11,16); // HH:MM
+        return '<div class="recent-row"><div><span class="verb">'+r.verb+'</span> &nbsp;<span class="lot">'+escapeHtml(r.lotId||'')+'</span></div><div class="ts">'+t+'</div></div>';
+      }).join('');
+      document.getElementById('recent').innerHTML = html || '<div style="color:#64748b;padding:8px 0;">No scans yet.</div>';
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+
+    // ---------- Toast ----------
+    var toastEl = document.getElementById('toast'); var toastTimer = 0;
+    function toast(msg, kind){
+      toastEl.textContent = msg;
+      toastEl.className = 'toast show' + (kind==='error'?' error':kind==='warn'?' warn':'');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function(){ toastEl.className='toast'; }, 2200);
+    }
+
+    // ---------- Wi-Fi heartbeat ----------
+    var wifiTimer = 0, wifiFailStreak = 0;
+    function startWifiHeartbeat(){
+      if (wifiTimer) clearInterval(wifiTimer);
+      probeOnce();
+      wifiTimer = setInterval(probeOnce, 60000);
+    }
+    function stopWifiHeartbeat(){ if (wifiTimer) clearInterval(wifiTimer); wifiTimer=0; }
+    function probeOnce(){
+      var t0 = Date.now(), to = setTimeout(function(){ markWifi('TIMEOUT', 10000); }, 10000);
+      google.script.run
+        .withSuccessHandler(function(){ clearTimeout(to); markWifi('OK', Date.now()-t0); })
+        .withFailureHandler(function(){ clearTimeout(to); markWifi('ERROR', Date.now()-t0); })
+        .pingScan();
+    }
+    function markWifi(status, ms){
+      var dot = document.getElementById('wifiDot'), text = document.getElementById('wifiText');
+      if (status === 'OK') {
+        wifiFailStreak = 0;
+        dot.className = 'wifi-dot' + (ms > 3000 ? ' warn' : '');
+        text.textContent = (ms > 3000 ? 'Slow' : 'OK') + ' · ' + ms + 'ms';
+      } else {
+        wifiFailStreak++;
+        dot.className = 'wifi-dot bad';
+        text.textContent = 'Offline (' + status.toLowerCase() + ')';
+      }
+      recordWifi(status, ms);
+    }
+    function recordWifi(status, ms){
+      if (!operator || !selectedLoc) return;
+      google.script.run.recordWifiProbe({ pin: operator.pin, locationId: selectedLoc, latency_ms: ms, status: status });
+    }
+  </script>
+</body>
+</html>
