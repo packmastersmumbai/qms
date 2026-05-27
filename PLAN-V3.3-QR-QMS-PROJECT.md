@@ -168,7 +168,8 @@ Carried forward from v3.2 — none of these matter until willingness is proven:
 | Validation doc above signed off | QMS owner + warehouse-in-charge | Initialled hardcopy filed |
 | `WIFI_LOG` + `PILOT_DAILY` sheets created | Dev | Schemas confirmed |
 | Nightly trigger for `computeDailyPilotStats` installed | Dev | Test fire at 22:00 Day 0 |
-| Security/GRN/Dispatch/Floor-1/Floor-2 clerks briefed (30 min each) | Dev | Each does 3 successful scans |
+| 7 DWM-mirrored operators briefed (30 min each) — Khushi/1111 (GRN), Rajesh/4444 (Gate+Security), Anuj/2222 (Floor-1), Santosh/3333 (Floor-2), Admin/1234 + TBM/5555 (admin fallback), BBM/6666 (owner observer). Brief = [QR-V33-OPERATOR-BRIEF.md](docs/QR-V33-OPERATOR-BRIEF.md). | Dev | Each does 3 successful scans |
+| [QR-V33-VALIDATION-PROTOCOL.md](docs/QR-V33-VALIDATION-PROTOCOL.md) signed | QMS owner + warehouse-in-charge | Initialled hardcopy filed |
 | Warehouse-in-charge briefed on Day-1 morning coaching duty | Dev | Walkthrough rehearsal |
 
 Total briefing: 2.5h. Total sticker cost: ~₹500. Total dev: ~250 LoC.
