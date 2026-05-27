@@ -18,3 +18,7 @@ tailwind-input.css
 tailwind-generated.css
 _swap-tailwind.js
 PM-QMS-PROJECT-BRIEF.md
+e2e-auth-capture.js
+e2e-probe.js
+e2e-scan-v33.js
+e2e-storageState.json
