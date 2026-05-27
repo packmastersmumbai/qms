@@ -36,20 +36,49 @@ var CHOKEPOINTS_ = {
 // Sheet ensure (idempotent — safe to call repeatedly)
 // ---------------------------------------------------------------------------
 
+/**
+ * Replace the OPERATORS sheet contents with the DWM-mirrored seed.
+ * Admin-only; idempotent. Use when rolling out PLAN-V3.3 to a fresh tenant
+ * or resetting the seed after testing.
+ */
+function reseedOperators() {
+  var ss = getSpreadsheet();
+  var opSh = ss.getSheetByName(OPERATORS_SHEET) || _ensureSheetWithHeaders_(ss, OPERATORS_SHEET, OPERATORS_HEADERS);
+  // Clear body rows (keep header)
+  if (opSh.getLastRow() > 1) {
+    opSh.getRange(2, 1, opSh.getLastRow() - 1, OPERATORS_HEADERS.length).clearContent();
+  }
+  var seed = [
+    ['1234','Admin',  'admin',     'day','true'],
+    ['1111','Khushi', 'grn-clerk', 'day','true'],
+    ['2222','Anuj',   'floor-1',   'day','true'],
+    ['3333','Santosh','floor-2',   'day','true'],
+    ['4444','Rajesh', 'gate',      'day','true'],
+    ['5555','TBM',    'admin',     'day','true'],
+    ['6666','BBM',    'owner',     'day','true']
+  ];
+  opSh.getRange(2, 1, seed.length, OPERATORS_HEADERS.length).setValues(seed);
+  return { ok: true, seeded: seed.length };
+}
+
 function ensurePilotSheets() {
   var ss = getSpreadsheet();
   _ensureSheetWithHeaders_(ss, SCAN_EVENTS_SHEET,  SCAN_EVENTS_HEADERS);
   _ensureSheetWithHeaders_(ss, WIFI_LOG_SHEET,     WIFI_LOG_HEADERS);
   _ensureSheetWithHeaders_(ss, PILOT_DAILY_SHEET,  PILOT_DAILY_HEADERS);
   var opSh = _ensureSheetWithHeaders_(ss, OPERATORS_SHEET, OPERATORS_HEADERS);
-  // Seed test PINs on first creation only (no rows beyond header).
+  // Seed PINs on first creation only — mirrors DWM user list (7 active users).
+  // Role mapping = DWM role → PM QMS chokepoint duty. PINs are PM-QMS-local
+  // (NOT DWM's hashed PINs); rotate them by editing this sheet.
   if (opSh && opSh.getLastRow() < 2) {
     var seed = [
-      ['1234','Admin','admin','day','true'],
-      ['1111','Priya','grn-clerk','day','true'],
-      ['2222','Ravi','dispatch','day','true'],
-      ['3333','Meena','floor-1','day','true'],
-      ['4444','Suresh','floor-2','day','true']
+      ['1234','Admin',  'admin',     'day','true'],
+      ['1111','Khushi', 'grn-clerk', 'day','true'],
+      ['2222','Anuj',   'floor-1',   'day','true'],
+      ['3333','Santosh','floor-2',   'day','true'],
+      ['4444','Rajesh', 'gate',      'day','true'],
+      ['5555','TBM',    'admin',     'day','true'],
+      ['6666','BBM',    'owner',     'day','true']
     ];
     opSh.getRange(2, 1, seed.length, OPERATORS_HEADERS.length).setValues(seed);
   }
