@@ -50,3 +50,43 @@ By signing below, we confirm we have read the hypothesis, the 3 invalidation cri
 ---
 
 **File location after sign-off:** scan signed copy to `docs/QR-V33-VALIDATION-PROTOCOL-SIGNED.pdf` and archive hardcopy with QMS records.
+
+---
+
+## Day-0 pre-flight technical checks (NEW per veritas v4 STOP 0.535 security findings)
+
+Run these once on Day 0 before any operator scans. Both are headless via `clasp run` from the PM QMS directory.
+
+### Check 1 — Lock pilot sheets (prevents PIN + email leak via sheet-share)
+
+```
+cd "C:\Users\Appex\My Drive (packmasters.mumbai@gmail.com)\PM QMS"
+npx clasp run lockPilotSheets
+```
+
+**Expected:** `{ok:true, locked:["SCAN_EVENTS","WIFI_LOG","OPERATORS","PILOT_DAILY"], ownerEmail:"packmasters.mumbai@gmail.com"}`. After this, only the spreadsheet owner can edit those sheets directly; `recordScan()` still appends via Apps Script (server-side bypasses sheet protection).
+
+**If it fails:** the spreadsheet owner must run from the Apps Script editor with their own credentials, or share owner role with the script's effective user.
+
+### Check 2 — Verify auth boundary (proves recordScan rejects bad payloads)
+
+```
+npx clasp run verifyAuthBoundary
+```
+
+**Expected:** `{ok:true, passed:4, failed:0, details:[...]}` with all 4 checks passing:
+- invalid locationId → rejected
+- unknown PIN → rejected
+- missing lotId → rejected
+- Google auth context present (will warn if run headlessly — that's expected; the warn is only meaningful when run from the web UI)
+
+**If any rejection check fails:** STOP — input validation regressed; do not start pilot.
+
+### Sign-off
+Both checks above must pass before the QMS owner signs this protocol. The dev confirms by pasting the JSON output below:
+
+```
+lockPilotSheets output:    _______________________________________________
+verifyAuthBoundary output: _______________________________________________
+Confirmed by: ___________________  Date: _____ / _____ / 2026
+```

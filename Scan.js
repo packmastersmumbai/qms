@@ -419,3 +419,76 @@ function getPilotSummary() {
   var filtered = rows.filter(function(r){ return String(r[0]) >= cutYmd; });
   return { headers: PILOT_DAILY_HEADERS, rows: filtered };
 }
+
+// ---------------------------------------------------------------------------
+// Security hardening (per veritas v4 STOP 0.535 — security seat findings)
+// ---------------------------------------------------------------------------
+
+/**
+ * One-shot: protect SCAN_EVENTS, WIFI_LOG, OPERATORS from edit by anyone
+ * other than the spreadsheet owner. Pilot sheets contain operatorPin + personal
+ * googleEmail — must not be mutable by general domain users.
+ *
+ * Run from clasp: `clasp run lockPilotSheets`
+ * Idempotent — safe to re-run.
+ */
+function lockPilotSheets() {
+  var ss = getSpreadsheet();
+  var sheetsToLock = [SCAN_EVENTS_SHEET, WIFI_LOG_SHEET, OPERATORS_SHEET, PILOT_DAILY_SHEET];
+  var owner = ss.getOwner ? ss.getOwner() : null;
+  var ownerEmail = owner ? owner.getEmail() : Session.getEffectiveUser().getEmail();
+  var locked = [];
+  sheetsToLock.forEach(function(name) {
+    var sh = ss.getSheetByName(name);
+    if (!sh) return;
+    // Remove existing protections owned by this script first (idempotent)
+    var existing = sh.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+    existing.forEach(function(p){ try { p.remove(); } catch(e) {} });
+    var prot = sh.protect().setDescription('Pilot security: edit restricted to owner per veritas v4 finding');
+    // Strip all editors except owner
+    prot.removeEditors(prot.getEditors().map(function(u){ return u.getEmail(); }).filter(function(e){ return e && e !== ownerEmail; }));
+    if (prot.canDomainEdit()) prot.setDomainEdit(false);
+    locked.push(name);
+  });
+  return { ok: true, locked: locked, ownerEmail: ownerEmail };
+}
+
+/**
+ * Day-0 manual auth-boundary verification.
+ * Run from clasp (`clasp run verifyAuthBoundary`) or from Apps Script editor.
+ * Confirms that recordScan() rejects unauthenticated/invalid calls per the
+ * validation protocol's "1-line manual test on Day 0" requirement.
+ *
+ * Tests:
+ *   1. recordScan with invalid locationId → must throw
+ *   2. recordScan with unknown PIN → must throw
+ *   3. recordScan with missing lotId → must throw
+ *   4. Session.getActiveUser().getEmail() returns a value (proves Google auth context)
+ *
+ * Returns {ok, passed, failed, details}.
+ */
+function verifyAuthBoundary() {
+  var results = [];
+  function check(name, fn, expectThrow) {
+    try {
+      fn();
+      results.push({ name: name, passed: !expectThrow, note: expectThrow ? 'expected throw but got success' : 'returned ok' });
+    } catch (e) {
+      results.push({ name: name, passed: !!expectThrow, note: String(e).slice(0, 120) });
+    }
+  }
+  check('reject invalid locationId', function() {
+    recordScan({ pin: '1234', locationId: 'LOC|HACKER', lotId: 'TEST/AUTH/001' });
+  }, true);
+  check('reject unknown PIN', function() {
+    recordScan({ pin: '9999999', locationId: 'LOC|GATE-IN', lotId: 'TEST/AUTH/002' });
+  }, true);
+  check('reject missing lotId', function() {
+    recordScan({ pin: '1234', locationId: 'LOC|GATE-IN', lotId: '' });
+  }, true);
+  var gEmail = '';
+  try { gEmail = Session.getActiveUser().getEmail() || ''; } catch(e) {}
+  results.push({ name: 'Google auth context present', passed: !!gEmail, note: gEmail ? 'email captured: ' + gEmail : 'WARNING: no email — auth context may be missing in headless run (expected when called via clasp run)' });
+  var passed = results.filter(function(r){ return r.passed; }).length;
+  return { ok: passed === results.length || (passed === results.length - 1 && !gEmail), passed: passed, failed: results.length - passed, details: results };
+}
