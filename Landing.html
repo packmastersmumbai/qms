@@ -1128,7 +1128,7 @@
   'use strict';
 
   /* ═════════════ CONFIG ═════════════ */
-  var CACHE_KEY = 'pmqms_landing_v5';
+  var CACHE_KEY = 'pmqms_landing_v6';
   var ALERTS_VISIBLE = 3;  // Collapse beyond this; user can expand
   var CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
@@ -1619,6 +1619,18 @@
   function writeCache(data) {
     try { localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data: data })); } catch (e) {}
   }
+  function readFullCache() {
+    try {
+      var raw = localStorage.getItem(CACHE_KEY + '_full');
+      if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || !p.savedAt || (Date.now() - p.savedAt) > CACHE_TTL_MS) return null;
+      return p.data || null;
+    } catch (e) { return null; }
+  }
+  function writeFullCache(bundle) {
+    try { localStorage.setItem(CACHE_KEY + '_full', JSON.stringify({ savedAt: Date.now(), data: bundle })); } catch (e) {}
+  }
 
   /* ═════════════ PERSONA ═════════════ */
   var PERSONAS = ['Operator', 'Manager'];
@@ -1815,15 +1827,36 @@
     /* Static shell: paint groups immediately (counts as 0) */
     renderGroups({});
 
+    // Full bundle cache (landing + counts + settings + kpis) — instant repeat load
+    var fullCached = readFullCache();
+    if (fullCached) {
+      applyBundle(fullCached);
+      hideLoader();
+      // Background refresh — update counts silently, don't block UI
+      google.script.run
+        .withSuccessHandler(function (bundle) {
+          if (!bundle) return;
+          applyBundle(bundle);
+          writeFullCache(bundle);
+          schedulePrefetch();
+        })
+        .withFailureHandler(function () {})
+        .getLandingBundleV2(getPersona());
+      schedulePrefetch();
+      return;
+    }
+
+    // Cold start — show loader, fetch fast bundle first (no KPIs), then KPIs lazily
     var cached = readCache();
     if (cached) {
-      // Cached only had landing — apply, then we'll refresh KPIs+settings from server
       applyData(cached);
       hideLoader();
     } else {
       showLoader('Synchronising shift data');
       startLoaderProgress();
     }
+
+    // Fast bundle: landing + counts + settings (no KPIs)
     google.script.run
       .withSuccessHandler(function (bundle) {
         if (!bundle) {
@@ -1834,6 +1867,17 @@
         if (bundle.landing) writeCache(bundle.landing);
         hideLoader();
         schedulePrefetch();
+        // Lazy-load KPIs after UI is visible
+        setTimeout(function () {
+          google.script.run
+            .withSuccessHandler(function (fullBundle) {
+              if (!fullBundle) return;
+              applyBundle(fullBundle);
+              writeFullCache(fullBundle);
+            })
+            .withFailureHandler(function () {})
+            .getLandingBundleV2(getPersona());
+        }, 800);
       })
       .withFailureHandler(function () {
         if (!cached) {
@@ -1843,18 +1887,17 @@
           showToast('Live refresh failed — showing cached data', true);
         }
       })
-      .getLandingBundleV2(getPersona());
+      .getLandingBundleV3Fast(getPersona());
   }
 
-  /* Idle prefetch — uses shared PMHtmlCache (persists across navigation) */
+  /* Idle prefetch — top 4 most-used forms only, heavily staggered to not compete with data calls */
   function schedulePrefetch() {
-    var targets = ['GRN', 'IQC', 'OQC', 'NCR', 'KPI', 'Records', 'Production', 'IPQC', 'Gatepass', 'Dispatch'];
+    var targets = ['IQC', 'Production', 'GRN', 'OQC'];
     if (window.PMHtmlCache && typeof window.PMHtmlCache.prefetch === 'function') {
       window.PMHtmlCache.prefetch(targets);
       return;
     }
-    // Fallback to in-memory
-    var idle = window.requestIdleCallback || function (cb) { return setTimeout(cb, 1200); };
+    var idle = window.requestIdleCallback || function (cb) { return setTimeout(cb, 2000); };
     targets.forEach(function (form, i) {
       idle(function () {
         if (_prefetchCache[form]) return;
@@ -1862,7 +1905,7 @@
           .withSuccessHandler(function (html) { _prefetchCache[form] = html; })
           .withFailureHandler(function () {})
           .getFormHtml(form);
-      }, { timeout: 2000 + i * 500 });
+      }, { timeout: 3000 + i * 1500 });
     });
   }
 

@@ -664,6 +664,36 @@ function getLandingBundleV2(persona) {
   };
 }
 
+// Fast bundle: landing + counts + settings only — no KPIs.
+// Called on cold start so UI appears quickly; KPIs are fetched lazily after.
+function getLandingBundleV3Fast(persona) {
+  persona = _pmNormPersona_(persona);
+  var ss, pending;
+  try { ss = getSpreadsheet(); pending = computePendingCounts_(ss); } catch(e) { pending = null; }
+
+  var landing = null, recordsCounts = null;
+  try {
+    var cached = _pmCacheGet_('pmqms_landing_v1');
+    if (cached) { landing = cached; }
+    else { landing = _computeQmsLandingState_(ss, pending); _pmCachePut_('pmqms_landing_v1', landing); }
+  } catch(e) {}
+  try {
+    var cachedRc = _pmCacheGet_('pmqms_records_counts_v1');
+    if (cachedRc) { recordsCounts = cachedRc; }
+    else { recordsCounts = _computeRecordsCounts_(pending); _pmCachePut_('pmqms_records_counts_v1', recordsCounts); }
+  } catch(e) {}
+
+  return {
+    landing: landing,
+    recordsCounts: recordsCounts,
+    settings: getUISettings(persona),
+    kpis: null,
+    registry: KPI_REGISTRY.map(function(r){ return {key:r.key, label:r.label, group:r.group, format:r.format, unit:r.unit, sparkline:r.sparkline, defaultTarget:r.target}; }),
+    tileModules: PM_TILE_MODULES_,
+    personas: PM_PERSONAS_
+  };
+}
+
 // ── Diagnostics ─────────────────────────────────────────────────
 function diag_qmsKpis(persona) {
   _diagRequireOwner_();
