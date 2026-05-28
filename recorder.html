@@ -42,7 +42,13 @@ var chunks       = [];
 var timerInt     = null;
 var seconds      = 0;
 var recordedBlob = null;
-var opener       = window.opener;
+
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbxMFpeJOqF5_iARRCo7aHLg0Pw_XlqKdAzmDVck8DUdDfgr1nIIjbvTgrlyc0XtYRuaVQ/exec';
+
+function urlParam(name) {
+  var m = new URLSearchParams(window.location.search).get(name);
+  return m || '';
+}
 
 function $(id) { return document.getElementById(id); }
 function status(msg) { $('status').textContent = msg; }
@@ -127,25 +133,48 @@ function onRecordingDone(mime) {
 
 function useVideo() {
   if (!recordedBlob) return;
-  status('Sending to IQC form…');
+  status('Uploading to Drive… please wait');
   $('useBtn').disabled = $('retakeBtn').disabled = true;
 
   var ext = recordedBlob.type.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+  var mb  = (recordedBlob.size / 1024 / 1024).toFixed(1);
   var reader = new FileReader();
-  reader.onload = function(e) {
-    var b64 = e.target.result.split(',')[1];
-    var mb  = (recordedBlob.size / 1024 / 1024).toFixed(1);
-    var payload = JSON.stringify({
-      type:     'QMS_VIDEO',
-      base64:   b64,
-      mime:     recordedBlob.type,
-      ext:      ext,
-      filename: 'defect_' + Date.now() + '.' + ext,
-      sizeMb:   mb
+  reader.onload = function(ev) {
+    var b64 = ev.target.result.split(',')[1];
+    fetch(GAS_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:       'saveIQCVideo',
+        base64:       b64,
+        mime:         recordedBlob.type,
+        ext:          ext,
+        docNo:        'IQC',
+        grnNo:        urlParam('grnNo'),
+        materialDesc: urlParam('desc'),
+        disposition:  'PENDING'
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.success) {
+        localStorage.setItem('QMS_VIDEO_PENDING', JSON.stringify({
+          type:    'QMS_VIDEO',
+          url:     res.url,
+          sizeMb:  mb,
+          ext:     ext
+        }));
+        status('Uploaded! Returning to IQC form…');
+        setTimeout(function() { window.close(); }, 1200);
+      } else {
+        status('Upload failed: ' + (res.error || 'unknown error'));
+        $('useBtn').disabled = $('retakeBtn').disabled = false;
+      }
+    })
+    .catch(function(err) {
+      status('Upload error: ' + err.message);
+      $('useBtn').disabled = $('retakeBtn').disabled = false;
     });
-    localStorage.setItem('QMS_VIDEO_PENDING', payload);
-    status('Sent! You can close this tab.');
-    setTimeout(function() { window.close(); }, 1500);
   };
   reader.readAsDataURL(recordedBlob);
 }
