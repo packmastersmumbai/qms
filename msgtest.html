@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>MSG Test</title></head>
+<body>
+<div id="out" style="font-family:monospace;padding:16px;font-size:14px">Waiting for QMS_VIDEO message...</div>
+<script>
+window.addEventListener('message', function(e) {
+  document.getElementById('out').textContent = 'RECEIVED: type=' + (e.data && e.data.type) + ' origin=' + e.origin + ' sizeMb=' + (e.data && e.data.sizeMb);
+});
+</script>
+</body>
+</html>
