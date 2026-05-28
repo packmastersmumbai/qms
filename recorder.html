@@ -74,7 +74,13 @@ function startRec() {
   var opts = { videoBitsPerSecond: 500000 };
   if (mime) opts.mimeType = mime;
 
-  recorder = new MediaRecorder(stream, opts);
+  try {
+    recorder = new MediaRecorder(stream, opts);
+  } catch(e) {
+    // fallback: no options (browser picks defaults)
+    mime = '';
+    recorder = new MediaRecorder(stream);
+  }
   recorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
   recorder.onstop = function() { onRecordingDone(mime); };
   recorder.start(1000);
