@@ -128,7 +128,7 @@ function onRecordingDone(mime) {
 
 function useVideo() {
   if (!recordedBlob) return;
-  status('Preparing video…');
+  status('Sending to IQC form…');
   $('useBtn').disabled = $('retakeBtn').disabled = true;
 
   var ext = recordedBlob.type.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
@@ -136,16 +136,24 @@ function useVideo() {
   var reader = new FileReader();
   reader.onload = function(ev) {
     var b64 = ev.target.result.split(',')[1];
-    window.name = JSON.stringify({
+    var payload = {
       type:     'QMS_VIDEO',
       base64:   b64,
       mime:     recordedBlob.type,
       ext:      ext,
       filename: 'defect_' + Date.now() + '.' + ext,
       sizeMb:   mb
-    });
-    status('Done! Switch back to the IQC tab.');
-    // Don't close — keep window alive so opener can read window.name
+    };
+    // Try postMessage to opener first
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(payload, '*');
+      status('Sent! You can close this tab.');
+      setTimeout(function() { window.close(); }, 1500);
+    } else {
+      // No opener — user may have opened recorder directly; show manual copy fallback
+      status('No IQC tab found. Please close this tab and reopen the recorder from the IQC form.');
+      $('useBtn').disabled = $('retakeBtn').disabled = false;
+    }
   };
   reader.readAsDataURL(recordedBlob);
 }
