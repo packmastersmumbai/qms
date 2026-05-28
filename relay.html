@@ -15,13 +15,8 @@ function flush() {
   } catch(e) {}
 }
 
-// Catch writes that happened before this iframe loaded
-flush();
-
-// Catch writes that happen while this iframe is alive
-window.addEventListener('storage', function(e) {
-  if (e.key === KEY && e.newValue) flush();
-});
+// Poll every 500ms — storage event is unreliable across tabs on mobile
+setInterval(flush, 500);
 </script>
 </body>
 </html>
