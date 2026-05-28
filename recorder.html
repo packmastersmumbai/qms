@@ -144,14 +144,18 @@ function useVideo() {
       filename: 'defect_' + Date.now() + '.' + ext,
       sizeMb:   mb
     };
-    // Try postMessage to opener first
     if (window.opener && !window.opener.closed) {
+      // Post to opener and all its iframes — IQC listener lives inside a GAS inner frame
       window.opener.postMessage(payload, '*');
+      try {
+        for (var i = 0; i < window.opener.frames.length; i++) {
+          window.opener.frames[i].postMessage(payload, '*');
+        }
+      } catch(fe) {}
       status('Sent! You can close this tab.');
       setTimeout(function() { window.close(); }, 1500);
     } else {
-      // No opener — user may have opened recorder directly; show manual copy fallback
-      status('No IQC tab found. Please close this tab and reopen the recorder from the IQC form.');
+      status('No IQC tab found. Please reopen recorder from the IQC form.');
       $('useBtn').disabled = $('retakeBtn').disabled = false;
     }
   };
