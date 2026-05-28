@@ -32,7 +32,7 @@
       <button class="btn" id="useBtn"    onclick="useVideo()">✓ Use This Video</button>
       <button class="btn" id="retakeBtn" onclick="retake()">↺ Retake</button>
     </div>
-    <div id="info">500 kbps · max 60 sec · ~375 KB per 10 sec</div>
+    <div id="info">600 kbps · max 60 sec · ~450 KB per 10 sec</div>
   </div>
 
 <script>
@@ -71,7 +71,7 @@ function startRec() {
     return MediaRecorder.isTypeSupported(m);
   }) || '';
 
-  var opts = { videoBitsPerSecond: 500000 };
+  var opts = { videoBitsPerSecond: 600000 };
   if (mime) opts.mimeType = mime;
 
   try {
@@ -143,7 +143,7 @@ function useVideo() {
         ext:      ext,
         filename: 'defect_' + Date.now() + '.' + ext,
         sizeMb:   mb
-      }, 'https://packmastersmumbai.github.io');
+      }, '*');
       status('Sent! You can close this tab.');
       setTimeout(function() { window.close(); }, 1500);
     } else {
