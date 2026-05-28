@@ -145,13 +145,17 @@ function useVideo() {
       sizeMb:   mb
     };
     if (window.opener && !window.opener.closed) {
-      // Post to opener and all its iframes — IQC listener lives inside a GAS inner frame
-      window.opener.postMessage(payload, '*');
-      try {
-        for (var i = 0; i < window.opener.frames.length; i++) {
-          window.opener.frames[i].postMessage(payload, '*');
-        }
-      } catch(fe) {}
+      // Broadcast recursively to opener + all nested frames (IQC lives in GAS inner iframe)
+      function broadcast(win, depth) {
+        if (depth > 4) return;
+        try { win.postMessage(payload, '*'); } catch(e) {}
+        try {
+          for (var i = 0; i < win.frames.length; i++) {
+            broadcast(win.frames[i], depth + 1);
+          }
+        } catch(e) {}
+      }
+      broadcast(window.opener, 0);
       status('Sent! You can close this tab.');
       setTimeout(function() { window.close(); }, 1500);
     } else {
