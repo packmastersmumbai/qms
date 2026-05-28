@@ -86,8 +86,8 @@ function startRec() {
   recorder.start(1000);
 
   $('startBtn').style.display  = 'none';
-  $('stopBtn').style.display   = '';
-  $('timer').style.display     = '';
+  $('stopBtn').style.display   = 'flex';
+  $('timer').style.display     = 'block';
 
   timerInt = setInterval(function() {
     seconds++;
@@ -104,6 +104,7 @@ function stopRec() {
   clearInterval(timerInt);
   if (recorder && recorder.state !== 'inactive') recorder.stop();
   $('stopBtn').style.display = 'none';
+  $('startBtn').style.display = 'none';
   status('Processing…');
 }
 
@@ -120,7 +121,7 @@ function onRecordingDone(mime) {
   $('viewfinder').play();
 
   $('timer').style.display = 'none';
-  $('useBtn').style.display = $('retakeBtn').style.display = '';
+  $('useBtn').style.display = $('retakeBtn').style.display = 'flex';
   status('Review your video (' + mb + ' MB) — use it or retake');
 }
 
@@ -159,7 +160,7 @@ function retake() {
   $('viewfinder').muted = true;
   $('viewfinder').srcObject = stream;
   $('useBtn').style.display = $('retakeBtn').style.display = 'none';
-  $('startBtn').style.display = '';
+  $('startBtn').style.display = 'flex';
   $('timer').textContent = '0:00';
   status('Camera ready — tap Start to record');
 }
