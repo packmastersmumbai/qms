@@ -136,22 +136,16 @@ function useVideo() {
   var reader = new FileReader();
   reader.onload = function(ev) {
     var b64 = ev.target.result.split(',')[1];
-    try {
-      localStorage.setItem('QMS_VIDEO_PENDING', JSON.stringify({
-        type:     'QMS_VIDEO',
-        base64:   b64,
-        mime:     recordedBlob.type,
-        ext:      ext,
-        filename: 'defect_' + Date.now() + '.' + ext,
-        sizeMb:   mb
-      }));
-      status('Done! Returning to IQC form…');
-      setTimeout(function() { window.close(); }, 1200);
-    } catch(e) {
-      // localStorage quota exceeded (video too large)
-      status('Video too large to transfer (' + mb + ' MB). Try a shorter clip.');
-      $('useBtn').disabled = $('retakeBtn').disabled = false;
-    }
+    window.name = JSON.stringify({
+      type:     'QMS_VIDEO',
+      base64:   b64,
+      mime:     recordedBlob.type,
+      ext:      ext,
+      filename: 'defect_' + Date.now() + '.' + ext,
+      sizeMb:   mb
+    });
+    status('Done! Switch back to the IQC tab.');
+    // Don't close — keep window alive so opener can read window.name
   };
   reader.readAsDataURL(recordedBlob);
 }
