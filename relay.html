@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
+<script>
+var KEY = 'QMS_VIDEO_PENDING';
+
+function flush() {
+  var raw = localStorage.getItem(KEY);
+  if (!raw) return;
+  try {
+    var payload = JSON.parse(raw);
+    localStorage.removeItem(KEY);
+    window.parent.postMessage(payload, '*');
+  } catch(e) {}
+}
+
+// Catch writes that happened before this iframe loaded
+flush();
+
+// Catch writes that happen while this iframe is alive
+window.addEventListener('storage', function(e) {
+  if (e.key === KEY && e.newValue) flush();
+});
+</script>
+</body>
+</html>

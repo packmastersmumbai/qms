@@ -135,20 +135,17 @@ function useVideo() {
   reader.onload = function(e) {
     var b64 = e.target.result.split(',')[1];
     var mb  = (recordedBlob.size / 1024 / 1024).toFixed(1);
-    if (opener && !opener.closed) {
-      opener.postMessage({
-        type:     'QMS_VIDEO',
-        base64:   b64,
-        mime:     recordedBlob.type,
-        ext:      ext,
-        filename: 'defect_' + Date.now() + '.' + ext,
-        sizeMb:   mb
-      }, '*');
-      status('Sent! You can close this tab.');
-      setTimeout(function() { window.close(); }, 1500);
-    } else {
-      status('Could not send — IQC form tab was closed. Please go back and retry.');
-    }
+    var payload = JSON.stringify({
+      type:     'QMS_VIDEO',
+      base64:   b64,
+      mime:     recordedBlob.type,
+      ext:      ext,
+      filename: 'defect_' + Date.now() + '.' + ext,
+      sizeMb:   mb
+    });
+    localStorage.setItem('QMS_VIDEO_PENDING', payload);
+    status('Sent! You can close this tab.');
+    setTimeout(function() { window.close(); }, 1500);
   };
   reader.readAsDataURL(recordedBlob);
 }
