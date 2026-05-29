@@ -1049,7 +1049,9 @@ function showToast(msg, type) {
 
 /* ── OQC Video ── */
 var oqcVideoBase64 = '', oqcVideoMime = '', oqcVideoExt = '', oqcVideoUrl = '';
+var QMS_RECORDER_ORIGIN = 'https://packmastersmumbai.github.io';
 window.addEventListener('message', function(e) {
+  if (e.origin !== QMS_RECORDER_ORIGIN) return;
   if (e.data && e.data.type === 'QMS_VIDEO') {
     oqcVideoBase64 = e.data.base64 || '';
     oqcVideoMime   = e.data.mime   || '';
