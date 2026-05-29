@@ -776,7 +776,7 @@ function issueProductionJob(data) {
         fgCode, plan.fgDesc,
         fgQty, plan.fgUom,
         issueIds.join(', '),
-        'BOOKED', '', '', ''
+        'IN_PROGRESS', '', '', ''
       ]);
       ws.getRange(ws.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy HH:mm');
 
@@ -898,7 +898,7 @@ function buildIssueSlip(fgCode, fgQty, jobId, issuedBy, poNo) {
 // Production Booking — close out a job against an IPQC session
 // ============================================================
 
-// Returns jobs in BOOKED status, ready for production booking.
+// Returns jobs in IN_PROGRESS status, ready for production booking.
 function getOpenProductionJobs() {
   try {
     var ws = ensureProdJobsSheet_();
@@ -907,7 +907,7 @@ function getOpenProductionJobs() {
     var out = [];
     for (var i = 0; i < data.length; i++) {
       var status = String(data[i][8] || '').toUpperCase();
-      if (status !== 'BOOKED') continue;
+      if (status !== 'IN_PROGRESS' && status !== 'BOOKED') continue; // BOOKED kept for legacy rows
       var ts = data[i][1];
       var tsMs = (ts instanceof Date) ? ts.getTime() : (Number(new Date(ts).getTime()) || 0);
       out.push({
@@ -991,8 +991,9 @@ function getJobBookedDetail(jobId) {
     }
   }
   if (!job) return { success: false, error: 'Job not found.' };
-  if (String(job.status).toUpperCase() !== 'BOOKED') {
-    return { success: false, error: 'Job status is ' + job.status + '; only BOOKED jobs can be booked into production.' };
+  var jobStatusUp = String(job.status).toUpperCase();
+  if (jobStatusUp !== 'IN_PROGRESS' && jobStatusUp !== 'BOOKED') {
+    return { success: false, error: 'Job status is ' + job.status + '; only IN_PROGRESS jobs can be booked into production.' };
   }
 
   // Find PROD_ISSUE_LOG rows for this job (used as join key to ledger via PO no)
@@ -1150,7 +1151,7 @@ function submitProductionBooking(data) {
       var jobsData = jobsWs.getDataRange().getValues();
       for (var r = 1; r < jobsData.length; r++) {
         if (String(jobsData[r][0]).trim() === jobId) {
-          jobsWs.getRange(r + 1, 9, 1, 4).setValues([['PRODUCED', ipqcId, bookingId, new Date()]]);
+          jobsWs.getRange(r + 1, 9, 1, 4).setValues([['COMPLETED', ipqcId, bookingId, new Date()]]);
           jobsWs.getRange(r + 1, 12).setNumberFormat('dd-MMM-yyyy HH:mm');
           break;
         }
