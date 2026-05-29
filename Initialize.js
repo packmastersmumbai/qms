@@ -90,7 +90,7 @@ var GRN_HEADERS = [
   'Invoice No.', 'Material Code', 'Material Description', 'Batch / Lot No.',
   'Qty Ordered', 'Qty Received', 'Unit', 'COA Received', 'Expiry Date',
   'Remarks', 'IQC Status', 'Created By', 'Timestamp',
-  'Storage Zone', 'Operator ID', 'Location ID'
+  'Storage Zone', 'Operator ID', 'Location ID', 'Closed At'
 ];
 
 var STOCK_LEDGER_HEADERS = [

@@ -227,8 +227,42 @@ function saveIQC(data) {
     var warnings = [];
     if (ledgerWarning) warnings.push(ledgerWarning);
 
-    // Update GRN status once, after all rows are written
-    if (data.grnNo) updateGRNIQCStatus(data.grnNo, disp || 'PENDING');
+    // Update GRN status; close GRN when all items have a final IQC disposition
+    if (data.grnNo) {
+      updateGRNIQCStatus(data.grnNo, disp || 'PENDING');
+      var finalDisps = ['ACCEPTED', 'REJECTED', 'HOLD', 'PARTIAL', 'ACCEPTED WITH DEVIATION'];
+      if (finalDisps.indexOf(disp) !== -1) {
+        try {
+          var grnWs3 = ss.getSheetByName('GRN_LOG');
+          var iqcWs2 = ss.getSheetByName('IQC_LOG');
+          if (grnWs3 && iqcWs2) {
+            var grnRows = grnWs3.getDataRange().getValues();
+            // Collect all batches on this GRN
+            var grnBatches = [];
+            for (var gi2 = 1; gi2 < grnRows.length; gi2++) {
+              if (String(grnRows[gi2][0]).trim() === String(data.grnNo).trim()) {
+                grnBatches.push(String(grnRows[gi2][8]).trim()); // col 9 = Batch
+              }
+            }
+            // Check each batch has a final IQC entry
+            var iqcRows = iqcWs2.getDataRange().getValues();
+            var allFinal = grnBatches.length > 0 && grnBatches.every(function(batch) {
+              for (var ii = 1; ii < iqcRows.length; ii++) {
+                if (String(iqcRows[ii][2]).trim() === String(data.grnNo).trim() &&
+                    String(iqcRows[ii][5]).trim() === batch) {
+                  var d2 = String(iqcRows[ii][22] || '').trim();
+                  if (finalDisps.indexOf(d2) !== -1) return true;
+                }
+              }
+              return false;
+            });
+            if (allFinal) updateGRNIQCStatus(data.grnNo, 'CLOSED');
+          }
+        } catch(closeErr) {
+          Logger.log('GRN auto-close failed: ' + closeErr.message);
+        }
+      }
+    }
 
     // Auto-raise NCR for rejected OR held sessions, then back-stamp col 24 (NCR Ref) on every row of this batch.
     var ncrError = '';
