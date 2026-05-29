@@ -126,14 +126,14 @@ function saveOQC(data) {
     // Req 5 — server-side IPQC gate: if closed sessions exist for this product+batch,
     // ipqcSessionRef must be provided.
     if (data.items && data.items.length > 0) {
-      var firstItem = data.items[0];
-      var itemProductCode = String(firstItem.materialCode || '').trim() ||
-                            _resolveProductCodeFromDesc_(firstItem.materialDesc || '');
-      var itemBatch = String(firstItem.batchPO || '').trim();
-      if (itemProductCode && itemBatch) {
-        var closedCount = _getIPQCSessionsForProductBatch_(itemProductCode, itemBatch);
-        if (closedCount > 0 && !String(firstItem.ipqcSessionRef || '').trim()) {
-          return { success: false, error: 'IPQC session reference required. Select the IPQC session before recording OQC.' };
+      for (var gi = 0; gi < data.items.length; gi++) {
+        var gItem = data.items[gi];
+        var gCode = String(gItem.materialCode || '').trim() || _resolveProductCodeFromDesc_(gItem.materialDesc || '');
+        var gBatch = String(gItem.batchPO || '').trim();
+        if (!gCode || !gBatch) continue;
+        var gCount = _getIPQCSessionsForProductBatch_(gCode, gBatch);
+        if (gCount > 0 && !String(gItem.ipqcSessionRef || '').trim()) {
+          return { success: false, error: 'IPQC session reference required for "' + (gItem.materialDesc || gCode) + '". Select the IPQC session before recording OQC.' };
         }
       }
     }
