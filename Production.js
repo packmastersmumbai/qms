@@ -805,6 +805,72 @@ function initProductionFGSheets() {
   return { success: true, message: 'BOM, PROD_JOBS, PROD_BOOKING_LOG sheets ready.' };
 }
 
+// ------------------------------------------------------------
+// PICK-LIST PREVIEW — per-component FIFO lots with locations.
+// Read-only. Used by Production_F to show operators which racks/lots to pull
+// BEFORE they commit issueProductionJob. Each component returns its rounded
+// issue qty (computeProductionPlan) split across lots in FIFO order.
+// Returns: { success, fgCode, fgDesc, fgQty, components: [
+//   { compCode, compDesc, type, compUom, required, issueQty, shortfall,
+//     lots: [ { batch, location, grnNo, qty, iqcDisposition } ] } ] }
+// ------------------------------------------------------------
+function previewProductionPickList(fgCode, fgQty) {
+  try {
+    var plan = computeProductionPlan(fgCode, fgQty);
+    if (!plan.success) return plan;
+
+    var out = {
+      success: true,
+      timestamp: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MMM-yyyy HH:mm'),
+      fgCode: plan.fgCode,
+      fgDesc: plan.fgDesc,
+      fgUom:  plan.fgUom,
+      fgQty:  Number(fgQty) || 0,
+      fgPerCarton:   plan.fgPerCarton,
+      fgCartonsFull: plan.fgCartonsFull,
+      fgLooseUnits:  plan.fgLooseUnits,
+      components: []
+    };
+
+    plan.lines.forEach(function(line){
+      var qtyForThis = line.issueQtyRounded > 0 ? line.issueQtyRounded : line.required;
+      var compEntry = {
+        compCode: line.compCode,
+        compDesc: line.compDesc,
+        type:     line.type,
+        compUom:  line.compUom,
+        required: line.required,
+        issueQty: qtyForThis,
+        masterP:  line.masterP,
+        packsToIssue: line.packsToIssue,
+        shortfall: line.shortfall,
+        lots:     [],
+        error:    null
+      };
+      if (qtyForThis <= 0) { out.components.push(compEntry); return; }
+      var alloc = planFIFOAllocation(line.compCode, qtyForThis);
+      if (!alloc.success) {
+        compEntry.error = alloc.error;
+      } else {
+        compEntry.lots = (alloc.plan || []).map(function(p){
+          return {
+            batch:           p.batchOrLotNo,
+            location:        p.locationId,
+            grnNo:           p.grnNo || '',
+            iqcDisposition:  p.iqcDisposition || '',
+            qty:             p.qtyFromThisLot
+          };
+        });
+      }
+      out.components.push(compEntry);
+    });
+    return out;
+  } catch(e) {
+    Logger.log('previewProductionPickList error: ' + e);
+    return { success: false, error: e.message };
+  }
+}
+
 // Returns a printable Issue Slip payload for a job.
 // Used by frontend after successful issueProductionJob to render the print view.
 function buildIssueSlip(fgCode, fgQty, jobId, issuedBy, poNo) {
@@ -1050,22 +1116,21 @@ function submitProductionBooking(data) {
             'Returned ' + returned + ' ' + (src2.uom || '') + ' (booking ' + bookingId + ')');
           ledgerOps++;
         }
-        // PROD_SCRAP / PROD_WASTAGE / PROD_LOSS — informational, no free change
         if (scrap > 0) {
           writeStockLedger_('PROD_SCRAP', L.compCode, L.batchOrLot, L.location,
-            0, 0, 'PRODUCTION', jobId, bookedBy,
+            0, scrap, 'PRODUCTION', jobId, bookedBy,
             'Scrap ' + scrap + ' ' + (src2.uom || '') + ' (booking ' + bookingId + ')');
           ledgerOps++;
         }
         if (wastage > 0) {
           writeStockLedger_('PROD_WASTAGE', L.compCode, L.batchOrLot, L.location,
-            0, 0, 'PRODUCTION', jobId, bookedBy,
+            0, wastage, 'PRODUCTION', jobId, bookedBy,
             'Wastage ' + wastage + ' ' + (src2.uom || '') + ' (booking ' + bookingId + ')');
           ledgerOps++;
         }
         if (loss > 0) {
           writeStockLedger_('PROD_LOSS', L.compCode, L.batchOrLot, L.location,
-            0, 0, 'PRODUCTION', jobId, bookedBy,
+            0, loss, 'PRODUCTION', jobId, bookedBy,
             'Process loss ' + loss + ' ' + (src2.uom || '') + ' (booking ' + bookingId + ')');
           ledgerOps++;
         }
