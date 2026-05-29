@@ -68,23 +68,43 @@ function _resolveProductCodeFromDesc_(desc) {
   return '';
 }
 
-// Req 5 helper — returns count of CLOSED IPQC sessions for a specific product+batch.
-// IPQC_Sessions sheet: col[1]=productCode, col[3]=batch, col[9]=status
+// Req 5 helper — returns count of CLOSED IPQC sessions for a specific product+batch
+// that are AVAILABLE for OQC reference (mirrors the getClosedIPQCSessionsForOQC filters):
+//   1. Status must be CLOSED
+//   2. sessionId must NOT already be referenced in OQC_LOG col[19] (usedRefs)
+//   3. Session date (col[6]) must be within the last 30 days
+// IPQC_Sessions sheet: col[0]=sessionId, col[1]=productCode, col[3]=batch,
+//                       col[6]=date, col[9]=status
 function _getIPQCSessionsForProductBatch_(productCode, batch) {
   var ss = getSpreadsheet();
   var ws = ss.getSheetByName('IPQC_Sessions');
   if (!ws) return 0;
+
+  // Build usedRefs from OQC_LOG col[19] (1-based col 20) — same as getClosedIPQCSessionsForOQC
+  var usedRefs = {};
+  var oqcWs = ss.getSheetByName('OQC_LOG');
+  if (oqcWs && oqcWs.getLastRow() > 1) {
+    var oqcData = oqcWs.getRange(2, 20, oqcWs.getLastRow() - 1, 1).getValues();
+    oqcData.forEach(function(r) { if (r[0]) usedRefs[String(r[0]).trim()] = true; });
+  }
+
+  var cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+
   var rows = ws.getDataRange().getValues();
   var count = 0;
+  var pcNorm = String(productCode || '').trim();
+  var batchNorm = String(batch || '').trim();
   for (var i = 1; i < rows.length; i++) {
+    var sid = String(rows[i][0] || '').trim();
+    if (!sid) continue;
+    if (String(rows[i][9] || '').trim().toUpperCase() !== 'CLOSED') continue;
+    if (usedRefs[sid]) continue;
+    var d = rows[i][6];
+    if (d && new Date(d) < cutoff) continue;
     var rPC = String(rows[i][1] || '').trim();
     var rBatch = String(rows[i][3] || '').trim();
-    var rStatus = String(rows[i][9] || '').trim().toUpperCase();
-    if (rPC === String(productCode || '').trim() &&
-        rBatch === String(batch || '').trim() &&
-        rStatus === 'CLOSED') {
-      count++;
-    }
+    if (rPC === pcNorm && rBatch === batchNorm) count++;
   }
   return count;
 }
@@ -118,18 +138,23 @@ function saveOQC(data) {
       }
     }
 
-    // Req 6 — duplicate OQC block: reject if a non-REJECTED OQC already exists for this batch.
+    // Req 6 — duplicate OQC block: reject if a non-REJECTED OQC already exists for this
+    // batch+material. Checks every item (not just items[0]). Normalises whitespace on
+    // materialDesc (both sides) since materialCode is not stored in OQC_LOG.
     if (data.items && data.items.length > 0) {
-      var dupItem = data.items[0];
-      var dupMaterialDesc = String(dupItem.materialDesc || '').trim().toLowerCase();
-      var dupBatch = String(dupItem.batchPO || '').trim();
       var oqcVals = ws.getDataRange().getValues();
-      for (var di = 1; di < oqcVals.length; di++) {
-        var rowDesc = String(oqcVals[di][5] || '').trim().toLowerCase();
-        var rowBatch = String(oqcVals[di][4] || '').trim();
-        var rowDecision = String(oqcVals[di][14] || '').trim().toUpperCase();
-        if (rowDesc === dupMaterialDesc && rowBatch === dupBatch && rowDecision !== 'REJECTED') {
-          return { success: false, error: 'An OQC record already exists for this batch. Duplicate OQC blocked.' };
+      for (var ii = 0; ii < data.items.length; ii++) {
+        var dupItem = data.items[ii];
+        var dupMaterialDesc = String(dupItem.materialDesc || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        var dupBatch = String(dupItem.batchPO || '').trim();
+        if (!dupMaterialDesc || !dupBatch) continue;
+        for (var di = 1; di < oqcVals.length; di++) {
+          var rowDesc = String(oqcVals[di][5] || '').replace(/\s+/g, ' ').trim().toLowerCase();
+          var rowBatch = String(oqcVals[di][4] || '').trim();
+          var rowDecision = String(oqcVals[di][14] || '').trim().toUpperCase();
+          if (rowDesc === dupMaterialDesc && rowBatch === dupBatch && rowDecision !== 'REJECTED') {
+            return { success: false, error: 'An OQC record already exists for batch "' + dupBatch + '" / "' + dupItem.materialDesc + '". Duplicate OQC blocked.' };
+          }
         }
       }
     }
