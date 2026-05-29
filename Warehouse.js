@@ -226,6 +226,209 @@ function getFGLocations() {
   return getLocations('FG').concat(getLocations('FG_HOLD'));
 }
 
+// ── P4: 5-tab stock view ──────────────────────────────────────
+// Returns { rm, fg, wip, quarantine, rework } each as an array of row objects.
+function getStockView() {
+  try {
+    var ss  = getSpreadsheet();
+    var TZ  = 'Asia/Kolkata';
+    var now = new Date();
+    function ageDays(d) {
+      if (!d || !(d instanceof Date) || isNaN(d.getTime())) return null;
+      return Math.floor((now - d) / 86400000);
+    }
+    function fmtDate(d) {
+      if (!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+      return Utilities.formatDate(d, TZ, 'dd-MMM-yyyy');
+    }
+
+    // --- build location-type map ---
+    var locTypeMap = {}; // locationId → type string (RM, FG, FG_HOLD, QUARANTINE, REWORK, SCRAP, SAMPLE, WIP)
+    var locWs = ss.getSheetByName('LOCATIONS');
+    if (locWs && locWs.getLastRow() > 1) {
+      locWs.getRange(2, 1, locWs.getLastRow() - 1, 12).getValues().forEach(function(r) {
+        if (r[0]) locTypeMap[String(r[0]).trim()] = String(r[8] || '').toUpperCase();
+      });
+    }
+
+    // --- material master map ---
+    var matMap = {}; // code → { name, unit }
+    var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+    mats.forEach(function(m) {
+      var code = String(m.code || m.itemCode || '').trim();
+      if (code) matMap[code] = { name: m.name || m.itemDescription || code, unit: m.unit || '' };
+    });
+
+    // --- current balances by (matCode, batch, locationId) ---
+    var summary = getStockSummary(); // [{materialCode, batchOrLotNo, locationId, balance}]
+
+    // --- GRN_LOG: grnDate + supplier + IQC status by batch ---
+    var grnMap = {}; // batchNo → { date, supplier, iqcStatus, grnNo }
+    var grnWs = ss.getSheetByName('GRN_LOG');
+    if (grnWs && grnWs.getLastRow() > 1) {
+      grnWs.getDataRange().getValues().slice(1).forEach(function(r) {
+        var batch = String(r[8] || '').trim();
+        if (batch && !grnMap[batch]) {
+          grnMap[batch] = {
+            date:      r[1] instanceof Date ? r[1] : new Date(r[1]),
+            supplier:  String(r[3] || ''),
+            iqcStatus: String(r[15] || 'PENDING'),
+            grnNo:     String(r[0] || '')
+          };
+        }
+      });
+    }
+
+    // --- OQC_LOG: oqcDate + release decision + customer by batch ---
+    var oqcMap = {}; // batchNo → { date, decision, oqcNo }
+    var oqcWs = ss.getSheetByName('OQC_LOG');
+    if (oqcWs && oqcWs.getLastRow() > 1) {
+      oqcWs.getDataRange().getValues().slice(1).forEach(function(r) {
+        var batch = String(r[3] || '').trim(); // col 4 = Batch/PO
+        if (batch && !oqcMap[batch]) {
+          oqcMap[batch] = {
+            date:     r[1] instanceof Date ? r[1] : new Date(r[1]),
+            decision: String(r[14] || ''),
+            oqcNo:    String(r[0] || ''),
+            customer: String(r[2] || '')
+          };
+        }
+      });
+    }
+
+    // --- FG_DISPATCH_LOTS: customer by batch ---
+    var dispMap = {}; // batchNo → customer
+    var dispWs = ss.getSheetByName('FG_DISPATCH_LOTS');
+    if (dispWs && dispWs.getLastRow() > 1) {
+      dispWs.getDataRange().getValues().slice(1).forEach(function(r) {
+        var batch = String(r[3] || '').trim();
+        if (batch && !dispMap[batch]) dispMap[batch] = String(r[2] || '');
+      });
+    }
+
+    // --- PROD_JOBS WIP: IN_PROGRESS jobs ---
+    var wipRows = [];
+    var prodWs = ss.getSheetByName('PROD_JOBS');
+    if (prodWs && prodWs.getLastRow() > 1) {
+      prodWs.getDataRange().getValues().slice(1).forEach(function(r) {
+        var st = String(r[8] || '').toUpperCase();
+        if (st === 'IN_PROGRESS' || st === 'BOOKED') {
+          wipRows.push({
+            jobId:    String(r[0] || ''),
+            date:     r[1] instanceof Date ? r[1] : new Date(r[1]),
+            fgCode:   String(r[3] || ''),
+            fgDesc:   String(r[4] || ''),
+            fgQty:    Number(r[5]) || 0,
+            fgUom:    String(r[6] || ''),
+            ipqcId:   String(r[9] || ''),
+            status:   st
+          });
+        }
+      });
+    }
+
+    // --- REWORK_LOG: open rework ---
+    var reworkRows = [];
+    var rwWs = ss.getSheetByName('REWORK_LOG');
+    if (rwWs && rwWs.getLastRow() > 1) {
+      rwWs.getDataRange().getValues().slice(1).forEach(function(r) {
+        var st = String(r[10] || '').toUpperCase();
+        if (st === 'OPEN' || st === 'IN_PROGRESS') {
+          reworkRows.push({
+            reworkId:    String(r[0] || ''),
+            date:        r[1] instanceof Date ? r[1] : new Date(r[1]),
+            source:      String(r[2] || ''),
+            sourceRef:   String(r[3] || ''),
+            materialCode:String(r[4] || ''),
+            materialDesc:String(r[5] || ''),
+            batchNo:     String(r[6] || ''),
+            qty:         Number(r[7]) || 0,
+            unit:        String(r[8] || ''),
+            status:      st
+          });
+        }
+      });
+    }
+
+    // --- Classify stock lots by location type ---
+    var rmRows = [], fgRows = [], quarRows = [];
+    summary.forEach(function(s) {
+      var locType = locTypeMap[s.locationId] || '';
+      var grn     = grnMap[s.batchOrLotNo]  || {};
+      var oqc     = oqcMap[s.batchOrLotNo]  || {};
+      var mat     = matMap[s.materialCode]   || { name: s.materialCode, unit: '' };
+      var ageDate = grn.date || oqc.date || null;
+      var age     = ageDays(ageDate);
+
+      if (locType === 'RM') {
+        rmRows.push({
+          materialCode: s.materialCode,
+          materialDesc: mat.name,
+          batchNo:      s.batchOrLotNo,
+          supplier:     grn.supplier || '',
+          location:     s.locationId,
+          qty:          s.balance,
+          unit:         mat.unit || '',
+          grnDate:      fmtDate(grn.date),
+          ageDays:      age,
+          iqcStatus:    grn.iqcStatus || 'PENDING'
+        });
+      } else if (locType === 'FG' || locType === 'FG_HOLD') {
+        fgRows.push({
+          materialCode: s.materialCode,
+          materialDesc: mat.name,
+          batchNo:      s.batchOrLotNo,
+          customer:     dispMap[s.batchOrLotNo] || oqc.customer || '',
+          location:     s.locationId,
+          qty:          s.balance,
+          unit:         mat.unit || '',
+          oqcDate:      fmtDate(oqc.date),
+          ageDays:      age,
+          oqcRef:       oqc.oqcNo || ''
+        });
+      } else if (locType === 'QUARANTINE') {
+        quarRows.push({
+          materialCode: s.materialCode,
+          materialDesc: mat.name,
+          batchNo:      s.batchOrLotNo,
+          location:     s.locationId,
+          qty:          s.balance,
+          unit:         mat.unit || '',
+          since:        fmtDate(grn.date || oqc.date),
+          ageDays:      age,
+          sourceRef:    grn.grnNo || oqc.oqcNo || ''
+        });
+      }
+    });
+
+    return {
+      rm:         rmRows,
+      fg:         fgRows,
+      wip:        wipRows,
+      quarantine: quarRows,
+      rework:     reworkRows.map(function(r) {
+        var age2 = ageDays(r.date);
+        return {
+          reworkId:    r.reworkId,
+          materialCode:r.materialCode,
+          materialDesc:r.materialDesc,
+          batchNo:     r.batchNo,
+          qty:         r.qty,
+          unit:        r.unit,
+          source:      r.source,
+          sourceRef:   r.sourceRef,
+          since:       fmtDate(r.date),
+          ageDays:     age2,
+          status:      r.status
+        };
+      })
+    };
+  } catch(e) {
+    Logger.log('getStockView failed: ' + e.message);
+    return { rm: [], fg: [], wip: [], quarantine: [], rework: [] };
+  }
+}
+
 function saveLocation(d) {
   var ws = getSpreadsheet().getSheetByName('LOCATIONS');
   if (!ws) return { success: false, error: 'LOCATIONS sheet missing.' };
