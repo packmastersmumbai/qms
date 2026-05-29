@@ -21,7 +21,9 @@ function getOQCFormInit() {
     inspectors:   getInspectors(),
     ipqcSessions: ipqc,
     fgLocations:  fgLocs,
-    today:        Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
+    today:           Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd'),
+    samplingMethods: ['Normal', 'Tightened', 'Reduced', 'Skip Lot', '100% Inspection'],
+    defaultSampling: 'Normal'
   };
 }
 
@@ -66,6 +68,27 @@ function _resolveProductCodeFromDesc_(desc) {
   return '';
 }
 
+// Req 5 helper — returns count of CLOSED IPQC sessions for a specific product+batch.
+// IPQC_Sessions sheet: col[1]=productCode, col[3]=batch, col[9]=status
+function _getIPQCSessionsForProductBatch_(productCode, batch) {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('IPQC_Sessions');
+  if (!ws) return 0;
+  var rows = ws.getDataRange().getValues();
+  var count = 0;
+  for (var i = 1; i < rows.length; i++) {
+    var rPC = String(rows[i][1] || '').trim();
+    var rBatch = String(rows[i][3] || '').trim();
+    var rStatus = String(rows[i][9] || '').trim().toUpperCase();
+    if (rPC === String(productCode || '').trim() &&
+        rBatch === String(batch || '').trim() &&
+        rStatus === 'CLOSED') {
+      count++;
+    }
+  }
+  return count;
+}
+
 function saveOQC(data) {
   try {
     var ss  = getSpreadsheet();
@@ -80,6 +103,37 @@ function saveOQC(data) {
 
     var releasedThis = _isOQCReleasedDecision_(dec);
 
+    // Req 5 — server-side IPQC gate: if closed sessions exist for this product+batch,
+    // ipqcSessionRef must be provided.
+    if (data.items && data.items.length > 0) {
+      var firstItem = data.items[0];
+      var itemProductCode = String(firstItem.materialCode || '').trim() ||
+                            _resolveProductCodeFromDesc_(firstItem.materialDesc || '');
+      var itemBatch = String(firstItem.batchPO || '').trim();
+      if (itemProductCode && itemBatch) {
+        var closedCount = _getIPQCSessionsForProductBatch_(itemProductCode, itemBatch);
+        if (closedCount > 0 && !String(firstItem.ipqcSessionRef || '').trim()) {
+          return { success: false, error: 'IPQC session reference required. Select the IPQC session before recording OQC.' };
+        }
+      }
+    }
+
+    // Req 6 — duplicate OQC block: reject if a non-REJECTED OQC already exists for this batch.
+    if (data.items && data.items.length > 0) {
+      var dupItem = data.items[0];
+      var dupMaterialDesc = String(dupItem.materialDesc || '').trim().toLowerCase();
+      var dupBatch = String(dupItem.batchPO || '').trim();
+      var oqcVals = ws.getDataRange().getValues();
+      for (var di = 1; di < oqcVals.length; di++) {
+        var rowDesc = String(oqcVals[di][5] || '').trim().toLowerCase();
+        var rowBatch = String(oqcVals[di][4] || '').trim();
+        var rowDecision = String(oqcVals[di][14] || '').trim().toUpperCase();
+        if (rowDesc === dupMaterialDesc && rowBatch === dupBatch && rowDecision !== 'REJECTED') {
+          return { success: false, error: 'An OQC record already exists for this batch. Duplicate OQC blocked.' };
+        }
+      }
+    }
+
     // P6 — when released, require FG Location per item (defense in depth; UI also blocks)
     if (releasedThis) {
       for (var vi = 0; vi < data.items.length; vi++) {
@@ -90,6 +144,7 @@ function saveOQC(data) {
       }
     }
 
+    var firstAppendRowOQC = ws.getLastRow() + 1;
     data.items.forEach(function(item) {
       var docNo  = getNextDocNumber('oqc');
       var checks = item.checks || {};
@@ -119,7 +174,11 @@ function saveOQC(data) {
         item.ipqcSessionRef || '',
         operatorId,
         releasedThis ? fgLocation : '',  // col 22: FG Location ID
-        ''                                // col 23: FG Lot ID — back-filled below if mirrored
+        '',                               // col 23: FG Lot ID — back-filled below if mirrored
+        '',                               // col 24: Video URL — back-stamped after upload
+        data.samplingMethod || 'Normal',  // col 25: Sampling Method
+        '',                               // col 26: QR base64 (back-stamped after save)
+        ''                                // col 27: PDF Drive URL (back-stamped after save)
       ];
 
       ws.appendRow(row);
@@ -229,11 +288,137 @@ function saveOQC(data) {
       }
     }
 
+    // Save defect video if provided
+    if ((data.videoUrl || data.videoBase64) && docNos.length > 0) {
+      try {
+        var resolvedVideoUrl = data.videoUrl || '';
+        if (!resolvedVideoUrl && data.videoBase64) {
+          var firstItemV = data.items[0] || {};
+          resolvedVideoUrl = saveOQCVideo_(
+            data.videoBase64, data.videoMime || 'video/mp4', data.videoExt || 'mp4',
+            docNos[0], firstItemV.materialDesc || '', dec
+          );
+        }
+        if (resolvedVideoUrl) {
+          ws.getRange(firstAppendRowOQC, 24, docNos.length, 1).setValue(resolvedVideoUrl);
+        }
+      } catch(videoErr) {
+        Logger.log('OQC video save failed: ' + videoErr.message);
+        warnings.push('Record saved but video upload failed — upload manually.');
+      }
+    }
+
+    // Generate QR + PDF for the first docNo
+    if (docNos.length > 0) {
+      try {
+        var qrBase64Oqc = generateOQCQR_(docNos[0]);
+        var pdfUrlOqc   = generateOQCPdf_(docNos[0]);
+        if (qrBase64Oqc) ws.getRange(firstAppendRowOQC, 26, docNos.length, 1).setValue(qrBase64Oqc);
+        if (pdfUrlOqc)   ws.getRange(firstAppendRowOQC, 27, docNos.length, 1).setValue(pdfUrlOqc);
+      } catch(qrPdfErr) {
+        Logger.log('OQC QR/PDF generation failed: ' + qrPdfErr.message);
+        warnings.push('Record saved but QR/PDF generation failed — regenerate from DocView.');
+      }
+    }
+
     return { success: true, docNos: docNos, ncrNo: ncrNo, ncrError: ncrError, warnings: warnings };
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };
   }
+}
+
+function generateOQCQR_(docNo) {
+  var GAS_URL = ScriptApp.getService().getUrl();
+  var target  = GAS_URL + '?doc=' + encodeURIComponent(docNo);
+  var apiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&format=png&data=' + encodeURIComponent(target);
+  var resp    = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) throw new Error('QR API returned ' + resp.getResponseCode());
+  return 'data:image/png;base64,' + Utilities.base64Encode(resp.getContent());
+}
+
+function generateOQCPdf_(docNo) {
+  var data = getOQCPrintData(docNo);
+  var tmpl = HtmlService.createTemplateFromFile('PrintOQC_F');
+  tmpl.printData = data;
+  var html = tmpl.evaluate().getContent();
+  var blob = Utilities.newBlob(html, 'text/html', docNo + '.html');
+  var yearMon = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
+  var rootName = 'QMS/OQC/' + yearMon;
+  var folders  = DriveApp.getFoldersByName(rootName);
+  var folder   = folders.hasNext() ? folders.next() : DriveApp.createFolder(rootName);
+  var tempFile = DriveApp.createFile(blob);
+  var pdfBlob  = tempFile.getAs('application/pdf');
+  pdfBlob.setName(docNo + '.pdf');
+  var pdfFile  = folder.createFile(pdfBlob);
+  tempFile.setTrashed(true);
+  pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return pdfFile.getUrl();
+}
+
+function getOQCPrintData(docNo) {
+  var ws = getSpreadsheet().getSheetByName('OQC_LOG');
+  if (!ws) throw new Error('OQC_LOG not found');
+  var vals = ws.getDataRange().getValues();
+  var r = null;
+  for (var i = 1; i < vals.length; i++) {
+    if (String(vals[i][0]).trim() === String(docNo).trim()) { r = vals[i]; break; }
+  }
+  if (!r) throw new Error('No OQC record found for: ' + docNo);
+  function fmtDate(v) { try { return v ? Utilities.formatDate(new Date(v), 'Asia/Kolkata', 'dd-MMM-yyyy') : '—'; } catch(e){ return String(v||'—'); } }
+  return {
+    docNo:          String(r[0]  || ''),
+    date:           fmtDate(r[1]),
+    customerCode:   String(r[2]  || ''),
+    customerName:   String(r[3]  || ''),
+    batchPO:        String(r[4]  || ''),
+    materialDesc:   String(r[5]  || ''),
+    ipqcReviewed:   String(r[6]  || ''),
+    sampleSize:     r[7]  != null ? String(r[7]) : '',
+    checks: {
+      fillWeight:   String(r[8]  || '—'),
+      label:        String(r[9]  || '—'),
+      seal:         String(r[10] || '—'),
+      appearance:   String(r[11] || '—'),
+      custSpec:     String(r[12] || '—')
+    },
+    inspector:      String(r[13] || ''),
+    releaseDecision:String(r[14] || ''),
+    remarks:        String(r[15] || ''),
+    acceptedQty:    r[16] != null ? String(r[16]) : '',
+    rejectedQty:    r[17] != null ? String(r[17]) : '',
+    ipqcSessionRef: String(r[19] || ''),
+    fgLocation:     String(r[21] || ''),
+    samplingMethod: String(r[24] || 'Normal'),
+    qrBase64:       String(r[25] || ''),
+    pdfUrl:         String(r[26] || ''),
+    printedAt:      Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')
+  };
+}
+
+function getOQCPrintHtml(docNo) {
+  var data = getOQCPrintData(docNo);
+  var tmpl = HtmlService.createTemplateFromFile('PrintOQC_F');
+  tmpl.printData = data;
+  return tmpl.evaluate().getContent();
+}
+
+function saveOQCVideo_(base64, mime, ext, docNo, materialDesc, disposition) {
+  var ss = getSpreadsheet();
+  var ssFile = DriveApp.getFileById(ss.getId());
+  var parents = ssFile.getParents();
+  if (!parents.hasNext()) throw new Error('Cannot find parent folder of spreadsheet.');
+  var projectFolder = parents.next();
+  var mediaFolder = getOrCreateFolder_(projectFolder, 'Media');
+  var oqcFolder   = getOrCreateFolder_(mediaFolder, 'OQC');
+  var monthKey    = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
+  var monthFolder = getOrCreateFolder_(oqcFolder, monthKey);
+  var fileName = docNo + '_' + (disposition || 'OQC').replace(/\s+/g, '_') + '.' + ext;
+  var bytes = Utilities.base64Decode(base64);
+  var blob  = Utilities.newBlob(bytes, mime, fileName);
+  var file  = monthFolder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file.getUrl();
 }
 
 function getOQCIPQCCheck_(productCode, batch) {

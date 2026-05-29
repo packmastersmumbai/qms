@@ -305,11 +305,14 @@
       <div class="p-4 space-y-4">
 
         <div id="fieldIPQC">
-          <label class="label-base" for="selIPQC">From IPQC Session</label>
+          <label class="label-base" id="ipqcLabel" for="selIPQC">From IPQC Session</label>
           <select id="selIPQC" class="input-base">
             <option value="">— Select closed IPQC session —</option>
           </select>
           <div class="item-name-hint" id="ipqcHint">Picking a session auto-fills item &amp; batch.</div>
+          <div id="ipqcWarningBanner" style="display:none;margin-top:8px;background:#fffbeb;border:1.5px solid #d97706;border-radius:8px;padding:10px 12px;font-size:13px;color:#92400e;font-weight:500;">
+            ⚠ No closed IPQC session found. Complete and close an IPQC session for this product/batch first.
+          </div>
         </div>
 
         <div id="fieldMaterial">
@@ -383,6 +386,21 @@
       <p class="text-[11px] text-[#94a3b8] mt-2">Where this FG batch is being stored. Used for FIFO dispatch traceability.</p>
     </div>
 
+    <!-- SAMPLING METHOD -->
+    <div class="bg-card rounded-lg shadow-card border border-border p-4">
+      <label class="label-base" for="oqcSamplingMethod">Sampling Method</label>
+      <div class="relative">
+        <select id="oqcSamplingMethod" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+          <option value="Normal">Normal</option>
+          <option value="Tightened">Tightened</option>
+          <option value="Reduced">Reduced</option>
+          <option value="Skip Lot">Skip Lot</option>
+          <option value="100% Inspection">100% Inspection</option>
+        </select>
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+      </div>
+    </div>
+
     <!-- REMARKS -->
     <div class="bg-card rounded-lg shadow-card border border-border p-4">
       <label class="label-base" for="inpRemarks">Remarks</label>
@@ -413,7 +431,20 @@
 <!-- ══════════════════════════════════════
      STICKY BOTTOM BAR
 ══════════════════════════════════════ -->
-<div id="stickyBar" class="fixed bottom-0 w-full z-40 bg-white border-t border-[#e2e8f0] px-4 py-3 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
+<div id="stickyBar" class="fixed bottom-0 w-full z-40 bg-white border-t border-[#e2e8f0] px-4 py-3 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]" style="display:flex;flex-direction:column;gap:8px;">
+  <!-- Video widget -->
+  <div class="flex items-center gap-2">
+    <button type="button" onclick="openOQCRecorder()"
+      class="h-9 px-3 rounded-lg border border-[#e2e8f0] bg-white text-[#374151] text-[12px] font-semibold flex items-center gap-1.5 active:scale-95 transition-transform">
+      <span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 0;">videocam</span>
+      Record Video
+    </button>
+    <div id="oqcVideoPreview" class="hidden flex-1 items-center gap-2">
+      <span class="material-symbols-outlined text-[14px] text-[#16a34a]" style="font-variation-settings:'FILL' 1;">check_circle</span>
+      <span id="oqcVideoName" class="text-[12px] text-[#374151] truncate flex-1"></span>
+      <button type="button" onclick="clearOQCVideo()" class="text-[#94a3b8] text-[18px] leading-none">&times;</button>
+    </div>
+  </div>
   <button id="btnSave" disabled
     class="w-full h-[52px] bg-[#1e3a5f] text-white font-headline font-bold text-[15px] rounded-[10px] active:scale-[0.98] transition-transform disabled:bg-[#9CA3AF] disabled:text-white disabled:cursor-not-allowed">
     Save OQC
@@ -529,7 +560,48 @@ function loadInit() {
       });
       if (!gIPQCSessions.length) {
         document.getElementById('ipqcHint').textContent = 'No closed IPQC sessions in last 30 days — fill manually below.';
+        // Req 2: show amber warning banner + disable Save with alternate text
+        document.getElementById('ipqcWarningBanner').style.display = '';
+        var saveBtn = document.getElementById('btnSave');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Complete IPQC First';
+      } else {
+        // Req 1: sessions exist — make dropdown required, show red asterisk, add hint
+        document.getElementById('ipqcLabel').innerHTML = 'From IPQC Session <span style="color:#dc2626;margin-left:2px;">*</span>';
+        document.getElementById('ipqcHint').textContent = 'An IPQC session must be closed before OQC can be recorded.';
       }
+
+      // Prefill from Records "Send to OQC" / "Complete OQC" routing.
+      // Try IPQC session first, then material code, finally batch text.
+      try {
+        var prefRef = sessionStorage.getItem('pmPrefillRef');
+        if (prefRef) {
+          var matched = false;
+          for (var i = 0; i < ipqcSel.options.length; i++) {
+            if (ipqcSel.options[i].value === prefRef) {
+              ipqcSel.selectedIndex = i; matched = true;
+              var ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false);
+              ipqcSel.dispatchEvent(ev);
+              break;
+            }
+          }
+          if (!matched) {
+            for (var j = 0; j < matSel.options.length; j++) {
+              if (matSel.options[j].value === prefRef) {
+                matSel.selectedIndex = j; matched = true;
+                var ev2 = document.createEvent('HTMLEvents'); ev2.initEvent('change', true, false);
+                matSel.dispatchEvent(ev2);
+                break;
+              }
+            }
+          }
+          if (!matched) {
+            var bt = document.getElementById('inpBatch');
+            if (bt && !bt.value) bt.value = prefRef;
+          }
+          sessionStorage.removeItem('pmPrefillRef');
+        }
+      } catch(e) {}
 
     })
     .withFailureHandler(function(e) {
@@ -749,6 +821,9 @@ function setDisposition(val) {
 // Save readiness
 // ══════════════════════════════════════════════════════════
 function checkSaveReady() {
+  // Req 2: if no sessions at all, Save stays permanently disabled
+  if (gIPQCSessions.length === 0) return;
+
   var mat    = document.getElementById('selMaterial').value;
   var batch  = document.getElementById('inpBatch').value.trim();
   var cust   = document.getElementById('selCustomer').value;
@@ -756,7 +831,9 @@ function checkSaveReady() {
   var releasedLike = (gDisposition === 'ACCEPTED' || gDisposition === 'RELEASED' || gDisposition === 'ACCEPTED WITH DEVIATION');
   var fgLoc = document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : '';
   var fgLocOK = !releasedLike || !!fgLoc;
-  var ready  = mat && batch && cust && qty >= 1 && allParamsFilled() && gDisposition && fgLocOK;
+  // Req 3: ipqcRef is mandatory when sessions exist
+  var ipqcOK = !!gIpqcRef;
+  var ready  = mat && batch && cust && qty >= 1 && allParamsFilled() && gDisposition && fgLocOK && ipqcOK;
   document.getElementById('btnSave').disabled = !ready;
 }
 
@@ -810,6 +887,13 @@ function onSaveTap() {
     return;
   }
 
+  // Req 4: block save if IPQC sessions exist but none selected
+  if (gIPQCSessions.length > 0 && !gIpqcRef) {
+    showToast('Select an IPQC session first', 'error');
+    document.getElementById('selIPQC').focus();
+    return;
+  }
+
   // P6 — block save if released decision without FG location
   var releasedLikeSave = (gDisposition === 'ACCEPTED' || gDisposition === 'RELEASED' || gDisposition === 'ACCEPTED WITH DEVIATION');
   var fgLocSel = document.getElementById('selFGLocation');
@@ -842,6 +926,9 @@ function doSave() {
   var batchNo  = document.getElementById('inpBatch').value.trim();
   var qty      = parseFloat(document.getElementById('inpQty').value) || 0;
 
+  var safeOQCVideo = oqcVideoBase64 && oqcVideoBase64.length <= 4 * 1024 * 1024 ? oqcVideoBase64 : '';
+  if (oqcVideoBase64 && !safeOQCVideo) showToast('Video too large — skipped.', 'warning');
+
   var data = {
     date:            gToday || new Date().toISOString().split('T')[0],
     customerCode:    custSel.value,
@@ -850,6 +937,11 @@ function doSave() {
     inspector:       (window.QMS ? window.QMS.getOperatorName() : '') || 'QA',
     releaseDecision: gDisposition,
     operatorName:    window.QMS ? window.QMS.getOperatorName() : '',
+    videoBase64:     safeOQCVideo,
+    videoMime:       oqcVideoMime || '',
+    videoExt:        oqcVideoExt  || '',
+    videoUrl:        oqcVideoUrl  || '',
+    samplingMethod:  (document.getElementById('oqcSamplingMethod') ? document.getElementById('oqcSamplingMethod').value : 'Normal'),
     remarks:         document.getElementById('inpRemarks').value,
     fgLocation:    (document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : ''),
     items: [{
@@ -953,6 +1045,29 @@ function showToast(msg, type) {
   t.textContent = msg;
   t.className = 'toast show' + (type ? ' ' + type : '');
   setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+
+/* ── OQC Video ── */
+var oqcVideoBase64 = '', oqcVideoMime = '', oqcVideoExt = '', oqcVideoUrl = '';
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'QMS_VIDEO') {
+    oqcVideoBase64 = e.data.base64 || '';
+    oqcVideoMime   = e.data.mime   || '';
+    oqcVideoExt    = e.data.ext    || '';
+    oqcVideoUrl    = e.data.url    || '';
+    document.getElementById('oqcVideoName').textContent = (e.data.filename || ('video.' + oqcVideoExt));
+    document.getElementById('oqcVideoPreview').classList.remove('hidden');
+    document.getElementById('oqcVideoPreview').classList.add('flex');
+    showToast('Video ready — will attach on Save OQC', 'success');
+  }
+});
+function openOQCRecorder() {
+  window.open('https://packmastersmumbai.github.io/qms/recorder.html', 'qms_recorder');
+}
+function clearOQCVideo() {
+  oqcVideoBase64 = ''; oqcVideoMime = ''; oqcVideoExt = ''; oqcVideoUrl = '';
+  document.getElementById('oqcVideoPreview').classList.add('hidden');
+  document.getElementById('oqcVideoPreview').classList.remove('flex');
 }
 </script>
 </body>
