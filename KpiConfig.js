@@ -13,7 +13,7 @@ var PM_KPI_CACHED_PRESETS_ = ['THIS_MONTH', 'LAST_30', 'LAST_90', 'THIS_FY'];
 function _kpiCacheKeysForPersona_(persona) {
   return PM_KPI_CACHED_PRESETS_.map(function(p) { return 'pmqms_kpis_' + persona + '_' + p; });
 }
-var PM_TILE_MODULES_ = ['PO','GRN','IQC','IPQC','Production','OQC','Gatepass','Dispatch','NCR','CustomerReturn'];
+var PM_TILE_MODULES_ = ['PO','GRN','IQC','IPQC','Production','OQC','Dispatch','NCR','CustomerReturn','Rework'];
 
 // Single source of truth for KPIs. To add KPI #13: append one entry + write _kpi_<key>_ helper.
 function _kpiFnMap_() {

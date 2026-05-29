@@ -291,9 +291,11 @@ function disposeCustomerReturn(data) {
         if (typeof writeStockLedger_ === 'function' && productCode && fgBatchNo && qty > 0) {
           try {
             writeStockLedger_('CUSTOMER_RETURN_REWORK_OUT', productCode, fgBatchNo, 'QUARANTINE',
-              0, qty, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Sent to rework');
-            writeStockLedger_('CUSTOMER_RETURN_REWORK_IN', productCode, fgBatchNo, 'FG-HOLD',
+              0, qty, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'Sent to REWORK-AREA');
+            writeStockLedger_('CUSTOMER_RETURN_REWORK_IN', productCode, fgBatchNo, 'REWORK-AREA',
               qty, 0, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'In rework pending re-inspection');
+            _createReworkLogEntry_(ref, 'CUSTOMER_RETURN', 'CUSTOMER_RETURN', ref,
+              productCode || '', productDesc || '', fgBatchNo || '', qty, unit || '', data.disposedBy || '');
           } catch (ledgerErr) {
             Logger.log('CustomerReturn REWORK ledger failed: ' + ledgerErr.message);
             disposeWarnings.push('Stock ledger failed — return left OPEN for retry. Admin: ' + ledgerErr.message);

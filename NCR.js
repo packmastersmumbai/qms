@@ -80,6 +80,30 @@ function setNCRDisposition(ncrDocNo, disposition, dispositionBy) {
         logNCRHistory_(ref, fromStatus, toStatus, actor, 'Disposition: ' + disposition);
         _logNCRRevision_(ref, actor, 'Disposition', String(data[i][10] || 'PENDING_DISPOSITION'), disposition);
         _logNCRRevision_(ref, actor, 'Status', fromStatus, toStatus);
+
+        // Rework dispositions: move material to REWORK-AREA + create REWORK_LOG entry
+        if (disposition === 'rework-FG' || disposition === 'rework-RM') {
+          try {
+            var ncrRow = data[i];
+            var matCode  = String(ncrRow[4] || '').trim();
+            var matDesc  = String(ncrRow[5] || '').trim();
+            var batchNo  = String(ncrRow[6] || '').trim();
+            var qty      = Number(ncrRow[7]) || 0;
+            var unit     = String(ncrRow[8] || '').trim();
+            var srcLoc   = disposition === 'rework-FG' ? 'FG-HOLD' : 'QUARANTINE';
+            if (matCode && batchNo && qty > 0) {
+              writeStockLedger_('NCR_REWORK_OUT', matCode, batchNo, srcLoc,
+                0, qty, 'NCR', ref, actor, 'NCR ' + disposition + ' — to REWORK-AREA', matDesc);
+              writeStockLedger_('NCR_REWORK_IN', matCode, batchNo, 'REWORK-AREA',
+                qty, 0, 'NCR', ref, actor, 'NCR ' + disposition + ' — awaiting rework', matDesc);
+              _createReworkLogEntry_(ref, 'NCR', ncrRow[2] || '', ncrRow[3] || '',
+                matCode, matDesc, batchNo, qty, unit, actor);
+            }
+          } catch(rwErr) {
+            Logger.log('NCR rework ledger/log failed: ' + rwErr.message);
+          }
+        }
+
         return { success: true };
       }
     }

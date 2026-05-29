@@ -86,7 +86,6 @@ function onOpen() {
     .addItem('🔍  New IQC', 'openIQCForm')
     .addItem('🏭  New IPQC Check', 'openIPQCForm')
     .addItem('📤  New OQC', 'openOQCForm')
-    .addItem('🚚  New Gatepass', 'openGatpassForm')
     .addItem('📋  NCR Triage',   'openNCRForm')
     .addItem('📦  Customer Returns', 'openCustomerReturnForm')
     .addSeparator()
@@ -140,13 +139,6 @@ function openImportCSV() {
   SpreadsheetApp.getUi().showModelessDialog(html, 'Import Past Data (CSV)');
 }
 
-function openGatpassForm() {
-  var html = HtmlService.createTemplateFromFile('Gatepass_F').evaluate()
-    .setTitle('New Gatepass')
-    .setWidth(340);
-  SpreadsheetApp.getUi().showSidebar(html);
-}
-
 function openNCRForm() {
   var html = HtmlService.createTemplateFromFile('NCR_F').evaluate()
     .setWidth(740)
@@ -159,6 +151,13 @@ function openCustomerReturnForm() {
     .setWidth(740)
     .setTitle('Customer Returns');
   SpreadsheetApp.getUi().showModalDialog(html, 'Customer Returns');
+}
+
+function openReworkForm() {
+  var html = HtmlService.createTemplateFromFile('Rework_F').evaluate()
+    .setWidth(480)
+    .setHeight(700);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'Rework');
 }
 
 function openIPQCForm() {
@@ -207,6 +206,26 @@ function openRecords() {
 
 // ── Web App — page router ─────────────────────────────────────
 
+function doPost(e) {
+  try {
+    var body = JSON.parse(e.postData.contents);
+    if (body.action === 'saveIQCVideo') {
+      var url = saveIQCVideo_(body.base64, body.mime, body.ext,
+                              body.docNo, body.grnNo, body.materialDesc, body.disposition);
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true, url: url }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: 'unknown action' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(ex) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: ex.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
 function doGet(e) {
   // Auto-store spreadsheet ID on first web app hit (bound script context)
   try {
@@ -241,7 +260,9 @@ function doGet(e) {
     warehouse:      { file: 'Warehouse_F',      title: 'Warehouse' },
     settings:       { file: 'Settings_F',       title: 'Settings' },
     masterscrud:    { file: 'MastersCrud_F',    title: 'Masters CRUD' },
-    scan:           { file: 'Scan_F',           title: 'Scan' }
+    scan:           { file: 'Scan_F',           title: 'Scan' },
+    recorder:       { file: 'Recorder_F',       title: 'Record Defect Video' },
+    rework:         { file: 'Rework_F',         title: 'Rework' }
   };
   if (pageMap[page]) {
     // Guard admin pages — same owner check used by _mastersRequireOwner_()
@@ -286,7 +307,7 @@ function getFormHtml(type) {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;
   } catch (e) {}
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing', Recorder:'Recorder_F', Rework:'Rework_F' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();
@@ -439,27 +460,11 @@ function computePendingCounts_(ss) {
     });
   } catch(e) { Logger.log('Gatepass count: ' + e); }
 
-  // Dispatch: FG_DISPATCH_LOTS — undelivered rows
+  // Dispatch: FG_DISPATCH_LOTS — only actionable lots (not yet fully dispatched)
   try {
-    var fg = ss.getSheetByName('FG_DISPATCH_LOTS');
-    if (fg && fg.getLastRow() >= 2) {
-      var fgData = fg.getDataRange().getValues();
-      var fgHdr = fgData[0];
-      // Look for a Status / Delivered field
-      var stIdx = fgHdr.findIndex(function(h){ var x = String(h).toLowerCase(); return x === 'status' || x === 'delivery status' || x === 'dispatch status'; });
-      var n = 0;
-      if (stIdx >= 0) {
-        for (var r = 1; r < fgData.length; r++) {
-          var s = String(fgData[r][stIdx] || '').toUpperCase().trim();
-          if (s !== 'DELIVERED' && s !== 'CLOSED' && s !== 'CANCELLED') n++;
-        }
-      } else {
-        // No status column → assume any row = active dispatch
-        n = fgData.length - 1;
-      }
-      c.Dispatch = n;
-      brk.Dispatch = { 'NOT DELIVERED': n };
-    }
+    c.Dispatch = countWhere('Dispatch', 'FG_DISPATCH_LOTS', 14, function(s){
+      return s === 'AVAILABLE' || s === 'PARTIAL' || s === 'NEEDS_REVIEW' || s === '';
+    });
   } catch(e) { Logger.log('Dispatch count: ' + e); }
 
   try {

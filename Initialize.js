@@ -111,7 +111,8 @@ var LOCATIONS_SEED = [
   ['FG-STORE',      'GF', 'FG',      '', '', '', '', 'FG Store',            'FG',         '', '', 'Y'],
   ['FG-HOLD',       'GF', 'FG',      '', '', '', '', 'FG Hold (pre-OQC)',   'FG_HOLD',    '', '', 'Y'],
   ['SCRAP-AREA',    'GF', 'Stores',  '', '', '', '', 'Scrap collection',    'SCRAP',      '', '', 'Y'],
-  ['SAMPLE-CABINET','GF', 'QA Lab',  '', '', '', '', 'Sample retention',    'SAMPLE',     '', '', 'Y']
+  ['SAMPLE-CABINET','GF', 'QA Lab',  '', '', '', '', 'Sample retention',    'SAMPLE',     '', '', 'Y'],
+  ['REWORK-AREA',  'GF', 'Stores',  '', '', '', '', 'Rework holding area', 'REWORK',     '', '', 'Y']
 ];
 
 var CUSTOMER_RETURN_HEADERS = [
@@ -212,6 +213,13 @@ var MASTERS_PARAMETERS_HEADERS = [
   'method_type', 'check_brief', 'tools', 'doc_ref', 'doc_number'
 ];
 
+var REWORK_LOG_HEADERS = [
+  'Rework ID', 'Date', 'Source', 'Source Ref', 'Material Code', 'Material Desc',
+  'Batch No.', 'Qty', 'Unit', 'Location', 'Status',
+  'Completed By', 'Completed At', 'Qty Reworked', 'Qty Scrapped',
+  'Re-OQC Ref', 'Re-IQC Ref', 'Remarks'
+];
+
 var NCR_HEADERS = [
   'NCR No.', 'Date', 'Source', 'Source Ref', 'Material Code', 'Material Desc',
   'Batch No.', 'Qty Affected', 'Unit', 'Defect Description',
@@ -258,6 +266,7 @@ function initializeProject() {
     createLogSheet_(ss, 'STOCK_LEDGER',         STOCK_LEDGER_HEADERS);
     createLogSheet_(ss, 'CUSTOMER_RETURN_LOG',  CUSTOMER_RETURN_HEADERS);
     createLogSheet_(ss, 'SCRAP_LOG',            SCRAP_LOG_HEADERS);
+    createLogSheet_(ss, 'REWORK_LOG',           REWORK_LOG_HEADERS);
     createLogSheet_(ss, 'SAMPLE_LOG',           SAMPLE_LOG_HEADERS);
     createLogSheet_(ss, 'REVISIONS_LOG', ['TYPE', 'DOC_NO', 'TIMESTAMP', 'REVISED_BY', 'FIELD', 'OLD_VALUE', 'NEW_VALUE']);
     createLogSheet_(ss, 'PO_HEADER', PO_HEADER_HEADERS);
@@ -513,6 +522,7 @@ function verifyAndRepairSheets_core() {
     'CUSTOMER_RETURN_LOG':  CUSTOMER_RETURN_HEADERS,
     'SCRAP_LOG':            SCRAP_LOG_HEADERS,
     'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
+    'REWORK_LOG':           REWORK_LOG_HEADERS,
     'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
     'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS,
     'PO_HEADER':            PO_HEADER_HEADERS,
@@ -855,6 +865,7 @@ function forceFixSheetHeaders() {
     'CUSTOMER_RETURN_LOG':  CUSTOMER_RETURN_HEADERS,
     'SCRAP_LOG':            SCRAP_LOG_HEADERS,
     'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
+    'REWORK_LOG':           REWORK_LOG_HEADERS,
     'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
     'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS,
     'PO_HEADER':            PO_HEADER_HEADERS,
@@ -948,6 +959,7 @@ function inspectSheetData() {
     'CUSTOMER_RETURN_LOG':  CUSTOMER_RETURN_HEADERS,
     'SCRAP_LOG':            SCRAP_LOG_HEADERS,
     'SAMPLE_LOG':           SAMPLE_LOG_HEADERS,
+    'REWORK_LOG':           REWORK_LOG_HEADERS,
     'FG_DISPATCH_LOTS':     FG_DISPATCH_HEADERS,
     'FG_FIFO_OVERRIDE_LOG': FG_OVERRIDE_HEADERS,
     'PO_HEADER':            PO_HEADER_HEADERS,

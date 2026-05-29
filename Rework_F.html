@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rework</title>
+<?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('BottomNav').getContent(); ?>
+<style>
+  body { background:#f8fafc; font-family:'Inter',sans-serif; padding-bottom:80px; }
+  .card { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); margin:12px; padding:16px; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:9999px; font-size:11px; font-weight:600; }
+  .badge-open { background:#FFF9C4; color:#795548; }
+  .badge-ip   { background:#E3F2FD; color:#1565C0; }
+  .lbl { font-size:11px; color:#78909C; font-weight:500; text-transform:uppercase; letter-spacing:.4px; }
+  .val { font-size:14px; color:#263238; margin-top:2px; }
+  .btn-primary { background:#1E88E5; color:#fff; border:none; border-radius:8px; padding:10px 20px; font-weight:600; font-size:14px; cursor:pointer; }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-outline { background:#fff; color:#1E88E5; border:1.5px solid #1E88E5; border-radius:8px; padding:8px 16px; font-weight:600; font-size:13px; cursor:pointer; }
+  .input { width:100%; border:1.5px solid #CFD8DC; border-radius:8px; padding:9px 12px; font-size:14px; box-sizing:border-box; }
+  .input:focus { outline:none; border-color:#1E88E5; }
+  .section-title { font-size:13px; font-weight:700; color:#455A64; margin:16px 12px 4px; text-transform:uppercase; letter-spacing:.5px; }
+  #completionForm { display:none; }
+  .toast { position:fixed; bottom:72px; left:50%; transform:translateX(-50%); background:#323232; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; z-index:9999; display:none; }
+  .toast.success { background:#2E7D32; } .toast.error { background:#C62828; }
+</style>
+</head>
+<body>
+
+<div id="topBar" style="background:#1E88E5;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;">
+  <button onclick="history.back()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0;">&#8592;</button>
+  <span style="font-size:17px;font-weight:700;">Rework Items</span>
+  <span id="spinner" style="display:none;margin-left:auto;font-size:12px;opacity:.8;">Loading…</span>
+</div>
+
+<div id="listView">
+  <p class="section-title">Open Rework</p>
+  <div id="itemList"><p style="text-align:center;color:#90A4AE;padding:32px;">Loading…</p></div>
+</div>
+
+<div id="completionForm" class="card">
+  <p style="font-size:16px;font-weight:700;color:#263238;margin:0 0 12px;">Complete Rework</p>
+  <div id="formSummary" style="background:#F5F5F5;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;"></div>
+
+  <div style="margin-bottom:12px;">
+    <div class="lbl">Qty Reworked (salvaged) <span style="color:#C62828;">*</span></div>
+    <input id="qtyReworked" type="number" min="0" step="any" class="input" placeholder="0" oninput="updateQtyScrapped()">
+  </div>
+  <div style="margin-bottom:12px;">
+    <div class="lbl">Qty Scrapped (failed re-inspection)</div>
+    <input id="qtyScrapped" type="number" min="0" step="any" class="input" placeholder="auto-calculated" readonly style="background:#F5F5F5;">
+  </div>
+
+  <div id="reOQCBlock" style="margin-bottom:12px;display:none;">
+    <div class="lbl">Re-OQC Reference <span style="color:#C62828;">*</span></div>
+    <input id="reOQCRef" type="text" class="input" placeholder="OQC doc number">
+    <div style="font-size:11px;color:#78909C;margin-top:3px;">OQC must be completed before FG can be released.</div>
+  </div>
+  <div id="reIQCBlock" style="margin-bottom:12px;display:none;">
+    <div class="lbl">Re-IQC Reference <span style="color:#C62828;">*</span></div>
+    <input id="reIQCRef" type="text" class="input" placeholder="IQC doc number">
+    <div style="font-size:11px;color:#78909C;margin-top:3px;">IQC must be completed before RM can be released.</div>
+  </div>
+
+  <div style="margin-bottom:12px;">
+    <div class="lbl">Completed By <span style="color:#C62828;">*</span></div>
+    <input id="completedBy" type="text" class="input" placeholder="Name / Operator ID">
+  </div>
+  <div style="margin-bottom:16px;">
+    <div class="lbl">Remarks</div>
+    <textarea id="remarks" class="input" rows="2" placeholder="Optional notes"></textarea>
+  </div>
+
+  <div style="display:flex;gap:10px;">
+    <button class="btn-outline" onclick="closeForm()">Cancel</button>
+    <button id="submitBtn" class="btn-primary" onclick="submitCompletion()">Submit Completion</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var ITEMS = [];
+var SELECTED = null;
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  t.style.display = 'block';
+  setTimeout(function(){ t.style.display = 'none'; }, 3000);
+}
+
+function loadItems() {
+  document.getElementById('spinner').style.display = 'inline';
+  google.script.run
+    .withSuccessHandler(function(items) {
+      document.getElementById('spinner').style.display = 'none';
+      ITEMS = items || [];
+      renderList();
+    })
+    .withFailureHandler(function(e) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('itemList').innerHTML = '<p style="color:#C62828;text-align:center;padding:24px;">Error loading items: ' + e.message + '</p>';
+    })
+    .getReworkItems();
+}
+
+function renderList() {
+  var el = document.getElementById('itemList');
+  if (!ITEMS.length) {
+    el.innerHTML = '<p style="text-align:center;color:#90A4AE;padding:32px;">No open rework items. All clear!</p>';
+    return;
+  }
+  el.innerHTML = ITEMS.map(function(item, idx) {
+    var badgeCls = item.status === 'IN_PROGRESS' ? 'badge-ip' : 'badge-open';
+    return '<div class="card" style="margin:8px 12px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+        '<div>' +
+          '<div style="font-size:15px;font-weight:700;color:#263238;">' + esc(item.reworkId) + '</div>' +
+          '<div style="font-size:12px;color:#78909C;">' + esc(item.date) + ' · ' + esc(item.source) + '</div>' +
+        '</div>' +
+        '<span class="badge ' + badgeCls + '">' + item.status + '</span>' +
+      '</div>' +
+      '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
+        '<div><div class="lbl">Material</div><div class="val">' + esc(item.materialDesc || item.materialCode) + '</div></div>' +
+        '<div><div class="lbl">Batch</div><div class="val">' + esc(item.batchNo) + '</div></div>' +
+        '<div><div class="lbl">Qty</div><div class="val">' + item.qty + ' ' + esc(item.unit) + '</div></div>' +
+        '<div><div class="lbl">Ref</div><div class="val">' + esc(item.sourceRef) + '</div></div>' +
+      '</div>' +
+      '<div style="margin-top:12px;">' +
+        '<button class="btn-primary" style="width:100%;" onclick="openForm(' + idx + ')">Complete Rework</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openForm(idx) {
+  SELECTED = ITEMS[idx];
+  var isFG = SELECTED.source === 'CUSTOMER_RETURN' ||
+             (SELECTED.source === 'NCR' && SELECTED.sourceRef.indexOf('rework-FG') >= 0);
+  document.getElementById('formSummary').innerHTML =
+    '<b>' + esc(SELECTED.reworkId) + '</b> &nbsp;|&nbsp; ' +
+    esc(SELECTED.materialDesc || SELECTED.materialCode) + ' · Batch ' + esc(SELECTED.batchNo) +
+    '<br>Original qty: <b>' + SELECTED.qty + ' ' + esc(SELECTED.unit) + '</b>';
+  document.getElementById('qtyReworked').value = '';
+  document.getElementById('qtyReworked').max = SELECTED.qty;
+  document.getElementById('qtyScrapped').value = '';
+  document.getElementById('reOQCRef').value = '';
+  document.getElementById('reIQCRef').value = '';
+  document.getElementById('completedBy').value = '';
+  document.getElementById('remarks').value = '';
+  document.getElementById('reOQCBlock').style.display = isFG ? 'block' : 'none';
+  document.getElementById('reIQCBlock').style.display = isFG ? 'none' : 'block';
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('completionForm').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+function closeForm() {
+  SELECTED = null;
+  document.getElementById('completionForm').style.display = 'none';
+  document.getElementById('listView').style.display = 'block';
+}
+
+function updateQtyScrapped() {
+  var rw = parseFloat(document.getElementById('qtyReworked').value) || 0;
+  var orig = SELECTED ? SELECTED.qty : 0;
+  var sc = Math.max(0, orig - rw);
+  document.getElementById('qtyScrapped').value = sc % 1 === 0 ? sc : sc.toFixed(3);
+}
+
+function submitCompletion() {
+  if (!SELECTED) return;
+  var isFG = SELECTED.source === 'CUSTOMER_RETURN' ||
+             (SELECTED.source === 'NCR' && SELECTED.sourceRef.indexOf('rework-FG') >= 0);
+  var qtyReworked = parseFloat(document.getElementById('qtyReworked').value) || 0;
+  var qtyScrapped = parseFloat(document.getElementById('qtyScrapped').value) || 0;
+  var reOQCRef    = document.getElementById('reOQCRef').value.trim();
+  var reIQCRef    = document.getElementById('reIQCRef').value.trim();
+  var completedBy = document.getElementById('completedBy').value.trim();
+  var remarks     = document.getElementById('remarks').value.trim();
+
+  if (!completedBy)           { showToast('Completed By is required.', 'error'); return; }
+  if (isFG && !reOQCRef)      { showToast('Re-OQC Reference is required for FG rework.', 'error'); return; }
+  if (!isFG && !reIQCRef)     { showToast('Re-IQC Reference is required for RM rework.', 'error'); return; }
+  if (Math.abs(qtyReworked + qtyScrapped - SELECTED.qty) > 0.01) {
+    showToast('Reworked + Scrapped must equal ' + SELECTED.qty + ' ' + SELECTED.unit, 'error'); return;
+  }
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.textContent = 'Submit Completion';
+      if (!res.success) { showToast(res.error || 'Save failed.', 'error'); return; }
+      showToast('Rework ' + SELECTED.reworkId + ' completed. ' + res.qtyReworked + ' → ' + res.destination, 'success');
+      closeForm();
+      loadItems();
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false;
+      btn.textContent = 'Submit Completion';
+      showToast('Error: ' + e.message, 'error');
+    })
+    .submitReworkCompletion({
+      reworkId:    SELECTED.reworkId,
+      qtyReworked: qtyReworked,
+      qtyScrapped: qtyScrapped,
+      reOQCRef:    reOQCRef,
+      reIQCRef:    reIQCRef,
+      completedBy: completedBy,
+      remarks:     remarks
+    });
+}
+
+loadItems();
+</script>
+</body>
+</html>
