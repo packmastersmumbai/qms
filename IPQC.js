@@ -11,7 +11,7 @@ function _ensureIPQCSessions() {
   var ws = ss.getSheetByName('IPQC_Sessions');
   if (!ws) {
     ws = ss.insertSheet('IPQC_Sessions');
-    ws.appendRow(['session_id', 'product_code', 'product_name', 'batch', 'inspector', 'line', 'date', 'start_time', 'end_time', 'status', 'rounds']);
+    ws.appendRow(['session_id', 'product_code', 'product_name', 'batch', 'inspector', 'line', 'date', 'start_time', 'end_time', 'status', 'rounds', 'video_url']);
   }
   return ws;
 }
@@ -434,7 +434,148 @@ function saveRound(sessionId, roundData) {
       });
     }
 
+    // Record physical sample deduction for this round
+    var ipqcSampQty = Number(roundData.sampleCount) || params.length || 0;
+    if (ipqcSampQty > 0 && roundData.productCode && roundData.batch) {
+      try {
+        recordSample({
+          refDocType:    'IPQC',
+          refDocNo:      sessionId + '/R' + roundNo,
+          materialCode:  roundData.productCode,
+          batchOrLotNo:  roundData.batch,
+          qtySample:     ipqcSampQty,
+          unit:          'pcs',
+          samplePurpose: 'IPQC round ' + roundNo,
+          takenBy:       roundData.inspector || '',
+          locationStored: 'SAMPLE-CABINET',
+          locationId:    'SAMPLE-CABINET'
+        });
+      } catch(sampErr) {
+        Logger.log('IPQC recordSample failed: ' + sampErr.message);
+      }
+    }
+
     return { ok: true, roundNo: roundNo, ncrWarnings: ncrWarnings };
+  } catch(e) {
+    Logger.log(e);
+    return { ok: false, error: e.message };
+  }
+}
+
+function generateIPQCQR_(sessionId) {
+  var GAS_URL = ScriptApp.getService().getUrl();
+  var target  = GAS_URL + '?doc=' + encodeURIComponent(sessionId);
+  var apiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&format=png&data=' + encodeURIComponent(target);
+  var resp    = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) throw new Error('QR API returned ' + resp.getResponseCode());
+  return 'data:image/png;base64,' + Utilities.base64Encode(resp.getContent());
+}
+
+function generateIPQCPdf_(sessionId) {
+  var data = getIPQCPrintData(sessionId);
+  var tmpl = HtmlService.createTemplateFromFile('PrintIPQC_F');
+  tmpl.printData = data;
+  var html = tmpl.evaluate().getContent();
+  var blob = Utilities.newBlob(html, 'text/html', sessionId + '.html');
+  var yearMon = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
+  var rootName = 'QMS/IPQC/' + yearMon;
+  var folders  = DriveApp.getFoldersByName(rootName);
+  var folder   = folders.hasNext() ? folders.next() : DriveApp.createFolder(rootName);
+  var tempFile = DriveApp.createFile(blob);
+  var pdfBlob  = tempFile.getAs('application/pdf');
+  pdfBlob.setName(sessionId + '.pdf');
+  var pdfFile  = folder.createFile(pdfBlob);
+  tempFile.setTrashed(true);
+  pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return pdfFile.getUrl();
+}
+
+function getIPQCPrintData(sessionId) {
+  var ws = getSpreadsheet().getSheetByName('IPQC_Sessions');
+  if (!ws) throw new Error('IPQC_Sessions not found');
+  var vals = ws.getDataRange().getValues();
+  var r = null;
+  for (var i = 1; i < vals.length; i++) {
+    if (String(vals[i][0]).trim() === String(sessionId).trim()) { r = vals[i]; break; }
+  }
+  if (!r) throw new Error('IPQC session not found: ' + sessionId);
+  function fmtDate(v) { try { return v ? Utilities.formatDate(new Date(v), 'Asia/Kolkata', 'dd-MMM-yyyy') : '—'; } catch(e){ return String(v||'—'); } }
+
+  // Pull round data from IPQC_LOG
+  var logWs  = getSpreadsheet().getSheetByName('IPQC_LOG');
+  var rounds = [];
+  if (logWs && logWs.getLastRow() > 1) {
+    var logVals = logWs.getDataRange().getValues();
+    var roundMap = {};
+    for (var j = 1; j < logVals.length; j++) {
+      if (String(logVals[j][0]).trim() !== String(sessionId).trim()) continue;
+      var rNo = Number(logVals[j][3]);
+      if (!roundMap[rNo]) roundMap[rNo] = { roundNo: rNo, timestamp: logVals[j][4], params: [] };
+      roundMap[rNo].params.push({
+        code:   String(logVals[j][5]),
+        name:   String(logVals[j][6]),
+        spec:   String(logVals[j][7]),
+        actual: String(logVals[j][9]),
+        result: String(logVals[j][10]),
+        remark: String(logVals[j][11])
+      });
+    }
+    var rNos = Object.keys(roundMap).map(Number).sort(function(a,b){return a-b;});
+    rNos.forEach(function(n){ rounds.push(roundMap[n]); });
+  }
+
+  return {
+    sessionId:   String(r[0] || ''),
+    productCode: String(r[1] || ''),
+    productName: String(r[2] || ''),
+    batch:       String(r[3] || ''),
+    inspector:   String(r[4] || ''),
+    line:        String(r[5] || ''),
+    date:        fmtDate(r[6]),
+    startTime:   String(r[7] || ''),
+    endTime:     String(r[8] || ''),
+    status:      String(r[9] || ''),
+    rounds:      rounds,
+    qrBase64:    String(r[12] || ''),
+    pdfUrl:      String(r[13] || ''),
+    printedAt:   Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')
+  };
+}
+
+function getIPQCPrintHtml(sessionId) {
+  var data = getIPQCPrintData(sessionId);
+  var tmpl = HtmlService.createTemplateFromFile('PrintIPQC_F');
+  tmpl.printData = data;
+  return tmpl.evaluate().getContent();
+}
+
+function saveIPQCSessionVideo(sessionId, videoBase64, videoMime, videoExt) {
+  try {
+    var ss = getSpreadsheet();
+    var ssFile = DriveApp.getFileById(ss.getId());
+    var parents = ssFile.getParents();
+    if (!parents.hasNext()) throw new Error('Cannot find parent folder.');
+    var projectFolder = parents.next();
+    var mediaFolder = getOrCreateFolder_(projectFolder, 'Media');
+    var ipqcFolder  = getOrCreateFolder_(mediaFolder, 'IPQC');
+    var monthKey    = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
+    var monthFolder = getOrCreateFolder_(ipqcFolder, monthKey);
+    var fileName    = sessionId + '.' + (videoExt || 'mp4');
+    var bytes = Utilities.base64Decode(videoBase64);
+    var blob  = Utilities.newBlob(bytes, videoMime || 'video/mp4', fileName);
+    var file  = monthFolder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var videoUrl = file.getUrl();
+    // Back-stamp col 12 (1-based) on the session row
+    var ws = _ensureIPQCSessions();
+    var values = ws.getDataRange().getValues();
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][0]).trim() === String(sessionId).trim()) {
+        ws.getRange(i + 1, 12).setValue(videoUrl);
+        break;
+      }
+    }
+    return { ok: true, videoUrl: videoUrl };
   } catch(e) {
     Logger.log(e);
     return { ok: false, error: e.message };
@@ -451,6 +592,15 @@ function closeSession(sessionId) {
         // end_time = col 9 (1-based), status = col 10 (1-based)
         ws.getRange(i + 1, 9).setValue(endTime);
         ws.getRange(i + 1, 10).setValue('CLOSED');
+        // Generate QR + PDF on close
+        try {
+          var qrB64 = generateIPQCQR_(sessionId);
+          var pdfU  = generateIPQCPdf_(sessionId);
+          if (qrB64) ws.getRange(i + 1, 13).setValue(qrB64);
+          if (pdfU)  ws.getRange(i + 1, 14).setValue(pdfU);
+        } catch(qrErr) {
+          Logger.log('IPQC QR/PDF failed: ' + qrErr.message);
+        }
         return { ok: true };
       }
     }
