@@ -125,10 +125,14 @@
 </header>
 
 <!-- ═══ TAB STRIP ═══ -->
-<div id="whTabBar" class="fixed top-[56px] w-full z-40 bg-white border-b border-[#e2e8f0] flex h-[44px]">
-  <button class="flex-1 flex items-center justify-center text-[14px] tab-btn-active transition-colors" data-tab="stock">Stock</button>
-  <button class="flex-1 flex items-center justify-center text-[14px] tab-btn-inactive transition-colors" data-tab="locations">Locations</button>
-  <button class="flex-1 flex items-center justify-center text-[14px] tab-btn-inactive transition-colors" data-tab="movements">Movements</button>
+<div id="whTabBar" class="fixed top-[56px] w-full z-40 bg-white border-b border-[#e2e8f0] h-[44px] overflow-x-auto flex" style="scrollbar-width:none;">
+  <button class="flex-shrink-0 px-4 flex items-center justify-center text-[13px] tab-btn-active transition-colors" data-tab="rm">RM</button>
+  <button class="flex-shrink-0 px-4 flex items-center justify-center text-[13px] tab-btn-inactive transition-colors" data-tab="fg">FG</button>
+  <button class="flex-shrink-0 px-4 flex items-center justify-center text-[13px] tab-btn-inactive transition-colors" data-tab="wip">WIP</button>
+  <button class="flex-shrink-0 px-4 flex items-center justify-center text-[13px] tab-btn-inactive transition-colors" data-tab="quarantine">Quar.</button>
+  <button class="flex-shrink-0 px-4 flex items-center justify-center text-[13px] tab-btn-inactive transition-colors" data-tab="rework">Rework</button>
+  <button class="flex-shrink-0 px-4 flex items-center justify-center text-[13px] tab-btn-inactive transition-colors" data-tab="movements">Moves</button>
+  <button class="flex-shrink-0 px-4 flex items-center justify-center text-[13px] tab-btn-inactive transition-colors" data-tab="locations">Locs</button>
 </div>
 
 <!-- ═══ SEARCH ═══ -->
@@ -144,15 +148,29 @@
 <!-- ═══ CONTENT (offset for fixed topbar + tabs + search) ═══ -->
 <div class="pt-[156px] px-4 max-w-2xl mx-auto">
 
-  <!-- STOCK PANEL -->
-  <div class="tab-panel active" id="panel-stock">
-    <!-- Stock summary bar (fix #83) -->
-    <div id="stockSummaryBar" class="bg-white rounded-[10px] border border-[#e2e8f0] shadow-card px-4 py-2 mb-3 flex items-center justify-between text-[12px] text-[#64748b]">
-      <span><span id="summLotsCount" class="font-bold text-[#0f172a]">—</span> lots</span>
-      <span class="opacity-50">·</span>
-      <span>est. value <span id="summLotsValue" class="font-bold text-[#0f172a]">—</span></span>
-    </div>
-    <div id="cards-stock" class="flex flex-col gap-3 mb-24"></div>
+  <!-- RM PANEL -->
+  <div class="tab-panel active" id="panel-rm">
+    <div id="cards-rm" class="mb-24"></div>
+  </div>
+
+  <!-- FG PANEL -->
+  <div class="tab-panel" id="panel-fg">
+    <div id="cards-fg" class="mb-24"></div>
+  </div>
+
+  <!-- WIP PANEL -->
+  <div class="tab-panel" id="panel-wip">
+    <div id="cards-wip" class="mb-24"></div>
+  </div>
+
+  <!-- QUARANTINE PANEL -->
+  <div class="tab-panel" id="panel-quarantine">
+    <div id="cards-quarantine" class="mb-24"></div>
+  </div>
+
+  <!-- REWORK PANEL -->
+  <div class="tab-panel" id="panel-rework">
+    <div id="cards-rework" class="mb-24"></div>
   </div>
 
   <!-- MOVEMENTS PANEL (fix #77) -->
@@ -224,8 +242,9 @@
 (function() {
   'use strict';
 
-  var activeTab = 'stock';
-  var cache = { stock: null, locations: null, materials: null };
+  var activeTab = 'rm';
+  var cache = { rm: null, fg: null, wip: null, quarantine: null, rework: null, locations: null, materials: null, movements: null };
+  var stockViewCache = null;
   var loadState = {};
   var editingLocationId = null;
   var searchTimer = null;
@@ -262,35 +281,21 @@
     if (!loadState[tab]) loadTab(tab);
   }
 
+  var STOCK_VIEW_TABS = { rm:1, fg:1, wip:1, quarantine:1, rework:1 };
+
   /* ── Skeleton ── */
   function showSkeleton(tab) {
-    if (tab === 'stock') {
-      var el = document.getElementById('cards-stock');
-      if (!el) return;
-      var html = '';
-      for (var r = 0; r < 4; r++) {
-        html += '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-card p-4">' +
-          '<div class="skel-bar w-2/5 mb-2" style="height:16px;"></div>' +
-          '<div class="skel-bar w-3/5 mb-3" style="height:12px;"></div>' +
-          '<div class="flex gap-2"><div class="skel-bar w-16" style="height:22px;"></div><div class="skel-bar w-20" style="height:22px;"></div></div>' +
-          '</div>';
-      }
-      el.innerHTML = html;
-    } else {
-      var tbody = document.getElementById('tbody-' + tab);
-      if (!tbody) return;
-      var cols = 7;
-      var skHtml = '';
-      var widths = [55, 70, 62, 80, 58, 66, 72];
-      for (var rr = 0; rr < 6; rr++) {
-        skHtml += '<tr>';
-        for (var c = 0; c < cols; c++) {
-          skHtml += '<td><span class="skel-bar" style="width:' + widths[(rr+c) % widths.length] + '%">&nbsp;</span></td>';
-        }
-        skHtml += '</tr>';
-      }
-      tbody.innerHTML = skHtml;
+    var el = document.getElementById('cards-' + tab);
+    if (!el) return;
+    var html = '';
+    for (var r = 0; r < 4; r++) {
+      html += '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-card p-4 mb-3">' +
+        '<div class="skel-bar w-2/5 mb-2" style="height:16px;"></div>' +
+        '<div class="skel-bar w-3/5 mb-3" style="height:12px;"></div>' +
+        '<div class="flex gap-2"><div class="skel-bar w-16" style="height:22px;"></div><div class="skel-bar w-20" style="height:22px;"></div></div>' +
+        '</div>';
     }
+    el.innerHTML = html;
   }
 
   /* ── Load ── */
@@ -347,141 +352,157 @@
 
   function loadTab(tab) {
     loadState[tab] = 'loading';
-    if (tab === 'movements') {
-      loadMovements();
-      return;
-    }
-    showSkeleton(tab);
-    if (tab === 'stock') {
-      Promise.all([
-        new Promise(function(res, rej) {
-          google.script.run.withSuccessHandler(res).withFailureHandler(rej).getStockSummary();
-        }),
-        new Promise(function(res, rej) {
-          if (cache.materials) return res(cache.materials);
-          google.script.run.withSuccessHandler(function(m){ cache.materials = m || []; res(cache.materials); })
-            .withFailureHandler(rej).getMaterials();
-        })
-      ]).then(function(arr) {
-        var stock = arr[0] || [];
-        var mats = arr[1] || [];
-        var matMap = {};
-        mats.forEach(function(m){ matMap[String(m.code).trim()] = m; });
-        stock.forEach(function(s) {
-          var m = matMap[String(s.materialCode).trim()] || {};
-          s.desc = m.desc || '';
-          s.unit = m.unit || '';
-        });
-        cache.stock = stock;
-        loadState.stock = 'loaded';
-        renderTab('stock', '');
-      }).catch(function(e){ onError('stock', e); });
-    } else if (tab === 'locations') {
+    if (tab === 'movements') { loadMovements(); return; }
+    if (tab === 'locations') {
       google.script.run
         .withSuccessHandler(function(rows) { cache.locations = rows || []; loadState.locations = 'loaded'; renderTab('locations', ''); })
         .withFailureHandler(function(e) { onError('locations', e); })
         .getLocations();
+      return;
+    }
+    if (STOCK_VIEW_TABS[tab]) {
+      showSkeleton(tab);
+      if (stockViewCache) {
+        loadState[tab] = 'loaded';
+        renderStockTab(tab, '');
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(data) {
+          stockViewCache = data || { rm:[], fg:[], wip:[], quarantine:[], rework:[] };
+          ['rm','fg','wip','quarantine','rework'].forEach(function(t){ loadState[t] = 'loaded'; });
+          renderStockTab(tab, '');
+        })
+        .withFailureHandler(function(e) { onError(tab, e); })
+        .getStockView();
     }
   }
 
   function onError(tab, err) {
     loadState[tab] = 'error';
-    var tbody = document.getElementById('tbody-' + tab);
-    var cols = (tab === 'stock') ? 6 : 7;
-    tbody.innerHTML = '<tr><td colspan="' + cols + '"><div class="wh-empty">Could not load. ' +
-      '<a onclick="retryTab(\'' + tab + '\')">Retry</a></div></td></tr>';
+    var el = document.getElementById('cards-' + tab) || document.getElementById('tbody-' + tab);
+    if (el) el.innerHTML = '<div class="wh-empty" style="color:#dc2626;">Could not load. <a onclick="retryTab(\'' + tab + '\')">Retry</a></div>';
     showToast('Could not load ' + tab + '.', 'error');
   }
-  window.retryTab = function(tab) { loadState[tab] = null; loadTab(tab); };
+  window.retryTab = function(tab) { if (STOCK_VIEW_TABS[tab]) stockViewCache = null; loadState[tab] = null; loadTab(tab); };
   window.showLedger = function(matCode, batchNo) {
     showToast('Ledger: ' + matCode + (batchNo ? ' · ' + batchNo : ''), 'info');
   };
 
-  /* ── Render ── */
-  function renderTab(tab, query) {
-    var rows = (tab === 'stock' ? cache.stock : cache.locations) || [];
-    var q = (query || '').toLowerCase();
-    var filtered = rows;
-    if (q) {
-      filtered = rows.filter(function(r){
-        return Object.keys(r).some(function(k){
-          var v = r[k];
-          return v && String(v).toLowerCase().indexOf(q) !== -1;
-        });
-      });
-    }
+  /* ── Age badge ── */
+  function ageBadge(d) {
+    if (d === null || d === undefined || d === '') return '';
+    var n = Number(d);
+    if (isNaN(n)) return '';
+    var bg = n < 15 ? '#dcfce7' : n < 30 ? '#fff7ed' : '#fee2e2';
+    var col = n < 15 ? '#16a34a' : n < 30 ? '#ea580c' : '#dc2626';
+    return '<span style="background:' + bg + ';color:' + col + ';" class="text-[10px] font-bold px-2 py-0.5 rounded-full">' + n + 'd</span>';
+  }
 
-    if (tab === 'stock') {
-      var cardsEl = document.getElementById('cards-stock');
-      if (!cardsEl) return;
-      if (!filtered.length) {
-        var emptyMsg = q
-          ? 'No results for &ldquo;' + esc(query) + '&rdquo;. <a onclick="clearSearch()">Clear</a>'
-          : 'No stock on hand.';
-        cardsEl.innerHTML = '<div class="wh-empty">' + emptyMsg + '</div>';
-        return;
-      }
-      var statusCfg = {
-        'ACCEPTED':   { bg: '#dcfce7', color: '#16a34a', label: 'ACCEPTED' },
-        'RELEASED':   { bg: '#dcfce7', color: '#16a34a', label: 'RELEASED' },
-        'HOLD':       { bg: '#fff7ed', color: '#ea580c', label: 'HOLD' },
-        'QUARANTINE': { bg: '#ffe9d6', color: '#b5650f', label: 'QUARANTINE' },
-        'REJECTED':   { bg: '#fee2e2', color: '#dc2626', label: 'REJECTED' },
-      };
-      var cardHtml = '';
-      filtered.forEach(function(r) {
-        var st   = (r.status || '').toUpperCase();
-        var cfg  = statusCfg[st] || { bg: '#f1f5f9', color: '#64748b', label: st || '—' };
-        var isRM = r.locationId && r.locationId.indexOf('RM') === 0;
-        var isFG = r.locationId && r.locationId.indexOf('FG') === 0;
-        var locBg    = isRM ? '#fee2e2' : (isFG ? '#dbeafe' : '#e0f2fe');
-        var locColor = isRM ? '#dc2626' : (isFG ? '#1d4ed8' : '#0369a1');
-        cardHtml +=
-          '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-card p-4">' +
-            '<div class="flex justify-between items-start mb-1">' +
-              '<div>' +
-                '<p class="font-headline text-[15px] font-bold text-[#1e3a5f]">' + esc(r.materialCode) + '</p>' +
-                '<p class="text-[13px] text-[#64748b] mt-0.5">' + esc(r.desc || '') + '</p>' +
-              '</div>' +
-              (r.locationId
-                ? '<span style="background:' + locBg + ';color:' + locColor + ';" class="text-[11px] font-bold px-2 py-1 rounded-full">' + esc(r.locationId) + '</span>'
-                : '') +
-            '</div>' +
-            '<p class="text-[12px] text-[#94a3b8] mb-2">Batch: ' + esc(r.batchOrLotNo || '—') + '</p>' +
-            '<div class="flex items-center justify-between">' +
-              '<div class="flex items-center gap-3">' +
-                '<span style="background:' + cfg.bg + ';color:' + cfg.color + ';" class="text-[11px] font-bold px-2.5 py-1 rounded-full">' + cfg.label + '</span>' +
-                '<button onclick="showLedger(\'' + esc(r.materialCode) + '\',\'' + esc(r.batchOrLotNo || '') + '\')" class="text-[#0ea5e9] text-[12px] font-semibold hover:underline whitespace-nowrap">+ View Ledger</button>' +
-              '</div>' +
-              '<span class="font-headline text-[22px] font-bold text-[#0f172a]">' + esc(r.balance) + ' <span class="text-[13px] font-normal text-[#64748b]">' + esc(r.unit || '') + '</span></span>' +
-            '</div>' +
-          '</div>';
-      });
-      cardsEl.innerHTML = cardHtml;
-      /* Stock summary (fix #83) */
-      var lots = filtered.length;
-      var val = filtered.reduce(function(s, r){
-        var v = parseFloat(r.estValue || r.balanceValue || 0);
-        return s + (isNaN(v) ? 0 : v);
-      }, 0);
-      var lc = document.getElementById('summLotsCount');
-      var lv = document.getElementById('summLotsValue');
-      if (lc) lc.textContent = lots;
-      if (lv) lv.textContent = val > 0 ? ('₹' + val.toLocaleString('en-IN')) : '—';
+  function iqcBadge(s) {
+    var cfg = {
+      'ACCEPTED':{'bg':'#dcfce7','c':'#16a34a'}, 'CLOSED':{'bg':'#dbeafe','c':'#1d4ed8'},
+      'REJECTED':{'bg':'#fee2e2','c':'#dc2626'}, 'HOLD':{'bg':'#fff7ed','c':'#ea580c'},
+      'PENDING':{'bg':'#f1f5f9','c':'#64748b'}
+    };
+    var u = String(s || 'PENDING').toUpperCase();
+    var c = cfg[u] || cfg['PENDING'];
+    return '<span style="background:' + c.bg + ';color:' + c.c + ';" class="text-[10px] font-bold px-2 py-0.5 rounded-full">' + esc(u) + '</span>';
+  }
+
+  function stockCard(fields, qty, unit) {
+    var rows = fields.map(function(f) {
+      return '<div><div style="font-size:10px;color:#78909C;font-weight:600;text-transform:uppercase;letter-spacing:.3px;">' + f[0] + '</div>' +
+             '<div style="font-size:12px;color:#263238;margin-top:1px;">' + (f[1] || '—') + '</div></div>';
+    });
+    return '<div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-card p-4 mb-3">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">' + rows.join('') + '</div>' +
+      (qty != null ? '<div style="text-align:right;margin-top:8px;font-size:20px;font-weight:700;color:#1e3a5f;">' + esc(qty) + ' <span style="font-size:12px;font-weight:400;color:#64748b;">' + esc(unit || '') + '</span></div>' : '') +
+    '</div>';
+  }
+
+  function renderStockTab(tab, query) {
+    var el = document.getElementById('cards-' + tab);
+    if (!el || !stockViewCache) return;
+    var rows = stockViewCache[tab] || [];
+    var q = (query || '').toLowerCase();
+    if (q) rows = rows.filter(function(r) {
+      return Object.values ? Object.values(r).some(function(v){ return String(v||'').toLowerCase().indexOf(q) !== -1; })
+        : Object.keys(r).some(function(k){ return String(r[k]||'').toLowerCase().indexOf(q) !== -1; });
+    });
+
+    if (!rows.length) {
+      el.innerHTML = '<div class="wh-empty">' + (q ? 'No results. <a onclick="clearSearch()">Clear</a>' : 'Nothing here.') + '</div>';
       return;
     }
 
+    var html = rows.map(function(r) {
+      if (tab === 'rm') return stockCard([
+        ['Material', esc(r.materialDesc || r.materialCode)],
+        ['Batch', esc(r.batchNo)],
+        ['Supplier', esc(r.supplier)],
+        ['Location', esc(r.location)],
+        ['GRN Date', esc(r.grnDate)],
+        ['IQC', iqcBadge(r.iqcStatus) + (r.ageDays != null ? ' ' + ageBadge(r.ageDays) : '')]
+      ], r.qty, r.unit);
+
+      if (tab === 'fg') return stockCard([
+        ['Product', esc(r.materialDesc || r.materialCode)],
+        ['Batch', esc(r.batchNo)],
+        ['Customer', esc(r.customer)],
+        ['Location', esc(r.location)],
+        ['OQC Date', esc(r.oqcDate)],
+        ['OQC Ref', esc(r.oqcRef) + (r.ageDays != null ? ' ' + ageBadge(r.ageDays) : '')]
+      ], r.qty, r.unit);
+
+      if (tab === 'wip') return stockCard([
+        ['Job ID', esc(r.jobId)],
+        ['Product', esc(r.fgDesc || r.fgCode)],
+        ['IPQC ID', esc(r.ipqcId)],
+        ['Status', '<span style="background:#E3F2FD;color:#1565C0;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9999px;">' + esc(r.status) + '</span>'],
+        ['Since', esc(r.date instanceof Date ? r.date.toLocaleDateString('en-IN') : r.date)],
+        ['FG Target', esc(r.fgQty) + ' ' + esc(r.fgUom)]
+      ], null, null);
+
+      if (tab === 'quarantine') return stockCard([
+        ['Material', esc(r.materialDesc || r.materialCode)],
+        ['Batch', esc(r.batchNo)],
+        ['Location', esc(r.location)],
+        ['Source Ref', esc(r.sourceRef)],
+        ['Since', esc(r.since)],
+        ['Age', ageBadge(r.ageDays)]
+      ], r.qty, r.unit);
+
+      if (tab === 'rework') return stockCard([
+        ['Rework ID', esc(r.reworkId)],
+        ['Material', esc(r.materialDesc || r.materialCode)],
+        ['Batch', esc(r.batchNo)],
+        ['Source', esc(r.source)],
+        ['Since', esc(r.since)],
+        ['Status / Age', '<span style="background:#FFF9C4;color:#795548;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9999px;">' + esc(r.status) + '</span> ' + ageBadge(r.ageDays)]
+      ], r.qty, r.unit);
+
+      return '';
+    }).join('');
+    el.innerHTML = html;
+  }
+
+  /* ── Render (locations only — stock tabs use renderStockTab) ── */
+  function renderTab(tab, query) {
+    if (STOCK_VIEW_TABS[tab]) { renderStockTab(tab, query); return; }
+    var rows = cache.locations || [];
+    var q = (query || '').toLowerCase();
+    var filtered = q ? rows.filter(function(r){
+      return Object.keys(r).some(function(k){ return String(r[k]||'').toLowerCase().indexOf(q) !== -1; });
+    }) : rows;
     var tbody = document.getElementById('tbody-' + tab);
     if (!filtered.length) {
-      var msg2 = q
-        ? 'No results for &ldquo;' + esc(query) + '&rdquo;. <a onclick="clearSearch()">Clear</a>'
-        : 'No locations. Tap + to add.';
-      tbody.innerHTML = '<tr><td colspan="7"><div class="wh-empty">' + msg2 + '</div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7"><div class="wh-empty">' + (q ? 'No results. <a onclick="clearSearch()">Clear</a>' : 'No locations. Tap + to add.') + '</div></td></tr>';
       return;
     }
     var html = '';
     filtered.forEach(function(r) {
-      var cap = (r.capacityQty || r.capacityQty === 0) ? (esc(r.capacityQty) + ' ' + esc(r.capacityUnit || '')) : '';
+      var cap = r.capacityQty ? (esc(r.capacityQty) + ' ' + esc(r.capacityUnit || '')) : '';
       html += '<tr class="loc-row" data-loc-id="' + esc(r.id) + '">' +
         td(r.id) + td(r.label || r.id) +
         '<td><span class="loc-chip ' + locTypeChipClass(r.type) + '">' + esc(r.type || '') + '</span></td>' +
@@ -860,7 +881,7 @@
       this.className = 'pm-toast';
     });
 
-    loadTab('stock');
+    loadTab('rm');
   });
 
 })();
