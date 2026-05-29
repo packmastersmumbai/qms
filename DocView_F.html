@@ -252,6 +252,12 @@
 </div>
 
 <div class="dv-wrap">
+  <!-- Smart action bar (next-step + kebab + trace). Populated after record load. -->
+  <div id="dvActionBar" style="display:none;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin:12px 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+    <span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Actions:</span>
+    <div id="dvActionsRow" style="display:flex;gap:8px;flex-wrap:wrap;flex:1;"></div>
+  </div>
+
   <div id="dvContent"></div>
   <!-- Revision History -->
   <div class="dv-card" id="revCard" style="display:none;">
@@ -298,12 +304,147 @@ function onRecordLoaded(result) {
 
   document.getElementById('dvTitle').textContent = DOC_TYPE + ' — ' + DOC_NO;
   renderStatusBadge(getStatusValue());
+  renderActionBar(getStatusValue());
   renderFields();
   if (result.items && result.items.length > 0) {
     renderItemsTable(result.items, result.itemHeaders);
   }
+  if (result.iqcLinks && result.iqcLinks.length > 0) {
+    renderIQCLinks(result.iqcLinks);
+  }
   renderRevCard();
 }
+
+// ── Smart action bar (mirrors Records card actions) ───────────
+function _dvNextAction(type, status) {
+  var s = String(status || '').toUpperCase();
+  var t = String(type || '').toUpperCase();
+  var done = ['ACCEPTED','PASS','PASSED','RELEASED','CLOSED','COMPLETE','COMPLETED','DELIVERED','PRODUCED','CANCELLED'];
+  if (done.indexOf(s) !== -1) return null;
+  if (t === 'PO') {
+    if (s === 'OPEN' || s === 'PARTIAL_RECEIVED') return { label: 'Receive (GRN)', form: 'GRN' };
+  }
+  if (t === 'GRN') {
+    if (s.indexOf('IQC PENDING') !== -1 || s === 'PENDING' || s === '') return { label: 'Do IQC', form: 'IQC' };
+  }
+  if (t === 'IQC') {
+    if (s === 'ACCEPTED' || s === 'PASS') return { label: 'Start IPQC', form: 'IPQC' };
+    if (s === 'PENDING' || s === '') return { label: 'Resume IQC', form: 'IQC' };
+    if (s === 'REJECTED' || s === 'FAIL') return { label: 'Raise NCR', form: 'NCR' };
+  }
+  if (t === 'IPQC') {
+    if (s === 'OPEN' || s === 'PENDING') return { label: 'Continue IPQC', form: 'IPQC' };
+    if (s === 'PASS' || s === 'ACCEPTED') return { label: 'Book Production', form: 'Production' };
+    if (s === 'FAIL' || s === 'REJECTED') return { label: 'Raise NCR', form: 'NCR' };
+  }
+  if (t === 'PRODUCTION') {
+    if (s === 'BOOKED' || s === 'ISSUED' || s === 'OPEN') return { label: 'Send to OQC', form: 'OQC' };
+  }
+  if (t === 'OQC') {
+    if (s === 'PASS' || s === 'ACCEPTED') return { label: 'Create Gatepass', form: 'Gatepass' };
+    if (s === 'PENDING' || s === '') return { label: 'Complete OQC', form: 'OQC' };
+    if (s === 'FAIL' || s === 'REJECTED') return { label: 'Raise NCR', form: 'NCR' };
+  }
+  if (t === 'GATEPASS') {
+    if (s === 'ISSUED' || s === 'OPEN') return { label: 'Dispatch', form: 'Dispatch' };
+  }
+  if (t === 'DISPATCH') {
+    if (s === 'AVAILABLE' || s === 'PARTIAL' || s === 'OPEN') return { label: 'Mark Delivered', form: 'Dispatch' };
+  }
+  if (t === 'NCR') {
+    if (s === 'OPEN' || s === 'IN_PROGRESS' || s.indexOf('PENDING') !== -1) return { label: 'Resolve NCR', form: 'NCR' };
+  }
+  if (t === 'CUSTOMERRETURN' || t === 'CR') {
+    if (s === 'OPEN' || s.indexOf('PENDING') !== -1) return { label: 'Process Return', form: 'CustomerReturn' };
+  }
+  return null;
+}
+
+function _dvGotoForm(name) {
+  if (window.PMHtmlCache) { window.PMHtmlCache.navigate(name); return; }
+  google.script.run
+    .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+    .withFailureHandler(function(){})
+    .getFormHtml(name);
+}
+
+function renderActionBar(status) {
+  var bar = document.getElementById('dvActionBar');
+  var row = document.getElementById('dvActionsRow');
+  if (!bar || !row) return;
+  var next = _dvNextAction(DOC_TYPE, status);
+  var html = '';
+  if (next) {
+    html += '<button onclick="dvRunNext(\'' + escAttr(next.form) + '\')" ' +
+      'style="height:34px;padding:0 14px;border-radius:6px;background:#0D1B6E;color:#fff;font-size:12px;font-weight:700;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">' +
+      escHtml(next.label) + ' →</button>';
+  }
+  html += '<button onclick="dvTrace()" ' +
+    'style="height:34px;padding:0 12px;border-radius:6px;background:#fff;color:#0D1B6E;font-size:12px;font-weight:700;border:1px solid #0D1B6E;cursor:pointer;">🌳 Trace this batch</button>';
+
+  // Module-specific alternates
+  var alts = _dvAlts(DOC_TYPE, status);
+  alts.forEach(function(a){
+    html += '<button onclick="dvAlt(\'' + escAttr(a.form) + '\')" ' +
+      'style="height:34px;padding:0 12px;border-radius:6px;background:#fff;color:#64748b;font-size:12px;font-weight:600;border:1px solid #e2e8f0;cursor:pointer;">' +
+      escHtml(a.label) + '</button>';
+  });
+  row.innerHTML = html;
+  bar.style.display = 'flex';
+}
+
+function _dvAlts(type, status) {
+  var s = String(status || '').toUpperCase();
+  var t = String(type || '').toUpperCase();
+  var opts = [];
+  if (t === 'GRN')        { opts.push({ label: 'Raise NCR', form: 'NCR' }); }
+  else if (t === 'IQC')   {
+    if (s !== 'REJECTED' && s !== 'FAIL') opts.push({ label: 'Raise NCR', form: 'NCR' });
+    opts.push({ label: '🖨 Print Record', form: '__PRINT_IQC__' });
+  }
+  else if (t === 'IPQC')  { opts.push({ label: 'Raise NCR', form: 'NCR' }); }
+  else if (t === 'PRODUCTION') { opts.push({ label: 'View Pick List', form: 'Production' }); opts.push({ label: 'Raise NCR', form: 'NCR' }); }
+  else if (t === 'OQC')   { opts.push({ label: 'Raise NCR', form: 'NCR' }); }
+  else if (t === 'GATEPASS') { opts.push({ label: 'Cancel Gatepass', form: 'Gatepass' }); }
+  else if (t === 'DISPATCH') { opts.push({ label: 'Hold Lot', form: 'Dispatch' }); }
+  else if (t === 'CUSTOMERRETURN' || t === 'CR') { opts.push({ label: 'Raise NCR', form: 'NCR' }); }
+  return opts;
+}
+
+window.dvRunNext = function(form) {
+  try {
+    sessionStorage.setItem('pmPrefillRef', DOC_NO);
+    sessionStorage.setItem('pmAutoOpenDoc', DOC_NO);
+  } catch(e){}
+  _dvGotoForm(form);
+};
+window.dvAlt = function(form) {
+  if (form === '__PRINT_IQC__') { dvPrintIQC(); return; }
+  try {
+    sessionStorage.setItem('pmPrefillRef', DOC_NO);
+    sessionStorage.setItem('pmAutoOpenDoc', DOC_NO);
+  } catch(e){}
+  _dvGotoForm(form);
+};
+
+window.dvPrintIQC = function() {
+  google.script.run
+    .withSuccessHandler(function(html) {
+      var w = window.open('', '_blank');
+      if (w) { w.document.open(); w.document.write(html); w.document.close(); }
+      else { showToast && showToast('Allow pop-ups to open print record.', 'warning'); }
+    })
+    .withFailureHandler(function(e) {
+      alert('Print failed: ' + (e && e.message ? e.message : e));
+    })
+    .getIQCPrintHtml(DOC_NO);
+};
+window.dvTrace = function() {
+  try { sessionStorage.setItem('pmTraceRef', DOC_NO); } catch(e){}
+  _dvGotoForm('Trace');
+};
+
+function escAttr(s){ return String(s || '').replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
 
 function renderItemsTable(items, headers) {
   var html = '<div class="dv-card" id="itemsCard">' +
@@ -320,6 +461,46 @@ function renderItemsTable(items, headers) {
       }).join('') + '</tr>';
     }).join('') +
     '</tbody></table></div></div>';
+
+  var revCard = document.getElementById('revCard');
+  revCard.insertAdjacentHTML('beforebegin', html);
+}
+
+function renderIQCLinks(iqcLinks) {
+  var dispColor = { 'ACCEPTED':'#16a34a', 'REJECTED':'#dc2626', 'HOLD':'#ea580c',
+                    'PARTIAL':'#d97706', 'ACCEPTED WITH DEVIATION':'#d97706',
+                    'PENDING':'#64748b', '':'#64748b' };
+  var dispBg = { 'ACCEPTED':'#dcfce7','REJECTED':'#fee2e2','HOLD':'#fff7ed',
+                 'PARTIAL':'#fff7ed','ACCEPTED WITH DEVIATION':'#fff7ed',
+                 'PENDING':'#f1f5f9','':'#f1f5f9' };
+  var rows = iqcLinks.map(function(l, idx) {
+    var d = (l.disposition || '').toUpperCase();
+    var bg = idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
+    var badgeBg = dispBg[d] || '#f1f5f9';
+    var badgeCol = dispColor[d] || '#64748b';
+    return '<tr style="background:' + bg + ';">' +
+      '<td style="padding:5px 8px;border-bottom:1px solid #F3F4F6;font-weight:600;color:#1e3a5f;">' + escHtml(l.iqcNo) + '</td>' +
+      '<td style="padding:5px 8px;border-bottom:1px solid #F3F4F6;color:#374151;">' + escHtml(l.materialDesc) + '</td>' +
+      '<td style="padding:5px 8px;border-bottom:1px solid #F3F4F6;color:#374151;">' + escHtml(l.batchNo) + '</td>' +
+      '<td style="padding:5px 8px;border-bottom:1px solid #F3F4F6;">' +
+        '<span style="background:' + badgeBg + ';color:' + badgeCol + ';font-size:10px;font-weight:700;padding:2px 7px;border-radius:9999px;">' + escHtml(d || 'PENDING') + '</span>' +
+      '</td>' +
+      '<td style="padding:5px 8px;border-bottom:1px solid #F3F4F6;color:#6B7280;font-size:11px;">' + escHtml(l.date) + '</td>' +
+      '<td style="padding:5px 8px;border-bottom:1px solid #F3F4F6;color:#6B7280;font-size:11px;">' + escHtml(l.inspector) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  var html = '<div class="dv-card" id="iqcLinksCard">' +
+    '<div class="dv-card-title">IQC Records (' + iqcLinks.length + ')</div>' +
+    '<div style="overflow-x:auto;">' +
+    '<table style="width:100%;border-collapse:collapse;font-size:11px;">' +
+    '<thead><tr>' +
+      ['IQC No.','Material','Batch','Disposition','Date','Inspector'].map(function(h){
+        return '<th style="padding:5px 8px;text-align:left;background:#F3F4F6;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #E5E7EB;white-space:nowrap;">' + h + '</th>';
+      }).join('') +
+    '</tr></thead>' +
+    '<tbody>' + rows + '</tbody>' +
+    '</table></div></div>';
 
   var revCard = document.getElementById('revCard');
   revCard.insertAdjacentHTML('beforebegin', html);
@@ -390,6 +571,25 @@ function buildRow(f) {
     valHtml = displayVal ? statusBadgeHtml(displayVal) : '<span class="empty">—</span>';
   } else if (f.isParam) {
     valHtml = displayVal ? paramBadgeHtml(displayVal) : '<span class="empty">—</span>';
+  } else if (f.isImages) {
+    var urls = [];
+    if (!isEmpty) {
+      try {
+        urls = String(displayVal).split(',').map(function(u){ return u.trim(); }).filter(Boolean);
+      } catch(e) {}
+    }
+    valHtml = urls.length
+      ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">' +
+          urls.map(function(u) {
+            return '<a href="' + escHtml(u) + '" target="_blank">' +
+              '<img src="' + escHtml(u) + '" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;" alt="photo">' +
+              '</a>';
+          }).join('') + '</div>'
+      : '<span class="empty">—</span>';
+  } else if (f.isLink) {
+    valHtml = isEmpty
+      ? '<span class="empty">—</span>'
+      : '<a href="' + escHtml(displayVal) + '" target="_blank" style="color:#2563eb;text-decoration:underline;">View Video ↗</a>';
   } else {
     valHtml = isEmpty
       ? '<span class="empty">—</span>'

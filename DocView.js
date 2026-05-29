@@ -51,7 +51,7 @@ var DOC_FIELD_MAPS = {
   },
   IQC: {
     sheetName: 'IQC_LOG',
-    totalCols: 29,
+    totalCols: 37,
     fields: [
       { key: 'docNo',        label: 'IQC No.',               col: 0  },
       { key: 'date',         label: 'Date',                  col: 1,  isDate: true },
@@ -81,12 +81,18 @@ var DOC_FIELD_MAPS = {
       { key: 'remarks',      label: 'Remarks',               col: 25 },
       { key: 'acceptedQty',  label: 'Accepted Qty',          col: 26 },
       { key: 'rejectedQty',  label: 'Rejected Qty',          col: 27, readOnly: true },
-      { key: 'createdAt',    label: 'Created At',            col: 28, isTimestamp: true, readOnly: true }
+      { key: 'createdAt',    label: 'Created At',            col: 28, isTimestamp: true, readOnly: true },
+      { key: 'videoUrl',     label: 'Defect Video',          col: 30, isLink: true, readOnly: true },
+      { key: 'poRef',        label: 'PO Reference',          col: 32, readOnly: true },
+      { key: 'invoiceNo',    label: 'Invoice No.',           col: 33, readOnly: true },
+      { key: 'storeInCharge',label: 'Store In-Charge',       col: 34, readOnly: true },
+      { key: 'qaManager',    label: 'QA Manager',            col: 35, readOnly: true },
+      { key: 'imageUrls',    label: 'Defect Photos',         col: 36, isImages: true, readOnly: true }
     ]
   },
   OQC: {
     sheetName: 'OQC_LOG',
-    totalCols: 19,
+    totalCols: 24,
     fields: [
       { key: 'docNo',          label: 'OQC No.',              col: 0  },
       { key: 'date',           label: 'Date',                 col: 1,  isDate: true },
@@ -106,7 +112,8 @@ var DOC_FIELD_MAPS = {
       { key: 'remarks',        label: 'Remarks',              col: 15 },
       { key: 'acceptedQty',    label: 'Accepted Qty',         col: 16 },
       { key: 'rejectedQty',    label: 'Rejected Qty',         col: 17, readOnly: true },
-      { key: 'createdAt',      label: 'Created At',           col: 18, isTimestamp: true, readOnly: true }
+      { key: 'createdAt',      label: 'Created At',           col: 18, isTimestamp: true, readOnly: true },
+      { key: 'videoUrl',       label: 'Defect Video',         col: 23, isLink: true, readOnly: true }
     ]
   }
 };
@@ -197,6 +204,38 @@ function getRecordDetail(type, docNo) {
       result.items = items;
       result.itemHeaders = map.itemHeaders;
     }
+
+    // P6: GRN → IQC linkage — join IQC_LOG rows for this GRN No
+    if (type === 'GRN') {
+      try {
+        var iqcWs3 = ss.getSheetByName('IQC_LOG');
+        var iqcLinks = [];
+        if (iqcWs3 && iqcWs3.getLastRow() > 1) {
+          var iqcData = iqcWs3.getDataRange().getValues();
+          var seen = {};
+          for (var ii = 1; ii < iqcData.length; ii++) {
+            if (String(iqcData[ii][2]).trim() !== String(docNo).trim()) continue;
+            var iqcNo = String(iqcData[ii][0] || '').trim();
+            if (!iqcNo || seen[iqcNo]) continue;
+            seen[iqcNo] = true;
+            var iqcDate = iqcData[ii][1];
+            iqcLinks.push({
+              iqcNo:       iqcNo,
+              date:        iqcDate instanceof Date ? Utilities.formatDate(iqcDate, 'Asia/Kolkata', 'dd-MMM-yyyy') : String(iqcDate || ''),
+              disposition: String(iqcData[ii][22] || ''),
+              inspector:   String(iqcData[ii][6]  || ''),
+              materialDesc:String(iqcData[ii][4]  || ''),
+              batchNo:     String(iqcData[ii][5]  || '')
+            });
+          }
+        }
+        result.iqcLinks = iqcLinks;
+      } catch(iqcErr) {
+        Logger.log('P6 GRN→IQC join failed: ' + iqcErr.message);
+        result.iqcLinks = [];
+      }
+    }
+
     return result;
   } catch(e) {
     Logger.log(e);
