@@ -96,7 +96,7 @@ var GRN_HEADERS = [
 var STOCK_LEDGER_HEADERS = [
   'Txn ID', 'Timestamp', 'Txn Type', 'Material Code', 'Batch / Lot No.',
   'Location ID', 'Qty In', 'Qty Out', 'Balance After',
-  'Ref Doc Type', 'Ref Doc No.', 'Operator', 'Remarks'
+  'Ref Doc Type', 'Ref Doc No.', 'Operator', 'Remarks', 'Material Desc'
 ];
 
 var LOCATIONS_HEADERS = [

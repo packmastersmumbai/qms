@@ -1,16 +1,16 @@
 // ============================================================
 // Warehouse.gs — Stock ledger, balance, location, FIFO, scrap, sample
 // Single source of truth for material movement.
-// STOCK_LEDGER schema (13 cols, see Initialize.STOCK_LEDGER_HEADERS):
+// STOCK_LEDGER schema (14 cols, see Initialize.STOCK_LEDGER_HEADERS):
 //   0 Txn ID | 1 Timestamp | 2 Txn Type | 3 Material Code | 4 Batch | 5 Location ID
 //   6 Qty In | 7 Qty Out  | 8 Balance After | 9 Ref Doc Type | 10 Ref Doc No.
-//   11 Operator | 12 Remarks
+//   11 Operator | 12 Remarks | 13 Material Desc
 // ============================================================
 
 // ---------- Ledger primitives ----------
 
 function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
-                            qtyIn, qtyOut, refDocType, refDocNo, operator, remarks) {
+                            qtyIn, qtyOut, refDocType, refDocNo, operator, remarks, materialDesc) {
   var ss = getSpreadsheet();
   var ws = ss.getSheetByName('STOCK_LEDGER');
   if (!ws) return '';
@@ -43,7 +43,8 @@ function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
       refDocType || '',
       refDocNo || '',
       op,
-      remarks || ''
+      remarks || '',
+      materialDesc || ''
     ]);
     var lr = ws.getLastRow();
     ws.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy HH:mm');
