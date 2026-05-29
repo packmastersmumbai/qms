@@ -178,11 +178,171 @@ function saveGRN(data) {
       }
     }
 
+    // Back-stamp image URLs into all rows for this docNo (cols 22 & 23)
+    var docImages     = (data.docImageUrls     || []).join(',');
+    var productImages = (data.productImageUrls || []).join(',');
+    if (docImages || productImages) {
+      var allRows = ws.getDataRange().getValues();
+      for (var ri = 1; ri < allRows.length; ri++) {
+        if (String(allRows[ri][0]).trim() === String(docNo).trim()) {
+          if (docImages)     ws.getRange(ri + 1, 22).setValue(docImages);
+          if (productImages) ws.getRange(ri + 1, 23).setValue(productImages);
+        }
+      }
+    }
+
+    // QR + PDF (fire-and-forget; non-fatal)
+    try {
+      var qrBase64 = generateGRNQR_(docNo);
+      var pdfUrl   = generateGRNPdf_(docNo);
+      var allRows2 = ws.getDataRange().getValues();
+      for (var ri2 = 1; ri2 < allRows2.length; ri2++) {
+        if (String(allRows2[ri2][0]).trim() === String(docNo).trim()) {
+          ws.getRange(ri2 + 1, 24).setValue(qrBase64);
+          ws.getRange(ri2 + 1, 25).setValue(pdfUrl);
+        }
+      }
+    } catch(qrErr) {
+      Logger.log('GRN QR/PDF generation failed: ' + qrErr.message);
+    }
+
     return { success: true, docNo: docNo, warnings: warnings };
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };
   }
+}
+
+// ── Image upload ──────────────────────────────────────────────────────────────
+function uploadGRNImages(images) {
+  // Called from client before save; returns { docUrls: [], productUrls: [] }
+  // images = [{ base64, mime, kind }]  kind = 'doc' | 'product'
+  try {
+    var ss = getSpreadsheet();
+    var ssFile = DriveApp.getFileById(ss.getId());
+    var parents = ssFile.getParents();
+    if (!parents.hasNext()) throw new Error('Cannot find parent folder of spreadsheet.');
+    var projectFolder = parents.next();
+    var mediaFolder = getOrCreateFolder_(projectFolder, 'Media');
+    var grnFolder   = getOrCreateFolder_(mediaFolder, 'GRN');
+    var monthKey    = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
+    var monthFolder = getOrCreateFolder_(grnFolder, monthKey);
+
+    var docUrls     = [];
+    var productUrls = [];
+    var docIdx = 1, prodIdx = 1;
+
+    (images || []).slice(0, 10).forEach(function(img) {
+      var ext      = img.mime === 'image/jpeg' ? 'jpg' : 'png';
+      var kind     = img.kind === 'product' ? 'PRD' : 'DOC';
+      var idx      = img.kind === 'product' ? prodIdx++ : docIdx++;
+      var filename = 'GRN_' + kind + '_' + idx + '_' + Date.now() + '.' + ext;
+      var blob     = Utilities.newBlob(Utilities.base64Decode(img.base64), img.mime, filename);
+      var file     = monthFolder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      if (img.kind === 'product') productUrls.push(file.getUrl());
+      else                        docUrls.push(file.getUrl());
+    });
+
+    return { success: true, docUrls: docUrls, productUrls: productUrls };
+  } catch(e) {
+    Logger.log('uploadGRNImages: ' + e.message);
+    return { success: false, error: e.message, docUrls: [], productUrls: [] };
+  }
+}
+
+// ── QR & PDF ──────────────────────────────────────────────────────────────────
+function generateGRNQR_(docNo) {
+  var GAS_URL = ScriptApp.getService().getUrl();
+  var target  = GAS_URL + '?doc=' + encodeURIComponent(docNo);
+  var apiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&format=png&data=' + encodeURIComponent(target);
+  var resp    = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) throw new Error('QR API returned ' + resp.getResponseCode());
+  return 'data:image/png;base64,' + Utilities.base64Encode(resp.getContent());
+}
+
+function generateGRNPdf_(docNo) {
+  var data = getGRNPrintData(docNo);
+  var tmpl = HtmlService.createTemplateFromFile('PrintGRN_F');
+  tmpl.printData = data;
+  var html = tmpl.evaluate().getContent();
+  var blob = Utilities.newBlob(html, 'text/html', docNo + '.html');
+
+  var date    = new Date();
+  var yearMon = Utilities.formatDate(date, 'Asia/Kolkata', 'yyyy-MM');
+  var folders = DriveApp.getFoldersByName('QMS/GRN/' + yearMon);
+  var folder  = folders.hasNext() ? folders.next() : DriveApp.createFolder('QMS/GRN/' + yearMon);
+
+  var tempFile = DriveApp.createFile(blob);
+  var pdfBlob  = tempFile.getAs('application/pdf');
+  pdfBlob.setName(docNo + '.pdf');
+  var pdfFile  = folder.createFile(pdfBlob);
+  tempFile.setTrashed(true);
+  pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return pdfFile.getUrl();
+}
+
+// ── Print data ────────────────────────────────────────────────────────────────
+function getGRNPrintData(docNo) {
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  if (!ws) throw new Error('GRN_LOG not found');
+  var vals = ws.getDataRange().getValues();
+  // Collect all rows for this docNo (multi-item GRN)
+  var rows = [];
+  for (var i = 1; i < vals.length; i++) {
+    if (String(vals[i][0]).trim() === String(docNo).trim()) rows.push(vals[i]);
+  }
+  if (!rows.length) throw new Error('No GRN record found for: ' + docNo);
+  var r = rows[0];
+
+  function fmtDate(v) {
+    try { return v ? Utilities.formatDate(new Date(v), 'Asia/Kolkata', 'dd-MMM-yyyy') : '—'; }
+    catch(e) { return String(v || '—'); }
+  }
+
+  var docImages     = String(r[21] || '').split(',').map(function(u){ return u.trim(); }).filter(Boolean);
+  var productImages = String(r[22] || '').split(',').map(function(u){ return u.trim(); }).filter(Boolean);
+  var allImages     = docImages.concat(productImages);
+
+  var items = rows.map(function(row) {
+    return {
+      materialCode: String(row[6]  || ''),
+      materialDesc: String(row[7]  || ''),
+      batchNo:      String(row[8]  || ''),
+      qtyOrdered:   row[9]  != null ? String(row[9])  : '',
+      qtyReceived:  row[10] != null ? String(row[10]) : '',
+      unit:         String(row[11] || ''),
+      expiryDate:   fmtDate(row[13])
+    };
+  });
+
+  return {
+    docNo:        String(r[0]  || ''),
+    date:         fmtDate(r[1]),
+    supplierCode: String(r[2]  || ''),
+    supplierName: String(r[3]  || ''),
+    poRef:        String(r[4]  || ''),
+    invoiceNo:    String(r[5]  || ''),
+    coaReceived:  String(r[12] || ''),
+    remarks:      String(r[14] || ''),
+    status:       String(r[15] || ''),
+    inspector:    String(r[16] || ''),
+    storageZone:  String(r[18] || ''),
+    items:        items,
+    docImages:    docImages,
+    productImages:productImages,
+    allImages:    allImages,
+    qrBase64:     String(r[23] || ''),
+    pdfUrl:       String(r[24] || ''),
+    printedAt:    Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')
+  };
+}
+
+function getGRNPrintHtml(docNo) {
+  var data = getGRNPrintData(docNo);
+  var tmpl = HtmlService.createTemplateFromFile('PrintGRN_F');
+  tmpl.printData = data;
+  return tmpl.evaluate().getContent();
 }
 
 function updateGRNIQCStatus(grnNo, status) {
@@ -191,11 +351,15 @@ function updateGRNIQCStatus(grnNo, status) {
   var data = ws.getDataRange().getValues();
   var color = status === 'ACCEPTED' ? '#E8F5E9' :
               status === 'REJECTED' ? '#FFEBEE' :
-              status === 'HOLD'     ? '#FFF3CD' : '#FFFFFF';
-  // Update ALL rows with this docNo (multi-item GRNs have multiple rows)
+              status === 'HOLD'     ? '#FFF3CD' :
+              status === 'CLOSED'   ? '#E3F2FD' : '#FFFFFF';
+  var closedAt = status === 'CLOSED' ? new Date() : null;
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][0]).trim() === String(grnNo).trim()) {
       ws.getRange(i + 1, 16).setValue(status).setBackground(color);
+      if (closedAt) {
+        ws.getRange(i + 1, 22).setValue(closedAt).setNumberFormat('dd-MMM-yyyy HH:mm');
+      }
     }
   }
 }
