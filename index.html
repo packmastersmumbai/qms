@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pack Masters QMS</title>
-  <meta http-equiv="refresh" content="0;url=https://script.google.com/macros/s/AKfycbyxRPJVpjs_CA7fXj3OsHbA4CZIJixLo_r7NmPJbz3z/exec">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -27,7 +26,9 @@
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
   <script>
-    window.location.replace("https://script.google.com/macros/s/AKfycbyxRPJVpjs_CA7fXj3OsHbA4CZIJixLo_r7NmPJbz3z/exec");
+    var base = "https://script.google.com/macros/s/AKfycbxMFpeJOqF5_iARRCo7aHLg0Pw_XlqKdAzmDVck8DUdDfgr1nIIjbvTgrlyc0XtYRuaVQ/exec";
+    var q = window.location.search;
+    window.location.replace(base + (q || ''));
   </script>
 </head>
 <body>
