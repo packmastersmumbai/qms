@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Record Defect Video</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #fff; min-height: 100dvh; display: flex; flex-direction: column; }
+    #viewfinder { width: 100%; flex: 1; object-fit: cover; background: #000; display: block; }
+    #ui { padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #0f172a; }
+    #status { text-align: center; font-size: 13px; color: #94a3b8; min-height: 20px; }
+    #timer  { text-align: center; font-size: 28px; font-weight: 700; color: #ef4444; display: none; }
+    .btn { width: 100%; height: 52px; border-radius: 12px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    #startBtn  { background: #2563eb; color: #fff; }
+    #stopBtn   { background: #dc2626; color: #fff; display: none; }
+    #useBtn    { background: #16a34a; color: #fff; display: none; }
+    #retakeBtn { background: #334155; color: #fff; display: none; }
+    .row { display: flex; gap: 8px; }
+    .row .btn { flex: 1; }
+    #info { font-size: 12px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <video id="viewfinder" autoplay muted playsinline></video>
+  <div id="ui">
+    <div id="timer">0:00</div>
+    <div id="status">Tap Start to record defect video</div>
+    <button class="btn" id="startBtn" onclick="startRec()">● Start Recording</button>
+    <button class="btn" id="stopBtn"  onclick="stopRec()">■ Stop</button>
+    <div class="row">
+      <button class="btn" id="useBtn"    onclick="useVideo()">✓ Use This Video</button>
+      <button class="btn" id="retakeBtn" onclick="retake()">↺ Retake</button>
+    </div>
+    <div id="info">600 kbps · max 60 sec · ~450 KB per 10 sec</div>
+  </div>
+
+<script>
+var stream       = null;
+var recorder     = null;
+var chunks       = [];
+var timerInt     = null;
+var seconds      = 0;
+var recordedBlob = null;
+
+
+
+function $(id) { return document.getElementById(id); }
+function status(msg) { $('status').textContent = msg; }
+
+// Start camera on load
+window.addEventListener('load', function() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    status('Camera not supported on this browser.'); return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true })
+    .then(function(s) {
+      stream = s;
+      $('viewfinder').srcObject = s;
+      status('Camera ready — tap Start to record');
+    })
+    .catch(function(e) {
+      status('Camera access denied: ' + e.message);
+    });
+});
+
+function startRec() {
+  if (!stream) { status('Camera not ready.'); return; }
+  chunks = []; seconds = 0; recordedBlob = null;
+
+  var mime = ['video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'].find(function(m) {
+    return MediaRecorder.isTypeSupported(m);
+  }) || '';
+
+  var opts = { videoBitsPerSecond: 600000 };
+  if (mime) opts.mimeType = mime;
+
+  try {
+    recorder = new MediaRecorder(stream, opts);
+  } catch(e) {
+    // fallback: no options (browser picks defaults)
+    mime = '';
+    recorder = new MediaRecorder(stream);
+  }
+  recorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = function() { onRecordingDone(mime); };
+  recorder.start(1000);
+
+  $('startBtn').style.display  = 'none';
+  $('stopBtn').style.display   = 'flex';
+  $('timer').style.display     = 'block';
+
+  timerInt = setInterval(function() {
+    seconds++;
+    var m = Math.floor(seconds / 60);
+    var s = seconds % 60;
+    $('timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    if (seconds >= 60) stopRec();
+  }, 1000);
+
+  status('Recording… (auto-stops at 60 sec)');
+}
+
+function stopRec() {
+  clearInterval(timerInt);
+  if (recorder && recorder.state !== 'inactive') recorder.stop();
+  $('stopBtn').style.display = 'none';
+  $('startBtn').style.display = 'none';
+  status('Processing…');
+}
+
+function onRecordingDone(mime) {
+  var ext = mime && mime.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+  recordedBlob = new Blob(chunks, { type: mime || 'video/webm' });
+  var mb = (recordedBlob.size / 1024 / 1024).toFixed(1);
+
+  // Play back for review
+  $('viewfinder').srcObject = null;
+  $('viewfinder').src = URL.createObjectURL(recordedBlob);
+  $('viewfinder').controls = true;
+  $('viewfinder').muted = false;
+  $('viewfinder').play();
+
+  $('timer').style.display = 'none';
+  $('useBtn').style.display = $('retakeBtn').style.display = 'flex';
+  status('Review your video (' + mb + ' MB) — use it or retake');
+}
+
+function useVideo() {
+  if (!recordedBlob) return;
+  status('Sending to IQC form…');
+  $('useBtn').disabled = $('retakeBtn').disabled = true;
+
+  var ext = recordedBlob.type.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+  var mb  = (recordedBlob.size / 1024 / 1024).toFixed(1);
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var b64 = ev.target.result.split(',')[1];
+    var payload = {
+      type:     'QMS_VIDEO',
+      base64:   b64,
+      mime:     recordedBlob.type,
+      ext:      ext,
+      filename: 'defect_' + Date.now() + '.' + ext,
+      sizeMb:   mb
+    };
+    if (window.opener && !window.opener.closed) {
+      // Broadcast recursively to opener + all nested frames (IQC lives in GAS inner iframe)
+      function broadcast(win, depth) {
+        if (depth > 4) return;
+        try { win.postMessage(payload, '*'); } catch(e) {}
+        try {
+          for (var i = 0; i < win.frames.length; i++) {
+            broadcast(win.frames[i], depth + 1);
+          }
+        } catch(e) {}
+      }
+      broadcast(window.opener, 0);
+      status('Sent! You can close this tab.');
+      setTimeout(function() { window.close(); }, 1500);
+    } else {
+      status('No IQC tab found. Please reopen recorder from the IQC form.');
+      $('useBtn').disabled = $('retakeBtn').disabled = false;
+    }
+  };
+  reader.readAsDataURL(recordedBlob);
+}
+
+function retake() {
+  recordedBlob = null; chunks = []; seconds = 0;
+  $('viewfinder').src = '';
+  $('viewfinder').controls = false;
+  $('viewfinder').muted = true;
+  $('viewfinder').srcObject = stream;
+  $('useBtn').style.display = $('retakeBtn').style.display = 'none';
+  $('startBtn').style.display = 'flex';
+  $('timer').textContent = '0:00';
+  status('Camera ready — tap Start to record');
+}
+
+window.addEventListener('beforeunload', function() {
+  if (stream) stream.getTracks().forEach(function(t) { t.stop(); });
+});
+</script>
+</body>
+</html>

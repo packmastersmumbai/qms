@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
+<script>
+var KEY = 'QMS_VIDEO_PENDING';
+
+function flush() {
+  var raw = localStorage.getItem(KEY);
+  if (!raw) return;
+  try {
+    var payload = JSON.parse(raw);
+    localStorage.removeItem(KEY);
+    window.parent.postMessage(payload, '*');
+  } catch(e) {}
+}
+
+// Poll every 500ms — storage event is unreliable across tabs on mobile
+setInterval(flush, 500);
+</script>
+</body>
+</html>
