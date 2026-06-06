@@ -50,9 +50,7 @@
   ></iframe>
   <script>
     var base = "https://script.google.com/macros/s/AKfycbxMFpeJOqF5_iARRCo7aHLg0Pw_XlqKdAzmDVck8DUdDfgr1nIIjbvTgrlyc0XtYRuaVQ/exec";
-    var q = window.location.search;
-    document.getElementById('app').src = base + (q || '');
-
+    document.getElementById('app').src = base + (window.location.search || '');
     var app = document.getElementById('app');
     var loader = document.getElementById('loader');
     app.addEventListener('load', function() {
@@ -60,6 +58,7 @@
       loader.style.opacity = '0';
       setTimeout(function(){ loader.style.display = 'none'; }, 300);
     });
+    // Fallback: hide loader after 12s if iframe load event doesn't fire
     setTimeout(function() {
       app.classList.add('ready');
       loader.style.display = 'none';
