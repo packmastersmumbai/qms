@@ -142,7 +142,8 @@ function esc(s) {
 
 function openForm(idx) {
   SELECTED = ITEMS[idx];
-  var isFG = SELECTED.source === 'CUSTOMER_RETURN' ||
+  var isFG = SELECTED.materialType === 'FG' ||
+             SELECTED.source === 'CUSTOMER_RETURN' ||
              (SELECTED.source === 'NCR' && SELECTED.sourceRef.indexOf('rework-FG') >= 0);
   document.getElementById('formSummary').innerHTML =
     '<b>' + esc(SELECTED.reworkId) + '</b> &nbsp;|&nbsp; ' +
@@ -177,7 +178,8 @@ function updateQtyScrapped() {
 
 function submitCompletion() {
   if (!SELECTED) return;
-  var isFG = SELECTED.source === 'CUSTOMER_RETURN' ||
+  var isFG = SELECTED.materialType === 'FG' ||
+             SELECTED.source === 'CUSTOMER_RETURN' ||
              (SELECTED.source === 'NCR' && SELECTED.sourceRef.indexOf('rework-FG') >= 0);
   var qtyReworked = parseFloat(document.getElementById('qtyReworked').value) || 0;
   var qtyScrapped = parseFloat(document.getElementById('qtyScrapped').value) || 0;

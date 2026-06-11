@@ -25,5 +25,6 @@ Thumbs.db
 client_secret*.json
 creds.json
 docs/
+_unused/
 landing-post-deploy.yml
 node_modules/

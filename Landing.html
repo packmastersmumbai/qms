@@ -320,7 +320,7 @@
       text-align: left;
       cursor: pointer;
       transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
-      overflow: hidden;
+      overflow: visible;
     }
     .pm-tile:hover {
       border-color: var(--pm-navy);
@@ -388,7 +388,7 @@
     .pm-tile-add {
       position: absolute; top: 6px; right: 6px;
       width: 20px; height: 20px;
-      display: none; align-items: center; justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       background: var(--pm-sky);
       color: #fff;
       border: 0; border-radius: 5px;
@@ -397,10 +397,6 @@
       transition: background .12s ease;
     }
     .pm-tile-add:hover { background: var(--pm-navy-2); }
-    .pm-tile:hover .pm-tile-add { display: flex; }
-    @media (hover: none) {
-      .pm-tile-add { display: flex; }   /* always-visible on touch */
-    }
 
     /* Tile statuses */
     .pm-tile.has-pending { border-left: 3px solid var(--pm-hold); }
@@ -1085,9 +1081,6 @@
     <button class="pm-menu-item" onclick="navigateTo('OQC')">
       <span class="pm-menu-item-icon"><svg><use href="#i-shield-check"/></svg></span>Outgoing QC
     </button>
-    <button class="pm-menu-item" onclick="navigateTo('Gatepass')">
-      <span class="pm-menu-item-icon"><svg><use href="#i-qr"/></svg></span>Gatepass
-    </button>
     <button class="pm-menu-item" onclick="navigateTo('Dispatch')">
       <span class="pm-menu-item-icon"><svg><use href="#i-truck"/></svg></span>Dispatch
     </button>
@@ -1332,7 +1325,6 @@
     ]},
     { label: 'Ship', modules: [
       { name: 'OQC',        form: 'OQC',        icon: 'i-shield-check',    countKey: 'OQC' },
-      { name: 'Gatepass',   form: 'Gatepass',   icon: 'i-qr',              countKey: 'Gatepass' },
       { name: 'Dispatch',   form: 'Dispatch',   icon: 'i-truck',           countKey: 'Dispatch' }
     ]},
     { label: 'Resolve', modules: [

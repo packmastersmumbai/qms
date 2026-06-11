@@ -295,7 +295,7 @@ function disposeCustomerReturn(data) {
             writeStockLedger_('CUSTOMER_RETURN_REWORK_IN', productCode, fgBatchNo, 'REWORK-AREA',
               qty, 0, 'CUSTOMER_RETURN', ref, data.disposedBy || '', 'In rework pending re-inspection');
             _createReworkLogEntry_(ref, 'CUSTOMER_RETURN', 'CUSTOMER_RETURN', ref,
-              productCode || '', productDesc || '', fgBatchNo || '', qty, unit || '', data.disposedBy || '');
+              productCode || '', productDesc || '', fgBatchNo || '', qty, unit || '', data.disposedBy || '', 'FG');
           } catch (ledgerErr) {
             Logger.log('CustomerReturn REWORK ledger failed: ' + ledgerErr.message);
             disposeWarnings.push('Stock ledger failed — return left OPEN for retry. Admin: ' + ledgerErr.message);

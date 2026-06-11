@@ -649,6 +649,126 @@ function closeHoldIQC(data) {
   }
 }
 
+// Sends an IQC result report to the supplier by email.
+// Called from IQC_F.html after a result is saved.
+function buildIQCEmailPayload_(iqcDocNo) {
+  var ss   = getSpreadsheet();
+  var ws   = ss.getSheetByName('IQC_LOG');
+  if (!ws) throw new Error('IQC_LOG not found');
+  var rows = ws.getDataRange().getValues();
+
+  var items = [];
+  var supplierName = '', grnNo = '', dateStr = '', disp = '', videoUrl = '', imageUrls = '';
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(iqcDocNo).trim()) {
+      if (!grnNo) {
+        grnNo        = String(rows[i][2] || '');
+        supplierName = String(rows[i][3] || '');
+        dateStr      = rows[i][1] instanceof Date
+          ? Utilities.formatDate(rows[i][1], 'Asia/Kolkata', 'dd-MMM-yyyy') : String(rows[i][1] || '');
+        disp         = String(rows[i][22] || '');
+      }
+      items.push({
+        material: String(rows[i][4] || ''),
+        batch:    String(rows[i][5] || ''),
+        qty:      String(rows[i][9]  || ''),
+        unit:     String(rows[i][10] || ''),
+        result:   String(rows[i][22] || '')
+      });
+      if (!videoUrl && rows[i][30]) videoUrl = String(rows[i][30]);
+      if (!imageUrls && rows[i][36]) imageUrls = String(rows[i][36]);
+    }
+  }
+  if (!items.length) throw new Error('IQC record not found: ' + iqcDocNo);
+
+  var supplierEmail = '';
+  var grnDocImages = [], grnProductImages = [];
+  var grnWs = ss.getSheetByName('GRN_LOG');
+  if (grnWs && grnNo) {
+    var grnRows = grnWs.getDataRange().getValues();
+    for (var g = 1; g < grnRows.length; g++) {
+      if (String(grnRows[g][0]).trim() === grnNo) {
+        var suppCode = String(grnRows[g][2] || '').trim();
+        if (suppCode) {
+          var suppWs = ss.getSheetByName('MASTERS_Suppliers');
+          if (suppWs && suppWs.getLastRow() > 1) {
+            var suppData = suppWs.getDataRange().getValues();
+            for (var s = 1; s < suppData.length; s++) {
+              if (String(suppData[s][0]).trim() === suppCode) {
+                supplierEmail = String(suppData[s][8] || '').trim();
+                break;
+              }
+            }
+          }
+        }
+        grnDocImages     = String(grnRows[g][21] || '').split(',').map(function(u){ return u.trim(); }).filter(Boolean);
+        grnProductImages = String(grnRows[g][22] || '').split(',').map(function(u){ return u.trim(); }).filter(Boolean);
+        break;
+      }
+    }
+  }
+  if (!supplierEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supplierEmail)) supplierEmail = 'packmasters.mumbai@gmail.com';
+
+  var rows2 = items.map(function(it) {
+    return '<tr><td style="padding:4px 8px;border:1px solid #e2e8f0">' + esc_(it.material) + '</td>' +
+           '<td style="padding:4px 8px;border:1px solid #e2e8f0">' + esc_(it.batch) + '</td>' +
+           '<td style="padding:4px 8px;border:1px solid #e2e8f0">' + esc_(it.qty) + ' ' + esc_(it.unit) + '</td>' +
+           '<td style="padding:4px 8px;border:1px solid #e2e8f0;font-weight:600;color:' +
+             (it.result === 'ACCEPTED' ? '#15803d' : it.result === 'REJECTED' ? '#b91c1c' : '#b45309') + '">' +
+             esc_(it.result) + '</td></tr>';
+  }).join('');
+
+  function thumbHtml_(urls) {
+    return urls.map(function(u) {
+      var m = u.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      var thumb = m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w300' : u;
+      return '<a href="' + u + '" target="_blank"><img src="' + thumb + '" width="160" style="border-radius:6px;margin:4px;border:1px solid #e2e8f0;vertical-align:top" alt="photo"></a>';
+    }).join('');
+  }
+
+  var iqcImageList = imageUrls ? imageUrls.split(',').map(function(u){ return u.trim(); }).filter(Boolean) : [];
+
+  var html = '<p>Dear ' + esc_(supplierName) + ',</p>' +
+    '<p>Please find below the IQC inspection result for GRN <b>' + esc_(grnNo) + '</b> dated <b>' + esc_(dateStr) + '</b>.</p>' +
+    '<table style="border-collapse:collapse;font-family:sans-serif;font-size:13px">' +
+    '<tr style="background:#f1f5f9"><th style="padding:4px 8px;border:1px solid #e2e8f0">Material</th>' +
+    '<th style="padding:4px 8px;border:1px solid #e2e8f0">Batch</th>' +
+    '<th style="padding:4px 8px;border:1px solid #e2e8f0">Qty</th>' +
+    '<th style="padding:4px 8px;border:1px solid #e2e8f0">Result</th></tr>' +
+    rows2 + '</table>' +
+    '<p>IQC Doc No: <b>' + esc_(iqcDocNo) + '</b> &nbsp;|&nbsp; Overall: <b>' + esc_(disp) + '</b></p>' +
+    '<p><a href="https://packmastersmumbai.github.io/qms?doc=' + encodeURIComponent(iqcDocNo) + '" target="_blank" style="color:#1d4ed8">View IQC Document Online</a></p>' +
+    (iqcImageList.length ? '<p><b>IQC Photos:</b></p><p>' + thumbHtml_(iqcImageList) + '</p>' : '') +
+    (videoUrl ? '<p><b>IQC Video:</b> <a href="' + videoUrl + '" target="_blank" style="color:#1d4ed8">Watch Video</a></p>' : '') +
+    '<hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">' +
+    '<p><b>GRN Reference:</b> <a href="https://packmastersmumbai.github.io/qms?doc=' + encodeURIComponent(grnNo) + '" target="_blank" style="color:#1d4ed8">View GRN ' + esc_(grnNo) + ' Online</a></p>' +
+    (grnDocImages.length ? '<p><b>GRN Document Images:</b></p><p>' + thumbHtml_(grnDocImages) + '</p>' : '') +
+    (grnProductImages.length ? '<p><b>GRN Product Images:</b></p><p>' + thumbHtml_(grnProductImages) + '</p>' : '') +
+    '<p style="color:#64748b;font-size:11px">This is an automated report from Pack Masters QMS.</p>';
+
+  return { to: supplierEmail, subject: 'IQC Report — GRN ' + grnNo + ' [' + iqcDocNo + ']', html: html };
+}
+
+function previewIQCReport(iqcDocNo) {
+  try {
+    return { ok: true, payload: buildIQCEmailPayload_(iqcDocNo) };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+function sendIQCReport(iqcDocNo) {
+  try {
+    var p = buildIQCEmailPayload_(iqcDocNo);
+    GmailApp.sendEmail(p.to, p.subject, '', { htmlBody: p.html });
+    return { ok: true, email: p.to };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+function esc_(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 // Returns all GRN_LOG line items for a given GRN doc number
 // Used by IQC_F.html to build matrix columns after GRN selection
 function getGRNItems(grnNo) {

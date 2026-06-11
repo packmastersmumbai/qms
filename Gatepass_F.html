@@ -482,6 +482,21 @@ function onOqcRefsLoaded(refs) {
     if (opt && opt.dataset.unit) document.getElementById('fifoUnit').textContent = opt.dataset.unit || 'pcs';
     refreshSaveBtn();
   });
+  // Prefill from Records "Create Gatepass" routing — match against OQC ref options.
+  try {
+    var prefRef = sessionStorage.getItem('pmPrefillRef');
+    if (prefRef) {
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === prefRef) {
+          sel.selectedIndex = i;
+          var ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false);
+          sel.dispatchEvent(ev);
+          break;
+        }
+      }
+      sessionStorage.removeItem('pmPrefillRef');
+    }
+  } catch(e) {}
   refreshSaveBtn();
 }
 

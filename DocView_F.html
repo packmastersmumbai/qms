@@ -276,6 +276,12 @@
 var DOC_TYPE = '<?= type ?>';
 var DOC_NO   = '<?= docNo ?>';
 
+// Deep-link: derive type from doc number when not injected (e.g. PM/IQC/2026-189 → IQC)
+if (!DOC_TYPE && DOC_NO) {
+  var _parts = DOC_NO.split('/');
+  if (_parts.length >= 2) DOC_TYPE = _parts[_parts.length - 2];
+}
+
 var currentRecord  = null;
 var fieldsMeta     = null;
 var isEditMode     = false;
@@ -401,6 +407,7 @@ function _dvAlts(type, status) {
   else if (t === 'IQC')   {
     if (s !== 'REJECTED' && s !== 'FAIL') opts.push({ label: 'Raise NCR', form: 'NCR' });
     opts.push({ label: '🖨 Print Record', form: '__PRINT_IQC__' });
+    opts.push({ label: '✉ Send to Supplier', form: '__EMAIL_IQC__' });
   }
   else if (t === 'IPQC')  { opts.push({ label: 'Raise NCR', form: 'NCR' }); }
   else if (t === 'PRODUCTION') { opts.push({ label: 'View Pick List', form: 'Production' }); opts.push({ label: 'Raise NCR', form: 'NCR' }); }
@@ -420,6 +427,7 @@ window.dvRunNext = function(form) {
 };
 window.dvAlt = function(form) {
   if (form === '__PRINT_IQC__') { dvPrintIQC(); return; }
+  if (form === '__EMAIL_IQC__') { dvEmailIQC(); return; }
   try {
     sessionStorage.setItem('pmPrefillRef', DOC_NO);
     sessionStorage.setItem('pmAutoOpenDoc', DOC_NO);
@@ -438,6 +446,42 @@ window.dvPrintIQC = function() {
       alert('Print failed: ' + (e && e.message ? e.message : e));
     })
     .getIQCPrintHtml(DOC_NO);
+};
+window.dvEmailIQC = function() {
+  var modal = document.getElementById('emailPreviewModal');
+  var body  = document.getElementById('emailPreviewBody');
+  var meta  = document.getElementById('emailPreviewMeta');
+  body.innerHTML = '<p style="color:#64748b">Loading preview…</p>';
+  meta.textContent = '';
+  modal.style.display = 'flex';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.ok) {
+        body.innerHTML = '<p style="color:#b91c1c">' + ((res && res.error) || 'Could not load preview.') + '</p>';
+        return;
+      }
+      meta.textContent = 'To: ' + res.payload.to + '   |   Subject: ' + res.payload.subject;
+      body.innerHTML = res.payload.html;
+    })
+    .withFailureHandler(function(e) {
+      body.innerHTML = '<p style="color:#b91c1c">Preview failed: ' + (e && e.message ? e.message : String(e)) + '</p>';
+    })
+    .previewIQCReport(DOC_NO);
+};
+window.dvEmailIQCSend = function() {
+  document.getElementById('emailPreviewModal').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.ok) {
+        alert('✓ Report sent to ' + res.email);
+      } else {
+        alert((res && res.error) || 'Could not send email. Please try again.');
+      }
+    })
+    .withFailureHandler(function(e) {
+      alert('Could not send email: ' + (e && e.message ? e.message : String(e)));
+    })
+    .sendIQCReport(DOC_NO);
 };
 window.dvTrace = function() {
   try { sessionStorage.setItem('pmTraceRef', DOC_NO); } catch(e){}
@@ -853,5 +897,21 @@ function showError(msg) {
     '<div style="padding:30px;text-align:center;color:var(--danger);">' + escHtml(msg) + '</div>';
 }
 </script>
+
+<!-- Email Preview Modal -->
+<div id="emailPreviewModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.5);align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;">
+  <div style="background:#fff;border-radius:12px;width:100%;max-width:600px;margin:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);overflow:hidden;">
+    <div style="background:#1e3a5f;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-weight:600;font-size:15px;">Email Preview</span>
+      <button onclick="document.getElementById('emailPreviewModal').style.display='none'" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <div id="emailPreviewMeta" style="padding:10px 16px;background:#f8fafc;font-size:12px;color:#475569;border-bottom:1px solid #e2e8f0;white-space:pre-wrap;"></div>
+    <div id="emailPreviewBody" style="padding:16px;font-family:sans-serif;font-size:13px;line-height:1.6;max-height:60vh;overflow-y:auto;"></div>
+    <div style="padding:12px 16px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="document.getElementById('emailPreviewModal').style.display='none'" style="padding:8px 18px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;">Cancel</button>
+      <button onclick="dvEmailIQCSend()" style="padding:8px 18px;border:none;border-radius:8px;background:#1e3a5f;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✉ Send</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

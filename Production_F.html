@@ -246,7 +246,30 @@
                 <tbody id="fgPlanBody"></tbody>
               </table>
             </div>
-            <button class="prd-save" id="btnIssueFG" onclick="issueFgPlan()" style="margin-top:10px;">Issue Production Job</button>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+              <button class="prd-save" id="btnPickList" onclick="showPickList()" style="background:#0d9488;flex:1;min-width:150px;">Show Pick List (FIFO)</button>
+              <button class="prd-save" id="btnIssueFG" onclick="issueFgPlan()" style="flex:1;min-width:150px;">Issue Production Job</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Pick List Modal ── -->
+      <div id="pickListModal" style="display:none;position:fixed;inset:0;background:rgba(11,42,74,0.6);z-index:9999;overflow-y:auto;padding:20px;box-sizing:border-box;">
+        <div style="background:#fff;border-radius:10px;max-width:840px;margin:0 auto;padding:18px 20px;box-shadow:0 8px 28px rgba(0,0,0,0.25);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;">FIFO Pick List</div>
+              <div id="pickListTitle" style="font-size:15px;font-weight:700;color:#0B2A4A;"></div>
+            </div>
+            <button onclick="document.getElementById('pickListModal').style.display='none';"
+                    style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;padding:0 4px;">&times;</button>
+          </div>
+          <div id="pickListBody" style="font-size:12px;"></div>
+          <div style="display:flex;gap:8px;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:10px;flex-wrap:wrap;">
+            <button onclick="printPickList()" style="flex:1;min-width:120px;padding:9px;background:#0B2A4A;color:#fff;border:0;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨 Print Final List</button>
+            <button onclick="sharePickList()" style="flex:1;min-width:120px;padding:9px;background:#16a34a;color:#fff;border:0;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">📤 Share (WhatsApp)</button>
+            <button onclick="document.getElementById('pickListModal').style.display='none';" style="padding:9px 14px;background:#fff;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Close</button>
           </div>
         </div>
       </div>
@@ -764,6 +787,195 @@
         '</body></html>';
       w.document.write(html);
       w.document.close();
+    }
+
+    // ── Pick-List preview (FIFO + locations + checkboxes) ─────────
+    var PICK_LIST = null;
+
+    function showPickList() {
+      var fgCode = document.getElementById('fgItem').value;
+      var fgQty  = Number(document.getElementById('fgQty').value) || 0;
+      if (!fgCode) { showToast('Pick an FG first.', 'error'); return; }
+      if (fgQty <= 0) { showToast('Enter FG qty > 0.', 'error'); return; }
+      var btn = document.getElementById('btnPickList');
+      btn.disabled = true; btn.textContent = 'Computing FIFO…';
+      google.script.run
+        .withSuccessHandler(function(data){
+          btn.disabled = false; btn.textContent = 'Show Pick List (FIFO)';
+          if (!data || !data.success) {
+            showToast((data && data.error) || 'Pick list failed.', 'error');
+            return;
+          }
+          PICK_LIST = data;
+          renderPickListModal(data);
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false; btn.textContent = 'Show Pick List (FIFO)';
+          showToast('Pick list error: ' + (e.message || e), 'error');
+        })
+        .previewProductionPickList(fgCode, fgQty);
+    }
+
+    function renderPickListModal(d) {
+      document.getElementById('pickListTitle').textContent =
+        d.fgCode + ' — ' + (d.fgDesc || '') + ' × ' + d.fgQty + ' ' + (d.fgUom || '');
+      var html = '';
+      html += '<div style="background:#f7faff;border:1px solid #cfdcef;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#0B2A4A;">' +
+        'Tick each row as you pick from the rack. FIFO order — oldest lot first. ' +
+        'Issued qty rounds up to whole supplier packs.' +
+        '</div>';
+      d.components.forEach(function(c, idx){
+        html += '<div style="border:1px solid #e2e8f0;border-radius:6px;margin-bottom:10px;overflow:hidden;">' +
+          '<div style="background:#0B2A4A;color:#fff;padding:6px 10px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;">' +
+            '<span>' + (idx+1) + '. ' + escapeHtml(c.compCode) + ' — ' + escapeHtml(c.compDesc) + '</span>' +
+            '<span style="font-size:10px;font-weight:600;background:#1a3a6a;padding:2px 6px;border-radius:3px;">' + escapeHtml(c.type || '') + '</span>' +
+          '</div>' +
+          '<div style="padding:8px 10px;font-size:11px;background:#fafbfc;border-bottom:1px solid #eef0f3;color:#334155;">' +
+            'Required: <b>' + Number(c.required).toFixed(3) + ' ' + escapeHtml(c.compUom) + '</b>' +
+            ' &nbsp;|&nbsp; Issue qty: <b style="color:#0B2A4A;">' + Number(c.issueQty).toFixed(3) + ' ' + escapeHtml(c.compUom) + '</b>' +
+            (c.masterP > 0 ? ' (' + c.packsToIssue + ' × ' + c.masterP + ' ' + escapeHtml(c.compUom) + ')' : '') +
+          '</div>';
+        if (c.error) {
+          html += '<div style="padding:10px;color:#b91c1c;font-size:12px;background:#fef2f2;">⚠ ' + escapeHtml(c.error) + '</div>';
+        } else if (!c.lots || c.lots.length === 0) {
+          html += '<div style="padding:10px;color:#64748b;font-size:12px;">No lots to pick.</div>';
+        } else {
+          html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">' +
+            '<thead style="background:#f0f4f8;color:#0B2A4A;">' +
+              '<tr>' +
+                '<th style="padding:5px 6px;text-align:left;width:34px;">Pick</th>' +
+                '<th style="padding:5px 6px;text-align:left;">Batch/Lot</th>' +
+                '<th style="padding:5px 6px;text-align:left;">Location</th>' +
+                '<th style="padding:5px 6px;text-align:left;">GRN</th>' +
+                '<th style="padding:5px 6px;text-align:right;">Qty</th>' +
+              '</tr>' +
+            '</thead><tbody>';
+          c.lots.forEach(function(lot, li){
+            var rowId = 'pl_' + idx + '_' + li;
+            html += '<tr style="border-top:1px solid #f0f0f0;">' +
+              '<td style="padding:4px 6px;text-align:center;"><input type="checkbox" id="' + rowId + '" class="pl-chk" data-c="' + idx + '" data-l="' + li + '" style="width:18px;height:18px;cursor:pointer;"></td>' +
+              '<td style="padding:4px 6px;font-weight:600;color:#0B2A4A;">' + escapeHtml(lot.batch || '—') + '</td>' +
+              '<td style="padding:4px 6px;"><span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-weight:600;">' + escapeHtml(lot.location || '—') + '</span></td>' +
+              '<td style="padding:4px 6px;color:#64748b;">' + escapeHtml(lot.grnNo || '—') + '</td>' +
+              '<td style="padding:4px 6px;text-align:right;font-weight:600;">' + Number(lot.qty).toFixed(3) + ' ' + escapeHtml(c.compUom) + '</td>' +
+            '</tr>';
+          });
+          html += '</tbody></table>';
+        }
+        html += '</div>';
+      });
+      document.getElementById('pickListBody').innerHTML = html;
+      document.getElementById('pickListModal').style.display = 'block';
+    }
+
+    // Build a plain-text version of the picked rows for printing / sharing.
+    // If no checkbox is ticked yet, treat the FULL pick list as the slip.
+    function _pickListAsText() {
+      if (!PICK_LIST) return '';
+      var ticked = Array.prototype.slice.call(document.querySelectorAll('.pl-chk:checked'));
+      var useAll = ticked.length === 0;
+      var lines = [];
+      lines.push('PRODUCTION PICK LIST');
+      lines.push(PICK_LIST.fgCode + ' — ' + (PICK_LIST.fgDesc || ''));
+      lines.push('Qty: ' + PICK_LIST.fgQty + ' ' + (PICK_LIST.fgUom || ''));
+      lines.push('Generated: ' + PICK_LIST.timestamp);
+      lines.push('');
+      PICK_LIST.components.forEach(function(c, idx){
+        var rows = (c.lots || []).filter(function(_, li){
+          if (useAll) return true;
+          return document.getElementById('pl_' + idx + '_' + li) && document.getElementById('pl_' + idx + '_' + li).checked;
+        });
+        if (rows.length === 0) return;
+        lines.push('— ' + (idx+1) + '. ' + c.compCode + ' (' + c.compDesc + ')');
+        rows.forEach(function(lot){
+          lines.push('   • ' + (lot.batch || '—') + ' @ ' + (lot.location || '—') +
+                     ' | GRN ' + (lot.grnNo || '—') +
+                     ' | ' + Number(lot.qty).toFixed(3) + ' ' + c.compUom);
+        });
+      });
+      return lines.join('\n');
+    }
+
+    function printPickList() {
+      if (!PICK_LIST) return;
+      var ticked = Array.prototype.slice.call(document.querySelectorAll('.pl-chk:checked'));
+      var useAll = ticked.length === 0;
+      var w = window.open('', '_blank', 'width=820,height=900');
+      if (!w) { showToast('Pop-up blocked. Allow pop-ups to print.', 'error'); return; }
+      var html = '<!doctype html><html><head><title>Pick List ' + escapeHtml(PICK_LIST.fgCode) + '</title>' +
+        '<style>body{font-family:Arial,sans-serif;padding:18px;color:#222;}' +
+        'h1{font-size:17px;margin:0 0 4px;}h2{font-size:12px;margin:14px 0 6px;color:#0B2A4A;border-bottom:1px solid #ccc;padding-bottom:3px;}' +
+        '.meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:11px;border:1px solid #ccc;padding:8px;border-radius:4px;margin-bottom:12px;}' +
+        'table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px;}' +
+        'th,td{border:1px solid #999;padding:4px 6px;}' +
+        'th{background:#0B2A4A;color:#fff;text-align:left;}' +
+        '.chkcol{width:32px;text-align:center;}' +
+        '.tick{display:inline-block;width:14px;height:14px;border:1.5px solid #0B2A4A;border-radius:2px;background:#0B2A4A;color:#fff;font-size:11px;line-height:14px;text-align:center;}' +
+        '.empty{display:inline-block;width:14px;height:14px;border:1.5px solid #999;border-radius:2px;}' +
+        '.sig{margin-top:22px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;font-size:11px;}' +
+        '.sig div{border-top:1px solid #333;padding-top:4px;text-align:center;}' +
+        '@media print{button{display:none;}}</style></head><body>' +
+        '<h1>PRODUCTION PICK LIST' + (useAll ? '' : ' (PICKED ITEMS)') + '</h1>' +
+        '<div style="font-size:11px;color:#666;margin-bottom:8px;">' + escapeHtml(PICK_LIST.timestamp) + '</div>' +
+        '<div class="meta">' +
+          '<div><b>FG Code:</b> ' + escapeHtml(PICK_LIST.fgCode) + '</div>' +
+          '<div><b>FG Qty:</b> ' + PICK_LIST.fgQty + ' ' + escapeHtml(PICK_LIST.fgUom || '') + '</div>' +
+          '<div style="grid-column:1/3;"><b>FG Description:</b> ' + escapeHtml(PICK_LIST.fgDesc || '') + '</div>' +
+        '</div>';
+      PICK_LIST.components.forEach(function(c, idx){
+        var rows = (c.lots || []).filter(function(_, li){
+          if (useAll) return true;
+          return document.getElementById('pl_' + idx + '_' + li) && document.getElementById('pl_' + idx + '_' + li).checked;
+        });
+        if (rows.length === 0 && !useAll) return;
+        html += '<h2>' + (idx+1) + '. ' + escapeHtml(c.compCode) + ' — ' + escapeHtml(c.compDesc) +
+                ' <span style="font-weight:400;color:#666;">(Issue ' + Number(c.issueQty).toFixed(3) + ' ' + escapeHtml(c.compUom) + ')</span></h2>';
+        if (rows.length === 0) { html += '<div style="color:#999;font-size:11px;">No lots.</div>'; return; }
+        html += '<table><thead><tr><th class="chkcol">✓</th><th>Batch/Lot</th><th>Location</th><th>GRN</th><th style="text-align:right;">Qty</th></tr></thead><tbody>';
+        rows.forEach(function(lot, li){
+          var picked = !useAll || (document.getElementById('pl_' + idx + '_' + li) && document.getElementById('pl_' + idx + '_' + li).checked);
+          html += '<tr>' +
+            '<td class="chkcol"><span class="' + (picked && !useAll ? 'tick">✓' : 'empty">&nbsp;') + '</span></td>' +
+            '<td><b>' + escapeHtml(lot.batch || '—') + '</b></td>' +
+            '<td>' + escapeHtml(lot.location || '—') + '</td>' +
+            '<td>' + escapeHtml(lot.grnNo || '—') + '</td>' +
+            '<td style="text-align:right;">' + Number(lot.qty).toFixed(3) + ' ' + escapeHtml(c.compUom) + '</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table>';
+      });
+      html += '<div class="sig"><div>Picked By (Stores)</div><div>Verified By</div><div>Received By (Production)</div></div>' +
+        '<div style="margin-top:14px;text-align:right;"><button onclick="window.print()" style="padding:8px 16px;font-size:13px;background:#0B2A4A;color:#fff;border:none;border-radius:4px;cursor:pointer;">🖨 Print</button></div>' +
+        '</body></html>';
+      w.document.write(html);
+      w.document.close();
+    }
+
+    function sharePickList() {
+      if (!PICK_LIST) return;
+      var text = _pickListAsText();
+      // Try Web Share API first (mobile WhatsApp/etc.)
+      if (navigator.share) {
+        navigator.share({ title: 'Pick List ' + PICK_LIST.fgCode, text: text }).catch(function(){
+          // User cancelled or share failed — fall through to clipboard
+          _copyAndOpenWhatsApp(text);
+        });
+      } else {
+        _copyAndOpenWhatsApp(text);
+      }
+    }
+
+    function _copyAndOpenWhatsApp(text) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      } catch(e) {}
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      showToast('Copied. Paste into chat if needed.', 'success');
     }
 
     function issueFgPlan() {

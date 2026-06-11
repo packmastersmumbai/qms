@@ -120,6 +120,34 @@
     .dsp-pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
     .dsp-pill.over { background: var(--amber); color: var(--navy); }
 
+    /* Multi-item section */
+    .dsp-items-section { margin-bottom: 14px; }
+    .dsp-items-label { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+    .dsp-item-block {
+      border: 1.5px solid #e2e8f0; border-radius: 10px;
+      padding: 12px; margin-bottom: 10px;
+      background: #fafbff;
+    }
+    .dsp-item-block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .dsp-item-block-num { font-size: 12px; font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 2px 8px; border-radius: 8px; }
+    .dsp-item-remove { background: none; border: none; cursor: pointer; color: #b32a2a; font-size: 18px; line-height: 1; padding: 0 4px; }
+    .dsp-add-item-btn { background: none; border: 1.5px dashed #0ea5e9; color: #0369a1; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 4px; }
+    .dsp-add-item-btn:hover { background: #e0f2fe; }
+
+    /* Success card */
+    .dsp-success-card {
+      background: var(--white); border: 1px solid #bbf7d0; border-radius: 12px;
+      padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    .dsp-success-icon { font-size: 48px; margin-bottom: 8px; color: #16a34a; }
+    .dsp-success-title { font-size: 16px; font-weight: 700; color: #15803d; margin-bottom: 4px; }
+    .dsp-success-doc { font-size: 13px; color: #374151; margin-bottom: 14px; }
+    .dsp-success-doc strong { color: var(--navy); }
+    .dsp-success-lots { text-align: left; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+    .dsp-success-item-head { background: #f0f3f8; padding: 6px 10px; font-size: 12px; font-weight: 700; color: var(--navy); }
+    .dsp-success-lot-row { padding: 5px 10px; font-size: 12px; color: #374151; border-top: 1px solid #f1f5f9; }
+
     .dsp-toast {
       position: fixed; bottom: 88px; left: 50%; z-index: 10000;
       transform: translateX(-50%) translateY(100px);
@@ -140,7 +168,7 @@
         <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
       </button>
       <span class="page-title">New Dispatch</span>
-      <span class="doc-badge" id="docNoPreview">DISP</span>
+      <span class="doc-badge" id="docNoPreview">DSP-</span>
     </div>
 
     <div class="dsp-tabs">
@@ -151,10 +179,11 @@
     <div class="dsp-body">
 
       <div id="paneNew">
-        <div class="dsp-form">
+        <div id="successPane" style="display:none;"></div>
+        <div id="formPane" class="dsp-form">
           <div class="dsp-grid3">
             <div class="dsp-field">
-              <label>Gatepass No (preview)</label>
+              <label>DSP No (preview)</label>
               <input id="fDocNo" disabled />
             </div>
             <div class="dsp-field">
@@ -167,47 +196,20 @@
             </div>
           </div>
 
-          <div class="dsp-grid2">
-            <div class="dsp-field">
-              <label>Customer</label>
-              <select id="fCustomer"><option value="">— select customer —</option></select>
-            </div>
-            <div class="dsp-field">
-              <label>Product (FG)</label>
-              <select id="fProduct"><option value="">— select product —</option></select>
-            </div>
+          <div class="dsp-field">
+            <label>Customer</label>
+            <select id="fCustomer"><option value="">— select customer —</option></select>
           </div>
 
-          <div class="dsp-grid3">
-            <div class="dsp-field">
-              <label>Qty Requested</label>
-              <input type="number" id="fQty" min="0" step="any" placeholder="0" />
-            </div>
-            <div class="dsp-field">
-              <label>Unit</label>
-              <input id="fUnit" disabled />
-            </div>
-            <div class="dsp-field">
-              <label>&nbsp;</label>
-              <button class="dsp-button" id="btnPreview" onclick="onPreview()" style="margin-top:0;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;">
-                <span class="material-symbols-outlined" style="font-size:18px;">search</span>
-                Plan FIFO Allocation
-              </button>
-            </div>
-          </div>
+          <hr style="margin:10px 0 14px;border:0;border-top:1px solid #e0e0e0;">
 
-          <div id="planArea" style="display:none;">
-            <div id="planCards" class="dsp-plan-cards"></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f8fafc;border-radius:8px;margin-top:10px;font-size:13px;font-weight:700;color:#1e3a5f;">
-              <span>Total chosen:</span>
-              <span id="planTotal">0</span>
+          <!-- Multi-item section -->
+          <div class="dsp-items-section">
+            <div class="dsp-items-label">
+              <span>Items</span>
             </div>
-            <div id="planBanner" class="dsp-banner info" style="display:none;"></div>
-          </div>
-
-          <div class="dsp-field" id="overrideReasonField" style="display:none;margin-top:10px;">
-            <label>Override Reason (required, ≥ 5 chars)</label>
-            <textarea id="fOverrideReason" placeholder="Why deviate from FIFO order?"></textarea>
+            <div id="itemsContainer"></div>
+            <button class="dsp-add-item-btn" onclick="addItem()">+ Add Item</button>
           </div>
 
           <hr style="margin:14px 0;border:0;border-top:1px solid #e0e0e0;">
@@ -222,9 +224,12 @@
             <input id="fDriver" placeholder="Driver name" />
           </div>
 
-          <!-- Removed: Transporter, Security Guard (fix #91) -->
           <input type="hidden" id="fTransporter" value="" />
-          <input type="hidden" id="fGuard" value="" />
+
+          <div class="dsp-field">
+            <label>Security Guard</label>
+            <input id="fGuard" placeholder="Guard name" />
+          </div>
 
           <div class="dsp-field">
             <label>Authorized By</label>
@@ -251,7 +256,7 @@
   <div id="dispStickyFooter" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:1px solid #e2e8f0;box-shadow:0 -4px 12px rgba(0,0,0,0.05);padding:12px 16px;z-index:50;">
     <button class="dsp-button" id="btnConfirm" onclick="onConfirm()" disabled
       style="background:#1e3a5f;color:#fff;height:56px;border-radius:10px;font-size:15px;margin-top:0;">
-      Create Gatepass
+      Save Dispatch + Gatepass
     </button>
   </div>
 
@@ -259,10 +264,12 @@
 
   <script>
     var INIT = null;
-    var CURRENT_FIFO_PLAN = null;   // server-returned FIFO plan
-    var CHOSEN_PLAN = [];           // user-edited copy
-    var SKIPPED = {};               // lotId -> true
 
+    // Per-item state: array indexed by item slot index.
+    // Each entry: { fifoPlan, chosenPlan, skipped }
+    var ITEM_STATE = [];
+
+    // ----- Utilities -----
     function showToast(msg, kind) {
       var t = document.getElementById('toast');
       t.textContent = msg;
@@ -285,12 +292,13 @@
       if (name === 'recent') reloadRecent();
     }
 
+    // ----- Init -----
     function loadInit() {
       google.script.run
         .withSuccessHandler(function(d){
           INIT = d || {};
           document.getElementById('fDocNo').value = INIT.docNumber || '';
-          document.getElementById('docNoPreview').textContent = INIT.docNumber || '—';
+          document.getElementById('docNoPreview').textContent = INIT.docNumber || 'DSP-';
           document.getElementById('fDate').value  = INIT.today || '';
 
           var cust = document.getElementById('fCustomer');
@@ -300,101 +308,242 @@
                      escapeHtml((c.code || '') + ' — ' + (c.name || '')) + '</option>';
             }).join('');
 
-          var prod = document.getElementById('fProduct');
-          prod.innerHTML = '<option value="">— select product —</option>' +
-            (INIT.products || []).map(function(p){
-              return '<option value="' + escapeHtml(p.code) + '" data-unit="' + escapeHtml(p.unit || '') +
-                     '" data-desc="' + escapeHtml(p.desc || '') + '">' +
-                     escapeHtml((p.code || '') + ' — ' + (p.desc || '')) + '</option>';
-            }).join('');
-
           var auth = document.getElementById('fAuthorizedBy');
           auth.innerHTML = '<option value="">— select —</option>' +
-            (INIT.inspectors || []).map(function(i){
-              var n = i.name || i;
+            (INIT.inspectors || []).map(function(insp){
+              var n = insp.name || insp;
               return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>';
             }).join('');
+
+          // Rebuild items container with fresh product options
+          rebuildItemProductSelects();
+
+          // Prefill routing
+          try {
+            var prefRef = sessionStorage.getItem('pmPrefillRef');
+            if (prefRef) {
+              var matched = false;
+              for (var j = 0; j < cust.options.length; j++) {
+                if (cust.options[j].value === prefRef) { cust.selectedIndex = j; matched = true; break; }
+              }
+              if (!matched && ITEM_STATE.length > 0) {
+                var prodSel0 = document.getElementById('iProd-0');
+                if (prodSel0) {
+                  for (var k = 0; k < prodSel0.options.length; k++) {
+                    if (prodSel0.options[k].value === prefRef) { prodSel0.selectedIndex = k; onItemProductChange(0); break; }
+                  }
+                }
+              }
+              sessionStorage.removeItem('pmPrefillRef');
+            }
+          } catch(e) {}
         })
         .withFailureHandler(function(e){ showToast('Init failed: ' + (e.message || e), 'error'); })
         .getDispatchFormInit();
     }
 
-    function onProductChange() {
-      var sel = document.getElementById('fProduct');
-      var opt = sel.options[sel.selectedIndex];
-      document.getElementById('fUnit').value = (opt && opt.dataset.unit) || '';
-      clearPlan();
+    // kgPerCons map: productCode → kg total from BOM
+    var KG_PER_CONS = {};
+
+    function buildProductOptions() {
+      KG_PER_CONS = {};
+      return '<option value="">— select product —</option>' +
+        ((INIT && INIT.products) || []).map(function(p){
+          KG_PER_CONS[p.code] = p.kgPerCons || 0;
+          return '<option value="' + escapeHtml(p.code) + '" data-unit="' + escapeHtml(p.unit || '') +
+                 '" data-desc="' + escapeHtml(p.desc || '') +
+                 '" data-kgpercons="' + Number(p.kgPerCons || 0) + '">' +
+                 escapeHtml((p.code || '') + ' — ' + (p.desc || '')) + '</option>';
+        }).join('');
     }
 
-    function clearPlan() {
-      CURRENT_FIFO_PLAN = null;
-      CHOSEN_PLAN = [];
-      SKIPPED = {};
-      document.getElementById('planArea').style.display = 'none';
-      var pc = document.getElementById('planCards');
-      if (pc) pc.innerHTML = '';
-      document.getElementById('planTotal').textContent = '0';
-      document.getElementById('overrideReasonField').style.display = 'none';
-      document.getElementById('btnConfirm').disabled = true;
-      var banner = document.getElementById('planBanner');
-      banner.style.display = 'none';
-      banner.className = 'dsp-banner info';
-      banner.textContent = '';
+    function rebuildItemProductSelects() {
+      var container = document.getElementById('itemsContainer');
+      var blocks = container.querySelectorAll('.dsp-item-block');
+      for (var b = 0; b < blocks.length; b++) {
+        var idx = parseInt(blocks[b].getAttribute('data-item'), 10);
+        var sel = document.getElementById('iProd-' + idx);
+        if (sel) {
+          var cur = sel.value;
+          sel.innerHTML = buildProductOptions();
+          sel.value = cur;
+        }
+      }
     }
 
-    function onPreview() {
-      var custSel = document.getElementById('fCustomer');
-      var prodSel = document.getElementById('fProduct');
-      var cust = custSel.value;
-      var prod = prodSel.value;
-      var qty  = Number(document.getElementById('fQty').value);
-      if (!cust) { showToast('Pick a customer', 'error'); return; }
-      if (!prod) { showToast('Pick a product', 'error'); return; }
-      if (!qty || qty <= 0) { showToast('Qty must be > 0', 'error'); return; }
+    // ----- Multi-item management -----
+    var _itemCounter = 0;
 
-      var btn = document.getElementById('btnPreview');
+    function addItem() {
+      var idx = _itemCounter++;
+      ITEM_STATE[idx] = { fifoPlan: null, chosenPlan: [], skipped: {}, kgPerCons: 0 };
+
+      var container = document.getElementById('itemsContainer');
+      var div = document.createElement('div');
+      div.className = 'dsp-item-block';
+      div.setAttribute('data-item', idx);
+      div.innerHTML =
+        '<div class="dsp-item-block-head">' +
+          '<span class="dsp-item-block-num">Item ' + (idx + 1) + '</span>' +
+          (idx > 0 ? '<button class="dsp-item-remove" onclick="removeItem(' + idx + ')" title="Remove item">&times;</button>' : '') +
+        '</div>' +
+        '<div class="dsp-field">' +
+          '<label>Product (FG)</label>' +
+          '<select id="iProd-' + idx + '" onchange="onItemProductChange(' + idx + ')">' + buildProductOptions() + '</select>' +
+        '</div>' +
+        '<div class="dsp-field">' +
+          '<label>Qty Requested <span style="font-weight:400;color:#64748b;font-size:12px;">(CONS)</span></label>' +
+          '<input type="number" id="iQty-' + idx + '" min="0" step="any" placeholder="0" oninput="onItemQtyInput(' + idx + ')" />' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+          '<div class="dsp-field" style="margin-bottom:0;">' +
+            '<label style="font-size:12px;color:#64748b;">Qty (KG) <span style="font-weight:400;font-size:11px;">auto</span></label>' +
+            '<input id="iQtyKg-' + idx + '" disabled style="background:#f0f9ff;color:#0369a1;font-weight:600;border-color:#bae6fd;" />' +
+          '</div>' +
+          '<div class="dsp-field" style="margin-bottom:0;">' +
+            '<label style="font-size:12px;color:#64748b;">Unit</label>' +
+            '<input id="iUnit-' + idx + '" disabled />' +
+          '</div>' +
+        '</div>' +
+        '<div id="iKgInfo-' + idx + '" style="display:none;font-size:11px;color:#64748b;margin:4px 0 10px;padding:4px 8px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;"></div>' +
+        '<button class="dsp-button" id="iBtnPlan-' + idx + '" onclick="onItemPreview(' + idx + ')" ' +
+          'style="margin-top:0;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;">' +
+          '<span class="material-symbols-outlined" style="font-size:18px;">search</span>Plan FIFO Allocation' +
+        '</button>' +
+        '<div id="iPlanArea-' + idx + '" style="display:none;margin-top:8px;">' +
+          '<div id="iPlanCards-' + idx + '" class="dsp-plan-cards"></div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8fafc;border-radius:8px;margin-top:8px;font-size:13px;font-weight:700;color:#1e3a5f;">' +
+            '<span>Total chosen:</span><span id="iPlanTotal-' + idx + '">0</span>' +
+          '</div>' +
+          '<div id="iPlanBanner-' + idx + '" class="dsp-banner info" style="display:none;"></div>' +
+        '</div>' +
+        '<div class="dsp-field" id="iOverrideField-' + idx + '" style="display:none;margin-top:8px;">' +
+          '<label>Override Reason (required, ≥ 5 chars)</label>' +
+          '<textarea id="iOverrideReason-' + idx + '" placeholder="Why deviate from FIFO order?"></textarea>' +
+        '</div>';
+      container.appendChild(div);
+      checkAllItemsReady();
+    }
+
+    function removeItem(idx) {
+      var block = document.querySelector('.dsp-item-block[data-item="' + idx + '"]');
+      if (block) block.parentNode.removeChild(block);
+      ITEM_STATE[idx] = null;
+      checkAllItemsReady();
+    }
+
+    function onItemProductChange(idx) {
+      var sel  = document.getElementById('iProd-' + idx);
+      var opt  = sel && sel.options[sel.selectedIndex];
+      var unit = document.getElementById('iUnit-' + idx);
+      if (unit) unit.value = (opt && opt.dataset.unit) || '';
+      // Store kgPerCons on the item state
+      var kpc = opt ? (parseFloat(opt.dataset.kgpercons) || 0) : 0;
+      if (ITEM_STATE[idx]) ITEM_STATE[idx].kgPerCons = kpc;
+      updateItemKgField(idx);
+      clearItemPlan(idx);
+    }
+
+    function onItemQtyInput(idx) {
+      updateItemKgField(idx);
+      if (ITEM_STATE[idx] && ITEM_STATE[idx].fifoPlan) recomputeItemPlanState(idx);
+    }
+
+    function updateItemKgField(idx) {
+      var cons = parseFloat(document.getElementById('iQty-' + idx) && document.getElementById('iQty-' + idx).value) || 0;
+      var kpc  = (ITEM_STATE[idx] && ITEM_STATE[idx].kgPerCons) || 0;
+      var kgEl = document.getElementById('iQtyKg-' + idx);
+      var info = document.getElementById('iKgInfo-' + idx);
+      if (!kgEl) return;
+      if (kpc > 0 && cons > 0) {
+        var kg = cons * kpc;
+        kgEl.value = kg % 1 === 0 ? kg : kg.toFixed(2);
+        if (info) {
+          info.style.display = '';
+          info.textContent = '1 CONS = ' + kpc.toFixed(2) + ' KG (from BOM) · ' + cons + ' CONS × ' + kpc.toFixed(2) + ' = ' + (cons * kpc).toFixed(2) + ' KG';
+        }
+      } else if (kpc === 0 && cons > 0) {
+        kgEl.value = '';
+        kgEl.placeholder = 'No BOM';
+        if (info) { info.style.display = ''; info.textContent = 'No BOM conversion found for this product — KG will not be auto-calculated.'; }
+      } else {
+        kgEl.value = '';
+        if (info) info.style.display = 'none';
+      }
+    }
+
+    function clearItemPlan(idx) {
+      if (!ITEM_STATE[idx]) return;
+      ITEM_STATE[idx].fifoPlan = null;
+      ITEM_STATE[idx].chosenPlan = [];
+      ITEM_STATE[idx].skipped = {};
+      var planArea = document.getElementById('iPlanArea-' + idx);
+      if (planArea) planArea.style.display = 'none';
+      var cards = document.getElementById('iPlanCards-' + idx);
+      if (cards) cards.innerHTML = '';
+      var total = document.getElementById('iPlanTotal-' + idx);
+      if (total) total.textContent = '0';
+      var overrideField = document.getElementById('iOverrideField-' + idx);
+      if (overrideField) overrideField.style.display = 'none';
+      var banner = document.getElementById('iPlanBanner-' + idx);
+      if (banner) { banner.style.display = 'none'; banner.textContent = ''; }
+      checkAllItemsReady();
+    }
+
+    function onItemPreview(idx) {
+      var cust = document.getElementById('fCustomer').value;
+      var prod = document.getElementById('iProd-' + idx);
+      var qty  = Number(document.getElementById('iQty-' + idx).value);
+      if (!cust) { showToast('Pick a customer first', 'error'); return; }
+      if (!prod || !prod.value) { showToast('Pick a product for item ' + (idx + 1), 'error'); return; }
+      if (!qty || qty <= 0) { showToast('Qty must be > 0 for item ' + (idx + 1), 'error'); return; }
+
+      var btn = document.getElementById('iBtnPlan-' + idx);
       btn.disabled = true; btn.textContent = 'Planning…';
       google.script.run
         .withSuccessHandler(function(res){
-          btn.disabled = false; btn.textContent = 'Preview FIFO';
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">search</span>Plan FIFO Allocation';
           if (!res || !res.success) {
             showToast(res && res.error || 'Plan failed', 'error');
-            clearPlan();
+            clearItemPlan(idx);
             return;
           }
-          CURRENT_FIFO_PLAN = res.plan || [];
-          // Deep copy for chosen plan
-          CHOSEN_PLAN = CURRENT_FIFO_PLAN.map(function(p){
-            return {
-              lotId: p.lotId, oqcRef: p.oqcRef, oqcDate: p.oqcDate,
-              batch: p.batch, fgLocation: p.fgLocation,
-              qtyAvailable: p.qtyAvailable, qty: p.qty
-            };
+          ITEM_STATE[idx].fifoPlan = res.plan || [];
+          ITEM_STATE[idx].chosenPlan = ITEM_STATE[idx].fifoPlan.map(function(p){
+            return { lotId: p.lotId, oqcRef: p.oqcRef, oqcDate: p.oqcDate,
+                     batch: p.batch, fgLocation: p.fgLocation,
+                     qtyAvailable: p.qtyAvailable, qty: p.qty };
           });
-          SKIPPED = {};
-          renderPlan();
+          ITEM_STATE[idx].skipped = {};
+          renderItemPlan(idx);
         })
         .withFailureHandler(function(e){
-          btn.disabled = false; btn.textContent = 'Preview FIFO';
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">search</span>Plan FIFO Allocation';
           showToast('Plan error: ' + (e.message || e), 'error');
         })
-        .planFGDispatchAllocation(cust, prod, qty);
+        .planFGDispatchAllocation(cust, prod.value, qty);
     }
 
-    function renderPlan() {
-      var cards = document.getElementById('planCards');
-      cards.innerHTML = '';
-      CHOSEN_PLAN.forEach(function(p, idx){
-        var fifoIdx = CURRENT_FIFO_PLAN.findIndex(function(f){ return f.lotId === p.lotId; });
-        var isFifo = fifoIdx === idx && Math.abs(Number(p.qty) - Number(CURRENT_FIFO_PLAN[fifoIdx].qty)) < 0.001;
+    function renderItemPlan(idx) {
+      var state = ITEM_STATE[idx];
+      var cardsEl = document.getElementById('iPlanCards-' + idx);
+      cardsEl.innerHTML = '';
+      state.chosenPlan.forEach(function(p, i2){
+        var fifoIdx = -1;
+        for (var fi = 0; fi < state.fifoPlan.length; fi++) {
+          if (state.fifoPlan[fi].lotId === p.lotId) { fifoIdx = fi; break; }
+        }
+        var isFifo = fifoIdx === i2 && Math.abs(Number(p.qty) - Number(state.fifoPlan[fifoIdx] && state.fifoPlan[fifoIdx].qty)) < 0.001;
         var cardCls = isFifo ? 'is-fifo' : 'is-over';
         var dateStr = p.oqcDate ? String(p.oqcDate).substring(0, 10) : '';
         var qtyVal = Number(p.qty || 0);
-        cards.innerHTML +=
-          '<div class="plan-card ' + cardCls + '" data-lot="' + escapeHtml(p.lotId) + '">' +
+        cardsEl.innerHTML +=
+          '<div class="plan-card ' + cardCls + '" data-item="' + idx + '" data-lot="' + escapeHtml(p.lotId) + '">' +
             '<div class="plan-card-head">' +
               '<span class="plan-card-lot">' + escapeHtml(p.lotId) + '</span>' +
-              '<span class="plan-card-rank">#' + (idx + 1) + (isFifo ? ' · FIFO' : ' · OVERRIDE') + '</span>' +
+              '<span class="plan-card-rank">#' + (i2 + 1) + (isFifo ? ' · FIFO' : ' · OVERRIDE') + '</span>' +
             '</div>' +
             '<div class="plan-card-meta">' +
               '<b>OQC:</b> ' + escapeHtml(p.oqcRef) + (dateStr ? ' · ' + escapeHtml(dateStr) : '') + '<br>' +
@@ -408,138 +557,247 @@
           '</div>';
       });
 
-      // Wire card events
-      Array.prototype.slice.call(cards.querySelectorAll('.plan-card')).forEach(function(card){
+      Array.prototype.slice.call(cardsEl.querySelectorAll('.plan-card')).forEach(function(card){
         var lotId = card.getAttribute('data-lot');
         var inp = card.querySelector('.alloc-input');
         inp.addEventListener('input', function(e){
           var v = Number(e.target.value) || 0;
-          for (var i = 0; i < CHOSEN_PLAN.length; i++) {
-            if (CHOSEN_PLAN[i].lotId === lotId) { CHOSEN_PLAN[i].qty = v; break; }
+          var cp = ITEM_STATE[idx].chosenPlan;
+          for (var ci = 0; ci < cp.length; ci++) {
+            if (cp[ci].lotId === lotId) { cp[ci].qty = v; break; }
           }
-          recomputePlanState();
+          recomputeItemPlanState(idx);
         });
       });
 
-      recomputePlanState();
-      document.getElementById('planArea').style.display = '';
+      document.getElementById('iPlanArea-' + idx).style.display = '';
+      recomputeItemPlanState(idx);
     }
 
-    function recomputePlanState() {
-      var qtyReq = Number(document.getElementById('fQty').value) || 0;
+    function recomputeItemPlanState(idx) {
+      var state = ITEM_STATE[idx];
+      if (!state || !state.fifoPlan) return;
+      var qtyReq = Number(document.getElementById('iQty-' + idx).value) || 0;
       var total = 0;
-      CHOSEN_PLAN.forEach(function(p){
-        if (!SKIPPED[p.lotId]) total += Number(p.qty) || 0;
+      state.chosenPlan.forEach(function(p){
+        if (!state.skipped[p.lotId]) total += Number(p.qty) || 0;
       });
-      document.getElementById('planTotal').textContent = total.toFixed(2);
+      document.getElementById('iPlanTotal-' + idx).textContent = total.toFixed(2);
 
-      // Detect override (skips, order changes, or qty changes vs FIFO baseline)
-      var override = false;
-      var chosenActive = CHOSEN_PLAN.filter(function(p){ return !SKIPPED[p.lotId]; });
-      if (chosenActive.length !== CURRENT_FIFO_PLAN.length) override = true;
+      var isOverride = false;
+      var chosenActive = state.chosenPlan.filter(function(p){ return !state.skipped[p.lotId]; });
+      if (chosenActive.length !== state.fifoPlan.length) isOverride = true;
       else {
-        for (var i = 0; i < CURRENT_FIFO_PLAN.length; i++) {
-          var fp = CURRENT_FIFO_PLAN[i];
+        for (var i = 0; i < state.fifoPlan.length; i++) {
+          var fp = state.fifoPlan[i];
           var cp = chosenActive[i];
           if (!cp || cp.lotId !== fp.lotId || Math.abs(Number(cp.qty) - Number(fp.qty)) > 0.001) {
-            override = true; break;
+            isOverride = true; break;
           }
         }
       }
 
-      document.getElementById('overrideReasonField').style.display = override ? '' : 'none';
+      document.getElementById('iOverrideField-' + idx).style.display = isOverride ? '' : 'none';
 
-      var banner = document.getElementById('planBanner');
+      var banner = document.getElementById('iPlanBanner-' + idx);
       var diff = Math.abs(total - qtyReq);
       if (diff > 0.001) {
         banner.style.display = '';
         banner.className = 'dsp-banner err';
         banner.textContent = 'Total chosen (' + total.toFixed(2) + ') ≠ Qty requested (' + qtyReq + '). Adjust before confirming.';
-        document.getElementById('btnConfirm').disabled = true;
-      } else if (override) {
+      } else if (isOverride) {
         banner.style.display = '';
         banner.className = 'dsp-banner warn';
-        banner.textContent = '⚠ Override detected — provide a reason (≥5 chars) before confirming.';
-        document.getElementById('btnConfirm').disabled = false;
+        banner.textContent = 'Override detected — provide a reason (≥5 chars) before confirming.';
       } else {
         banner.style.display = '';
         banner.className = 'dsp-banner info';
-        banner.textContent = '✓ FIFO plan ready — ' + chosenActive.length + ' lot(s), total ' + total.toFixed(2) + '.';
-        document.getElementById('btnConfirm').disabled = false;
+        banner.textContent = 'FIFO plan ready — ' + chosenActive.length + ' lot(s), total ' + total.toFixed(2) + '.';
       }
+      checkAllItemsReady();
     }
 
-    function onConfirm() {
-      var custSel = document.getElementById('fCustomer');
-      var prodSel = document.getElementById('fProduct');
-      var custOpt = custSel.options[custSel.selectedIndex];
-      var prodOpt = prodSel.options[prodSel.selectedIndex];
-      var custName = (custOpt && custOpt.dataset.name) || '';
-      var prodDesc = (prodOpt && prodOpt.dataset.desc) || '';
-      var qtyReq = Number(document.getElementById('fQty').value) || 0;
-
-      var chosenActive = CHOSEN_PLAN.filter(function(p){ return !SKIPPED[p.lotId]; }).map(function(p){
-        return { lotId: p.lotId, qty: Number(p.qty) || 0 };
-      });
-      if (!chosenActive.length) { showToast('No lots selected', 'error'); return; }
-
-      var override = false;
-      if (chosenActive.length !== CURRENT_FIFO_PLAN.length) override = true;
-      else {
-        for (var i = 0; i < CURRENT_FIFO_PLAN.length; i++) {
-          if (chosenActive[i].lotId !== CURRENT_FIFO_PLAN[i].lotId ||
-              Math.abs(chosenActive[i].qty - CURRENT_FIFO_PLAN[i].qty) > 0.001) {
-            override = true; break;
+    function checkAllItemsReady() {
+      // Enable confirm only when every active item has a matching plan
+      var blocks = document.getElementById('itemsContainer').querySelectorAll('.dsp-item-block');
+      var allReady = blocks.length > 0;
+      for (var b = 0; b < blocks.length; b++) {
+        var idx = parseInt(blocks[b].getAttribute('data-item'), 10);
+        var state = ITEM_STATE[idx];
+        if (!state || !state.fifoPlan || !state.chosenPlan.length) { allReady = false; break; }
+        var qtyReq = Number(document.getElementById('iQty-' + idx).value) || 0;
+        var total = 0;
+        state.chosenPlan.forEach(function(p){ if (!state.skipped[p.lotId]) total += Number(p.qty) || 0; });
+        if (Math.abs(total - qtyReq) > 0.001) { allReady = false; break; }
+        // Check override reason if this item deviates from FIFO
+        var chosenActive = state.chosenPlan.filter(function(p){ return !state.skipped[p.lotId]; });
+        var isOverride = chosenActive.length !== state.fifoPlan.length;
+        if (!isOverride) {
+          for (var i = 0; i < state.fifoPlan.length; i++) {
+            var fp = state.fifoPlan[i];
+            var cp = chosenActive[i];
+            if (!cp || cp.lotId !== fp.lotId || Math.abs(Number(cp.qty) - Number(fp.qty)) > 0.001) {
+              isOverride = true; break;
+            }
           }
         }
+        if (isOverride) {
+          var reasonEl = document.getElementById('iOverrideReason-' + idx);
+          var reason = (reasonEl && reasonEl.value || '').trim();
+          if (reason.length < 5) { allReady = false; break; }
+        }
       }
-      var overrideReason = document.getElementById('fOverrideReason').value.trim();
-      if (override && overrideReason.length < 5) {
-        showToast('Override reason ≥ 5 chars required', 'error');
-        document.getElementById('fOverrideReason').focus();
-        return;
+      document.getElementById('btnConfirm').disabled = !allReady;
+    }
+
+    // ----- Confirm (submit) -----
+    function onConfirm() {
+      var custSel = document.getElementById('fCustomer');
+      var custOpt = custSel.options[custSel.selectedIndex];
+      var custName = (custOpt && custOpt.dataset.name) || '';
+      if (!custSel.value) { showToast('Pick a customer', 'error'); return; }
+
+      var blocks = document.getElementById('itemsContainer').querySelectorAll('.dsp-item-block');
+      if (!blocks.length) { showToast('Add at least one item', 'error'); return; }
+
+      var items = [];
+      for (var b = 0; b < blocks.length; b++) {
+        var idx = parseInt(blocks[b].getAttribute('data-item'), 10);
+        var state = ITEM_STATE[idx];
+        var prodSel = document.getElementById('iProd-' + idx);
+        var prodOpt = prodSel && prodSel.options[prodSel.selectedIndex];
+        var prodDesc = (prodOpt && prodOpt.dataset.desc) || '';
+        var qtyReq = Number(document.getElementById('iQty-' + idx).value) || 0;
+
+        var chosenActive = (state.chosenPlan || []).filter(function(p){ return !state.skipped[p.lotId]; }).map(function(p){
+          return { lotId: p.lotId, qty: Number(p.qty) || 0 };
+        });
+        if (!chosenActive.length) { showToast('No lots selected for item ' + (b + 1), 'error'); return; }
+
+        var isOverride = false;
+        if (state.fifoPlan) {
+          if (chosenActive.length !== state.fifoPlan.length) isOverride = true;
+          else {
+            for (var i = 0; i < state.fifoPlan.length; i++) {
+              if (chosenActive[i].lotId !== state.fifoPlan[i].lotId ||
+                  Math.abs(chosenActive[i].qty - state.fifoPlan[i].qty) > 0.001) {
+                isOverride = true; break;
+              }
+            }
+          }
+        }
+        var overrideReason = (document.getElementById('iOverrideReason-' + idx) || {}).value || '';
+        overrideReason = overrideReason.trim();
+        if (isOverride && overrideReason.length < 5) {
+          showToast('Override reason ≥ 5 chars required for item ' + (b + 1), 'error');
+          document.getElementById('iOverrideReason-' + idx).focus();
+          return;
+        }
+
+        var kpc    = (ITEM_STATE[idx] && ITEM_STATE[idx].kgPerCons) || 0;
+        var qtyKg  = kpc > 0 ? qtyReq * kpc : null;
+        items.push({
+          productCode:    (prodSel && prodSel.value) || '',
+          productDesc:    prodDesc,
+          qtyRequested:   qtyReq,
+          qtyRequestedKg: qtyKg,
+          kgPerCons:      kpc,
+          chosenPlan:     chosenActive,
+          overrideReason: overrideReason
+        });
       }
 
       var payload = {
-        date:           document.getElementById('fDate').value,
-        customerCode:   custSel.value,
-        customerName:   custName,
-        productCode:    prodSel.value,
-        productDesc:    prodDesc,
-        qtyRequested:   qtyReq,
-        chosenPlan:     chosenActive,
-        overrideReason: overrideReason,
-        vehicleNo:      document.getElementById('fVehicle').value.trim(),
-        driverName:     document.getElementById('fDriver').value.trim(),
-        transporter:    document.getElementById('fTransporter').value.trim(),
-        authorizedBy:   document.getElementById('fAuthorizedBy').value,
-        securityGuard:  document.getElementById('fGuard').value.trim(),
-        remarks:        document.getElementById('fRemarks').value.trim(),
-        operatorName:   document.getElementById('fOperator').value.trim()
+        date:          document.getElementById('fDate').value,
+        customerCode:  custSel.value,
+        customerName:  custName,
+        items:         items,
+        vehicleNo:     document.getElementById('fVehicle').value.trim(),
+        driverName:    document.getElementById('fDriver').value.trim(),
+        transporter:   document.getElementById('fTransporter').value.trim(),
+        authorizedBy:  document.getElementById('fAuthorizedBy').value,
+        securityGuard: document.getElementById('fGuard').value.trim(),
+        remarks:       document.getElementById('fRemarks').value.trim(),
+        operatorName:  document.getElementById('fOperator').value.trim()
       };
 
       var btn = document.getElementById('btnConfirm');
       btn.disabled = true; btn.textContent = 'Saving…';
       google.script.run
         .withSuccessHandler(function(res){
-          btn.disabled = false; btn.textContent = 'Confirm Dispatch';
+          btn.disabled = false; btn.textContent = 'Save Dispatch + Gatepass';
           if (!res || !res.success) {
             showToast('Failed: ' + (res && res.error || 'unknown'), 'error');
             return;
           }
-          showToast('Dispatch ' + res.gpNo + ' saved · ' + res.lots.length + ' lot(s)' + (res.override ? ' (OVERRIDE)' : ''));
-          // Reset form
-          document.getElementById('fQty').value = '';
-          document.getElementById('fOverrideReason').value = '';
-          document.getElementById('fRemarks').value = '';
-          clearPlan();
-          loadInit();
+          showSuccessScreen(res);
         })
         .withFailureHandler(function(e){
-          btn.disabled = false; btn.textContent = 'Confirm Dispatch';
+          btn.disabled = false; btn.textContent = 'Save Dispatch + Gatepass';
           showToast('Error: ' + (e.message || e), 'error');
         })
         .saveDispatchWithFIFO(payload);
+    }
+
+    function showSuccessScreen(res) {
+      document.getElementById('formPane').style.display = 'none';
+      document.getElementById('dispStickyFooter').style.display = 'none';
+
+      var itemsHtml = '';
+      if (res.items && res.items.length) {
+        res.items.forEach(function(ri){
+          var kgStr = ri.qtyRequestedKg != null ? ' · ' + Number(ri.qtyRequestedKg).toFixed(2) + ' KG' : '';
+          itemsHtml += '<div class="dsp-success-item-head">' + escapeHtml(ri.productCode + (ri.productDesc ? ' — ' + ri.productDesc : '')) + ' · ' + Number(ri.qtyRequested).toFixed(2) + ' CONS' + kgStr + '</div>';
+          (ri.lots || []).forEach(function(l){
+            itemsHtml += '<div class="dsp-success-lot-row">Lot <b>' + escapeHtml(l.lotId) + '</b> · Batch <b>' + escapeHtml(l.batch) + '</b> · ' + Number(l.qty).toFixed(2) + '</div>';
+          });
+        });
+      } else {
+        (res.lots || []).forEach(function(l){
+          itemsHtml += '<div class="dsp-success-lot-row">Lot <b>' + escapeHtml(l.lotId) + '</b> · Batch <b>' + escapeHtml(l.batch) + '</b> · ' + Number(l.qty).toFixed(2) + '</div>';
+        });
+      }
+
+      var pane = document.getElementById('successPane');
+      pane.style.display = '';
+      pane.innerHTML =
+        '<div class="dsp-success-card">' +
+          '<div class="dsp-success-icon"><span class="material-symbols-outlined" style="font-size:48px;color:#16a34a;">check_circle</span></div>' +
+          '<div class="dsp-success-title">Dispatch Saved</div>' +
+          '<div class="dsp-success-doc">' +
+            '<strong>' + escapeHtml(res.dspNo || '') + '</strong>' +
+            (res.gpNo ? ' &nbsp;·&nbsp; GP: <strong>' + escapeHtml(res.gpNo) + '</strong>' : '') +
+            (res.override ? ' &nbsp;<span class="dsp-pill over">OVERRIDE</span>' : '') +
+          '</div>' +
+          '<div class="dsp-success-lots">' + itemsHtml + '</div>' +
+          '<button class="dsp-button" onclick="resetForm()" style="background:#1e3a5f;color:#fff;height:48px;border-radius:10px;margin-top:0;">New Dispatch</button>' +
+        '</div>';
+    }
+
+    function resetForm() {
+      // Reset item state
+      ITEM_STATE = [];
+      _itemCounter = 0;
+      document.getElementById('itemsContainer').innerHTML = '';
+
+      // Reset header fields
+      document.getElementById('fCustomer').selectedIndex = 0;
+      document.getElementById('fVehicle').value = '';
+      document.getElementById('fDriver').value = '';
+      document.getElementById('fGuard').value = '';
+      document.getElementById('fAuthorizedBy').selectedIndex = 0;
+      document.getElementById('fRemarks').value = '';
+
+      // Show form again
+      document.getElementById('successPane').style.display = 'none';
+      document.getElementById('formPane').style.display = '';
+      document.getElementById('dispStickyFooter').style.display = '';
+      document.getElementById('btnConfirm').disabled = true;
+
+      // Reload fresh doc number
+      loadInit();
+      // Add first item slot back
+      addItem();
     }
 
     function reloadRecent() {
@@ -578,14 +836,21 @@
         .getRecentDispatches(20);
     }
 
+    window.addEventListener('load', function(){
+      addItem();   // start with one item slot
+      loadInit();
+    });
+
     document.addEventListener('DOMContentLoaded', function(){
-      document.getElementById('fProduct').addEventListener('change', onProductChange);
-      document.getElementById('fCustomer').addEventListener('change', clearPlan);
-      document.getElementById('fQty').addEventListener('input', function(){
-        if (CURRENT_FIFO_PLAN) recomputePlanState();
+      document.getElementById('fCustomer').addEventListener('change', function(){
+        // Customer change should clear all plans (product availability is customer-scoped)
+        var blocks = document.getElementById('itemsContainer').querySelectorAll('.dsp-item-block');
+        for (var b = 0; b < blocks.length; b++) {
+          var idx = parseInt(blocks[b].getAttribute('data-item'), 10);
+          clearItemPlan(idx);
+        }
       });
     });
-    window.addEventListener('load', loadInit);
 
     // ── nav ──
     function navigate(page) {
@@ -595,9 +860,9 @@
         .getFormHtml(page);
     }
     function goHome() {
-      var hasData = (document.getElementById('fCustomer') && document.getElementById('fCustomer').value) ||
-                    (document.getElementById('fProduct') && document.getElementById('fProduct').value) ||
-                    (document.getElementById('fQty') && document.getElementById('fQty').value);
+      var hasData = document.getElementById('fCustomer').value ||
+                    document.getElementById('fVehicle').value ||
+                    (document.querySelectorAll('.item-block').length > 1);
       if (hasData && !confirm('Unsaved changes. Leave?')) return;
       navigate('Landing');
     }

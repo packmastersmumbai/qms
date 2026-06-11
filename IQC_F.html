@@ -61,17 +61,23 @@
 <body class="bg-surface text-text-value antialiased min-h-screen pb-[88px] pm-narrow">
 
 <!-- ══ TOP APP BAR ══ -->
-<header class="fixed top-0 w-full h-[56px] bg-primary shadow-md flex items-center justify-between px-4 z-50">
-  <button id="s1BackBtn" aria-label="Go Back" class="text-white active:scale-95 transition-transform p-2 -ml-2">
-    <span class="material-symbols-outlined">arrow_back</span>
-  </button>
-  <h1 class="font-headline text-[20px] font-bold text-white text-center flex-1">IQC Inspection</h1>
-  <span id="docBadge" class="text-[13px] font-semibold text-white/90 bg-white/20 px-3 py-1 rounded-full">IQC</span>
+<header class="fixed top-0 w-full bg-primary shadow-md z-50">
+  <div class="h-[56px] flex items-center justify-between px-4">
+    <button id="s1BackBtn" aria-label="Go Back" class="text-white active:scale-95 transition-transform p-2 -ml-2">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <h1 class="font-headline text-[20px] font-bold text-white text-center flex-1">IQC Inspection</h1>
+    <span id="docBadge" class="text-[13px] font-semibold text-white/90 bg-white/20 px-3 py-1 rounded-full">IQC</span>
+  </div>
+  <div class="flex items-center justify-between px-4 py-1.5 bg-primary/90 border-t border-white/10">
+    <span class="text-[11px] text-white/70 font-medium">PM/FRM/IQC-02 · Rev v1.1</span>
+    <span class="text-[11px] text-white/70 font-medium">ISO 9001:2015 · Cl. 8.4.2</span>
+  </div>
 </header>
 
 <!-- ══════════════════════ SCREEN 1: INSPECTION ══════════════════════ -->
 <div id="screen1">
-<main class="pt-[68px] px-4 space-y-3 max-w-md mx-auto">
+<main class="pt-[96px] px-4 space-y-3 max-w-md mx-auto">
 
   <!-- GRN Selector Card -->
   <section id="manualSection" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
@@ -108,6 +114,33 @@
           </select>
           <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
         </div>
+      </div>
+      <div>
+        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Sampling Method</label>
+        <div class="relative">
+          <select id="samplingMethod" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+            <option value="Normal">Normal</option>
+            <option value="Tightened">Tightened</option>
+            <option value="Reduced">Reduced</option>
+            <option value="Skip Lot">Skip Lot</option>
+            <option value="100% Inspection">100% Inspection</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PO Reference + Invoice No -->
+    <div class="flex flex-col gap-3 mt-3">
+      <div>
+        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">PO Reference <span class="font-normal text-text-helper">(optional)</span></label>
+        <input id="poRef" type="text" placeholder="e.g. PO-2025-0042"
+          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+      </div>
+      <div>
+        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Invoice No. <span class="font-normal text-text-helper">(optional)</span></label>
+        <input id="invoiceNo" type="text" placeholder="Supplier invoice number"
+          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
       </div>
     </div>
 
@@ -173,6 +206,10 @@
       </button>
 
       <!-- Qty inputs: single column per DESIGN.md -->
+      <div id="qtyRefStrip" class="hidden bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center justify-between">
+        <span class="text-[13px] text-text-helper font-medium">GRN Qty Received</span>
+        <span id="qtyRefValue" class="text-[14px] font-bold text-primary"></span>
+      </div>
       <div class="flex flex-col gap-3 mb-4">
         <div>
           <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty Accepted</label>
@@ -184,6 +221,12 @@
           <input id="rejectedQty" type="number" min="0" placeholder="0"
             class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
         </div>
+        <div>
+          <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty On Hold <span class="font-normal text-text-helper">(pending decision)</span></label>
+          <input id="holdQty" type="number" min="0" placeholder="0"
+            class="w-full h-[44px] border-[1.5px] border-amber-300 rounded-lg text-[16px] text-text-value px-3 focus:border-amber-400 focus:outline-none bg-amber-50">
+        </div>
+        <div id="qtyMismatchWarn" class="hidden bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 text-[12px] text-amber-700 font-medium"></div>
       </div>
       <div>
         <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Sample Size</label>
@@ -219,7 +262,7 @@
   <span class="w-10"></span>
 </header>
 
-<main class="pt-[68px] px-4 space-y-3 max-w-md mx-auto pb-[100px]">
+<main class="pt-[72px] px-4 space-y-3 max-w-md mx-auto pb-[100px]">
 
   <!-- Batch info -->
   <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
@@ -279,14 +322,106 @@
     </div>
   </section>
 
+  <!-- Signatures -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+    <h3 class="font-headline text-[15px] font-semibold text-text-heading">Signatures</h3>
+    <div class="flex flex-col gap-3">
+      <div>
+        <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">QC Inspector</label>
+        <input id="sigInspector" type="text" placeholder="Name" readonly
+          class="w-full h-[44px] border-[1.5px] border-gray-200 rounded-lg text-[15px] text-text-value px-3 bg-slate-50">
+      </div>
+      <div>
+        <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">Store In-Charge</label>
+        <input id="storeInCharge" type="text" placeholder="Name"
+          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[15px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+      </div>
+      <div>
+        <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">QA Manager</label>
+        <input id="qaManager" type="text" placeholder="Name"
+          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[15px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+      </div>
+    </div>
+  </section>
+
+  <!-- Image Upload -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-text-helper">photo_camera</span>
+      <h3 class="font-headline text-[15px] font-semibold text-text-heading">IQC Documents <span class="text-[12px] font-normal text-text-helper">(photos, optional, max 5)</span></h3>
+    </div>
+    <label class="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-slate-300 rounded-xl p-4 cursor-pointer bg-slate-50 active:bg-slate-100 transition-colors">
+      <span class="material-symbols-outlined text-[28px] text-slate-400">add_photo_alternate</span>
+      <span class="text-[13px] text-text-helper font-semibold">Tap to add photos</span>
+      <span class="text-[11px] text-slate-400">Camera or gallery · JPEG compressed</span>
+      <input id="imageInput" type="file" accept="image/*" multiple class="hidden" onchange="onImagesSelected(this)">
+    </label>
+    <div id="imagePreviews" style="display:none;flex-wrap:wrap;gap:8px;"></div>
+  </section>
+
+  <!-- Defect Video Upload -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[20px] text-text-helper">videocam</span>
+      <h3 class="font-headline text-[15px] font-semibold text-text-heading">IQC Video <span class="text-[12px] font-normal text-text-helper">(optional)</span></h3>
+    </div>
+
+    <!-- Picker state -->
+    <div id="videoPickerLabel" class="flex gap-2">
+      <button type="button" onclick="openRecorder()"
+        class="flex-1 flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-blue-300 rounded-xl p-4 bg-blue-50 active:bg-blue-100 transition-colors">
+        <span class="material-symbols-outlined text-[28px] text-blue-400">videocam</span>
+        <span class="text-[13px] text-primary font-semibold">Record Now</span>
+        <span class="text-[11px] text-slate-400">500 kbps compressed</span>
+      </button>
+      <label class="flex-1 flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-slate-300 rounded-xl p-4 cursor-pointer bg-slate-50 active:bg-slate-100 transition-colors">
+        <span class="material-symbols-outlined text-[28px] text-slate-400">upload_file</span>
+        <span class="text-[13px] text-text-helper font-semibold">Upload Existing</span>
+        <span class="text-[11px] text-slate-400">From gallery</span>
+        <input id="videoInput" type="file" accept="video/*" class="hidden" onchange="onVideoSelected(this)">
+      </label>
+    </div>
+
+    <!-- Preview state -->
+    <div id="videoPreview" class="hidden flex-col gap-2">
+      <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+        <span class="material-symbols-outlined text-[20px] text-accent">movie</span>
+        <div class="flex-1 min-w-0">
+          <div id="videoFileName" class="text-[13px] font-semibold text-primary truncate"></div>
+          <div id="videoFileSize" class="text-[11px] text-text-helper"></div>
+        </div>
+        <button type="button" onclick="clearVideo()" class="text-slate-400 active:text-red-500 p-1">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <!-- Sticky footer — screen 2 -->
 <footer class="fixed bottom-0 w-full bg-white border-t border-border p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-  <div class="max-w-md mx-auto">
+  <div class="max-w-md mx-auto flex flex-col gap-2">
+    <!-- Save confirmation banner — shown after successful save -->
+    <div id="saveConfirmBanner" style="display:none"
+      class="w-full rounded-[10px] bg-green-50 border border-green-300 px-4 py-2.5 flex items-center gap-2">
+      <span class="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
+      <div>
+        <div id="saveConfirmDocNo" class="text-[13px] font-bold text-green-800"></div>
+        <div class="text-[11px] text-green-700">IQC saved successfully</div>
+      </div>
+    </div>
     <button id="saveBtn" disabled onclick="saveIQC()"
       class="w-full h-[56px] bg-primary text-white rounded-[10px] font-semibold text-[16px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40">
       <span class="material-symbols-outlined">save</span>Save IQC Result
+    </button>
+    <button id="emailReportBtn" style="display:none" onclick="sendEmailReport()"
+      class="w-full h-[48px] bg-[#0ea5e9] text-white rounded-[10px] font-semibold text-[15px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined">send</span>Send Report to Supplier
+    </button>
+    <button id="doneBtn" style="display:none" onclick="goHome()"
+      class="w-full h-[44px] bg-slate-100 text-slate-700 rounded-[10px] font-semibold text-[14px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+      <span class="material-symbols-outlined text-[18px]">home</span>Back to Home
     </button>
   </div>
 </footer>
@@ -298,29 +433,35 @@
 <script>
 /* ── Constants ── */
 var IQC_PARAMS = [
-  {id:'qty',    label:'Quantity',             spec:'As per PO'},
-  {id:'pkg',    label:'Packaging Condition',  spec:'Intact / Undamaged'},
-  {id:'colour', label:'Colour',               spec:'Per approved sample'},
-  {id:'shape',  label:'Shape / Form',         spec:'Per specification'},
-  {id:'dims',   label:'Size / Dimensions',    spec:'Per spec sheet'},
-  {id:'weight', label:'Net Weight',           spec:'Per spec (calibrated balance)'},
-  {id:'clean',  label:'Cleanliness',          spec:'No contamination'},
-  {id:'odour',  label:'Odour',                spec:'Normal / None'},
-  {id:'label',  label:'Label Accuracy',       spec:'Matches PO / Spec'},
-  {id:'msds',   label:'MSDS / SDS Available', spec:'Received'},
-  {id:'shelf',  label:'Shelf Life / Expiry',  spec:'Min 75% remaining'},
-  {id:'coa',    label:'COA / Test Report',    spec:'Received & Verified'}
+  {id:'qty',    label:'Quantity',             spec:'As per PO',                      ccp:true,  hint:'Verify count / weight matches PO exactly'},
+  {id:'pkg',    label:'Packaging Condition',  spec:'Intact / Undamaged',             ccp:false, hint:'Check for tears, dents, wet damage'},
+  {id:'colour', label:'Colour',               spec:'Per approved sample',            ccp:true,  hint:'Compare against approved colour swatch'},
+  {id:'shape',  label:'Shape / Form',         spec:'Per specification',              ccp:false, hint:'Check for deformation, correct geometry'},
+  {id:'dims',   label:'Size / Dimensions',    spec:'Per spec sheet',                 ccp:true,  hint:'Measure at least 3 samples with vernier'},
+  {id:'weight', label:'Net Weight',           spec:'Per spec (calibrated balance)',  ccp:true,  hint:'Use calibrated balance; deduct tare'},
+  {id:'clean',  label:'Cleanliness',          spec:'No contamination',               ccp:true,  hint:'Visual + tactile; check for foreign matter'},
+  {id:'odour',  label:'Odour',                spec:'Normal / None',                  ccp:false, hint:'Unusual odour may indicate contamination'},
+  {id:'label',  label:'Label Accuracy',       spec:'Matches PO / Spec',              ccp:false, hint:'Verify item code, batch, MFD/EXP dates'},
+  {id:'msds',   label:'MSDS / SDS Available', spec:'Received',                       ccp:false, hint:'Confirm MSDS on file for this material'},
+  {id:'shelf',  label:'Shelf Life / Expiry',  spec:'Min 75% remaining',              ccp:true,  hint:'Remaining life must be ≥75% at receipt'},
+  {id:'coa',    label:'COA / Test Report',    spec:'Received & Verified',            ccp:true,  hint:'COA values must match spec; verify lot no.'}
 ];
 
 /* ── State ── */
-var formSaved    = false;
-var prefill      = null;
-var initData     = null;
-var GRN_MAP      = {};
+var formSaved      = false;
+var lastSavedDocNo = '';
+var prefill        = null;
+var initData       = null;
+var GRN_MAP        = {};
 var currentItems = [];
 var currentIdx   = 0;
 var itemData     = [];
 var overallDisp  = '';
+var videoBase64  = '';
+var videoMime    = '';
+var videoExt     = '';
+var videoUrl     = '';
+var imageFiles   = [];  // [{base64, mime, name}] max 5
 
 /* ── Init ── */
 document.addEventListener('DOMContentLoaded', function() {
@@ -340,8 +481,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('s2BackBtn').addEventListener('click', onScreen2Back);
   document.getElementById('grnNo').addEventListener('change', onGRNChange);
   document.getElementById('sampleSize').addEventListener('input', saveQtyState);
-  document.getElementById('acceptedQty').addEventListener('input', saveQtyState);
-  document.getElementById('rejectedQty').addEventListener('input', saveQtyState);
+  document.getElementById('acceptedQty').addEventListener('input', onQtyInput);
+  document.getElementById('rejectedQty').addEventListener('input', onQtyInput);
+  document.getElementById('holdQty').addEventListener('input', onHoldQtyInput);
 
   google.script.run
     .withSuccessHandler(onInitLoaded)
@@ -380,6 +522,17 @@ function onInitLoaded(d) {
     });
   }
 
+  var smSel = document.getElementById('samplingMethod');
+  if ((d.samplingMethods || []).length) {
+    smSel.innerHTML = '';
+    d.samplingMethods.forEach(function(m) {
+      var mo = document.createElement('option');
+      mo.value = m; mo.textContent = m;
+      if (m === (d.defaultSampling || 'Normal')) mo.selected = true;
+      smSel.appendChild(mo);
+    });
+  }
+
   var gSel = document.getElementById('grnNo');
   (d.recentGRNs || []).forEach(function(g) {
     GRN_MAP[g.grnNo] = g;
@@ -388,6 +541,18 @@ function onInitLoaded(d) {
     go.textContent = g.grnNo + ' — ' + (g.supplierName || '').substring(0,24) + (g.date ? ' (' + g.date + ')' : '');
     gSel.appendChild(go);
   });
+
+  // Prefill from Records "Do IQC" routing
+  try {
+    var prefRef = sessionStorage.getItem('pmPrefillRef');
+    if (prefRef && GRN_MAP[prefRef]) {
+      gSel.value = prefRef;
+      sessionStorage.removeItem('pmPrefillRef');
+      // Fire change so dependent fields populate
+      var ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false);
+      gSel.dispatchEvent(ev);
+    }
+  } catch(e) {}
 
   if (d.today) document.getElementById('dateField').value = d.today;
 
@@ -501,7 +666,7 @@ function onGRNChange() {
 
 /* ── Item rendering ── */
 function makeBlankItemData() {
-  return {params:{}, sampleSize:0, acceptedQty:0, rejectedQty:0, disp:''};
+  return {params:{}, sampleSize:0, acceptedQty:0, rejectedQty:0, holdQty:0, disp:''};
 }
 
 function renderCurrentItem() {
@@ -520,10 +685,24 @@ function renderCurrentItem() {
     Math.round((currentIdx+1)/total*100) + '%';
 
   // Restore qty fields
-  var d = itemData[currentIdx];
+  var d    = itemData[currentIdx];
+  var item = currentItems[currentIdx];
+  var grnQty = Number(item && item.qtyReceived) || 0;
+  var unit   = (item && item.unit) ? ' ' + item.unit : '';
+
+  var refStrip = document.getElementById('qtyRefStrip');
+  if (grnQty > 0) {
+    document.getElementById('qtyRefValue').textContent = grnQty + unit;
+    refStrip.classList.remove('hidden');
+  } else {
+    refStrip.classList.add('hidden');
+  }
+
   document.getElementById('sampleSize').value  = d.sampleSize  || '';
   document.getElementById('acceptedQty').value = d.acceptedQty || '';
   document.getElementById('rejectedQty').value = d.rejectedQty || '';
+  document.getElementById('holdQty').value     = d.holdQty     || '';
+  updateQtyMismatch();
 
   buildParamSection();
   updateDispCard();
@@ -581,9 +760,33 @@ function buildParamSection() {
     row.className = 'flex items-center justify-between h-[48px] bg-white border border-slate-200 rounded-lg px-3' +
       (val === 'PASS' ? ' param-row-pass' : val === 'FAIL' ? ' param-row-fail' : val === 'NA' ? ' param-row-na' : '');
 
+    var lblWrap = document.createElement('div');
+    lblWrap.className = 'flex flex-col min-w-0 pr-2';
+
+    var lblTop = document.createElement('div');
+    lblTop.className = 'flex items-center gap-1.5';
     var lbl = document.createElement('span');
-    lbl.className = 'text-[14px] font-medium text-text-field truncate pr-2' + (val === 'FAIL' ? ' text-status-fail' : '');
+    lbl.className = 'text-[14px] font-medium truncate' + (val === 'FAIL' ? ' text-status-fail' : ' text-text-field');
     lbl.textContent = (i+1) + '. ' + p.label;
+    lblTop.appendChild(lbl);
+    if (p.ccp) {
+      var ccpBadge = document.createElement('span');
+      ccpBadge.className = 'shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 leading-none';
+      ccpBadge.textContent = 'CCP';
+      lblTop.appendChild(ccpBadge);
+    }
+    lblWrap.appendChild(lblTop);
+    if (p.hint) {
+      var hint = document.createElement('span');
+      hint.className = 'text-[11px] text-text-helper italic truncate';
+      hint.textContent = p.hint;
+      lblWrap.appendChild(hint);
+    }
+
+    row.style.height = 'auto';
+    row.style.minHeight = '48px';
+    row.style.paddingTop = '8px';
+    row.style.paddingBottom = '8px';
 
     var btns = document.createElement('div');
     btns.className = 'flex gap-1 shrink-0';
@@ -599,7 +802,7 @@ function buildParamSection() {
       btns.appendChild(b);
     });
 
-    row.appendChild(lbl);
+    row.appendChild(lblWrap);
     row.appendChild(btns);
     grid.appendChild(row);
   });
@@ -620,8 +823,8 @@ function setParam(paramId, val) {
   if (row) {
     row.className = 'flex items-center justify-between h-[48px] bg-white border border-slate-200 rounded-lg px-3' +
       (val==='PASS' ? ' param-row-pass' : val==='FAIL' ? ' param-row-fail' : val==='NA' ? ' param-row-na' : '');
-    var lbl = row.querySelector('span');
-    if (lbl) lbl.className = 'text-[14px] font-medium truncate pr-2' + (val==='FAIL' ? ' text-status-fail' : ' text-text-field');
+    var lbl = row.querySelector('.flex.flex-col span:first-child') || row.querySelector('span');
+    if (lbl) lbl.className = 'text-[14px] font-medium truncate' + (val==='FAIL' ? ' text-status-fail' : ' text-text-field');
     row.querySelectorAll('button').forEach(function(b) {
       var bv = b.textContent.trim();
       b.className = 'min-w-[44px] min-h-[44px] px-3 py-2 rounded-md text-[13px] font-semibold border transition-all active:scale-95 ' +
@@ -668,14 +871,32 @@ function updateDispCard() {
 }
 
 function setItemDisp(val) {
-  itemData[currentIdx].disp = val;
+  var d  = itemData[currentIdx];
+  d.disp = val;
+  d._dispAutoSet = false; // manual override — stop auto-set from overwriting
   renderItemDispButtons(val);
   updateStickyBar();
+  // Auto-fill qty only if all three are still empty
+  var item   = currentItems[currentIdx];
+  var grnQty = Number(item && item.qtyReceived) || 0;
+  if (grnQty > 0 && !d.acceptedQty && !d.rejectedQty && !d.holdQty) {
+    if (val === 'ACCEPTED') {
+      d.acceptedQty = grnQty; d.rejectedQty = 0; d.holdQty = 0;
+    } else if (val === 'REJECTED') {
+      d.acceptedQty = 0; d.rejectedQty = grnQty; d.holdQty = 0;
+    } else if (val === 'HOLD') {
+      d.acceptedQty = 0; d.rejectedQty = 0; d.holdQty = grnQty;
+    }
+    document.getElementById('acceptedQty').value = d.acceptedQty || '';
+    document.getElementById('rejectedQty').value = d.rejectedQty || '';
+    document.getElementById('holdQty').value     = d.holdQty     || '';
+    updateQtyMismatch();
+  }
 }
 
 function renderItemDispButtons(val) {
   var map = {dAcc:'ACCEPTED', dRej:'REJECTED', dHld:'HOLD', dAwd:'AWD'};
-  var cls = {ACCEPTED:'disp-acc-active', REJECTED:'disp-rej-active', HOLD:'disp-hld-active', AWD:'disp-awd-active'};
+  var cls = {ACCEPTED:'disp-acc-active', REJECTED:'disp-rej-active', HOLD:'disp-hld-active', AWD:'disp-awd-active', PARTIAL:'disp-hld-active'};
   Object.keys(map).forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -690,6 +911,74 @@ function saveQtyState() {
   d.sampleSize  = parseFloat(document.getElementById('sampleSize').value)  || 0;
   d.acceptedQty = parseFloat(document.getElementById('acceptedQty').value) || 0;
   d.rejectedQty = parseFloat(document.getElementById('rejectedQty').value) || 0;
+  d.holdQty     = parseFloat(document.getElementById('holdQty').value)     || 0;
+}
+
+function onQtyInput() {
+  var d      = itemData[currentIdx];
+  if (!d) return;
+  var item   = currentItems[currentIdx];
+  var grnQty = Number(item && item.qtyReceived) || 0;
+  d.acceptedQty = parseFloat(document.getElementById('acceptedQty').value) || 0;
+  d.rejectedQty = parseFloat(document.getElementById('rejectedQty').value) || 0;
+
+  // Auto-compute hold = grnQty - accepted - rejected (only when grnQty is known and holdQty field not manually focused)
+  if (grnQty > 0) {
+    var remainder = grnQty - d.acceptedQty - d.rejectedQty;
+    var computed  = remainder > 0 ? remainder : 0;
+    d.holdQty = computed;
+    document.getElementById('holdQty').value = computed > 0 ? computed : '';
+  } else {
+    d.holdQty = parseFloat(document.getElementById('holdQty').value) || 0;
+  }
+
+  d.sampleSize  = parseFloat(document.getElementById('sampleSize').value)  || 0;
+  updateQtyMismatch();
+  autoSetDisp();
+}
+
+function onHoldQtyInput() {
+  // User typed directly in hold field — just save and validate, no auto-recompute
+  var d = itemData[currentIdx];
+  if (!d) return;
+  d.acceptedQty = parseFloat(document.getElementById('acceptedQty').value) || 0;
+  d.rejectedQty = parseFloat(document.getElementById('rejectedQty').value) || 0;
+  d.holdQty     = parseFloat(document.getElementById('holdQty').value)     || 0;
+  d.sampleSize  = parseFloat(document.getElementById('sampleSize').value)  || 0;
+  updateQtyMismatch();
+  autoSetDisp();
+}
+
+function updateQtyMismatch() {
+  var warn   = document.getElementById('qtyMismatchWarn');
+  var item   = currentItems[currentIdx];
+  var grnQty = Number(item && item.qtyReceived) || 0;
+  if (!grnQty) { warn.classList.add('hidden'); return; }
+  var acc = parseFloat(document.getElementById('acceptedQty').value) || 0;
+  var rej = parseFloat(document.getElementById('rejectedQty').value) || 0;
+  var hld = parseFloat(document.getElementById('holdQty').value)     || 0;
+  var sum = acc + rej + hld;
+  if (Math.abs(sum - grnQty) > 0.001) {
+    var unit = item.unit ? ' ' + item.unit : '';
+    warn.textContent = 'Accepted + Rejected + Hold = ' + sum + unit + ', but GRN qty is ' + grnQty + unit + '. Please verify.';
+    warn.classList.remove('hidden');
+  } else {
+    warn.classList.add('hidden');
+  }
+}
+
+function autoSetDisp() {
+  var d   = itemData[currentIdx];
+  var acc = d.acceptedQty || 0;
+  var rej = d.rejectedQty || 0;
+  var hld = d.holdQty     || 0;
+  if (acc === 0 && rej === 0 && hld === 0) return;
+  var disp = hld > 0
+    ? (acc > 0 || rej > 0 ? 'PARTIAL' : 'HOLD')
+    : (rej > 0 ? (acc > 0 ? 'PARTIAL' : 'REJECTED') : 'ACCEPTED');
+  // Only highlight suggestion — do NOT set d.disp or enable the button
+  // User must still explicitly tap a disposition button to proceed
+  renderItemDispButtons(disp);
 }
 
 /* ── Sticky bar ── */
@@ -708,6 +997,7 @@ function updateStickyBar() {
 
 function onStickyTap() {
   saveQtyState();
+  updateQtyMismatch();
   var d = itemData[currentIdx];
   if (!d.disp) {
     var card = document.getElementById('dispCard');
@@ -751,6 +1041,11 @@ function showSummary() {
   var hasHold   = itemData.some(function(d){ return d.disp==='HOLD'; });
   var hasAwd    = itemData.some(function(d){ return d.disp==='AWD'; });
   setOverallDisp(hasReject?'REJECTED':hasHold?'HOLD':hasAwd?'AWD':'ACCEPTED');
+
+  // Mirror inspector into signature block (read-only)
+  var inspVal = document.getElementById('inspector').value;
+  var sigEl = document.getElementById('sigInspector');
+  if (sigEl) sigEl.value = inspVal;
 
   document.getElementById('screen1').style.display = 'none';
   document.getElementById('screen2').style.display = '';
@@ -846,6 +1141,7 @@ function doSaveIQC() {
       sampleSize:   d.sampleSize||0,
       acceptedQty:  d.acceptedQty||0,
       rejectedQty:  d.rejectedQty||0,
+      holdQty:      d.holdQty||0,
       params: {
         qty:    pmap.qty    ||'NA', pkg:    pmap.pkg    ||'NA',
         colour: pmap.colour ||'NA', shape:  pmap.shape  ||'NA',
@@ -857,46 +1153,240 @@ function doSaveIQC() {
     };
   });
 
+  // GAS google.script.run has a practical ~5MB payload limit before timeouts.
+  // Strip video base64 if too large and warn — IQC record still saves without it.
+  var safeVideoBase64 = videoBase64 || '';
+  var safeVideoUrl    = videoUrl    || '';
+  var videoStripped   = false;
+  if (safeVideoBase64 && safeVideoBase64.length > 4 * 1024 * 1024) {
+    safeVideoBase64 = '';
+    videoStripped = true;
+  }
+
   var data = {
-    date:         document.getElementById('dateField').value,
-    grnNo:        prefill ? (prefill.grnId||'') : document.getElementById('grnNo').value,
-    supplierName: prefill ? (prefill.supplierName||'') : document.getElementById('supplierField').value,
-    inspector:    document.getElementById('inspector').value,
-    aqlLevel:     document.getElementById('aqlLevel').value,
-    sampleId:     document.getElementById('sampleId').value,
-    disposition:  (overallDisp === 'AWD' ? 'ACCEPTED WITH DEVIATION' : overallDisp),
-    remarks:      document.getElementById('remarks').value,
-    ncrRef:       document.getElementById('ncrRef').value,
-    deviationRef: document.getElementById('deviationRef').value,
-    operatorName: window.QMS ? window.QMS.getOperatorName() : '',
-    items:        items
+    date:          document.getElementById('dateField').value,
+    grnNo:         prefill ? (prefill.grnId||'') : document.getElementById('grnNo').value,
+    supplierName:  prefill ? (prefill.supplierName||'') : document.getElementById('supplierField').value,
+    inspector:     document.getElementById('inspector').value,
+    aqlLevel:       document.getElementById('aqlLevel').value,
+    samplingMethod: document.getElementById('samplingMethod').value,
+    sampleId:      document.getElementById('sampleId').value,
+    disposition:   (overallDisp === 'AWD' ? 'ACCEPTED WITH DEVIATION' : overallDisp),
+    remarks:       document.getElementById('remarks').value,
+    ncrRef:        document.getElementById('ncrRef').value,
+    deviationRef:  document.getElementById('deviationRef').value,
+    poRef:         document.getElementById('poRef') ? document.getElementById('poRef').value : '',
+    invoiceNo:     document.getElementById('invoiceNo') ? document.getElementById('invoiceNo').value : '',
+    storeInCharge: document.getElementById('storeInCharge') ? document.getElementById('storeInCharge').value : '',
+    qaManager:     document.getElementById('qaManager') ? document.getElementById('qaManager').value : '',
+    operatorName:  window.QMS ? window.QMS.getOperatorName() : '',
+    items:         items,
+    videoBase64:   safeVideoBase64,
+    videoMime:     videoMime   || '',
+    videoExt:      videoExt    || '',
+    videoUrl:      safeVideoUrl,
+    images:        imageFiles.map(function(f){ return {base64:f.base64, mime:f.mime, name:f.name}; })
   };
+
+  if (videoStripped) {
+    showToast('Video too large to attach — IQC will save without it.', 'warning');
+  }
 
   google.script.run
     .withSuccessHandler(function(res) {
       if (res && res.success) {
         formSaved = true;
-        showToast('IQC record saved', 'success');
+        lastSavedDocNo = (res.docNos && res.docNos[0]) || '';
+        // Show persistent confirmation banner
+        var banner = document.getElementById('saveConfirmBanner');
+        var docNoEl = document.getElementById('saveConfirmDocNo');
+        if (banner) {
+          if (docNoEl) docNoEl.textContent = lastSavedDocNo || 'IQC Saved';
+          banner.style.display = 'flex';
+        }
+        document.getElementById('saveBtn').style.display = 'none';
+        document.getElementById('emailReportBtn').style.display = 'flex';
+        document.getElementById('doneBtn').style.display = 'flex';
+        showToast('IQC ' + lastSavedDocNo + ' saved', 'success');
         var hasWarnings = (res.warnings && res.warnings.length) || res.ncrError;
         if (hasWarnings) {
           var msgs = (res.warnings && res.warnings.length) ? res.warnings : [res.ncrError];
           setTimeout(function(){ showToast('⚠ ' + msgs.join(' | '), 'warning'); }, 600);
-          setTimeout(function(){ goHome(); }, 5000);
-        } else {
-          setTimeout(function(){ goHome(); }, 1500);
         }
       } else {
-        showToast('Error: '+((res&&res.error)||'Unknown error'), 'error');
+        var errMsg = (res && res.error) || 'Unknown error';
+        showToast('Save failed: ' + errMsg, 'error');
+        setTimeout(function(){ alert('IQC save failed: ' + errMsg); }, 100);
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined">save</span>Save IQC Result';
       }
     })
     .withFailureHandler(function(e) {
-      showToast(e.message||'Save failed', 'error');
+      var errMsg = (e && e.message) || 'Save failed — check connection and retry.';
+      showToast(errMsg, 'error');
+      setTimeout(function(){ alert('IQC save failed: ' + errMsg); }, 100);
       btn.disabled = false;
       btn.innerHTML = '<span class="material-symbols-outlined">save</span>Save IQC Result';
     })
     .saveIQC(data);
+}
+
+/* ── Send Email Report ── */
+function sendEmailReport() {
+  if (!lastSavedDocNo) { goHome(); return; }
+  var btn = document.getElementById('emailReportBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined">hourglass_top</span>Sending…';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.ok) {
+        showToast('Report sent to ' + res.email, 'success');
+      } else {
+        showToast((res && res.error) || 'Email failed', 'error');
+      }
+      setTimeout(function(){ goHome(); }, 2000);
+    })
+    .withFailureHandler(function(e) {
+      showToast((e && e.message) || 'Email failed', 'error');
+      setTimeout(function(){ goHome(); }, 2000);
+    })
+    .sendIQCReport(lastSavedDocNo);
+}
+
+/* ── Video ── */
+window.addEventListener('message', function(e) {
+  // Debug: show all incoming messages as toast so we can diagnose on-device
+  if (e.data && e.data.type === 'QMS_VIDEO') {
+    onVideoMessage(e.data);
+  } else if (e.data && e.data.type) {
+    showToast('msg received: ' + e.data.type, 'info');
+  }
+});
+
+function openRecorder() {
+  window.open('https://packmastersmumbai.github.io/qms/recorder.html', 'qms_recorder');
+}
+
+function onVideoMessage(data) {
+  if (!data || data.type !== 'QMS_VIDEO') return;
+  videoUrl    = data.url    || '';
+  videoBase64 = data.base64 || '';
+  videoMime   = data.mime   || '';
+  videoExt    = data.ext    || '';
+  document.getElementById('videoFileName').textContent = videoUrl ? 'Drive video (' + data.ext + ')' : (data.filename || '');
+  document.getElementById('videoFileSize').textContent = data.sizeMb + ' MB · 600 kbps compressed';
+  document.getElementById('videoPickerLabel').classList.add('hidden');
+  document.getElementById('videoPreview').classList.remove('hidden');
+  document.getElementById('videoPreview').classList.add('flex');
+  showToast('Video received from recorder', 'success');
+}
+
+function onVideoSelected(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var mb = file.size / 1024 / 1024;
+  if (mb > 100) {
+    showToast('Video too large (' + mb.toFixed(1) + ' MB). Max 100 MB.', 'error');
+    input.value = '';
+    return;
+  }
+  if (mb > 50) showToast('Large video (' + mb.toFixed(1) + ' MB) — upload may take a while.', 'warning');
+  var ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
+  videoMime = file.type || 'video/mp4';
+  videoExt  = ext;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    videoBase64 = e.target.result.split(',')[1];
+    document.getElementById('videoFileName').textContent = file.name;
+    document.getElementById('videoFileSize').textContent = mb.toFixed(1) + ' MB';
+    document.getElementById('videoPickerLabel').classList.add('hidden');
+    document.getElementById('videoPreview').classList.remove('hidden');
+    document.getElementById('videoPreview').classList.add('flex');
+  };
+  reader.onerror = function() { showToast('Could not read video file.', 'error'); };
+  reader.readAsDataURL(file);
+}
+
+function clearVideo() {
+  videoBase64 = ''; videoMime = ''; videoExt = ''; videoUrl = '';
+  document.getElementById('videoInput').value = '';
+  document.getElementById('videoPickerLabel').classList.remove('hidden');
+  document.getElementById('videoPreview').classList.add('hidden');
+  document.getElementById('videoPreview').classList.remove('flex');
+}
+
+/* ── Image upload ── */
+function onImagesSelected(input) {
+  var files = Array.prototype.slice.call(input.files || []);
+  if (!files.length) return;
+  var remaining = 5 - imageFiles.length;
+  if (remaining <= 0) { showToast('Maximum 5 images already added.', 'warning'); input.value=''; return; }
+  files = files.slice(0, remaining);
+  var pending = files.length;
+  files.forEach(function(file) {
+    // Use FileReader as primary path — works reliably in GAS iframe + mobile
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var dataUrl = ev.target.result;
+      // Compress via canvas if possible; fall back to raw data URL
+      try {
+        var canvas = document.createElement('canvas');
+        var imgEl  = new Image();
+        imgEl.onload = function() {
+          var maxDim = 1280;
+          var w = imgEl.width, h = imgEl.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+            else       { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+          var b64 = canvas.toDataURL('image/jpeg', 0.82).split(',')[1];
+          imageFiles.push({base64: b64, mime: 'image/jpeg', name: file.name, previewSrc: 'data:image/jpeg;base64,' + b64});
+          pending--;
+          if (pending === 0) renderImagePreviews();
+        };
+        imgEl.onerror = function() {
+          // Canvas failed — store raw base64
+          var b64 = dataUrl.split(',')[1];
+          imageFiles.push({base64: b64, mime: file.type || 'image/jpeg', name: file.name, previewSrc: dataUrl});
+          pending--;
+          if (pending === 0) renderImagePreviews();
+        };
+        imgEl.src = dataUrl;
+      } catch(canvasErr) {
+        var b64 = dataUrl.split(',')[1];
+        imageFiles.push({base64: b64, mime: file.type || 'image/jpeg', name: file.name, previewSrc: dataUrl});
+        pending--;
+        if (pending === 0) renderImagePreviews();
+      }
+    };
+    reader.onerror = function() { pending--; if (pending===0) renderImagePreviews(); };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderImagePreviews() {
+  var wrap = document.getElementById('imagePreviews');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  if (!imageFiles.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  imageFiles.forEach(function(f, i) {
+    var thumb = document.createElement('div');
+    thumb.style.cssText = 'position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;background:#f1f5f9;flex-shrink:0;';
+    var imgEl = document.createElement('img');
+    imgEl.src = f.previewSrc || ('data:image/jpeg;base64,' + f.base64);
+    imgEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.style.cssText = 'position:absolute;top:2px;right:2px;width:20px;height:20px;background:rgba(0,0,0,0.6);border-radius:50%;display:flex;align-items:center;justify-content:center;border:0;cursor:pointer;padding:0;';
+    del.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px;color:#fff;">close</span>';
+    del.onclick = (function(idx){ return function(){ imageFiles.splice(idx,1); renderImagePreviews(); }; })(i);
+    thumb.appendChild(imgEl); thumb.appendChild(del);
+    wrap.appendChild(thumb);
+  });
 }
 
 /* ── Utilities ── */

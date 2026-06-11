@@ -246,7 +246,45 @@
     <div class="field-error-msg" id="err-disp" style="display:none">Please select a disposition</div>
   </section>
 
-  <!-- Section 5: Remarks -->
+  <!-- Section 5: Images -->
+  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Images <span class="text-[10px] font-normal normal-case tracking-normal text-[#94a3b8]">(optional · max 5 per type)</span></h2>
+
+    <!-- Document Images -->
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#1e3a5f] text-[18px]" style="font-variation-settings:'FILL' 1">description</span>
+        <span class="font-label text-[13px] font-semibold text-[#374151]">Document Images</span>
+        <span class="text-[10px] text-[#94a3b8]">Invoice / COA / Challan</span>
+      </div>
+      <div id="doc-img-preview" class="flex flex-wrap gap-2"></div>
+      <label id="doc-img-btn" class="flex items-center justify-center gap-2 h-[42px] border-[1.5px] border-dashed border-[#94a3b8] rounded-lg cursor-pointer text-[13px] font-semibold text-[#64748b] hover:border-accent hover:text-accent transition-all">
+        <span class="material-symbols-outlined text-[18px]">add_a_photo</span> Add Document Photo
+        <input type="file" accept="image/*" multiple class="hidden img-file-input" data-kind="doc">
+      </label>
+    </div>
+
+    <!-- Product Images -->
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#16a34a] text-[18px]" style="font-variation-settings:'FILL' 1">inventory_2</span>
+        <span class="font-label text-[13px] font-semibold text-[#374151]">Product Images</span>
+        <span class="text-[10px] text-[#94a3b8]">Material / Packaging photos</span>
+      </div>
+      <div id="prod-img-preview" class="flex flex-wrap gap-2"></div>
+      <label id="prod-img-btn" class="flex items-center justify-center gap-2 h-[42px] border-[1.5px] border-dashed border-[#94a3b8] rounded-lg cursor-pointer text-[13px] font-semibold text-[#64748b] hover:border-accent hover:text-accent transition-all">
+        <span class="material-symbols-outlined text-[18px]">add_a_photo</span> Add Product Photo
+        <input type="file" accept="image/*" multiple class="hidden img-file-input" data-kind="product">
+      </label>
+    </div>
+
+    <div id="img-upload-status" class="hidden text-[12px] font-semibold text-[#1e3a5f] flex items-center gap-2">
+      <span class="spinner" style="border-color:rgba(30,58,95,0.3);border-top-color:#1e3a5f;"></span>
+      <span id="img-upload-msg">Uploading images…</span>
+    </div>
+  </section>
+
+  <!-- Section 6: Remarks -->
   <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
     <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Remarks</h2>
     <textarea id="remarks" rows="3" placeholder="Deviations, observations, or notes"
@@ -634,6 +672,118 @@ function checkOverReceiptWarning() {
     : (pending !== null ? 'PO pending: ' + pending : '');
 }
 
+// ── Image handling ─────────────────────────────────────────────────
+var _grnImages = [];   // { base64, mime, kind, previewUrl }
+
+function compressImage_(file, maxPx, quality, cb) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > maxPx || h > maxPx) {
+        var ratio = Math.min(maxPx / w, maxPx / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(function(blob) {
+        var r2 = new FileReader();
+        r2.onload = function(ev) {
+          var b64 = ev.target.result.split(',')[1];
+          cb(null, b64, blob.type, canvas.toDataURL(blob.type, quality));
+        };
+        r2.readAsDataURL(blob);
+      }, 'image/jpeg', quality);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function onImageFilesChosen_(input) {
+  var kind     = input.getAttribute('data-kind');   // 'doc' | 'product'
+  var previewEl = document.getElementById(kind === 'doc' ? 'doc-img-preview' : 'prod-img-preview');
+  var btnEl     = document.getElementById(kind === 'doc' ? 'doc-img-btn'     : 'prod-img-btn');
+  var existing  = _grnImages.filter(function(i){ return i.kind === kind; }).length;
+  var files     = Array.prototype.slice.call(input.files || []);
+  var allowed   = Math.max(0, 5 - existing);
+  if (!files.length) return;
+  files = files.slice(0, allowed);
+  if (!files.length) { showToast('Max 5 images per type already added.', 'warning'); return; }
+
+  files.forEach(function(file) {
+    compressImage_(file, 1200, 0.75, function(err, b64, mime, previewUrl) {
+      if (err) { showErr('Image processing failed.'); return; }
+      var entry = { base64: b64, mime: mime, kind: kind, previewUrl: previewUrl };
+      _grnImages.push(entry);
+      var idx = _grnImages.length - 1;
+
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative;width:72px;height:72px;';
+      var imgEl = document.createElement('img');
+      imgEl.src = previewUrl;
+      imgEl.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:8px;border:1.5px solid #d1d5db;';
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.textContent = '×';
+      del.style.cssText = 'position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      del.onclick = (function(i, w) { return function() {
+        _grnImages.splice(i, 1);
+        w.remove();
+        updateImgBtnVisibility_(kind);
+      }; })(idx, wrap);
+      wrap.appendChild(imgEl);
+      wrap.appendChild(del);
+      previewEl.appendChild(wrap);
+      updateImgBtnVisibility_(kind);
+    });
+  });
+  input.value = '';
+}
+
+function updateImgBtnVisibility_(kind) {
+  var count = _grnImages.filter(function(i){ return i.kind === kind; }).length;
+  var btn   = document.getElementById(kind === 'doc' ? 'doc-img-btn' : 'prod-img-btn');
+  if (btn) btn.style.display = count >= 5 ? 'none' : '';
+}
+
+function uploadImagesAndSave_(afterUpload) {
+  var toUpload = _grnImages.filter(function(i){ return !i.url; });
+  if (!toUpload.length) { afterUpload([]); return; }
+
+  var statusEl = document.getElementById('img-upload-status');
+  var msgEl    = document.getElementById('img-upload-msg');
+  statusEl.classList.remove('hidden');
+  msgEl.textContent = 'Uploading ' + toUpload.length + ' image' + (toUpload.length > 1 ? 's' : '') + '…';
+
+  var payload = toUpload.map(function(i){ return { base64: i.base64, mime: i.mime, kind: i.kind }; });
+  google.script.run
+    .withSuccessHandler(function(res) {
+      statusEl.classList.add('hidden');
+      if (!res || !res.success) {
+        showToast('Image upload failed — saving without images.', 'warning');
+        afterUpload([]);
+        return;
+      }
+      // Stitch urls back onto _grnImages entries
+      var di = 0, pi = 0;
+      toUpload.forEach(function(entry) {
+        if (entry.kind === 'doc')     { entry.url = (res.docUrls     || [])[di++] || ''; }
+        else                          { entry.url = (res.productUrls || [])[pi++] || ''; }
+      });
+      afterUpload(_grnImages);
+    })
+    .withFailureHandler(function(e) {
+      statusEl.classList.add('hidden');
+      showToast('Image upload failed — saving without images.', 'warning');
+      afterUpload([]);
+    })
+    .uploadGRNImages(payload);
+}
+
 // ── Save ───────────────────────────────────────────────────────────
 function doSave() {
   var isMulti = !!(_activePO && document.getElementById('po-multi-section').style.display !== 'none');
@@ -811,6 +961,16 @@ function _doSaveProceed() {
 
   function afterStop(operatorName) {
     data.operatorName = operatorName || '';
+
+    // Upload images first, then save
+    uploadImagesAndSave_(function(uploadedImages) {
+      data.docImageUrls     = uploadedImages.filter(function(i){ return i.kind === 'doc';     }).map(function(i){ return i.url || ''; }).filter(Boolean);
+      data.productImageUrls = uploadedImages.filter(function(i){ return i.kind === 'product'; }).map(function(i){ return i.url || ''; }).filter(Boolean);
+      doActualSave_(data);
+    });
+  }
+
+  function doActualSave_(data) {
     google.script.run
       .withSuccessHandler(function(res) {
         if (res && res.success) {
@@ -978,6 +1138,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.querySelectorAll('.disp-btn').forEach(function(btn) {
     btn.addEventListener('click', function() { selectDisp(btn.getAttribute('data-disp')); });
+  });
+
+  document.querySelectorAll('.img-file-input').forEach(function(input) {
+    input.addEventListener('change', function() { onImageFilesChosen_(input); });
   });
 
   init();

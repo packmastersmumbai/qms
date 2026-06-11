@@ -22,7 +22,8 @@ var MASTERS_SCHEMA_ = {
       { key:'material',  label:'Material',   type:'text' },
       { key:'city',      label:'City',       type:'text' },
       { key:'approved',  label:'Approved',   type:'enum:Y/N' },
-      { key:'stateCode', label:'State Code', type:'text' }
+      { key:'stateCode', label:'State Code', type:'text' },
+      { key:'email',     label:'Email',      type:'text' }
     ]
   },
   Materials: {

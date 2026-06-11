@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Traceability — Pack Masters QMS</title>
+<?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined">
+<style>
+  /* ── Scoped Trace styles (token-driven via Theme.html :root vars) ── */
+  .tr-anchor-card { background:#fff; border:1px solid var(--pm-border, #e2e8f0); border-radius:12px; padding:14px 16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .tr-anchor-type { background:#0D1B6E; color:#fff; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+  .tr-lane-hdr   { font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:1.5px; margin:18px 0 8px; display:flex; align-items:center; gap:6px; }
+  .tr-comp-card  { background:#fff; border:1px solid var(--pm-border, #e2e8f0); border-radius:10px; overflow:hidden; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+  .tr-comp-hdr   { background:#0B2A4A; color:#fff; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .tr-type-rm    { background:#0d9488; }
+  .tr-type-pm    { background:#7c3aed; }
+  .tr-type-comp  { background:#0B2A4A; }
+  .tr-lot-row    { padding:10px 12px; border-top:1px solid #eef0f3; }
+  .tr-lot-row:first-child { border-top:0; }
+  .tr-lot-meta   { font-size:11px; color:#475569; display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:4px; }
+  .tr-loc        { background:#fef3c7; color:#92400e; padding:1px 7px; border-radius:3px; font-weight:600; font-size:11px; }
+  .tr-chain      { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .tr-chip       { font-size:10.5px; padding:3px 8px; border-radius:99px; border:1px solid var(--pm-border, #e2e8f0); background:#fff; color:#0f172a; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:transform .12s; }
+  .tr-chip:active{ transform:scale(.96); }
+  .tr-chip.green { background:#dcfce7; color:#166534; border-color:#bbf7d0; }
+  .tr-chip.amber { background:#fef3c7; color:#92400e; border-color:#fde68a; }
+  .tr-chip.red   { background:#fee2e2; color:#b91c1c; border-color:#fecaca; }
+  .tr-chip.blue  { background:#dbeafe; color:#1e40af; border-color:#bfdbfe; }
+  .tr-chip.grey  { background:#f1f5f9; color:#64748b; border-color:#e2e8f0; }
+  .tr-flag       { font-size:10px; padding:1px 6px; border-radius:3px; background:#fee2e2; color:#b91c1c; font-weight:700; }
+  .tr-empty      { background:#fff; border:1px dashed #cbd5e1; border-radius:10px; padding:18px; text-align:center; color:#64748b; font-size:13px; }
+  .tr-step-row   { background:#fff; border:1px solid var(--pm-border, #e2e8f0); border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:background .12s; }
+  .tr-step-row:active { background:#f8fafc; }
+  .tr-step-dot   { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-right:10px; display:inline-block; }
+  .tr-dot-green  { background:#16a34a; }
+  .tr-dot-amber  { background:#f59e0b; }
+  .tr-dot-red    { background:#dc2626; }
+  .tr-dot-grey   { background:#cbd5e1; }
+  .tr-dot-blue   { background:#2563eb; }
+  .tr-step-meta  { font-size:11px; color:#64748b; margin-top:2px; }
+  .tr-issue-pill { display:inline-flex; align-items:center; gap:3px; font-size:10px; padding:2px 7px; border-radius:99px; background:#fee2e2; color:#b91c1c; font-weight:700; margin-left:6px; cursor:pointer; }
+  .tr-orphan     { background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px 12px; font-size:12px; color:#9a3412; margin-bottom:8px; }
+  .pm-narrow main, .pm-wide main { padding-top:0; } /* override theme rules */
+</style>
+</head>
+<body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px] pm-wide">
+
+<!-- ── Top App Bar (full-bleed; inner cage centers content) ── -->
+<header class="fixed top-0 left-0 right-0 w-full z-50 h-[56px] bg-[#0D1B6E] shadow-md">
+  <div class="h-full max-w-[1280px] mx-auto flex items-center justify-between px-4 relative">
+    <div class="flex items-center gap-2">
+      <span id="logoBtn"
+            class="material-symbols-outlined text-white active:scale-95 duration-100 hover:bg-white/10 transition-colors p-1 rounded-full cursor-pointer"
+            style="font-variation-settings:'FILL' 0;">arrow_back</span>
+      <span class="font-headline text-[15px] font-bold text-white cursor-pointer" id="logoBtnText">Pack Masters</span>
+    </div>
+    <h1 class="font-headline text-[18px] font-bold text-white tracking-tight absolute left-1/2 -translate-x-1/2">Traceability</h1>
+    <div class="flex items-center gap-1"></div>
+  </div>
+</header>
+
+<!-- ── Search strip ── -->
+<div id="searchStrip" class="fixed top-[56px] left-0 right-0 z-40 bg-white border-b border-[#e5e7eb] shadow-[0_2px_8px_rgba(13,27,110,0.06)]">
+  <div class="max-w-[1280px] mx-auto px-3 py-2 flex gap-2 items-center">
+    <div class="relative flex-1 min-w-0">
+      <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#94a3b8] text-[18px]" style="font-variation-settings:'FILL' 0;">search</span>
+      <input type="search" id="qInput" placeholder="Paste any ID — PO, GRN, IQC, IPQC, FG Job, OQC, GP, Dispatch, NCR…"
+             class="w-full h-[36px] border border-[#e2e8f0] rounded-[6px] pl-8 pr-3 text-[13px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#0D1B6E]">
+    </div>
+    <button id="goBtn" class="h-[36px] px-4 rounded-[6px] bg-[#0D1B6E] text-white text-[12px] font-bold active:scale-95">Trace</button>
+  </div>
+</div>
+
+<!-- ── Main ── -->
+<main class="pt-[112px] px-4 max-w-[880px] mx-auto w-full pb-[24px]" id="traceMain">
+  <div id="traceBody">
+    <div class="tr-empty">
+      <span class="material-symbols-outlined text-[40px] text-[#cbd5e1] block mb-2" style="font-variation-settings:'FILL' 0;">account_tree</span>
+      Paste or scan any document number, batch ID, or lot ID above to trace its full chain.
+    </div>
+  </div>
+</main>
+
+<!-- ── Bottom nav (full-bleed; inner cage) ── -->
+<nav class="fixed bottom-0 left-0 right-0 w-full pb-safe z-50 h-[64px] bg-white border-t border-[#e2e8f0]">
+ <div class="h-full max-w-[1280px] mx-auto flex justify-around items-center px-2">
+  <button id="navHome" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">home</span>
+    <span class="font-label text-[11px] font-semibold">Home</span>
+  </button>
+  <button id="navRecords" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">inventory</span>
+    <span class="font-label text-[11px] font-semibold">Records</span>
+  </button>
+  <button class="flex flex-col items-center justify-center text-[#0D1B6E] font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 1;">account_tree</span>
+    <span class="font-label text-[11px] font-semibold">Trace</span>
+  </button>
+  <button id="navKPI" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">analytics</span>
+    <span class="font-label text-[11px] font-semibold">KPIs</span>
+  </button>
+  <button id="navMore" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+    <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">more_horiz</span>
+    <span class="font-label text-[11px] font-semibold">More</span>
+  </button>
+ </div>
+</nav>
+
+<script>
+(function(){
+  'use strict';
+
+  function esc(s){
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // Nav
+  function gotoForm(name){
+    if (window.PMHtmlCache) { window.PMHtmlCache.navigate(name); return; }
+    google.script.run
+      .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+      .withFailureHandler(function(){})
+      .getFormHtml(name);
+  }
+  document.getElementById('logoBtn').addEventListener('click', function(){ gotoForm('Landing'); });
+  document.getElementById('logoBtnText').addEventListener('click', function(){ gotoForm('Landing'); });
+  document.getElementById('navHome').addEventListener('click', function(){ gotoForm('Landing'); });
+  document.getElementById('navRecords').addEventListener('click', function(){ gotoForm('Records'); });
+  document.getElementById('navKPI').addEventListener('click', function(){ gotoForm('KPI'); });
+
+  // Status → dot+chip color
+  function statusColor(s){
+    var x = String(s||'').toUpperCase();
+    if (['ACCEPTED','PASS','PASSED','RELEASED','CLOSED','COMPLETE','COMPLETED','DELIVERED','PRODUCED','DISPATCHED'].indexOf(x) !== -1) return 'green';
+    if (['FAIL','FAILED','REJECTED','CANCELLED','HOLD'].indexOf(x) !== -1) return 'red';
+    if (x === '' || x === 'OPEN' || x.indexOf('PENDING') !== -1 || x === 'BOOKED' || x === 'IN_PROGRESS' || x === 'ISSUED' || x === 'AVAILABLE' || x === 'PARTIAL') return 'amber';
+    return 'grey';
+  }
+  function typeStyle(t){
+    var x = String(t||'').toUpperCase();
+    if (x === 'RM') return 'tr-type-rm';
+    if (x === 'PM') return 'tr-type-pm';
+    return 'tr-type-comp';
+  }
+
+  // Tap navigation for chips
+  function openDocChip(type, docNo){
+    if (!docNo) return;
+    try { sessionStorage.setItem('pmAutoOpenDoc', docNo); } catch(e){}
+    try { sessionStorage.setItem('pmRecordsOpen', docNo); } catch(e){}
+    try { sessionStorage.setItem('pmRecordsFilter', type); } catch(e){}
+    gotoForm('Records');
+  }
+  window.__traceOpen = function(t, d){ openDocChip(t, d); };
+  window.__traceFollow = function(d){
+    var el = document.getElementById('qInput');
+    if (el) el.value = d;
+    runTrace(d);
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+
+  function chip(label, type, docNo, color, title){
+    var cls = 'tr-chip ' + (color || 'blue');
+    return '<span class="' + cls + '" title="' + esc(title||'') + '"' +
+      ' onclick="window.__traceOpen(\'' + esc(type) + '\',\'' + esc(docNo) + '\')">' + esc(label) + '</span>';
+  }
+  function followChip(label, docNo){
+    return '<span class="tr-chip blue" title="Re-trace from this node"' +
+      ' onclick="window.__traceFollow(\'' + esc(docNo) + '\')">' +
+      '<span class="material-symbols-outlined" style="font-size:13px;">account_tree</span>' + esc(label) + '</span>';
+  }
+
+  // ─── Render ──────────────────────────────────────────────────
+  function render(trace){
+    var body = document.getElementById('traceBody');
+    if (!trace) { body.innerHTML = '<div class="tr-empty">No response from server.</div>'; return; }
+    if (!trace.anchor) {
+      body.innerHTML = '<div class="tr-empty"><span class="material-symbols-outlined text-[40px] text-[#cbd5e1] block mb-2">search_off</span>' +
+        esc(trace.message || 'No record found.') + '</div>';
+      return;
+    }
+    var a = trace.anchor;
+    var col = statusColor(a.status);
+    var html = '';
+
+    // Anchor card
+    html += '<div class="tr-anchor-card">' +
+      '<div class="flex justify-between items-start gap-2">' +
+        '<div>' +
+          '<div class="flex items-center gap-2 mb-1">' +
+            '<span class="tr-anchor-type">' + esc(a.type) + '</span>' +
+            '<span class="tr-chip ' + col + '">' + esc(a.status || '—') + '</span>' +
+          '</div>' +
+          '<div class="font-headline text-[16px] font-bold text-[#0D1B6E]">' + esc(a.docNo) + '</div>' +
+          '<div class="text-[12px] text-[#475569] mt-1">' + esc(a.label || '') + '</div>' +
+          (a.dateLabel ? '<div class="text-[11px] text-[#64748b] mt-1">📅 ' + esc(a.dateLabel) + '</div>' : '') +
+        '</div>' +
+        '<button onclick="window.print()" title="Print" class="h-[32px] w-[32px] inline-flex items-center justify-center rounded-[6px] border border-[#e2e8f0] bg-white text-[#64748b] active:scale-95">' +
+          '<span class="material-symbols-outlined text-[16px]">print</span></button>' +
+      '</div>';
+
+    // Issue summary inside anchor card if any issues
+    var issueCount = (trace.issues.ncr.length + trace.issues.customerReturn.length + trace.issues.orphans.length);
+    if (issueCount > 0) {
+      html += '<div class="mt-3 pt-3 border-t border-[#e2e8f0] flex flex-wrap gap-2 items-center">' +
+        '<span class="text-[11px] font-bold text-[#64748b] uppercase tracking-wider">Issues:</span>';
+      if (trace.issues.ncr.length)            html += '<span class="tr-issue-pill" onclick="document.getElementById(\'issuesLane\').scrollIntoView({behavior:\'smooth\'})">⚠ ' + trace.issues.ncr.length + ' NCR</span>';
+      if (trace.issues.customerReturn.length) html += '<span class="tr-issue-pill" onclick="document.getElementById(\'issuesLane\').scrollIntoView({behavior:\'smooth\'})">↩ ' + trace.issues.customerReturn.length + ' Return</span>';
+      if (trace.issues.orphans.length)        html += '<span class="tr-issue-pill">⚠ ' + trace.issues.orphans.length + ' Orphan</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // ── Upstream lane ──
+    if (trace.upstream.components.length) {
+      html += '<div class="tr-lane-hdr"><span class="material-symbols-outlined" style="font-size:14px;">north</span> Upstream (materials in)</div>';
+      trace.upstream.components.forEach(function(c, ci){
+        var typeCls = typeStyle(c.type);
+        html += '<div class="tr-comp-card">' +
+          '<div class="tr-comp-hdr ' + typeCls + '">' +
+            '<div><b>' + (ci+1) + '. ' + esc(c.compCode) + '</b> — ' + esc(c.compDesc) + '</div>' +
+            '<span style="font-size:10px;font-weight:700;background:rgba(255,255,255,0.18);padding:2px 7px;border-radius:3px;">' + esc(c.type || 'COMP') + '</span>' +
+          '</div>';
+
+        if (!c.lots || c.lots.length === 0) {
+          html += '<div class="tr-lot-row" style="color:#94a3b8;font-size:12px;">No lot detail available.</div>';
+        } else {
+          c.lots.forEach(function(l){
+            var flagsHtml = (l.flags || []).map(function(f){ return '<span class="tr-flag">⚠ ' + esc(f) + '</span>'; }).join(' ');
+            html += '<div class="tr-lot-row">' +
+              '<div class="flex items-start justify-between gap-2 flex-wrap">' +
+                '<div>' +
+                  '<div class="font-bold text-[13px] text-[#0D1B6E]">' + esc(l.batch || '(no batch)') + '</div>' +
+                  '<div class="tr-lot-meta">' +
+                    (l.location ? '<span>📍 <span class="tr-loc">' + esc(l.location) + '</span></span>' : '') +
+                    (l.issuedQty   ? '<span>Issued: <b>' + Number(l.issuedQty).toFixed(2) + '</b></span>' : '') +
+                    (l.consumedQty ? '<span>Consumed: <b>' + Number(l.consumedQty).toFixed(2) + '</b></span>' : '') +
+                    (l.returnedQty ? '<span style="color:#0d9488;">Ret: ' + Number(l.returnedQty).toFixed(2) + '</span>' : '') +
+                    (l.scrapQty    ? '<span style="color:#b91c1c;">Scrap: ' + Number(l.scrapQty).toFixed(2) + '</span>' : '') +
+                    (l.wastageQty  ? '<span style="color:#92400e;">Waste: ' + Number(l.wastageQty).toFixed(2) + '</span>' : '') +
+                  '</div>' +
+                  (flagsHtml ? '<div class="mt-1">' + flagsHtml + '</div>' : '') +
+                '</div>' +
+              '</div>' +
+              '<div class="tr-chain">' +
+                (l.po  ? chip('PO ' + l.po.docNo,  'PO',  l.po.docNo,  statusColor(l.po.status), l.po.supplier) : '') +
+                (l.grn ? chip('GRN ' + l.grn.docNo,'GRN', l.grn.docNo, statusColor(l.grn.status), l.grn.supplier + ' · ' + (l.grn.date||'')) : '') +
+                (l.iqc ? chip('IQC ' + l.iqc.docNo,'IQC', l.iqc.docNo, statusColor(l.iqc.disposition), 'Disposition: ' + l.iqc.disposition) : '') +
+                followChip('Trace lot', (l.batch || c.compCode)) +
+              '</div>' +
+              '</div>';
+          });
+        }
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="tr-lane-hdr"><span class="material-symbols-outlined" style="font-size:14px;">north</span> Upstream</div>';
+      html += '<div class="tr-empty">No upstream materials linked.</div>';
+    }
+
+    // ── This batch ──
+    html += '<div class="tr-lane-hdr"><span class="material-symbols-outlined" style="font-size:14px;">center_focus_strong</span> This batch</div>';
+    var f = trace.thisBatch.focus;
+    if (f) {
+      if (f.type === 'PRODUCTION') {
+        html += '<div class="tr-step-row" onclick="window.__traceOpen(\'Production\',\'' + esc(f.docNo) + '\')">' +
+          '<div class="flex items-center"><span class="tr-step-dot tr-dot-blue"></span>' +
+            '<div><div class="font-bold text-[13px]">Production · ' + esc(f.docNo) + '</div>' +
+                 '<div class="tr-step-meta">' + esc(f.fgCode) + ' — ' + esc(f.fgDesc) + ' · ' + esc(f.fgQty) + ' ' + esc(f.fgUom||'') + ' · ' + esc(f.status) + (f.dateLabel ? ' · ' + esc(f.dateLabel) : '') + '</div></div>' +
+          '</div>' +
+          '<span class="material-symbols-outlined text-[#94a3b8]">chevron_right</span>' +
+        '</div>';
+      } else if (f.type === 'LOT') {
+        html += '<div class="tr-step-row">' +
+          '<div class="flex items-center"><span class="tr-step-dot tr-dot-blue"></span>' +
+            '<div><div class="font-bold text-[13px]">Lot · ' + esc(f.batchOrLot) + '</div>' +
+                 '<div class="tr-step-meta">' + esc(f.materialCode) + (f.location ? ' · 📍 ' + esc(f.location) : '') + '</div></div>' +
+          '</div>' +
+        '</div>';
+      }
+    }
+    // IPQC rows
+    if (trace.thisBatch.ipqc && trace.thisBatch.ipqc.length) {
+      trace.thisBatch.ipqc.forEach(function(ip){
+        var c2 = statusColor(ip.status);
+        html += '<div class="tr-step-row" onclick="window.__traceOpen(\'IPQC\',\'' + esc(ip.docNo) + '\')">' +
+          '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c2 + '"></span>' +
+            '<div><div class="font-bold text-[13px]">IPQC · ' + esc(ip.docNo) + '</div>' +
+                 '<div class="tr-step-meta">' + esc(ip.status) + ' · Round ' + esc(ip.rounds) + ' · ' + esc(ip.inspector || '') + (ip.dateLabel ? ' · ' + esc(ip.dateLabel) : '') + '</div></div>' +
+          '</div>' +
+          '<span class="material-symbols-outlined text-[#94a3b8]">chevron_right</span>' +
+        '</div>';
+      });
+    }
+
+    // ── Downstream lane ──
+    html += '<div class="tr-lane-hdr"><span class="material-symbols-outlined" style="font-size:14px;">south</span> Downstream (where this goes)</div>';
+    var dHtml = '';
+    function pushDownRows(arr, type){
+      arr.forEach(function(r){
+        var c3 = statusColor(r.status);
+        dHtml += '<div class="tr-step-row" onclick="window.__traceOpen(\'' + esc(type) + '\',\'' + esc(r.docNo) + '\')">' +
+          '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c3 + '"></span>' +
+            '<div><div class="font-bold text-[13px]">' + esc(type) + ' · ' + esc(r.docNo) + '</div>' +
+                 '<div class="tr-step-meta">' + esc(r.status) + (r.customer || r.party ? ' · ' + esc(r.customer || r.party) : '') + (r.dateLabel ? ' · ' + esc(r.dateLabel) : '') + '</div></div>' +
+          '</div>' +
+          '<span class="material-symbols-outlined text-[#94a3b8]">chevron_right</span>' +
+        '</div>';
+      });
+    }
+    pushDownRows(trace.downstream.oqc,      'OQC');
+    pushDownRows(trace.downstream.gatepass, 'Gatepass');
+    pushDownRows(trace.downstream.dispatch, 'Dispatch');
+
+    // FG jobs only when tracing from a LOT
+    if (trace.downstream.fgJobs && trace.downstream.fgJobs.length) {
+      trace.downstream.fgJobs.forEach(function(j){
+        var c4 = statusColor(j.status);
+        dHtml += '<div class="tr-step-row" onclick="window.__traceFollow(\'' + esc(j.jobId) + '\')">' +
+          '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c4 + '"></span>' +
+            '<div><div class="font-bold text-[13px]">FG Job · ' + esc(j.jobId) + '</div>' +
+                 '<div class="tr-step-meta">' + esc(j.fgCode) + ' · ' + esc(j.fgQty) + ' ' + esc(j.fgUom||'') + ' · ' + esc(j.status) + (j.dateLabel ? ' · ' + esc(j.dateLabel) : '') + '</div></div>' +
+          '</div>' +
+          '<span class="material-symbols-outlined text-[#94a3b8]">arrow_forward</span>' +
+        '</div>';
+      });
+      if (trace.meta.truncated && trace.meta.truncated.fgJobs) {
+        dHtml += '<div class="text-[11px] text-[#64748b] text-center py-2">Showing ' + trace.downstream.fgJobs.length + ' of ' + trace.meta.truncated.fgJobs + ' FG batches. <button class="trShowAll text-[#2563eb] underline">Show all</button></div>';
+      }
+    }
+    html += dHtml || '<div class="tr-empty">No downstream steps yet.</div>';
+
+    // ── Issues lane ──
+    html += '<div class="tr-lane-hdr" id="issuesLane"><span class="material-symbols-outlined" style="font-size:14px;">report</span> Issues</div>';
+    if (issueCount === 0) {
+      html += '<div class="tr-empty">No issues linked to this trace.</div>';
+    } else {
+      trace.issues.orphans.forEach(function(o){
+        html += '<div class="tr-orphan">⚠ <b>' + esc(o.kind) + '</b> — ' + esc(o.note) +
+          (o.issueIds && o.issueIds.length ? '<br><span style="font-size:11px;color:#7c2d12;">Issue IDs: ' + o.issueIds.map(esc).join(', ') + '</span>' : '') + '</div>';
+      });
+      trace.issues.ncr.forEach(function(n){
+        var c5 = statusColor(n.status);
+        html += '<div class="tr-step-row" onclick="window.__traceOpen(\'NCR\',\'' + esc(n.docNo) + '\')">' +
+          '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c5 + '"></span>' +
+            '<div><div class="font-bold text-[13px]">NCR · ' + esc(n.docNo) + ' <span class="text-[10px] font-bold text-[#b91c1c] bg-[#fee2e2] px-2 py-0.5 rounded ml-1">' + esc(n.raisedAtStep) + '</span></div>' +
+                 '<div class="tr-step-meta">' + esc(n.status) + ' · ' + esc(n.defect || '') + (n.dateLabel ? ' · ' + esc(n.dateLabel) : '') + '</div></div>' +
+          '</div>' +
+          '<span class="material-symbols-outlined text-[#94a3b8]">chevron_right</span>' +
+        '</div>';
+      });
+      trace.issues.customerReturn.forEach(function(cr){
+        var c6 = statusColor(cr.status);
+        html += '<div class="tr-step-row" onclick="window.__traceOpen(\'CustomerReturn\',\'' + esc(cr.docNo) + '\')">' +
+          '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c6 + '"></span>' +
+            '<div><div class="font-bold text-[13px]">Customer Return · ' + esc(cr.docNo) + '</div>' +
+                 '<div class="tr-step-meta">' + esc(cr.status) + ' · ' + esc(cr.reason || '') + (cr.dateLabel ? ' · ' + esc(cr.dateLabel) : '') + '</div></div>' +
+          '</div>' +
+          '<span class="material-symbols-outlined text-[#94a3b8]">chevron_right</span>' +
+        '</div>';
+      });
+    }
+
+    // Footer meta + history/cap toggles
+    var isFull = !!trace.meta.fullHistory;
+    var isNoCap = !!trace.meta.noCap;
+    var scopeLabel = isFull ? 'Full history' : ('Last ' + (trace.meta.dateFloor || 90) + ' days');
+    var truncSummary = '';
+    if (trace.meta.truncated) {
+      var truncBits = [];
+      Object.keys(trace.meta.truncated).forEach(function(k){ truncBits.push(k + ': ' + trace.meta.truncated[k]); });
+      if (truncBits.length) truncSummary = ' · Capped (' + truncBits.join(', ') + ')';
+    }
+    html += '<div class="text-center mt-4 pb-2">' +
+      '<button id="trHistToggle" class="text-[11px] text-[#2563eb] underline mr-3">' +
+        (isFull ? 'Show last 90 days only' : 'Load full history') +
+      '</button>' +
+      '<button id="trCapToggle" class="text-[11px] text-[#2563eb] underline">' +
+        (isNoCap ? 'Re-apply 10-row cap' : 'Show all rows') +
+      '</button>' +
+      '<div class="text-[10px] text-[#94a3b8] mt-1">' + scopeLabel + truncSummary + ' · Computed ' + esc(trace.meta.computedAt || '') + '</div>' +
+    '</div>';
+
+    body.innerHTML = html;
+
+    var tgl = document.getElementById('trHistToggle');
+    if (tgl) tgl.addEventListener('click', function(){
+      var q = document.getElementById('qInput').value.trim();
+      if (q) runTrace(q, !isFull, isNoCap);
+    });
+    var capBtn = document.getElementById('trCapToggle');
+    if (capBtn) capBtn.addEventListener('click', function(){
+      var q = document.getElementById('qInput').value.trim();
+      if (q) runTrace(q, isFull, !isNoCap);
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('.trShowAll'), function(btn){
+      btn.addEventListener('click', function(){
+        var q = document.getElementById('qInput').value.trim();
+        if (q) runTrace(q, isFull, true);
+      });
+    });
+  }
+
+  // ─── Run trace ────────────────────────────────────────────────
+  function runTrace(q, fullHistory, noCap){
+    if (!q) return;
+    var body = document.getElementById('traceBody');
+    body.innerHTML = '<div class="tr-empty"><span class="material-symbols-outlined animate-spin" style="font-size:24px;">progress_activity</span><br>Tracing…</div>';
+    google.script.run
+      .withSuccessHandler(function(r){ render(r); })
+      .withFailureHandler(function(e){
+        body.innerHTML = '<div class="tr-empty" style="color:#b91c1c;">Trace failed: ' + esc(e && e.message ? e.message : e) + '</div>';
+      })
+      .traceBatch(q, { fullHistory: !!fullHistory, noCap: !!noCap });
+  }
+
+  document.getElementById('goBtn').addEventListener('click', function(){ runTrace(document.getElementById('qInput').value.trim(), false, false); });
+  document.getElementById('qInput').addEventListener('keydown', function(e){ if (e.key === 'Enter') runTrace(this.value.trim(), false, false); });
+
+  // Auto-trace if pmTraceRef was set by Records kebab or URL ?ref=
+  function getRefFromURL(){
+    try {
+      var raw = '';
+      if (window.location.search && window.location.search.length > 1) raw = window.location.search;
+      else if (window.location.hash && window.location.hash.indexOf('?') >= 0) raw = '?' + window.location.hash.split('?')[1];
+      if (!raw) return '';
+      var p = new URLSearchParams(raw);
+      return p.get('ref') || '';
+    } catch(e){ return ''; }
+  }
+  var initialRef = '';
+  try {
+    initialRef = sessionStorage.getItem('pmTraceRef') || '';
+    if (initialRef) sessionStorage.removeItem('pmTraceRef');
+  } catch(e){}
+  if (!initialRef) initialRef = getRefFromURL();
+  if (initialRef) {
+    document.getElementById('qInput').value = initialRef;
+    runTrace(initialRef);
+  }
+})();
+</script>
+</body>
+</html>

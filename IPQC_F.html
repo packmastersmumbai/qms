@@ -434,6 +434,19 @@
   <!-- Sticky footer: stacked Save Round + Close Session, with Report inline -->
   <div class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.07)] flex flex-col gap-2 px-3 py-2.5"
     style="padding-bottom: max(10px, env(safe-area-inset-bottom)); z-index: 50;">
+    <!-- Video widget -->
+    <div id="ipqcVideoBar" class="flex items-center gap-2">
+      <button type="button" onclick="openIPQCRecorder()"
+        class="h-9 px-3 rounded-lg border border-[#e2e8f0] bg-white text-[#374151] text-[12px] font-semibold flex items-center gap-1.5 active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-[16px]" style="font-variation-settings:'FILL' 0;">videocam</span>
+        Record Video
+      </button>
+      <div id="ipqcVideoPreview" class="hidden flex-1 items-center gap-2">
+        <span class="material-symbols-outlined text-[14px] text-[#16a34a]" style="font-variation-settings:'FILL' 1;">check_circle</span>
+        <span id="ipqcVideoName" class="text-[12px] text-[#374151] truncate flex-1"></span>
+        <button type="button" onclick="clearIPQCVideo()" class="text-[#94a3b8] text-[18px] leading-none">&times;</button>
+      </div>
+    </div>
     <div class="flex gap-2">
       <button id="btnSaveRound"
         class="flex-[2] h-12 bg-[#1e3a5f] text-white rounded-lg font-headline font-bold text-[14px] flex items-center justify-center gap-2 active:opacity-80 transition-opacity disabled:opacity-50">
@@ -556,6 +569,25 @@ function populateProductSelect(fgList) {
     o.setAttribute('data-name', fg.name || fg.description || fg.code);
     sel.appendChild(o);
   });
+  // Prefill from Records "Start IPQC" routing — best-effort match against options;
+  // otherwise drop the ref into the batch field as a starting hint.
+  try {
+    var prefRef = sessionStorage.getItem('pmPrefillRef');
+    if (prefRef) {
+      var matched = false;
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === prefRef) { sel.selectedIndex = i; matched = true; break; }
+      }
+      if (matched) {
+        var ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false);
+        sel.dispatchEvent(ev);
+      } else {
+        var bt = document.getElementById('setupBatch');
+        if (bt && !bt.value) bt.value = prefRef;
+      }
+      sessionStorage.removeItem('pmPrefillRef');
+    }
+  } catch(e) {}
 }
 
 function prefillInspector(inspectors) {
@@ -1118,6 +1150,18 @@ function saveRound() {
         weights:    curWeights
       });
       showToast('Round ' + saved + ' saved · ' + roundElapsedHms, 'success');
+      // Upload session video if recorded
+      if (ipqcVideoBase64) {
+        var b64 = ipqcVideoBase64, mime = ipqcVideoMime, ext = ipqcVideoExt;
+        clearIPQCVideo();
+        if (b64.length <= 4 * 1024 * 1024) {
+          google.script.run
+            .withFailureHandler(function(){ showToast('Video upload failed — save manually.', 'warning'); })
+            .saveIPQCSessionVideo(SESSION_ID, b64, mime, ext);
+        } else {
+          showToast('Video too large — skipped. Use file picker to upload.', 'warning');
+        }
+      }
       // Surface any auto-NCR failures so the operator can raise them manually
       if (res.ncrWarnings && res.ncrWarnings.length) {
         res.ncrWarnings.forEach(function(msg) {
@@ -1775,6 +1819,106 @@ function truncate(str, max) {
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+/* ── IPQC Inline Video Recorder ── */
+var ipqcVideoBase64 = '', ipqcVideoMime = '', ipqcVideoExt = '';
+var _ipqcStream = null, _ipqcRecorder = null, _ipqcChunks = [], _ipqcBlob = null;
+
+function openIPQCRecorder() {
+  document.getElementById('ipqcRecorderModal').style.display = 'flex';
+  _ipqcChunks = []; _ipqcBlob = null;
+  var vf = document.getElementById('ipqcViewfinder');
+  document.getElementById('ipqcRecStatus').textContent = 'Starting camera…';
+  document.getElementById('ipqcRecStartBtn').style.display = '';
+  document.getElementById('ipqcRecStopBtn').style.display = 'none';
+  document.getElementById('ipqcRecUseBtn').style.display = 'none';
+  document.getElementById('ipqcRecRetakeBtn').style.display = 'none';
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true })
+    .then(function(stream) {
+      _ipqcStream = stream;
+      vf.srcObject = stream; vf.muted = true; vf.play();
+      document.getElementById('ipqcRecStatus').textContent = 'Camera ready — tap Start';
+    })
+    .catch(function(err) {
+      document.getElementById('ipqcRecStatus').textContent = 'Camera error: ' + err.message;
+    });
+}
+function ipqcRecStart() {
+  if (!_ipqcStream) return;
+  _ipqcChunks = []; _ipqcBlob = null;
+  var mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
+  _ipqcRecorder = new MediaRecorder(_ipqcStream, { mimeType: mime });
+  _ipqcRecorder.ondataavailable = function(e) { if (e.data.size) _ipqcChunks.push(e.data); };
+  _ipqcRecorder.onstop = function() {
+    _ipqcBlob = new Blob(_ipqcChunks, { type: mime });
+    var vf = document.getElementById('ipqcViewfinder');
+    vf.srcObject = null; vf.src = URL.createObjectURL(_ipqcBlob); vf.muted = false; vf.controls = true; vf.play();
+    document.getElementById('ipqcRecStatus').textContent = 'Review your video below';
+    document.getElementById('ipqcRecUseBtn').style.display = '';
+    document.getElementById('ipqcRecRetakeBtn').style.display = '';
+    document.getElementById('ipqcRecStartBtn').style.display = 'none';
+    document.getElementById('ipqcRecStopBtn').style.display = 'none';
+  };
+  _ipqcRecorder.start();
+  document.getElementById('ipqcRecStatus').textContent = 'Recording…';
+  document.getElementById('ipqcRecStartBtn').style.display = 'none';
+  document.getElementById('ipqcRecStopBtn').style.display = '';
+}
+function ipqcRecStop() { if (_ipqcRecorder && _ipqcRecorder.state !== 'inactive') _ipqcRecorder.stop(); }
+function ipqcRecUse() {
+  if (!_ipqcBlob) return;
+  var ext = _ipqcBlob.type.indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+  var mb = (_ipqcBlob.size / 1024 / 1024).toFixed(1);
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    ipqcVideoBase64 = ev.target.result.split(',')[1];
+    ipqcVideoMime   = _ipqcBlob.type;
+    ipqcVideoExt    = ext;
+    document.getElementById('ipqcVideoName').textContent = 'video.' + ext + ' (' + mb + ' MB)';
+    document.getElementById('ipqcVideoPreview').classList.remove('hidden');
+    document.getElementById('ipqcVideoPreview').classList.add('flex');
+    showToast('Video ready — will upload on Save Round', 'success');
+    closeIPQCRecorder();
+  };
+  reader.readAsDataURL(_ipqcBlob);
+}
+function ipqcRecRetake() {
+  var vf = document.getElementById('ipqcViewfinder');
+  vf.src = ''; vf.controls = false; vf.muted = true; vf.srcObject = _ipqcStream; vf.play();
+  _ipqcChunks = []; _ipqcBlob = null;
+  document.getElementById('ipqcRecStatus').textContent = 'Camera ready — tap Start';
+  document.getElementById('ipqcRecStartBtn').style.display = '';
+  document.getElementById('ipqcRecStopBtn').style.display = 'none';
+  document.getElementById('ipqcRecUseBtn').style.display = 'none';
+  document.getElementById('ipqcRecRetakeBtn').style.display = 'none';
+}
+function closeIPQCRecorder() {
+  if (_ipqcStream) { _ipqcStream.getTracks().forEach(function(t){ t.stop(); }); _ipqcStream = null; }
+  document.getElementById('ipqcRecorderModal').style.display = 'none';
+}
+function clearIPQCVideo() {
+  ipqcVideoBase64 = ''; ipqcVideoMime = ''; ipqcVideoExt = '';
+  document.getElementById('ipqcVideoPreview').classList.add('hidden');
+  document.getElementById('ipqcVideoPreview').classList.remove('flex');
+}
 </script>
+
+<!-- Inline video recorder modal -->
+<div id="ipqcRecorderModal" style="display:none;position:fixed;inset:0;z-index:999;background:#0f172a;flex-direction:column;">
+  <div style="padding:12px;display:flex;align-items:center;gap:10px;background:#1e293b;">
+    <button onclick="closeIPQCRecorder()" style="background:none;border:none;color:#94a3b8;font-size:22px;line-height:1;cursor:pointer;">✕</button>
+    <span style="color:#fff;font-size:14px;font-weight:600;">Record Session Video</span>
+  </div>
+  <video id="ipqcViewfinder" style="flex:1;width:100%;object-fit:cover;background:#000;" autoplay muted playsinline></video>
+  <div style="padding:16px;display:flex;flex-direction:column;gap:10px;background:#0f172a;">
+    <div id="ipqcRecStatus" style="text-align:center;color:#94a3b8;font-size:13px;">Starting camera…</div>
+    <button id="ipqcRecStartBtn" onclick="ipqcRecStart()" style="height:52px;border-radius:12px;border:none;background:#2563eb;color:#fff;font-size:16px;font-weight:600;cursor:pointer;">● Start Recording</button>
+    <button id="ipqcRecStopBtn"  onclick="ipqcRecStop()"  style="height:52px;border-radius:12px;border:none;background:#dc2626;color:#fff;font-size:16px;font-weight:600;cursor:pointer;display:none;">■ Stop</button>
+    <div style="display:flex;gap:8px;">
+      <button id="ipqcRecUseBtn"    onclick="ipqcRecUse()"    style="flex:1;height:52px;border-radius:12px;border:none;background:#16a34a;color:#fff;font-size:16px;font-weight:600;cursor:pointer;display:none;">✓ Use This Video</button>
+      <button id="ipqcRecRetakeBtn" onclick="ipqcRecRetake()" style="flex:1;height:52px;border-radius:12px;border:none;background:#334155;color:#fff;font-size:16px;font-weight:600;cursor:pointer;display:none;">↺ Retake</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

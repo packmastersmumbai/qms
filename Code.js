@@ -245,6 +245,18 @@ function doGet(e) {
     return ContentService.createTextOutput(String(out)).setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // QR code deep-link: ?doc=PM/IQC/2026-189 → route to DocView
+  var docParam = e && e.parameter && e.parameter.doc ? String(e.parameter.doc).trim() : '';
+  if (docParam) {
+    var dvTpl = HtmlService.createTemplateFromFile('DocView_F');
+    dvTpl.scriptUrl = ScriptApp.getService().getUrl();
+    dvTpl.docNo = docParam;
+    dvTpl.type = '';
+    return dvTpl.evaluate()
+      .setTitle('Document — Pack Masters QMS')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
   var page = e && e.parameter && e.parameter.page ? String(e.parameter.page).toLowerCase() : '';
   var template;
   // Canonical lowercase keys → { file, title }

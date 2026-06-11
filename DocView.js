@@ -82,12 +82,12 @@ var DOC_FIELD_MAPS = {
       { key: 'acceptedQty',  label: 'Accepted Qty',          col: 26 },
       { key: 'rejectedQty',  label: 'Rejected Qty',          col: 27, readOnly: true },
       { key: 'createdAt',    label: 'Created At',            col: 28, isTimestamp: true, readOnly: true },
-      { key: 'videoUrl',     label: 'Defect Video',          col: 30, isLink: true, readOnly: true },
+      { key: 'videoUrl',     label: 'IQC Video',             col: 30, isLink: true, readOnly: true },
       { key: 'poRef',        label: 'PO Reference',          col: 32, readOnly: true },
       { key: 'invoiceNo',    label: 'Invoice No.',           col: 33, readOnly: true },
       { key: 'storeInCharge',label: 'Store In-Charge',       col: 34, readOnly: true },
       { key: 'qaManager',    label: 'QA Manager',            col: 35, readOnly: true },
-      { key: 'imageUrls',    label: 'Defect Photos',         col: 36, isImages: true, readOnly: true }
+      { key: 'imageUrls',    label: 'IQC Documents',         col: 36, isImages: true, readOnly: true }
     ]
   },
   OQC: {

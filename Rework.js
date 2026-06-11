@@ -6,17 +6,17 @@
 
 // Shared helper — called by NCR.js and CustomerReturn.js to create a REWORK_LOG entry.
 function _createReworkLogEntry_(sourceRef, source, originalSource, originalRef,
-                                 matCode, matDesc, batchNo, qty, unit, createdBy) {
+                                 matCode, matDesc, batchNo, qty, unit, createdBy, materialType) {
   try {
     var ss = getSpreadsheet();
     var ws = ss.getSheetByName('REWORK_LOG');
     if (!ws) {
       ws = ss.insertSheet('REWORK_LOG');
-      ws.getRange(1, 1, 1, 18).setValues([[
+      ws.getRange(1, 1, 1, 19).setValues([[
         'Rework ID', 'Date', 'Source', 'Source Ref', 'Material Code', 'Material Desc',
         'Batch No.', 'Qty', 'Unit', 'Location', 'Status',
         'Completed By', 'Completed At', 'Qty Reworked', 'Qty Scrapped',
-        'Re-OQC Ref', 'Re-IQC Ref', 'Remarks'
+        'Re-OQC Ref', 'Re-IQC Ref', 'Remarks', 'Material Type'
       ]]);
       ws.setFrozenRows(1);
     }
@@ -25,7 +25,7 @@ function _createReworkLogEntry_(sourceRef, source, originalSource, originalRef,
       reworkId, new Date(), source, sourceRef,
       matCode, matDesc, batchNo, qty, unit,
       'REWORK-AREA', 'OPEN',
-      '', '', 0, 0, '', '', ''
+      '', '', 0, 0, '', '', '', materialType || ''
     ]);
     ws.getRange(ws.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy HH:mm');
     return reworkId;
@@ -60,6 +60,7 @@ function getReworkItems() {
         unit:        String(r[8]  || ''),
         location:    String(r[9]  || ''),
         status:      st,
+        materialType:String(r[18] || ''),
         rowIndex:    i + 1
       });
     }

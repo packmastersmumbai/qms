@@ -97,7 +97,8 @@ function setNCRDisposition(ncrDocNo, disposition, dispositionBy) {
               writeStockLedger_('NCR_REWORK_IN', matCode, batchNo, 'REWORK-AREA',
                 qty, 0, 'NCR', ref, actor, 'NCR ' + disposition + ' — awaiting rework', matDesc);
               _createReworkLogEntry_(ref, 'NCR', ncrRow[2] || '', ncrRow[3] || '',
-                matCode, matDesc, batchNo, qty, unit, actor);
+                matCode, matDesc, batchNo, qty, unit, actor,
+                disposition === 'rework-FG' ? 'FG' : 'RM');
             }
           } catch(rwErr) {
             Logger.log('NCR rework ledger/log failed: ' + rwErr.message);

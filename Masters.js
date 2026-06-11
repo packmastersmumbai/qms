@@ -7,8 +7,8 @@ function getSuppliers() {
   var ws = getSpreadsheet().getSheetByName('MASTERS_Suppliers');
   if (!ws) return [];
   var data = ws.getDataRange().getValues();
-  return data.slice(1).filter(function(r) { return r[0] && r[6] === 'Y'; })
-    .map(function(r) { return { code: r[0], name: r[1], contact: r[2], phone: r[3], material: r[4] }; });
+  return data.slice(1).filter(function(r) { return r[0] && (r[7] === 'Y' || r[6] === 'Y'); })
+    .map(function(r) { return { code: r[0], name: r[1], contact: r[2], phone: r[3], email: r[4] || '', material: r[5] || r[4] || '' }; });
 }
 
 function getMaterials() {
@@ -266,22 +266,36 @@ function seedDefaultParameters() {
 }
 
 function getRecentGRNs() {
-  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('GRN_LOG');
   if (!ws) return [];
   var data = ws.getDataRange().getValues();
   if (data.length < 2) return [];
+
+  // Build supplier email lookup from MASTERS_Suppliers
+  var emailMap = {};
+  try {
+    var suppWs = ss.getSheetByName('MASTERS_Suppliers');
+    if (suppWs && suppWs.getLastRow() > 1) {
+      suppWs.getDataRange().getValues().slice(1).forEach(function(r) {
+        if (r[0]) emailMap[String(r[0]).trim()] = String(r[4] || '').trim();
+      });
+    }
+  } catch(e) {}
 
   // Map all rows, reverse to most-recent-first, then deduplicate by grnNo
   var mapped = data.slice(1)
     .filter(function(r) { return r[0]; })
     .map(function(r) {
       return {
-        grnNo:        r[0],
-        date:         r[1] ? Utilities.formatDate(new Date(r[1]), 'Asia/Kolkata', 'dd-MMM-yyyy') : '',
-        supplierName: r[3],   // renamed from 'supplier'
-        material:     r[7],   // kept for dropdown label in IQC_F.html init()
-        batch:        r[8],
-        iqcStatus:    r[15] || 'PENDING'
+        grnNo:         r[0],
+        date:          r[1] ? Utilities.formatDate(new Date(r[1]), 'Asia/Kolkata', 'dd-MMM-yyyy') : '',
+        supplierCode:  String(r[2] || '').trim(),
+        supplierName:  r[3],
+        supplierEmail: emailMap[String(r[2] || '').trim()] || '',
+        material:      r[7],
+        batch:         r[8],
+        iqcStatus:     r[15] || 'PENDING'
       };
     })
     .reverse();
@@ -317,7 +331,7 @@ function saveMaster(type, data) {
   if (type === 'supplier') {
     var ws = ss.getSheetByName('MASTERS_Suppliers');
     if (!ws) throw new Error('Sheet MASTERS_Suppliers not found');
-    row = [data.code, data.name, data.contact, data.phone, data.material, data.city, data.approved];
+    row = [data.code, data.name, data.contact, data.phone, data.email || '', data.material, data.city, data.approved];
     sheetName = 'MASTERS_Suppliers';
     var values = ws.getDataRange().getValues();
     for (var i = 1; i < values.length; i++) {

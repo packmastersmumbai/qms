@@ -21,7 +21,28 @@
 //   8 Reason | 9 Operator | 10 Resulting Gatepass No | 11 Status (PENDING/COMMITTED/FAILED)
 // ============================================================
 
+// ---------- DISPATCH_LOG headers ----------
+var DISPATCH_LOG_HEADERS = [
+  'DSP No', 'Date', 'Customer Code', 'Customer Name',
+  'GP No', 'Total Qty', 'Items Count',
+  'Vehicle No', 'Driver', 'Transporter',
+  'Authorized By', 'Security Guard', 'Remarks',
+  'Operator', 'Created At', 'Status'
+];
+
 // ---------- Sheet accessors ----------
+
+function getDispatchLogSheet_() {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('DISPATCH_LOG');
+  if (!ws) {
+    ws = ss.insertSheet('DISPATCH_LOG');
+    ws.getRange(1, 1, 1, DISPATCH_LOG_HEADERS.length).setValues([DISPATCH_LOG_HEADERS])
+      .setFontWeight('bold').setBackground('#0B2A4A').setFontColor('#FFFFFF');
+    ws.setFrozenRows(1);
+  }
+  return ws;
+}
 
 function getFGDispatchSheet_() {
   var ss = getSpreadsheet();
@@ -136,16 +157,29 @@ function _updateFGDispatchLotRow_(rowIndex, lotState) {
 // ---------- Form init ----------
 
 function getDispatchFormInit() {
-  var docNumber = peekNextDocNumber('gp');
+  var docNumber = peekNextDocNumber('dsp');
   var today = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
   var customers = (typeof getCustomers === 'function') ? getCustomers() : [];
   var fgs = (typeof getFG === 'function') ? getFG() : [];
   // Normalize: ensure { code, desc, unit } shape
+  // Build kg-per-cons lookup from BOM (sum of all component consum values per FG code)
+  var bomKgMap = {};
+  try {
+    if (typeof getBomRows_ === 'function') {
+      getBomRows_().forEach(function(b) {
+        if (!bomKgMap[b.fgCode]) bomKgMap[b.fgCode] = 0;
+        bomKgMap[b.fgCode] += Number(b.consum) || 0;
+      });
+    }
+  } catch(e) { Logger.log('Dispatch BOM kg lookup failed: ' + e.message); }
+
   var products = fgs.map(function(m) {
+    var code = String(m.code || '').trim();
     return {
-      code: String(m.code || '').trim(),
-      desc: String(m.description || m.name || m.desc || '').trim(),
-      unit: String(m.uom || m.unit || '').trim()
+      code:     code,
+      desc:     String(m.description || m.name || m.desc || '').trim(),
+      unit:     String(m.uom || m.unit || '').trim(),
+      kgPerCons: bomKgMap[code] || 0
     };
   });
   return {
@@ -275,7 +309,8 @@ function planFGDispatchAllocation(customerCode, productCode, qtyRequested) {
 
 // ---------- Save dispatch (the main entry) ----------
 //
-// payload = {
+// Single-product (legacy) payload:
+// {
 //   date, customerCode, customerName,
 //   productCode, productDesc, qtyRequested,
 //   chosenPlan: [{ lotId, qty }],
@@ -284,6 +319,17 @@ function planFGDispatchAllocation(customerCode, productCode, qtyRequested) {
 //   remarks, dispatchZone, operatorName
 // }
 //
+// Multi-product payload (P0-A): add items array; legacy top-level fields used as
+// fallback when items is absent.
+// {
+//   ...same header fields...,
+//   items: [
+//     { productCode, productDesc, qtyRequested,
+//       chosenPlan: [{ lotId, qty }], overrideReason }
+//   ]
+// }
+//
+// Generates both a DSP- header doc number (DISPATCH_LOG) and a GP- number (GATEPASS_LOG).
 // Bypasses legacy assertOQCReleasedForRef_ (single-use guard); enforces gating via
 // FG_DISPATCH_LOTS.qtyAvailable + direct OQC decision re-check per lot.
 function saveDispatchWithFIFO(payload) {
@@ -293,51 +339,37 @@ function saveDispatchWithFIFO(payload) {
     if (!payload) return { success: false, error: 'Empty payload.' };
     var custCode = String(payload.customerCode || '').trim();
     var custName = String(payload.customerName || '').trim();
-    var prodCode = String(payload.productCode || '').trim();
-    var prodDesc = String(payload.productDesc || '').trim();
-    var qtyReq   = Number(payload.qtyRequested) || 0;
-    var chosen   = Array.isArray(payload.chosenPlan) ? payload.chosenPlan : [];
     if (!custCode) return { success: false, error: 'Customer required.' };
-    if (!prodCode) return { success: false, error: 'Product required.' };
-    if (qtyReq <= 0) return { success: false, error: 'Qty must be > 0.' };
-    if (!chosen.length) return { success: false, error: 'Chosen plan is empty.' };
 
-    // 1. Re-plan FIFO server-side
-    var fifoResult = planFGDispatchAllocation(custCode, prodCode, qtyReq);
-    if (!fifoResult.success) return fifoResult;
-    var fifoPlan = fifoResult.plan;
-
-    // 2. Detect override
-    var chosenCanon = canonicalizePlan_(chosen);
-    var fifoCanon   = canonicalizePlan_(fifoPlan);
-    var isOverride  = JSON.stringify(chosenCanon) !== JSON.stringify(fifoCanon);
-    var overrideRowIndex = 0;
-    var overrideId = '';
-    if (isOverride) {
-      var reason = String(payload.overrideReason || '').trim();
-      if (reason.length < 5) {
-        return { success: false, error: 'Override reason ≥ 5 chars required when chosen plan differs from FIFO.' };
-      }
-      var fifoLotIds = fifoCanon.map(function(p){ return p.lotId; });
-      var chosenLotIds = chosenCanon.map(function(p){ return p.lotId; });
-      var skipped = fifoLotIds.filter(function(id){ return chosenLotIds.indexOf(id) < 0; });
-      overrideId = 'FOV-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMddHHmmss');
-      var ovWs = getFGOverrideSheet_();
-      ovWs.appendRow([
-        overrideId, new Date(), custCode, prodCode, qtyReq,
-        JSON.stringify(fifoCanon), JSON.stringify(chosenCanon),
-        skipped.join(','), reason, payload.operatorName || '',
-        '', 'PENDING'
-      ]);
-      overrideRowIndex = ovWs.getLastRow();
-      ovWs.getRange(overrideRowIndex, 2).setNumberFormat('dd-MMM-yyyy HH:mm');
+    // Normalise to items array (multi-product support)
+    var items;
+    if (Array.isArray(payload.items) && payload.items.length > 0) {
+      items = payload.items;
+    } else {
+      // Single-product fallback — wrap legacy fields as one item
+      items = [{
+        productCode:    String(payload.productCode || '').trim(),
+        productDesc:    String(payload.productDesc || '').trim(),
+        qtyRequested:   Number(payload.qtyRequested) || 0,
+        chosenPlan:     Array.isArray(payload.chosenPlan) ? payload.chosenPlan : [],
+        overrideReason: String(payload.overrideReason || '').trim()
+      }];
     }
 
-    // 3. Resolve chosen plan against current FG_DISPATCH_LOTS rows; re-verify per lot.
+    if (!items.length) return { success: false, error: 'No items in payload.' };
+
+    // Validate each item before doing any writes
+    for (var ii = 0; ii < items.length; ii++) {
+      var itm = items[ii];
+      if (!String(itm.productCode || '').trim()) return { success: false, error: 'Item ' + (ii+1) + ': Product required.' };
+      if ((Number(itm.qtyRequested) || 0) <= 0)  return { success: false, error: 'Item ' + (ii+1) + ': Qty must be > 0.' };
+      if (!Array.isArray(itm.chosenPlan) || !itm.chosenPlan.length) return { success: false, error: 'Item ' + (ii+1) + ': Chosen plan is empty.' };
+    }
+
+    // ---------- Shared sheet reads (done once, outside item loop) ----------
     var ss = getSpreadsheet();
     var fglWs = getFGDispatchSheet_();
     var fglData = fglWs.getDataRange().getValues();
-    // Build lotId -> row index map (1-based) and snapshot
     var lotById = {};
     for (var i = 1; i < fglData.length; i++) {
       var lid = String(fglData[i][0] || '').trim();
@@ -354,22 +386,19 @@ function saveDispatchWithFIFO(payload) {
       }
     }
 
-    // Hoist LOCATIONS read out of the per-lot loop (MED-1 from code review).
-    // Build locId → type map once. Column position is resolved from the header
-    // row so a re-ordered LOCATIONS sheet still works.
     var locTypeByLocId = {};
     var locWs = ss.getSheetByName('LOCATIONS');
     if (locWs && locWs.getLastRow() > 1) {
       var lastCol = locWs.getLastColumn();
       var locHeaders = locWs.getRange(1, 1, 1, lastCol).getValues()[0];
-      var locIdCol = 0;     // 0-based index into the row array
+      var locIdCol = 0;
       var locTypeCol = -1;
       for (var lhi = 0; lhi < locHeaders.length; lhi++) {
         var hn = String(locHeaders[lhi] || '').trim().toLowerCase();
         if (hn === 'location id') locIdCol = lhi;
         if (hn === 'type') locTypeCol = lhi;
       }
-      if (locTypeCol < 0) locTypeCol = 8; // legacy fallback to column 9
+      if (locTypeCol < 0) locTypeCol = 8;
       var ld = locWs.getRange(2, 1, locWs.getLastRow() - 1, lastCol).getValues();
       for (var li = 0; li < ld.length; li++) {
         var lKey = String(ld[li][locIdCol] || '').trim();
@@ -377,101 +406,163 @@ function saveDispatchWithFIFO(payload) {
       }
     }
 
-    // Pre-validate every chosen lot
-    var resolved = [];
-    for (var ci = 0; ci < chosen.length; ci++) {
-      var c = chosen[ci];
-      var cLotId = String(c.lotId || '').trim();
-      var cQty   = Number(c.qty || c.qtyFromThisLot || 0);
-      if (!cLotId) {
-        _markOverrideStatus_(overrideRowIndex, 'FAILED');
-        return { success: false, error: 'Chosen plan row missing lotId.' };
+    // ---------- Per-item: FIFO re-plan, override detection, lot validation ----------
+    // resolvedItems[i] = { productCode, productDesc, qtyRequested, isOverride, overrideId,
+    //                      overrideRowIndex, lots: [resolved lot objects] }
+    var resolvedItems = [];
+    var allOverrideRowIndices = [];
+    for (var ii2 = 0; ii2 < items.length; ii2++) {
+      var itm2 = items[ii2];
+      var prodCode = String(itm2.productCode || '').trim();
+      var prodDesc = String(itm2.productDesc || '').trim();
+      var qtyReq   = Number(itm2.qtyRequested) || 0;
+      var chosen   = itm2.chosenPlan;
+
+      // Re-plan FIFO server-side
+      var fifoResult = planFGDispatchAllocation(custCode, prodCode, qtyReq);
+      if (!fifoResult.success) return fifoResult;
+      var fifoPlan = fifoResult.plan;
+
+      // Detect override
+      var chosenCanon = canonicalizePlan_(chosen);
+      var fifoCanon   = canonicalizePlan_(fifoPlan);
+      var isOverride  = JSON.stringify(chosenCanon) !== JSON.stringify(fifoCanon);
+      var overrideRowIndex = 0;
+      var overrideId = '';
+      if (isOverride) {
+        var reason = String(itm2.overrideReason || '').trim();
+        if (reason.length < 5) {
+          return { success: false, error: 'Item ' + (ii2+1) + ' (' + prodCode + '): Override reason ≥ 5 chars required when chosen plan differs from FIFO.' };
+        }
+        var fifoLotIds = fifoCanon.map(function(p){ return p.lotId; });
+        var chosenLotIds = chosenCanon.map(function(p){ return p.lotId; });
+        var skipped = fifoLotIds.filter(function(id){ return chosenLotIds.indexOf(id) < 0; });
+        overrideId = 'FOV-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMddHHmmss') + '-' + ii2;
+        var ovWs = getFGOverrideSheet_();
+        ovWs.appendRow([
+          overrideId, new Date(), custCode, prodCode, qtyReq,
+          JSON.stringify(fifoCanon), JSON.stringify(chosenCanon),
+          skipped.join(','), reason, payload.operatorName || '',
+          '', 'PENDING'
+        ]);
+        overrideRowIndex = ovWs.getLastRow();
+        ovWs.getRange(overrideRowIndex, 2).setNumberFormat('dd-MMM-yyyy HH:mm');
+        allOverrideRowIndices.push(overrideRowIndex);
       }
-      if (cQty <= 0) {
-        _markOverrideStatus_(overrideRowIndex, 'FAILED');
-        return { success: false, error: 'Chosen plan qty must be > 0 for lot ' + cLotId + '.' };
+
+      // Pre-validate every chosen lot for this item
+      var resolved = [];
+      for (var ci = 0; ci < chosen.length; ci++) {
+        var c = chosen[ci];
+        var cLotId = String(c.lotId || '').trim();
+        var cQty   = Number(c.qty || c.qtyFromThisLot || 0);
+        if (!cLotId) {
+          _markAllOverridesFailed_(allOverrideRowIndices);
+          return { success: false, error: 'Item ' + (ii2+1) + ': Chosen plan row missing lotId.' };
+        }
+        if (cQty <= 0) {
+          _markAllOverridesFailed_(allOverrideRowIndices);
+          return { success: false, error: 'Item ' + (ii2+1) + ': Chosen plan qty must be > 0 for lot ' + cLotId + '.' };
+        }
+        var slot = lotById[cLotId];
+        if (!slot) {
+          _markAllOverridesFailed_(allOverrideRowIndices);
+          return { success: false, error: 'FG lot ' + cLotId + ' not found.' };
+        }
+        var lotRow = slot.row;
+        // Gate 1: OQC decision RELEASED/ACCEPTED
+        var oqcRef = String(lotRow[2] || '').trim();
+        var dec = oqcDecByDoc[oqcRef] || '';
+        if (dec !== 'RELEASED' && dec !== 'ACCEPTED' && dec !== 'ACCEPTED WITH DEVIATION') {
+          _markAllOverridesFailed_(allOverrideRowIndices);
+          return { success: false, error: 'Lot ' + cLotId + ' references OQC ' + oqcRef + ' which is not released (decision="' + (dec || 'PENDING') + '").' };
+        }
+        // Gate 2: status not DISPATCHED/RECALLED/NEEDS_REVIEW
+        var st = String(lotRow[14] || '').toUpperCase();
+        if (st === 'DISPATCHED' || st === 'RECALLED' || st === 'NEEDS_REVIEW') {
+          _markAllOverridesFailed_(allOverrideRowIndices);
+          return { success: false, error: 'Lot ' + cLotId + ' is ' + st + ' — cannot dispatch.' };
+        }
+        // Gate 3: qty available
+        var availableNow = Number(lotRow[10] || 0) - Number(lotRow[11] || 0);
+        if (cQty > availableNow + 0.001) {
+          _markAllOverridesFailed_(allOverrideRowIndices);
+          return { success: false, error: 'Lot ' + cLotId + ' has only ' + availableNow + ' available; requested ' + cQty + '.' };
+        }
+        // Gate 4: FG location non-empty and type FG
+        var fgLoc = String(lotRow[9] || '').trim();
+        if (!fgLoc) {
+          _markAllOverridesFailed_(allOverrideRowIndices);
+          return { success: false, error: 'Lot ' + cLotId + ' has no FG location set.' };
+        }
+        var locType = locTypeByLocId[fgLoc] || '';
+        if (locType && locType !== 'FG') {
+          _markAllOverridesFailed_(allOverrideRowIndices);
+          return { success: false, error: 'Lot ' + cLotId + ' is at ' + fgLoc + ' (type ' + locType + '); only FG-type locations are dispatchable.' };
+        }
+        resolved.push({
+          lotId: cLotId, qty: cQty, rowIndex: slot.rowIndex, row: lotRow,
+          oqcRef: oqcRef, batch: String(lotRow[8] || '').trim(),
+          fgLocation: fgLoc, productCode: String(lotRow[6] || '').trim(),
+          productDesc: String(lotRow[7] || '').trim(), unit: String(lotRow[13] || '').trim()
+        });
+        // Update in-memory snapshot so subsequent items in this dispatch see reduced availability
+        slot.row[11] = Number(slot.row[11] || 0) + cQty;
       }
-      var slot = lotById[cLotId];
-      if (!slot) {
-        _markOverrideStatus_(overrideRowIndex, 'FAILED');
-        return { success: false, error: 'FG lot ' + cLotId + ' not found.' };
-      }
-      var row = slot.row;
-      // Gate 1: OQC decision RELEASED/ACCEPTED
-      var oqcRef = String(row[2] || '').trim();
-      var dec = oqcDecByDoc[oqcRef] || '';
-      if (dec !== 'RELEASED' && dec !== 'ACCEPTED' && dec !== 'ACCEPTED WITH DEVIATION') {
-        _markOverrideStatus_(overrideRowIndex, 'FAILED');
-        return { success: false, error: 'Lot ' + cLotId + ' references OQC ' + oqcRef + ' which is not released (decision="' + (dec || 'PENDING') + '").' };
-      }
-      // Gate 2: status not DISPATCHED/RECALLED/NEEDS_REVIEW
-      var st = String(row[14] || '').toUpperCase();
-      if (st === 'DISPATCHED' || st === 'RECALLED' || st === 'NEEDS_REVIEW') {
-        _markOverrideStatus_(overrideRowIndex, 'FAILED');
-        return { success: false, error: 'Lot ' + cLotId + ' is ' + st + ' — cannot dispatch.' };
-      }
-      // Gate 3: qty available
-      var availableNow = Number(row[10] || 0) - Number(row[11] || 0);
-      if (cQty > availableNow + 0.001) {
-        _markOverrideStatus_(overrideRowIndex, 'FAILED');
-        return { success: false, error: 'Lot ' + cLotId + ' has only ' + availableNow + ' available; requested ' + cQty + '.' };
-      }
-      // Gate 4: FG location non-empty and type FG (not FG_HOLD / QUARANTINE)
-      var fgLoc = String(row[9] || '').trim();
-      if (!fgLoc) {
-        _markOverrideStatus_(overrideRowIndex, 'FAILED');
-        return { success: false, error: 'Lot ' + cLotId + ' has no FG location set.' };
-      }
-      var locType = locTypeByLocId[fgLoc] || '';
-      if (locType && locType !== 'FG') {
-        _markOverrideStatus_(overrideRowIndex, 'FAILED');
-        return { success: false, error: 'Lot ' + cLotId + ' is at ' + fgLoc + ' (type ' + locType + '); only FG-type locations are dispatchable.' };
-      }
-      resolved.push({
-        lotId: cLotId, qty: cQty, rowIndex: slot.rowIndex, row: row,
-        oqcRef: oqcRef, batch: String(row[8] || '').trim(),
-        fgLocation: fgLoc, productCode: String(row[6] || '').trim(),
-        productDesc: String(row[7] || '').trim(), unit: String(row[13] || '').trim()
+
+      resolvedItems.push({
+        productCode: prodCode, productDesc: prodDesc, qtyRequested: qtyReq,
+        qtyRequestedKg: itm2.qtyRequestedKg != null ? Number(itm2.qtyRequestedKg) : null,
+        kgPerCons: Number(itm2.kgPerCons) || 0,
+        isOverride: isOverride, overrideId: overrideId, overrideRowIndex: overrideRowIndex,
+        lots: resolved
       });
     }
 
-    // 4. Generate ONE Gatepass docNo
-    var gpNo = getNextDocNumber('gp');
-    var now  = new Date();
-    var date = new Date(payload.date || new Date());
+    // ---------- All validation passed — generate doc numbers and write ----------
+    var dspNo = getNextDocNumber('dsp');
+    var gpNo  = getNextDocNumber('gp');
+    var now   = new Date();
+    var date  = new Date(payload.date || new Date());
     var userEmail = '';
     try { userEmail = Session.getActiveUser().getEmail() || 'QA'; } catch(eU) { userEmail = 'QA'; }
 
-    // 5. Append GATEPASS_LOG rows directly (one per lot, all sharing gpNo)
+    // 5. Append GATEPASS_LOG rows (one per lot per item, all sharing gpNo)
     var gpWs = ss.getSheetByName('GATEPASS_LOG');
     if (!gpWs) {
-      _markOverrideStatus_(overrideRowIndex, 'FAILED');
       return { success: false, error: 'GATEPASS_LOG sheet missing.' };
     }
     var gpStartRow = gpWs.getLastRow() + 1;
-    resolved.forEach(function(rs) {
-      gpWs.appendRow([
-        gpNo,
-        date,
-        'OUTBOUND',
-        rs.oqcRef,                       // OQC_REF
-        custName || custCode,            // PARTY
-        rs.productCode,                  // MATERIAL_CODE
-        rs.productDesc,                  // MATERIAL_DESC
-        rs.qty,                          // QTY
-        rs.unit,                         // UNIT
-        payload.vehicleNo     || '',
-        payload.driverName    || '',
-        payload.transporter   || '',
-        payload.authorizedBy  || '',
-        payload.securityGuard || '',
-        payload.remarks       || '',
-        'ISSUED',
-        userEmail,
-        now,
-        payload.dispatchZone  || rs.fgLocation,
-        payload.operatorName  || ''
-      ]);
+    var allResolvedLots = [];
+    resolvedItems.forEach(function(ri) {
+      ri.lots.forEach(function(rs) {
+        // GATEPASS_LOG cols (0-based): 0=docNo, 1=date, 2=type, 3=oqcRef, 4=party, 5=matCode,
+        // 6=matDesc, 7=qty, 8=unit, 9=vehicleNo, 10=driver, 11=transporter, 12=authorizedBy,
+        // 13=securityGuard, 14=remarks, 15=status, 16=createdBy, 17=createdAt, 18=dispatchZone, 19=operatorName
+        gpWs.appendRow([
+          gpNo,
+          date,
+          'OUTBOUND',
+          rs.oqcRef,
+          custName || custCode,
+          rs.productCode,
+          rs.productDesc,
+          rs.qty,
+          rs.unit,
+          payload.vehicleNo     || '',
+          payload.driverName    || '',
+          payload.transporter   || '',
+          payload.authorizedBy  || '',
+          payload.securityGuard || '',
+          payload.remarks       || '',
+          'ISSUED',
+          userEmail,
+          now,
+          payload.dispatchZone  || rs.fgLocation,
+          payload.operatorName  || ''
+        ]);
+        allResolvedLots.push(rs);
+      });
     });
     var gpEndRow = gpWs.getLastRow();
     for (var gr = gpStartRow; gr <= gpEndRow; gr++) {
@@ -479,56 +570,100 @@ function saveDispatchWithFIFO(payload) {
       gpWs.getRange(gr, 18).setNumberFormat('dd-MMM-yyyy HH:mm');
     }
 
-    // 6. STOCK_LEDGER FG_DISPATCH OUT per lot
-    resolved.forEach(function(rs) {
-      try {
-        if (typeof writeStockLedger_ === 'function') {
-          writeStockLedger_('FG_DISPATCH', rs.productCode, rs.batch, rs.fgLocation,
-            0, rs.qty,
-            'GATEPASS', gpNo, payload.operatorName || userEmail,
-            'Dispatch · cust=' + custCode + (isOverride ? ' · OVERRIDE (' + overrideId + ')' : ''));
-        }
-      } catch(eL) {
-        Logger.log('writeStockLedger_ FG_DISPATCH failed: ' + eL.message);
-      }
+    // 5b. Write one header row to DISPATCH_LOG
+    var totalQty = 0;
+    resolvedItems.forEach(function(ri) {
+      ri.lots.forEach(function(rs) { totalQty += rs.qty; });
     });
+    var dspWs = getDispatchLogSheet_();
+    dspWs.appendRow([
+      dspNo,
+      date,
+      custCode,
+      custName,
+      gpNo,
+      totalQty,
+      resolvedItems.length,
+      payload.vehicleNo     || '',
+      payload.driverName    || '',
+      payload.transporter   || '',
+      payload.authorizedBy  || '',
+      payload.securityGuard || '',
+      payload.remarks       || '',
+      payload.operatorName  || userEmail,
+      now,
+      'ISSUED'
+    ]);
+    var dspRow = dspWs.getLastRow();
+    dspWs.getRange(dspRow, 2).setNumberFormat('dd-MMM-yyyy');
+    dspWs.getRange(dspRow, 15).setNumberFormat('dd-MMM-yyyy HH:mm');
 
-    // 7. Update each FG_DISPATCH_LOTS row
-    resolved.forEach(function(rs) {
-      var row = rs.row;
-      var releasedQty = Number(row[10]) || 0;
-      var prevDispatched = Number(row[11]) || 0;
-      var newDispatched  = prevDispatched + rs.qty;
-      var prevFirstAt = row[15];
-      var firstAt = prevFirstAt ? prevFirstAt : now;
-      var prevRefs = String(row[17] || '').trim();
-      var newRefs  = prevRefs ? (prevRefs + ',' + gpNo) : gpNo;
-      _updateFGDispatchLotRow_(rs.rowIndex, {
-        qtyReleased: releasedQty,
-        qtyDispatched: newDispatched,
-        firstDispatchedAt: firstAt,
-        lastDispatchedAt: now,
-        gatepassRefs: newRefs
+    // 6. STOCK_LEDGER FG_DISPATCH OUT per lot
+    resolvedItems.forEach(function(ri) {
+      ri.lots.forEach(function(rs) {
+        try {
+          if (typeof writeStockLedger_ === 'function') {
+            writeStockLedger_('FG_DISPATCH', rs.productCode, rs.batch, rs.fgLocation,
+              0, rs.qty,
+              'GATEPASS', gpNo, payload.operatorName || userEmail,
+              'Dispatch ' + dspNo + ' · cust=' + custCode + (ri.isOverride ? ' · OVERRIDE (' + ri.overrideId + ')' : ''));
+          }
+        } catch(eL) {
+          Logger.log('writeStockLedger_ FG_DISPATCH failed: ' + eL.message);
+        }
       });
     });
 
-    // 8. Write GP no into override row + mark COMMITTED
-    if (overrideRowIndex) {
-      var ovWs2 = getFGOverrideSheet_();
-      ovWs2.getRange(overrideRowIndex, 11).setValue(gpNo);
-      ovWs2.getRange(overrideRowIndex, 12).setValue('COMMITTED');
-    }
+    // 7. Update each FG_DISPATCH_LOTS row
+    resolvedItems.forEach(function(ri) {
+      ri.lots.forEach(function(rs) {
+        var lotRow = rs.row;
+        var releasedQty = Number(lotRow[10]) || 0;
+        var prevDispatched = Number(lotRow[11]) || 0;
+        var newDispatched  = prevDispatched + rs.qty;
+        var prevFirstAt = lotRow[15];
+        var firstAt = prevFirstAt ? prevFirstAt : now;
+        var prevRefs = String(lotRow[17] || '').trim();
+        var newRefs  = prevRefs ? (prevRefs + ',' + gpNo) : gpNo;
+        _updateFGDispatchLotRow_(rs.rowIndex, {
+          qtyReleased: releasedQty,
+          qtyDispatched: newDispatched,
+          firstDispatchedAt: firstAt,
+          lastDispatchedAt: now,
+          gatepassRefs: newRefs
+        });
+      });
+    });
 
+    // 8. Write GP no into override rows + mark COMMITTED
+    resolvedItems.forEach(function(ri) {
+      if (ri.overrideRowIndex) {
+        var ovWs2 = getFGOverrideSheet_();
+        ovWs2.getRange(ri.overrideRowIndex, 11).setValue(gpNo);
+        ovWs2.getRange(ri.overrideRowIndex, 12).setValue('COMMITTED');
+      }
+    });
+
+    var anyOverride = resolvedItems.some(function(ri){ return ri.isOverride; });
     return {
       success: true,
+      dspNo: dspNo,
       gpNo: gpNo,
-      override: isOverride ? { overrideId: overrideId } : null,
-      lots: resolved.map(function(rs) {
+      override: anyOverride ? { overrideIds: resolvedItems.filter(function(ri){ return ri.isOverride; }).map(function(ri){ return ri.overrideId; }) } : null,
+      lots: allResolvedLots.map(function(rs) {
         return { lotId: rs.lotId, qty: rs.qty, batch: rs.batch, fgLocation: rs.fgLocation };
+      }),
+      items: resolvedItems.map(function(ri) {
+        return {
+          productCode: ri.productCode, productDesc: ri.productDesc,
+          qtyRequested: ri.qtyRequested,
+          lots: ri.lots.map(function(rs){ return { lotId: rs.lotId, qty: rs.qty, batch: rs.batch }; })
+        };
       })
     };
   } catch(e) {
     Logger.log('saveDispatchWithFIFO failed: ' + e.message + ' stack: ' + e.stack);
+    _markAllOverridesFailed_(allOverrideRowIndices);
     return { success: false, error: e.message };
   } finally {
     lock.releaseLock();
@@ -545,18 +680,9 @@ function _markOverrideStatus_(rowIndex, status) {
   }
 }
 
-function _locationType_(locId) {
-  if (!locId) return '';
-  var ws = getSpreadsheet().getSheetByName('LOCATIONS');
-  if (!ws || ws.getLastRow() < 2) return '';
-  var d = ws.getRange(2, 1, ws.getLastRow() - 1, 12).getValues();
-  var key = String(locId).trim();
-  for (var i = 0; i < d.length; i++) {
-    if (String(d[i][0]).trim() === key) {
-      return String(d[i][8] || '').toUpperCase();
-    }
-  }
-  return '';
+function _markAllOverridesFailed_(rowIndices) {
+  if (!rowIndices || !rowIndices.length) return;
+  rowIndices.forEach(function(ri) { _markOverrideStatus_(ri, 'FAILED'); });
 }
 
 // ---------- Recent dispatches (Tab 2) ----------

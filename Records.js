@@ -101,7 +101,7 @@ function _computeRecordsList_(type, filters) {
       var materialDesc = row[3] ? String(row[3]).trim() : '';         // col4
       name = grnNo && materialDesc ? grnNo + ' · ' + materialDesc
            : grnNo || materialDesc;
-      status = row[lastCol - 1] ? String(row[lastCol - 1]).trim() : 'PENDING'; // last col
+      status = row[22] ? String(row[22]).trim() : 'PENDING';          // col23 = disposition
     } else if (type === 'OQC') {
       name   = row[2]        ? String(row[2]).trim()       : '';      // col3 customerName
       status = row[lastCol - 1] ? String(row[lastCol - 1]).trim() : 'PENDING';
@@ -143,6 +143,8 @@ function _computeRecordsList_(type, filters) {
       var dspBatch = row[8] ? String(row[8]).trim() : '';
       name   = (dspCust ? dspCust + ' · ' : '') + dspProd + (dspBatch ? ' · ' + dspBatch : '');
       status = row[14] ? String(row[14]).trim() : 'AVAILABLE';
+      // Skip fully dispatched lots — they belong in history, not the active list
+      if (status.toUpperCase() === 'DISPATCHED') continue;
     }
 
     // Search filter (docNo or name)
@@ -151,12 +153,18 @@ function _computeRecordsList_(type, filters) {
       if (haystack.indexOf(search) === -1) continue;
     }
 
-    results.push({
+    var rec = {
       docNo:  docNo,
       date:   rowDate ? formatDate(rowDate) : (rawDate ? String(rawDate) : ''),
       name:   name,
       status: status || 'PENDING'
-    });
+    };
+    if (type === 'IQC') {
+      rec.videoUrl  = row[30] ? String(row[30]).trim() : '';  // col31
+      var imgRaw    = row[36] ? String(row[36]).trim() : '';  // col37
+      rec.imageUrls = imgRaw ? imgRaw.split(',').map(function(u){ return u.trim(); }).filter(Boolean) : [];
+    }
+    results.push(rec);
   }
 
   // Deduplicate GRN and Gatepass by docNo (multi-item = multiple rows per doc)
@@ -230,11 +238,15 @@ function _computeRecordsCounts_(pending) {
     try { pending = computePendingCounts_(ss); } catch(e) { Logger.log('Pending count error: ' + e); pending = {}; }
   }
   return {
-    grn:  pending.GRN  || 0,
-    iqc:  pending.IQC  || 0,
-    oqc:  pending.OQC  || 0,
-    gp:   pending.Gatepass || 0,
-    ipqc: pending.IPQC || 0,
+    grn:          pending.GRN          || 0,
+    iqc:          pending.IQC          || 0,
+    oqc:          pending.OQC          || 0,
+    gp:           pending.Gatepass     || 0,
+    ipqc:         pending.IPQC         || 0,
+    production:   pending.Production   || 0,
+    dispatch:     pending.Dispatch     || 0,
+    ncr:          pending.NCR          || 0,
+    cr:           pending.CustomerReturn || 0,
     totalGrn:  _countRows(ss, 'GRN_LOG'),
     totalIqc:  _countRows(ss, 'IQC_LOG'),
     totalOqc:  _countRows(ss, 'OQC_LOG'),

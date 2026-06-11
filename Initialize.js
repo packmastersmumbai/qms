@@ -217,7 +217,7 @@ var REWORK_LOG_HEADERS = [
   'Rework ID', 'Date', 'Source', 'Source Ref', 'Material Code', 'Material Desc',
   'Batch No.', 'Qty', 'Unit', 'Location', 'Status',
   'Completed By', 'Completed At', 'Qty Reworked', 'Qty Scrapped',
-  'Re-OQC Ref', 'Re-IQC Ref', 'Remarks'
+  'Re-OQC Ref', 'Re-IQC Ref', 'Remarks', 'Material Type'
 ];
 
 var NCR_HEADERS = [
@@ -253,7 +253,7 @@ function initializeProject() {
 
   try {
     createConfigSheet_(ss);
-    createMasterSheet_(ss, 'MASTERS_Suppliers',  ['Supplier Code','Supplier Name','Contact Person','Phone / WhatsApp','Material Supplied','City / Location','Approved (Y/N)','State Code'], SUPPLIERS);
+    createMasterSheet_(ss, 'MASTERS_Suppliers',  ['Supplier Code','Supplier Name','Contact Person','Phone / WhatsApp','Email','Material Supplied','City / Location','Approved (Y/N)','State Code'], SUPPLIERS);
     createMasterSheet_(ss, 'MASTERS_Materials',  ['Item Code','Item Description','Unit','Category'], MATERIALS);
     createMasterSheet_(ss, 'MASTERS_Customers',  ['Customer Code','Customer Name','Contact Person','Phone / WhatsApp','Email','Products Supplied','City'], CUSTOMERS);
     createMasterSheet_(ss, 'MASTERS_Personnel',  ['Name','Role / Designation','Department','WhatsApp No.','Send Notifications (Y/N)'], PERSONNEL);

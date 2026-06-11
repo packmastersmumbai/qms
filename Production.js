@@ -1106,7 +1106,7 @@ function submitProductionBooking(data) {
         // PROD_CONSUME — finalise: removes from booked, no free change
         if (consumed > 0) {
           writeStockLedger_('PROD_CONSUME', L.compCode, L.batchOrLot, L.location,
-            0, 0, 'PRODUCTION', jobId, bookedBy,
+            0, consumed, 'PRODUCTION', jobId, bookedBy,
             'Consumed ' + consumed + ' ' + (src2.uom || '') + ' (booking ' + bookingId + ')');
           ledgerOps++;
         }
