@@ -3,7 +3,7 @@
 
 **Version:** 1.1  
 **Date:** 2026-06-11  
-**Status:** Implemented — Live at @294  
+**Status:** Implemented — Live at @299  
 **Owner:** Pack Masters (packmasters.mumbai@gmail.com)
 
 ---
@@ -387,7 +387,7 @@ All inventory movements (RM receipt, IQC quarantine, production issue, productio
 |---|---|
 | Live URL | `https://packmastersmumbai.github.io/qms` |
 | GAS Script ID | `1gDN0dO6rsiE55Yu9bV9dgVFhtfoMyKmXWCy8B0-bAspjl_7o7hMRgtiQ` |
-| Current live version | @294 |
+| Current live version | @299 |
 | Rollback version | @222 |
 | Deploy command | `clasp push && clasp deploy --deploymentId AKfycbxMFpeJOqF5_... --description "type: description"` |
 | GAS owner account | `packmasters.mumbai@gmail.com` |

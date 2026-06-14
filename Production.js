@@ -291,10 +291,13 @@ function getRecentProductionIssues(limit) {
   if (ws.getLastRow() < 2) return [];
   var n = Math.min(limit || 10, ws.getLastRow() - 1);
   var rows = ws.getRange(ws.getLastRow() - n + 1, 1, n, PROD_ISSUE_HEADERS_.length).getValues();
+  // Serialize Date cells to ISO strings — google.script.run cannot structured-clone
+  // an array containing raw Date objects; it silently returns {} and the client
+  // success handler sees an empty/non-array value (the "No production issues yet" bug).
   return rows.reverse().map(function(r){
     return {
       issueId:     r[0],
-      timestamp:   r[1],
+      timestamp:   (r[1] instanceof Date) ? r[1].toISOString() : r[1],
       prodOrderNo: r[2],
       materialCode: r[3],
       materialName: r[4],

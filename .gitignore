@@ -21,6 +21,10 @@
 .claude/
 .env
 .playwright-cli/
+.playwright/
+e2e-storageState.json
+e2e-auth.json
+test-artifacts/
 Thumbs.db
 client_secret*.json
 creds.json
