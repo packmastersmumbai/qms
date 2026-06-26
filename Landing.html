@@ -105,39 +105,39 @@
     .pm-bn-btn svg { width: 18px; height: 18px; stroke-width: 1.75; }
     .pm-bn-btn.is-active svg { stroke-width: 2.2; }
 
-    main { padding: 56px 12px 72px; }
+    main { padding: 52px 10px 68px; }
 
     /* ── Hero band ──
        Replaces the old flat date strip. Sits flush under the top bar,
        carries date + shift + persona pill in a single navy-ink panel.
        Gives the page an anchor without competing with the tiles. */
     .pm-hero {
-      margin: 0 -12px 10px;
-      padding: 14px 14px 14px;
+      margin: 0 -10px 8px;
+      padding: 10px 12px;
       background: linear-gradient(180deg, #FFFFFF 0%, #F5F7FA 100%);
       border-bottom: 1px solid var(--pm-rule);
     }
-    .pm-hero-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .pm-hero-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .pm-hero-date {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 16px; font-weight: 700;
+      font-size: 14px; font-weight: 700;
       color: var(--pm-text);
       letter-spacing: -0.2px;
       line-height: 1.15;
     }
     .pm-hero-day {
-      font-size: 11px; font-weight: 500;
+      font-size: 10px; font-weight: 500;
       color: var(--pm-muted);
-      margin-top: 2px;
+      margin-top: 1px;
       letter-spacing: 0.2px;
     }
     .pm-hero-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .pm-shift {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10px; font-weight: 700;
+      font-size: 9.5px; font-weight: 700;
       color: var(--pm-navy);
       background: #EEF1FA;
-      padding: 5px 10px;
+      padding: 3px 8px;
       border-radius: 999px;
       letter-spacing: 0.5px;
     }
@@ -155,7 +155,7 @@
        without leaning on colored cards. */
     .pm-sec {
       display: flex; align-items: center; justify-content: space-between;
-      margin: 14px 2px 6px;
+      margin: 10px 2px 4px;
     }
     .pm-sec-l {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -292,7 +292,7 @@
     }
     .pm-stat-val {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 16px; font-weight: 700;
+      font-size: 13px; font-weight: 700;
       color: var(--pm-navy);
       letter-spacing: -0.3px;
       line-height: 1;
@@ -302,21 +302,21 @@
     .pm-stat.is-warn .pm-stat-val { color: var(--pm-warn); }
 
     /* ── Module tile grid (compact) ── */
-    .pm-group { margin-top: 4px; margin-bottom: 8px; }
+    .pm-group { margin-top: 2px; margin-bottom: 6px; }
     .pm-tiles {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
+      gap: 5px;
     }
     .pm-tile {
       position: relative;
       display: flex; flex-direction: column;
-      gap: 6px;
-      padding: 9px 10px 9px;
-      min-height: 84px;
+      gap: 4px;
+      padding: 7px 8px 8px;
+      min-height: 68px;
       background: #fff;
       border: 1px solid var(--pm-border);
-      border-radius: 10px;
+      border-radius: 8px;
       text-align: left;
       cursor: pointer;
       transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
@@ -333,14 +333,14 @@
       gap: 4px;
     }
     .pm-tile-icon {
-      width: 26px; height: 26px;
-      border-radius: 7px;
+      width: 22px; height: 22px;
+      border-radius: 6px;
       background: #EEF1FA;
       color: var(--pm-navy);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
-    .pm-tile-icon svg { width: 14px; height: 14px; stroke-width: 1.9; }
+    .pm-tile-icon svg { width: 12px; height: 12px; stroke-width: 1.9; }
     /* Group-tinted icon backgrounds. Subtle so the page stays neutral
        but you can tell Receive from Ship from Resolve at a glance. */
     .pm-tile[data-group="Receive"] .pm-tile-icon { background: #E0F2FE; color: #0369A1; }
@@ -350,14 +350,14 @@
     .pm-tile[data-group="Manage"]  .pm-tile-icon { background: #EEF1FA; color: var(--pm-navy); }
     .pm-tile-count {
       flex-shrink: 0;
-      min-width: 22px; height: 20px;
-      padding: 0 6px;
+      min-width: 18px; height: 17px;
+      padding: 0 5px;
       display: inline-flex; align-items: center; justify-content: center;
       background: #EEF1FA;
       color: var(--pm-navy);
       border: 0; border-radius: 999px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 10.5px; font-weight: 700;
+      font-size: 9.5px; font-weight: 700;
       cursor: pointer;
       transition: background .12s ease;
     }
@@ -367,12 +367,10 @@
     .pm-tile-count.is-na { background: transparent; color: var(--pm-faint); }
     .pm-tile-label {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 12px; font-weight: 700;
+      font-size: 11px; font-weight: 700;
       color: var(--pm-text);
       letter-spacing: 0px;
       line-height: 1.2;
-      /* allow up to 2 lines; truncate beyond that. Words like "Production"
-         and "Control Plan" must not be cut mid-word in a 3-col grid. */
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -380,9 +378,9 @@
       word-break: break-word;
     }
     .pm-tile-meta {
-      font-size: 9.5px; font-weight: 500;
+      font-size: 9px; font-weight: 500;
       color: var(--pm-muted);
-      line-height: 1.25;
+      line-height: 1.2;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .pm-tile-add {
@@ -578,17 +576,15 @@
     @media (prefers-reduced-motion: reduce) {
       .pm-rise, .pm-skel, .pm-belt-box, .pm-loader { animation: none !important; transition: none !important; }
     }
-    /* Hero KPI strip — single signal: left-edge color bar. No tinted icon
-       badge, no value re-coloring, no sparkline. Keeps the page clipboard-flat. */
-    .pm-kpi-hero { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; }
+    /* Hero KPI strip */
+    .pm-kpi-hero { display:grid; grid-template-columns: repeat(3, 1fr); gap:5px; }
     .pm-kpi-card {
       background:#fff;
       border:1px solid var(--pm-border);
       border-left:3px solid var(--pm-border);
-      border-radius:10px;
-      padding:9px 10px 10px;
-      display:flex; flex-direction:column; gap:4px;
-      min-height:74px;
+      border-radius:8px;
+      padding:7px 8px 8px;
+      display:flex; flex-direction:column; gap:2px;
       cursor:pointer;
       transition: background .12s, border-color .12s;
       position:relative; overflow:hidden;
@@ -599,47 +595,47 @@
     .pm-kpi-card.s-bad  { border-left-color:var(--pm-fail); }
     .pm-kpi-card.s-warn { border-left-color:#d97706; }
     .pm-kpi-card.s-na   { border-left-color:#cbd5e1; }
-    .pm-kpi-top { display:flex; justify-content:space-between; align-items:center; gap:6px; }
+    .pm-kpi-top { display:flex; justify-content:space-between; align-items:center; gap:4px; }
     .pm-kpi-label {
       font-family:'Plus Jakarta Sans', sans-serif;
-      font-size:9.5px; font-weight:700;
+      font-size:8.5px; font-weight:700;
       color:var(--pm-muted);
-      letter-spacing:1px; text-transform:uppercase;
+      letter-spacing:.8px; text-transform:uppercase;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .pm-kpi-mid { display:flex; align-items:baseline; gap:3px; margin-top:2px; }
+    .pm-kpi-mid { display:flex; align-items:baseline; gap:2px; margin-top:1px; }
     .pm-kpi-val {
       font-family:'JetBrains Mono', monospace;
-      font-size:21px; font-weight:700;
+      font-size:17px; font-weight:700;
       color:var(--pm-text);
       letter-spacing:-0.5px; line-height:1.05;
     }
-    .pm-kpi-unit { font-size:10px; color:var(--pm-muted); font-weight:600; }
+    .pm-kpi-unit { font-size:9px; color:var(--pm-muted); font-weight:600; }
     .pm-kpi-note {
-      font-size:9.5px; font-weight:500;
+      font-size:8.5px; font-weight:500;
       color:var(--pm-muted);
-      line-height:1.25;
+      line-height:1.2;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .pm-kpi-note.s-good { color:var(--pm-pass); }
     .pm-kpi-note.s-bad  { color:var(--pm-fail); }
     .pm-kpi-note.s-warn { color:#b45309; }
     .pm-kpi-note.s-na   { color:var(--pm-faint); }
-    .pm-kpi-empty { grid-column:1/-1; padding:14px; text-align:center; color:var(--pm-muted); font-size:11px; background:#fff; border:1px dashed var(--pm-border); border-radius:10px; }
-    /* Drill tiles — same 3-col compact grid as hero */
-    .pm-kpi-drill { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; }
-    .pm-kpi-drow { background:#fff; border:1px solid var(--pm-border); border-left-width:3px; border-radius:10px; padding:7px 9px; display:flex; flex-direction:column; gap:1px; min-height:62px; overflow:hidden; }
+    .pm-kpi-empty { grid-column:1/-1; padding:10px; text-align:center; color:var(--pm-muted); font-size:11px; background:#fff; border:1px dashed var(--pm-border); border-radius:8px; }
+    /* Drill tiles */
+    .pm-kpi-drill { display:grid; grid-template-columns: repeat(3, 1fr); gap:5px; }
+    .pm-kpi-drow { background:#fff; border:1px solid var(--pm-border); border-left-width:3px; border-radius:8px; padding:5px 7px; display:flex; flex-direction:column; gap:1px; overflow:hidden; }
     .pm-kpi-drow.is-err { border-color:#fed7aa; background:#fff7ed; }
     .pm-kpi-drow.s-good { border-left-color:var(--pm-pass); }
     .pm-kpi-drow.s-bad  { border-left-color:var(--pm-fail); }
     .pm-kpi-drow.s-warn { border-left-color:#d97706; }
     .pm-kpi-drow.s-na   { border-left-color:#cbd5e1; }
-    .pm-kpi-dlbl { font-size:9px; font-weight:700; color:var(--pm-muted); letter-spacing:0.6px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .pm-kpi-dsub { font-size:9px; font-weight:600; color:var(--pm-faint); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pm-kpi-dlbl { font-size:8.5px; font-weight:700; color:var(--pm-muted); letter-spacing:0.4px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pm-kpi-dsub { font-size:8.5px; font-weight:600; color:var(--pm-faint); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .pm-kpi-dsub.s-good { color:var(--pm-pass); }
     .pm-kpi-dsub.s-bad  { color:var(--pm-fail); }
     .pm-kpi-dsub.s-warn { color:#d97706; }
-    .pm-kpi-dval { font-family:'JetBrains Mono', monospace; font-size:17px; font-weight:800; color:var(--pm-navy); letter-spacing:-0.5px; line-height:1.1; }
+    .pm-kpi-dval { font-family:'JetBrains Mono', monospace; font-size:15px; font-weight:800; color:var(--pm-navy); letter-spacing:-0.5px; line-height:1.1; }
     .pm-kpi-dval.is-good { color: var(--pm-pass); }
     .pm-kpi-dval.is-bad { color: var(--pm-fail); }
 
@@ -722,20 +718,20 @@
       #pmAside .pm-sec:first-child { margin-top: 0; }
       #pmAside .pm-sec { margin: 8px 2px 6px; }
 
-      /* Tile grid breathes wider */
-      .pm-tiles { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .pm-tile { min-height: 96px; padding: 12px 14px 12px; }
-      .pm-tile-icon { width: 30px; height: 30px; }
-      .pm-tile-icon svg { width: 15px; height: 15px; }
-      .pm-tile-label { font-size: 13px; }
-      .pm-tile-meta { font-size: 10.5px; }
-      .pm-tile-count { height: 22px; font-size: 11px; min-width: 26px; }
+      /* Tile grid — desktop */
+      .pm-tiles { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .pm-tile { min-height: 76px; padding: 9px 10px; }
+      .pm-tile-icon { width: 24px; height: 24px; }
+      .pm-tile-icon svg { width: 13px; height: 13px; }
+      .pm-tile-label { font-size: 12px; }
+      .pm-tile-meta { font-size: 9.5px; }
+      .pm-tile-count { height: 19px; font-size: 10px; min-width: 20px; }
 
-      /* KPI hero collapses to single column in the narrow sidebar */
-      .pm-kpi-hero { grid-template-columns: 1fr; gap: 8px; }
-      .pm-kpi-card { min-height: 70px; padding: 10px 12px; }
-      .pm-kpi-val  { font-size: 22px; }
-      .pm-kpi-drill { grid-template-columns: 1fr; gap: 6px; }
+      /* KPI sidebar — 2-col grid to avoid tall single-column stack */
+      .pm-kpi-hero  { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .pm-kpi-card  { padding: 8px 10px; }
+      .pm-kpi-val   { font-size: 18px; }
+      .pm-kpi-drill { grid-template-columns: repeat(2, 1fr); gap: 5px; }
 
       /* Section labels look heavier on desktop */
       .pm-sec-l { font-size: 11px; }
@@ -1092,6 +1088,9 @@
     </button>
     <button class="pm-menu-item" onclick="navigateTo('Warehouse')">
       <span class="pm-menu-item-icon"><svg><use href="#i-boxes"/></svg></span>Warehouse
+    </button>
+    <button class="pm-menu-item" onclick="navigateTo('Scan')">
+      <span class="pm-menu-item-icon"><svg><use href="#i-boxes"/></svg></span>Scan (QR Pilot)
     </button>
     <button class="pm-menu-item" onclick="navigateTo('ControlPlan')">
       <span class="pm-menu-item-icon"><svg><use href="#i-ruler"/></svg></span>Control Plan

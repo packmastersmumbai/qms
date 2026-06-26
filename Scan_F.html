@@ -54,38 +54,24 @@
 </head>
 <body>
   <div class="wrap">
-    <!-- PIN GATE -->
+    <!-- WHO-ARE-YOU GATE (name pick; no PIN, no Google sign-in) -->
     <div id="gate" class="card">
       <h1>Pack Masters Scan</h1>
-      <h2>Enter your PIN</h2>
-      <div id="pinDisplay" class="pin-display"></div>
-      <div class="keypad">
-        <button class="key" data-d="1">1</button>
-        <button class="key" data-d="2">2</button>
-        <button class="key" data-d="3">3</button>
-        <button class="key" data-d="4">4</button>
-        <button class="key" data-d="5">5</button>
-        <button class="key" data-d="6">6</button>
-        <button class="key" data-d="7">7</button>
-        <button class="key" data-d="8">8</button>
-        <button class="key" data-d="9">9</button>
-        <button class="key danger" id="pinClr">clr</button>
-        <button class="key" data-d="0">0</button>
-        <button class="key action" id="pinOk">OK</button>
-      </div>
+      <h2 id="gateMsg">Who are you?</h2>
+      <select id="opSelect" class="lot-input"><option value="">Loading…</option></select>
+      <button id="opOk" class="btn-primary" disabled>Continue</button>
     </div>
 
-    <!-- MAIN UI (hidden until login) -->
+    <!-- MAIN UI (hidden until identity resolved) -->
     <div id="main" class="hidden">
       <div class="card">
         <div class="who">
           <div>
             <div class="who-name" id="whoName">—</div>
-            <div class="who-meta" id="whoMeta">—</div>
+            <div class="who-meta" id="whoMeta">Signed in</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
             <span class="wifi-pill"><span id="wifiDot" class="wifi-dot"></span><span id="wifiText">Wi-Fi</span></span>
-            <button class="logout" id="logoutBtn">Logout</button>
           </div>
         </div>
 
@@ -99,9 +85,32 @@
       </div>
 
       <div class="card">
-        <h2>Step 2 — Type/scan the lot ID</h2>
+        <h2 id="step2Title">Step 2 — Type/scan the lot ID</h2>
+
+        <!-- Gate-In only: GRN → item → qty (driven by real GRN data) -->
+        <div id="receiveFields" class="hidden">
+          <select id="grnSelect" class="lot-input"><option value="">— select GRN —</option></select>
+          <select id="grnItemSelect" class="lot-input" disabled><option value="">— select item —</option></select>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="qtyInput" class="lot-input" style="flex:1;margin-bottom:0;" placeholder="Quantity received" inputmode="decimal" min="0" step="any">
+            <span id="grnQtyHint" style="font-size:12px;color:#94a3b8;white-space:nowrap;"></span>
+          </div>
+          <input type="text" id="matInput" class="hidden">
+        </div>
+
+        <!-- Non-Gate-In: free lot id -->
         <input type="text" id="lotInput" class="lot-input" placeholder="e.g. PM/GRN/2026-0123  or supplier batch" autocomplete="off" autocapitalize="characters">
-        <button id="submitBtn" class="btn-primary" disabled>Record scan</button>
+
+        <button id="checkBtn" class="btn-primary" disabled>Check lot</button>
+
+        <!-- Confirm card — shows the previewed real effect before writing -->
+        <div id="confirmCard" class="hidden" style="margin-top:12px;padding:12px;background:#0f172a;border-radius:8px;border:1px solid #334155;">
+          <div id="confirmText" style="font-size:14px;margin-bottom:10px;line-height:1.4;"></div>
+          <div style="display:flex;gap:8px;">
+            <button id="confirmBtn" class="btn-primary" style="flex:1;">Confirm</button>
+            <button id="cancelBtn" class="logout" style="flex:0 0 auto;">Cancel</button>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -114,85 +123,224 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    var operator = null;       // {pin, displayName, role, shift}
+    var operator = null;       // { name, role, shift }
+    var operators = [];        // [{name, role, shift}]
     var selectedLoc = null;
     var recent = [];
+    var LS_KEY = 'pmScanOperator';
 
-    // ---------- PIN flow ----------
-    var pinBuf = '';
-    var pinDisplay = document.getElementById('pinDisplay');
-    function renderPin(){ pinDisplay.textContent = pinBuf.replace(/./g,'•'); }
-    document.querySelectorAll('.key[data-d]').forEach(function(b){
-      b.addEventListener('click', function(){
-        if (pinBuf.length >= 6) return;
-        pinBuf += b.getAttribute('data-d');
-        renderPin();
-      });
-    });
-    document.getElementById('pinClr').addEventListener('click', function(){ pinBuf=''; renderPin(); });
-    document.getElementById('pinOk').addEventListener('click', tryLogin);
+    // ---------- Identity (self-selected name; no PIN, no Google sign-in) ----------
+    var opSelect = document.getElementById('opSelect');
+    var opOk = document.getElementById('opOk');
 
-    function tryLogin(){
-      if (pinBuf.length < 3) { toast('PIN too short','error'); return; }
+    function loadOperators(){
       google.script.run
-        .withSuccessHandler(function(op){
-          if (!op) { toast('Unknown PIN','error'); pinBuf=''; renderPin(); return; }
-          operator = op;
-          document.getElementById('whoName').textContent = op.displayName;
-          document.getElementById('whoMeta').textContent = (op.role||'') + ' · ' + (op.shift||'') + ' shift';
-          document.getElementById('gate').classList.add('hidden');
-          document.getElementById('main').classList.remove('hidden');
-          startWifiHeartbeat();
+        .withSuccessHandler(function(list){
+          operators = list || [];
+          if (!operators.length) {
+            document.getElementById('gateMsg').textContent = 'No operators set up. Add names to the OPERATORS sheet.';
+            opSelect.innerHTML = '<option value="">(none)</option>';
+            return;
+          }
+          opSelect.innerHTML = '<option value="">— select your name —</option>' +
+            operators.map(function(o){
+              var meta = [o.role, o.shift && (o.shift + ' shift')].filter(Boolean).join(' · ');
+              return '<option value="'+escapeHtml(o.name)+'">'+escapeHtml(o.name)+(meta?' ('+escapeHtml(meta)+')':'')+'</option>';
+            }).join('');
+          // Auto-resume last operator on this device.
+          var saved = '';
+          try { saved = localStorage.getItem(LS_KEY) || ''; } catch(e){}
+          if (saved && operators.some(function(o){ return o.name === saved; })) {
+            opSelect.value = saved;
+            enterAs(saved);
+            return;
+          }
+          opOk.disabled = true;
         })
-        .withFailureHandler(function(e){ toast('Login error: '+e.message,'error'); })
-        .resolveOperator(pinBuf);
+        .withFailureHandler(function(e){
+          document.getElementById('gateMsg').textContent = 'Could not load operators: ' + (e.message||e) + ' — reload to retry.';
+        })
+        .getOperators();
     }
 
-    document.getElementById('logoutBtn').addEventListener('click', function(){
-      operator = null; selectedLoc = null; pinBuf=''; renderPin();
-      document.getElementById('main').classList.add('hidden');
-      document.getElementById('gate').classList.remove('hidden');
-      stopWifiHeartbeat();
-    });
+    opSelect.addEventListener('change', function(){ opOk.disabled = !opSelect.value; });
+    opOk.addEventListener('click', function(){ if (opSelect.value) enterAs(opSelect.value); });
+
+    function enterAs(name){
+      var found = operators.filter(function(o){ return o.name === name; })[0] || { name:name, role:'', shift:'' };
+      operator = found;
+      try { localStorage.setItem(LS_KEY, name); } catch(e){}
+      document.getElementById('whoName').textContent = found.name;
+      var meta = [found.role, found.shift && (found.shift + ' shift')].filter(Boolean).join(' · ');
+      document.getElementById('whoMeta').innerHTML = (meta || 'Operator') + ' · <a href="#" id="switchOp" style="color:#0ea5e9;">switch</a>';
+      document.getElementById('switchOp').addEventListener('click', function(ev){
+        ev.preventDefault();
+        operator = null; selectedLoc = null;
+        try { localStorage.removeItem(LS_KEY); } catch(e){}
+        document.getElementById('main').classList.add('hidden');
+        document.getElementById('gate').classList.remove('hidden');
+        opSelect.value = ''; opOk.disabled = true;
+        stopWifiHeartbeat();
+      });
+      document.getElementById('gate').classList.add('hidden');
+      document.getElementById('main').classList.remove('hidden');
+      startWifiHeartbeat();
+    }
+
+    loadOperators();
 
     // ---------- Chokepoint selection ----------
+    var GATE_IN = 'LOC|GATE-IN';
+    var grnSelect = document.getElementById('grnSelect');
+    var grnItemSelect = document.getElementById('grnItemSelect');
+    var grnQtyHint = document.getElementById('grnQtyHint');
+    var grnsLoaded = false;
+    var currentItems = [];   // items of the selected GRN
+
     document.querySelectorAll('.chokepoint').forEach(function(b){
       b.addEventListener('click', function(){
         document.querySelectorAll('.chokepoint').forEach(function(x){ x.classList.remove('active'); });
         b.classList.add('active');
         selectedLoc = b.getAttribute('data-loc');
-        refreshSubmitState();
+        var isGateIn = selectedLoc === GATE_IN;
+        // Gate-In: GRN→item→qty dropdowns. Other chokepoints: free lot id.
+        document.getElementById('receiveFields').classList.toggle('hidden', !isGateIn);
+        document.getElementById('lotInput').classList.toggle('hidden', isGateIn);
+        document.getElementById('step2Title').textContent = isGateIn
+          ? 'Step 2 — Pick the GRN and item received'
+          : 'Step 2 — Type/scan the lot ID';
+        if (isGateIn && !grnsLoaded) loadGRNs();
+        hideConfirm();
+        refreshCheckState();
       });
     });
 
-    // ---------- Lot input + submit ----------
-    var lotInput = document.getElementById('lotInput');
-    lotInput.addEventListener('input', refreshSubmitState);
-    function refreshSubmitState(){
-      document.getElementById('submitBtn').disabled = !(operator && selectedLoc && lotInput.value.trim().length);
+    // ---------- Gate-In: GRN + item dropdowns ----------
+    function loadGRNs(){
+      grnSelect.innerHTML = '<option value="">Loading GRNs…</option>';
+      google.script.run
+        .withSuccessHandler(function(grns){
+          grnsLoaded = true;
+          if (!grns || !grns.length) { grnSelect.innerHTML = '<option value="">(no GRNs found)</option>'; return; }
+          grnSelect.innerHTML = '<option value="">— select GRN —</option>' +
+            grns.map(function(g){
+              var label = g.grnNo + (g.supplierName ? ' · ' + g.supplierName : '') + (g.date ? ' · ' + g.date : '');
+              return '<option value="'+escapeHtml(g.grnNo)+'">'+escapeHtml(label)+'</option>';
+            }).join('');
+        })
+        .withFailureHandler(function(e){ grnSelect.innerHTML = '<option value="">(load failed)</option>'; toast('GRN load failed: '+(e.message||e),'error'); })
+        .getRecentGRNs();
     }
 
-    document.getElementById('submitBtn').addEventListener('click', function(){
+    grnSelect.addEventListener('change', function(){
+      grnItemSelect.innerHTML = '<option value="">Loading items…</option>';
+      grnItemSelect.disabled = true; currentItems = []; grnQtyHint.textContent = '';
+      qtyInput.value = ''; lotInput.value = ''; matInput.value = '';
+      refreshCheckState();
+      if (!grnSelect.value) { grnItemSelect.innerHTML = '<option value="">— select item —</option>'; return; }
+      google.script.run
+        .withSuccessHandler(function(items){
+          currentItems = items || [];
+          if (!currentItems.length) { grnItemSelect.innerHTML = '<option value="">(no items)</option>'; return; }
+          grnItemSelect.disabled = false;
+          grnItemSelect.innerHTML = '<option value="">— select item —</option>' +
+            currentItems.map(function(it, i){
+              var label = (it.materialDesc || it.materialCode) + ' · ' + (it.batchNo || '(no batch)');
+              return '<option value="'+i+'">'+escapeHtml(label)+'</option>';
+            }).join('');
+        })
+        .withFailureHandler(function(e){ grnItemSelect.innerHTML = '<option value="">(load failed)</option>'; toast('Item load failed: '+(e.message||e),'error'); })
+        .getGRNItems(grnSelect.value);
+    });
+
+    grnItemSelect.addEventListener('change', function(){
+      var it = currentItems[Number(grnItemSelect.value)];
+      if (!it) { grnQtyHint.textContent = ''; lotInput.value=''; matInput.value=''; qtyInput.value=''; refreshCheckState(); return; }
+      lotInput.value = it.batchNo || '';        // lot id = GRN batch
+      matInput.value = it.materialCode || '';
+      var grnQty = it.qtyReceived || it.qtyOrdered || 0;
+      qtyInput.value = grnQty || '';            // prefill with GRN qty (editable)
+      grnQtyHint.textContent = 'GRN: ' + grnQty + (it.unit ? ' ' + it.unit : '');
+      refreshCheckState();
+    });
+
+    // ---------- Lot input + check + confirm ----------
+    var lotInput = document.getElementById('lotInput');
+    var matInput = document.getElementById('matInput');
+    var qtyInput = document.getElementById('qtyInput');
+    var checkBtn = document.getElementById('checkBtn');
+    [lotInput, matInput, qtyInput].forEach(function(el){ el.addEventListener('input', refreshCheckState); });
+
+    function refreshCheckState(){
+      var ok = operator && selectedLoc && lotInput.value.trim().length;
+      if (selectedLoc === GATE_IN) ok = ok && matInput.value.trim().length && Number(qtyInput.value) > 0;
+      checkBtn.disabled = !ok;
+    }
+
+    function hideConfirm(){ document.getElementById('confirmCard').classList.add('hidden'); }
+
+    checkBtn.addEventListener('click', function(){
+      if (checkBtn.disabled) return;
+      var lotId = lotInput.value.trim();
+      checkBtn.disabled = true; checkBtn.textContent = 'Checking…';
+      google.script.run
+        .withSuccessHandler(function(look){
+          checkBtn.disabled = false; checkBtn.textContent = 'Check lot';
+          if (!look) { toast('Lookup failed','error'); return; }
+          showConfirm(look, lotId);
+        })
+        .withFailureHandler(function(e){
+          checkBtn.disabled = false; checkBtn.textContent = 'Check lot';
+          toast('Lookup failed: '+(e.message||e),'error');
+        })
+        .lookupLotForScan(lotId, selectedLoc);
+    });
+
+    function showConfirm(look, lotId){
+      var card = document.getElementById('confirmCard');
+      var txt = document.getElementById('confirmText');
+      var confirmBtn = document.getElementById('confirmBtn');
+      if (selectedLoc === GATE_IN) {
+        // Gate-In: receive uses typed qty/material; show that.
+        if (!look.ok && look.blockReason) { txt.innerHTML = '<span style="color:#f59e0b;">'+escapeHtml(look.blockReason)+'</span>'; confirmBtn.style.display='none'; }
+        else { txt.innerHTML = 'Receive <b>'+escapeHtml(qtyInput.value)+'</b> of <b>'+escapeHtml(matInput.value)+'</b><br>lot '+escapeHtml(lotId)+' → Gate-In'; confirmBtn.style.display=''; }
+      } else if (!look.ok) {
+        txt.innerHTML = '<span style="color:#f59e0b;">'+escapeHtml(look.blockReason||'Not allowed')+'</span>';
+        confirmBtn.style.display = 'none';
+      } else {
+        txt.innerHTML = escapeHtml(look.preview || 'Proceed?');
+        confirmBtn.style.display = '';
+      }
+      card.classList.remove('hidden');
+    }
+
+    document.getElementById('cancelBtn').addEventListener('click', hideConfirm);
+
+    document.getElementById('confirmBtn').addEventListener('click', function(){
       if (!operator || !selectedLoc) return;
       var lotId = lotInput.value.trim();
       if (!lotId) return;
       var btn = this; btn.disabled = true; btn.textContent='Saving…';
       var t0 = Date.now();
+      var payload = { operator: operator.name, locationId: selectedLoc, lotId: lotId, confirmed: true };
+      if (selectedLoc === GATE_IN) { payload.qty = Number(qtyInput.value) || 0; payload.materialCode = matInput.value.trim(); }
       google.script.run
         .withSuccessHandler(function(res){
-          var dt = Date.now() - t0;
-          recordWifi('OK', dt);
+          recordWifi('OK', Date.now()-t0);
           addRecent(res);
-          toast('Scanned: ' + res.verb + ' · ' + lotId, 'ok');
-          lotInput.value=''; btn.disabled=false; btn.textContent='Record scan';
-          // Keep chokepoint selected — typical use is multiple scans at the same doorway
+          var msg = res.action === 'RECEIVE' ? ('Received '+res.qtyMoved+' · '+lotId)
+                  : res.action === 'SHIP'    ? ('Dispatched '+res.qtyMoved+' · '+lotId)
+                  : ('Moved '+res.qtyMoved+' → '+res.toLocation);
+          toast(msg, 'ok');
+          lotInput.value=''; matInput.value=''; qtyInput.value='';
+          btn.disabled=false; btn.textContent='Confirm'; hideConfirm(); refreshCheckState();
         })
         .withFailureHandler(function(e){
           recordWifi('ERROR', Date.now()-t0);
           toast('Scan failed: '+(e.message||e),'error');
-          btn.disabled=false; btn.textContent='Record scan';
+          btn.disabled=false; btn.textContent='Confirm';
         })
-        .recordScan({ pin: operator.pin, locationId: selectedLoc, lotId: lotId });
+        .recordScan(payload);
     });
 
     function addRecent(res){
@@ -245,7 +393,7 @@
     }
     function recordWifi(status, ms){
       if (!operator || !selectedLoc) return;
-      google.script.run.recordWifiProbe({ pin: operator.pin, locationId: selectedLoc, latency_ms: ms, status: status });
+      google.script.run.recordWifiProbe({ locationId: selectedLoc, latency_ms: ms, status: status });
     }
   </script>
 </body>

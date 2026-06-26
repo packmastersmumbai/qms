@@ -32,6 +32,71 @@ var CHOKEPOINTS_ = {
   'LOC|FLOOR-2-IN': 'UP-2'
 };
 
+// Lifecycle action per chokepoint (real STOCK_LEDGER effect):
+//   RECEIVE → IN at the chokepoint's real location (new stock)
+//   MOVE    → OUT at lot's current location + IN at the chokepoint's real location
+//   SHIP    → OUT reducing balance to zero (dispatched)
+var CHOKEPOINT_ACTION_ = {
+  'LOC|GATE-IN':    'RECEIVE',
+  'LOC|FLOOR-1-IN': 'MOVE',
+  'LOC|FLOOR-2-IN': 'MOVE',
+  'LOC|GATE-OUT':   'SHIP'
+};
+
+// Chokepoint → real LOCATIONS row id. Created by ensureChokepointLocations_().
+// GATE-OUT has no destination location (stock leaves the building → 'DISPATCHED' marker).
+var CHOKEPOINT_LOCATION_ = {
+  'LOC|GATE-IN':    'SCAN-GATE-IN',
+  'LOC|FLOOR-1-IN': 'SCAN-FLOOR-1',
+  'LOC|FLOOR-2-IN': 'SCAN-FLOOR-2',
+  'LOC|GATE-OUT':   'DISPATCHED'
+};
+
+// New LOCATIONS rows backing the chokepoints (matches LOCATIONS_HEADERS, 12 cols).
+var CHOKEPOINT_LOCATION_ROWS_ = [
+  ['SCAN-GATE-IN', 'GF', 'Stores', '', '', '', '', 'Scan — Gate In (receiving)', 'RM', '', '', 'Y'],
+  ['SCAN-FLOOR-1', '1F', 'Floor 1', '', '', '', '', 'Scan — 1st Floor',          'WIP','', '', 'Y'],
+  ['SCAN-FLOOR-2', '2F', 'Floor 2', '', '', '', '', 'Scan — 2nd Floor',          'WIP','', '', 'Y']
+];
+
+/**
+ * Idempotently add the 3 chokepoint locations to the LOCATIONS sheet.
+ * (GATE-OUT is a logical 'DISPATCHED' state, not a physical location.)
+ * Safe to re-run — skips ids that already exist. Returns {added, existing}.
+ */
+function ensureChokepointLocations_() {
+  var ss = getSpreadsheet();
+  var sh = ss.getSheetByName('LOCATIONS');
+  if (!sh) throw new Error('LOCATIONS sheet missing — run Initialize first');
+  var have = {};
+  if (sh.getLastRow() > 1) {
+    sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().forEach(function(r){
+      if (r[0]) have[String(r[0]).trim()] = true;
+    });
+  }
+  var added = [], existing = [];
+  CHOKEPOINT_LOCATION_ROWS_.forEach(function(row){
+    if (have[row[0]]) { existing.push(row[0]); return; }
+    sh.appendRow(row);
+    added.push(row[0]);
+  });
+  return { added: added, existing: existing };
+}
+
+/** Public setup entry point — call once on rollout (also ensures pilot sheets). */
+function setupScanWms() {
+  ensurePilotSheets();
+  var loc = ensureChokepointLocations_();
+  return { ok: true, locations: loc };
+}
+
+/** Config for the scan UI / verification — the 4 chokepoints, their verb, action, and target location. */
+function getChokepointConfig() {
+  return Object.keys(CHOKEPOINTS_).map(function(loc){
+    return { locationId: loc, verb: CHOKEPOINTS_[loc], action: CHOKEPOINT_ACTION_[loc], targetLocation: CHOKEPOINT_LOCATION_[loc] };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Sheet ensure (idempotent — safe to call repeatedly)
 // ---------------------------------------------------------------------------
@@ -134,6 +199,85 @@ function resolveOperator(pin) {
 }
 
 // ---------------------------------------------------------------------------
+// Lookup — current stock state for a lot, + a preview of the scan's effect
+// ---------------------------------------------------------------------------
+
+/**
+ * Look up a lot's current stock and return what THIS scan would do.
+ * lotId is matched against STOCK_LEDGER batch/lot (case-insensitive).
+ *
+ * Returns:
+ *   { found, lotId, materialCode, materialDesc, unit,
+ *     current: [{locationId, balance}], totalBalance,
+ *     action, fromLocation, toLocation, preview, ok, blockReason }
+ *
+ * ok=false + blockReason set when the action can't proceed (e.g. SHIP/MOVE a
+ * lot with no stock, or RECEIVE a lot that already has stock).
+ */
+function lookupLotForScan(lotId, locationId) {
+  var lot = String(lotId || '').trim();
+  var loc = String(locationId || '').trim();
+  if (!lot) return { found: false, ok: false, blockReason: 'lotId required' };
+  if (!CHOKEPOINTS_.hasOwnProperty(loc)) return { found: false, ok: false, blockReason: 'Invalid chokepoint' };
+
+  var action = CHOKEPOINT_ACTION_[loc];
+  var target = CHOKEPOINT_LOCATION_[loc];
+
+  // Current stock for this lot across locations (positive balances only).
+  var summary = getStockSummary().filter(function(s){
+    return String(s.batchOrLotNo).trim().toLowerCase() === lot.toLowerCase() && s.balance > 0;
+  });
+  var totalBalance = summary.reduce(function(a, s){ return a + Number(s.balance || 0); }, 0);
+  var materialCode = summary.length ? summary[0].materialCode : '';
+
+  // Material desc/unit (best-effort from masters).
+  var desc = '', unit = '';
+  if (materialCode) {
+    var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+    for (var i = 0; i < mats.length; i++) {
+      if (mats[i].code === materialCode) { desc = mats[i].desc || ''; unit = mats[i].unit || ''; break; }
+    }
+  }
+
+  // Pick the source location = the location holding the most of this lot.
+  var fromLoc = '';
+  if (summary.length) {
+    summary.sort(function(a, b){ return b.balance - a.balance; });
+    fromLoc = summary[0].locationId;
+  }
+
+  var out = {
+    found: summary.length > 0,
+    lotId: lot, materialCode: materialCode, materialDesc: desc, unit: unit,
+    current: summary.map(function(s){ return { locationId: s.locationId, balance: s.balance }; }),
+    totalBalance: totalBalance,
+    action: action, fromLocation: fromLoc, toLocation: target,
+    ok: true, blockReason: ''
+  };
+
+  if (action === 'RECEIVE') {
+    if (totalBalance > 0) {
+      out.ok = false;
+      out.blockReason = 'Lot already in stock (' + totalBalance + (unit ? ' ' + unit : '') + ' at ' + fromLoc + '). Use a floor scan to move it, or receive via GRN.';
+    }
+    out.preview = 'Receive lot ' + lot + ' into ' + target;
+  } else if (action === 'MOVE') {
+    if (totalBalance <= 0) {
+      out.ok = false;
+      out.blockReason = 'Lot not in stock — cannot move. Receive it at Gate-In (or via GRN) first.';
+    }
+    out.preview = 'Move ' + totalBalance + (unit ? ' ' + unit : '') + ' of ' + lot + ' from ' + (fromLoc || '?') + ' → ' + target;
+  } else if (action === 'SHIP') {
+    if (totalBalance <= 0) {
+      out.ok = false;
+      out.blockReason = 'Lot not in stock — nothing to dispatch.';
+    }
+    out.preview = 'Dispatch ' + totalBalance + (unit ? ' ' + unit : '') + ' of ' + lot + ' from ' + (fromLoc || '?');
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Core scan write
 // ---------------------------------------------------------------------------
 
@@ -143,45 +287,117 @@ function resolveOperator(pin) {
  * Returns {ok:true, ts, verb} or throws.
  */
 function recordScan(payload) {
-  var pin       = String((payload || {}).pin || '').trim();
   var locationId = String((payload || {}).locationId || '').trim();
   var lotId     = String((payload || {}).lotId || '').trim();
-  var qty       = (payload || {}).qty;
+  var operator  = String((payload || {}).operator || '').trim();
+  var confirmed = (payload || {}).confirmed === true;   // UI must confirm the previewed action
 
   // Validate locationId — must be one of the 4 chokepoints
   if (!CHOKEPOINTS_.hasOwnProperty(locationId)) {
     throw new Error('Invalid locationId: ' + locationId);
   }
-  var verb = CHOKEPOINTS_[locationId];
+  var verb   = CHOKEPOINTS_[locationId];
+  var action = CHOKEPOINT_ACTION_[locationId];
+  var target = CHOKEPOINT_LOCATION_[locationId];
 
-  // Validate PIN → operator
-  var op = resolveOperator(pin);
-  if (!op) throw new Error('Unknown or inactive PIN');
+  // Identity = self-selected operator name (no PIN, no Google gate).
+  var op = resolveOperatorByName_(operator);
+  if (!op) throw new Error('Select who you are first');
 
   if (!lotId) throw new Error('lotId required');
   if (lotId.length > 100) throw new Error('lotId too long');
 
-  // Try to capture Google account email (best-effort; may be empty in some contexts)
+  // Re-evaluate stock state server-side (never trust the client preview).
+  var look = lookupLotForScan(lotId, locationId);
+  if (!look.ok) throw new Error(look.blockReason || 'Scan not allowed');
+  if (!confirmed) throw new Error('Confirm the action first');
+
+  // ---- Real STOCK_LEDGER lifecycle write (single source of truth) ----
+  var refNo = 'SCAN-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd-HHmmss');
+  var mat   = look.materialCode;
+  var desc  = look.materialDesc;
+  var moved = 0;
+
+  if (action === 'RECEIVE') {
+    // Gate-In is a real receive: operator enters the qty (lot is new, nothing to look up).
+    var rcvQty = Number((payload || {}).qty) || 0;
+    if (rcvQty <= 0) throw new Error('Enter the quantity received at Gate-In');
+    var rcvMat = String((payload || {}).materialCode || mat || '').trim();
+    if (!rcvMat) throw new Error('Material code required for Gate-In receive');
+    moved = rcvQty;
+    writeStockLedger_('SCAN_RECEIVE', rcvMat, lotId, target, rcvQty, 0, 'SCAN', refNo, op.name, 'Gate-In scan receive', desc);
+    mat = rcvMat;
+  } else if (action === 'MOVE') {
+    // OUT at source, IN at target floor — a real location transfer of the whole balance.
+    moved = look.totalBalance;
+    var fromLoc = look.fromLocation;
+    writeStockLedger_('SCAN_MOVE', mat, lotId, fromLoc, 0, moved, 'SCAN', refNo, op.name, 'Move → ' + target, desc);
+    writeStockLedger_('SCAN_MOVE', mat, lotId, target,  moved, 0, 'SCAN', refNo, op.name, 'Move ← ' + fromLoc, desc);
+  } else if (action === 'SHIP') {
+    // OUT reducing the lot's balance to zero (dispatched / left the building).
+    moved = look.totalBalance;
+    writeStockLedger_('SCAN_SHIP', mat, lotId, look.fromLocation, 0, moved, 'SCAN', refNo, op.name, 'Dispatched via Gate-Out scan', desc);
+  }
+
+  // ---- Pilot compliance log (SCAN_EVENTS) — unchanged measurement stream ----
   var gEmail = '';
   try { gEmail = Session.getActiveUser().getEmail() || ''; } catch(e) {}
-
   var ss = getSpreadsheet();
   var sh = ss.getSheetByName(SCAN_EVENTS_SHEET);
   if (!sh) { ensurePilotSheets(); sh = ss.getSheetByName(SCAN_EVENTS_SHEET); }
-
   var ts = new Date();
-  sh.appendRow([
-    ts,
-    op.displayName,    // userId column = friendly name for downstream queries
-    op.pin,
-    op.displayName,
-    locationId,
-    verb,
-    lotId,
-    qty != null ? qty : '',
-    gEmail
-  ]);
-  return { ok: true, ts: ts.toISOString(), verb: verb, operator: op.displayName, role: op.role, shift: op.shift };
+  sh.appendRow([ ts, op.name, '', op.name, locationId, verb, lotId, moved || '', gEmail ]);
+
+  return {
+    ok: true, ts: ts.toISOString(), verb: verb, action: action, lotId: lotId,
+    operator: op.name, role: op.role, shift: op.shift,
+    materialCode: mat, qtyMoved: moved, toLocation: (action === 'SHIP' ? 'DISPATCHED' : target),
+    refNo: refNo
+  };
+}
+
+/**
+ * Identity for the scan UI — returns the signed-in Google account if available.
+ * Best-effort only; the scan UI no longer gates on this (operator picks a name).
+ */
+function getScanUser() {
+  var email = '';
+  try { email = Session.getActiveUser().getEmail() || ''; } catch(e) {}
+  return { email: email };
+}
+
+/**
+ * Operator names for the scan-page "Who are you?" dropdown.
+ * Returns active operators from the OPERATORS sheet: [{name, role, shift}].
+ * No PIN, no Google sign-in — identity is a self-selected name.
+ */
+function getOperators() {
+  var ss = getSpreadsheet();
+  var sh = ss.getSheetByName(OPERATORS_SHEET);
+  if (!sh || sh.getLastRow() < 2) { ensurePilotSheets(); sh = ss.getSheetByName(OPERATORS_SHEET); }
+  if (!sh || sh.getLastRow() < 2) return [];
+  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, OPERATORS_HEADERS.length).getValues();
+  var out = [];
+  rows.forEach(function(r){
+    // OPERATORS_HEADERS = ['pin','displayName','role','shift','active']
+    if (String(r[4]).toLowerCase() === 'false') return;
+    var name = String(r[1] || '').trim();
+    if (!name) return;
+    out.push({ name: name, role: String(r[2] || ''), shift: String(r[3] || '') });
+  });
+  return out;
+}
+
+// Resolve an operator name → {name, role, shift}. Returns a bare {name} if the
+// name isn't in the sheet (free-typed), so scans are never blocked.
+function resolveOperatorByName_(name) {
+  var n = String(name || '').trim();
+  if (!n) return null;
+  var list = getOperators();
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].name.toLowerCase() === n.toLowerCase()) return list[i];
+  }
+  return { name: n, role: '', shift: '' };
 }
 
 // ---------------------------------------------------------------------------
@@ -234,15 +450,17 @@ function whereIsLot(lotId) {
 // ---------------------------------------------------------------------------
 
 function recordWifiProbe(payload) {
-  var pin        = String((payload || {}).pin || '');
   var locationId = String((payload || {}).locationId || '');
   var latency    = Number((payload || {}).latency_ms || 0);
   var status     = String((payload || {}).status || 'OK').toUpperCase();
   if (['OK','TIMEOUT','ERROR'].indexOf(status) === -1) status = 'ERROR';
+  var gEmail = '';
+  try { gEmail = Session.getActiveUser().getEmail() || ''; } catch(e) {}
   var ss = getSpreadsheet();
   var sh = ss.getSheetByName(WIFI_LOG_SHEET);
   if (!sh) { ensurePilotSheets(); sh = ss.getSheetByName(WIFI_LOG_SHEET); }
-  sh.appendRow([new Date(), pin, locationId, latency, status]);
+  // WIFI_LOG col 2 was operatorPin; now stores the Google email (schema unchanged).
+  sh.appendRow([new Date(), gEmail, locationId, latency, status]);
   return { ok: true };
 }
 
@@ -477,18 +695,16 @@ function verifyAuthBoundary() {
       results.push({ name: name, passed: !!expectThrow, note: String(e).slice(0, 120) });
     }
   }
+  var firstOp = (getOperators()[0] || {}).name || 'Admin';
   check('reject invalid locationId', function() {
-    recordScan({ pin: '1234', locationId: 'LOC|HACKER', lotId: 'TEST/AUTH/001' });
+    recordScan({ operator: firstOp, locationId: 'LOC|HACKER', lotId: 'TEST/AUTH/001' });
   }, true);
-  check('reject unknown PIN', function() {
-    recordScan({ pin: '9999999', locationId: 'LOC|GATE-IN', lotId: 'TEST/AUTH/002' });
+  check('reject missing operator', function() {
+    recordScan({ operator: '', locationId: 'LOC|GATE-IN', lotId: 'TEST/AUTH/002' });
   }, true);
   check('reject missing lotId', function() {
-    recordScan({ pin: '1234', locationId: 'LOC|GATE-IN', lotId: '' });
+    recordScan({ operator: firstOp, locationId: 'LOC|GATE-IN', lotId: '' });
   }, true);
-  var gEmail = '';
-  try { gEmail = Session.getActiveUser().getEmail() || ''; } catch(e) {}
-  results.push({ name: 'Google auth context present', passed: !!gEmail, note: gEmail ? 'email captured: ' + gEmail : 'WARNING: no email — auth context may be missing in headless run (expected when called via clasp run)' });
   var passed = results.filter(function(r){ return r.passed; }).length;
-  return { ok: passed === results.length || (passed === results.length - 1 && !gEmail), passed: passed, failed: results.length - passed, details: results };
+  return { ok: passed === results.length, passed: passed, failed: results.length - passed, details: results };
 }
