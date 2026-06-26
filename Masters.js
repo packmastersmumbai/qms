@@ -22,7 +22,8 @@ function getMaterials() {
         desc: r[1],
         unit: r[2],
         category: r[3],
-        defaultLocation: String(r[4] || '').trim()
+        defaultLocation: String(r[4] || '').trim(),
+        reorderLevel: Number(r[5]) || 0   // col F; blank/0 = no low-stock alert
       };
     });
 }

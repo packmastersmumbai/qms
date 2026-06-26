@@ -54,6 +54,45 @@ function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
   return txnId;
 }
 
+// All transactions for a specific batch — used by the ledger drawer.
+// Scans the full STOCK_LEDGER (no row cap), returns oldest-first for running balance.
+function getStockLedgerForBatch(materialCode, batchOrLotNo) {
+  try {
+    var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+    if (!ws || ws.getLastRow() < 2) return [];
+    var rows = ws.getDataRange().getValues();
+    var TZ = 'Asia/Kolkata';
+    var mc = String(materialCode || '').trim().toLowerCase();
+    var bn = String(batchOrLotNo || '').trim().toLowerCase();
+    var out = [];
+    for (var i = 1; i < rows.length; i++) {
+      var r = rows[i];
+      if (!r[0]) continue;
+      if (String(r[3] || '').trim().toLowerCase() !== mc) continue;
+      if (bn && String(r[4] || '').trim().toLowerCase() !== bn) continue;
+      out.push({
+        txnId:        r[0],
+        timestamp:    r[1] instanceof Date ? Utilities.formatDate(r[1], TZ, 'dd-MMM HH:mm') : String(r[1] || ''),
+        txnType:      r[2] || '',
+        materialCode: r[3] || '',
+        batchOrLotNo: r[4] || '',
+        locationId:   r[5] || '',
+        qtyIn:        Number(r[6]) || 0,
+        qtyOut:       Number(r[7]) || 0,
+        balance:      Number(r[8]) || 0,
+        refDocType:   r[9] || '',
+        refDocNo:     r[10] || '',
+        operator:     r[11] || '',
+        remarks:      r[12] || ''
+      });
+    }
+    return out; // oldest-first (sheet order)
+  } catch(e) {
+    Logger.log('getStockLedgerForBatch error: ' + e.message);
+    return [];
+  }
+}
+
 // Recent stock movements for the Movements tab (Warehouse_F.html).
 // Returns most-recent N (default 100) ledger rows newest-first.
 function getStockMovements(limit) {
@@ -153,6 +192,42 @@ function getStockByMaterial() {
   return Object.keys(grouped).map(function(k){ return grouped[k]; });
 }
 
+// Low-stock alert: materials whose total on-hand (summed across all lots and
+// locations) has fallen to or below their reorderLevel from MASTERS_Materials.
+// Items with reorderLevel <= 0 (blank in the sheet) never alert. Most-critical
+// (largest shortfall) first. Reuses getStockSummary() — no new reads of the ledger.
+function getLowStockItems() {
+  var summary = getStockSummary();             // [{materialCode, batchOrLotNo, locationId, balance}]
+  var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+
+  // Total on-hand per material code across every location/lot.
+  var onHand = {};
+  summary.forEach(function(s){
+    var k = String(s.materialCode).trim();
+    onHand[k] = (onHand[k] || 0) + (Number(s.balance) || 0);
+  });
+
+  var low = [];
+  mats.forEach(function(m){
+    var reorder = Number(m.reorderLevel) || 0;
+    if (reorder <= 0) return;                   // no threshold set → no alert
+    var have = onHand[m.code] || 0;             // materials with zero ledger rows count as 0
+    if (have <= reorder) {
+      low.push({
+        code: m.code,
+        desc: m.desc || m.code,
+        unit: m.unit || '',
+        onHand: have,
+        reorderLevel: reorder,
+        shortBy: reorder - have                 // >= 0
+      });
+    }
+  });
+
+  low.sort(function(a, b){ return b.shortBy - a.shortBy; });
+  return low;
+}
+
 // Returns lots for a material across AVAILABLE locations (i.e., not quarantine),
 // ordered by GRN receipt date (FIFO). Lots in QUARANTINE / SCRAP / SAMPLE are excluded.
 // NOTE: This function provides a FIFO advisory only — it does NOT enforce pick order.
@@ -250,13 +325,27 @@ function getStockView() {
         if (r[0]) locTypeMap[String(r[0]).trim()] = String(r[8] || '').toUpperCase();
       });
     }
+    // Infer type from locationId prefix for locations not in the LOCATIONS sheet
+    function inferLocType(locId) {
+      var id = String(locId || '').trim().toUpperCase();
+      if (!id) return '';
+      if (id === 'QUARANTINE' || id.startsWith('QUAR')) return 'QUARANTINE';
+      if (id === 'SCRAP' || id.startsWith('SCRAP')) return 'SCRAP';
+      if (id === 'SAMPLE' || id.startsWith('SAMPLE')) return 'SAMPLE';
+      if (id === 'REWORK' || id.startsWith('REWORK')) return 'REWORK';
+      if (id === 'WIP' || id.startsWith('WIP')) return 'WIP';
+      if (id === 'HOLD' || id.startsWith('FG-HOLD') || id.startsWith('FG_HOLD')) return 'FG_HOLD';
+      if (id.startsWith('FG')) return 'FG';
+      if (id.startsWith('RM')) return 'RM';
+      return '';
+    }
 
     // --- material master map ---
     var matMap = {}; // code → { name, unit }
     var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
     mats.forEach(function(m) {
       var code = String(m.code || m.itemCode || '').trim();
-      if (code) matMap[code] = { name: m.name || m.itemDescription || code, unit: m.unit || '' };
+      if (code) matMap[code] = { name: m.name || m.itemDescription || m.desc || code, unit: m.unit || '' };
     });
 
     // --- current balances by (matCode, batch, locationId) ---
@@ -313,9 +402,11 @@ function getStockView() {
       prodWs.getDataRange().getValues().slice(1).forEach(function(r) {
         var st = String(r[8] || '').toUpperCase();
         if (st === 'IN_PROGRESS' || st === 'BOOKED') {
+          var wipDate = r[1] instanceof Date ? r[1] : new Date(r[1]);
           wipRows.push({
             jobId:    String(r[0] || ''),
-            date:     r[1] instanceof Date ? r[1] : new Date(r[1]),
+            date:     fmtDate(wipDate),
+            ageDays:  ageDays(wipDate),
             fgCode:   String(r[3] || ''),
             fgDesc:   String(r[4] || ''),
             fgQty:    Number(r[5]) || 0,
@@ -353,7 +444,7 @@ function getStockView() {
     // --- Classify stock lots by location type ---
     var rmRows = [], fgRows = [], quarRows = [];
     summary.forEach(function(s) {
-      var locType = locTypeMap[s.locationId] || '';
+      var locType = locTypeMap[s.locationId] || inferLocType(s.locationId);
       var grn     = grnMap[s.batchOrLotNo]  || {};
       var oqc     = oqcMap[s.batchOrLotNo]  || {};
       var mat     = matMap[s.materialCode]   || { name: s.materialCode, unit: '' };
