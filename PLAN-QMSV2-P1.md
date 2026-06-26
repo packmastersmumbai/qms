@@ -66,50 +66,56 @@ REUSE (do NOT modify)
 
 ## 4. Tasks (ordered by dependency; each ≤5 files, each verifiable)
 
-- [ ] **T1 — Server: role + board data**
+> **P1 COMPLETE (2026-06-26).** All T1–T8 shipped + deployed @324. Full
+> `e2e-run-all.js` green: 159 checks, 0 failures, no regressions. T6 move
+> proof-of-write verified live (9/9, self-reverting ledger writes).
+> Commits: 7757511 (T1–T2), f389a46 (T3), 2ae93c6 (T4+T7+age-fix),
+> 962e74d (T5), cf1cb11 (T6). Next: P2 (QR scan + Putaway/Issue/Return inline).
+
+- [x] **T1 — Server: role + board data**
   - Build `Qmsv2.js`: `getRoleStageMap()`, `getOperators()` passthrough, `getQmsv2Board(type, role)` → reads `getRecordsList(type)`, maps each record's `status` into `{pending|inProgress|done}` columns + a `stage` index via `statusToStage(type,status)`, flags `overdue` by age.
   - Acceptance: `getQmsv2Board('GRN','storage')` returns columns with records carrying `{docNo, name, status, stage, overdue, ageDays}`.
   - Verify: E2E RPC call asserts shape + non-empty for a type with records.
   - Files: `Qmsv2.js`.
 
-- [ ] **T2 — Route the new page**
+- [x] **T2 — Route the new page**
   - `Code.js`: add `QMSV2:'QMSV2_F'` to `getFormHtml` pageMap; bump cache key `v10→v11`. Create minimal `QMSV2_F.html` shell (top bar + empty board) that loads.
   - Acceptance: `navigateTo('QMSV2')` opens the shell; page mounts.
   - Verify: E2E nav + assert a root element id exists.
   - Files: `Code.js`, `QMSV2_F.html`.
 
-- [ ] **T3 — Identity dropdown + role filter**
+- [x] **T3 — Identity dropdown + role filter**
   - Top-right user dropdown from `getOperators()`; persist to localStorage; selecting sets `currentRole`, re-requests `getQmsv2Board(type,currentRole)`.
   - Apply `DESIGN.md`: navy top bar, mono nothing here, 44px target.
   - Acceptance: switching user re-filters the board ("My Work").
   - Verify: E2E sets dropdown, asserts board reloads.
   - Files: `QMSV2_F.html`.
 
-- [ ] **T4 — Kanban board + cards (labeled pipeline)**
+- [x] **T4 — Kanban board + cards (labeled pipeline)**
   - Doc-type tab row (GRN·IQC·IPQC·OQC·Dispatch·Production·NCR); status columns; card = status word + mono doc id + desc + **labeled 6-stage tracker** (GRN·IQC·PUTAWAY·ISSUE·OQC·DISPATCH; filled-navy/blue-ring/gray-hollow from `stage`); 3px red left-edge when overdue. Match the revised Stitch mockup.
   - Acceptance: cards render with correct stage node states; overdue flagged.
   - Verify: E2E asserts ≥1 card + a `.pipeline` node with current-stage class.
   - Files: `QMSV2_F.html`.
 
-- [ ] **T5 — Action registry + picker**
+- [x] **T5 — Action registry + picker**
   - `ACTION_REGISTRY_` in `Qmsv2.js` (id,label,group,kind:'inline'|'launch',serverFn,fields[]). Picker UI ("+" → grouped tiles). `kind:'launch'` → `navigateTo(form)`; `kind:'inline'` → open inline form.
   - Acceptance: picker lists grouped actions; tapping a launch action opens the existing form.
   - Verify: E2E opens picker, asserts groups present; taps a launch action → existing form mounts.
   - Files: `Qmsv2.js`, `QMSV2_F.html`.
 
-- [ ] **T6 — Tier-1 inline action (Move) end-to-end**
+- [x] **T6 — Tier-1 inline action (Move) end-to-end**
   - Inline form for `move` from registry: material (getStockSummary), lot, from/to location (getLocations dropdowns — **no QR in P1**), qty + on-hand reference, by:user → review/confirm card → `runAction('move', payload)` → calls `recordLocationTransfer`.
   - Acceptance: a move writes OUT+IN `LOCATION_TRANSFER` rows; balance moves.
   - Verify: E2E performs a move on a seeded lot, asserts `STOCK_LEDGER` balance via `getStockSummary` before/after.
   - Files: `Qmsv2.js` (runAction), `QMSV2_F.html`.
 
-- [ ] **T7 — Nav collapse + reachability**
+- [x] **T7 — Nav collapse + reachability**
   - Add "Cockpit (v2)" entry on Landing (new home, old reachable). Do not remove old surfaces in P1 (defer full collapse).
   - Acceptance: Landing → Cockpit opens QMSV2; old forms still reachable.
   - Verify: E2E nav both ways.
   - Files: `Landing.html`.
 
-- [ ] **T8 — E2E suite + regression**
+- [x] **T8 — E2E suite + regression**
   - `e2e-qmsv2.js` covering T1–T6 RPC + UI; add to `e2e-run-all.js`. Run full suite.
   - Acceptance: `e2e-qmsv2.js` green; full `e2e-run-all.js` green (no regressions).
   - Verify: `node e2e-run-all.js`.
