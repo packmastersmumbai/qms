@@ -401,7 +401,7 @@
           html += '<button data-id="' + a.id + '" class="tile flex items-center justify-between gap-2 p-3 min-h-[48px] border border-outline-variant rounded-lg ' +
             'text-[14px] font-semibold text-on-surface hover:bg-surface-container-low hover:border-secondary/40 active:scale-[.98] transition text-left">' +
             '<span>' + esc(a.label) + '</span>' +
-            '<span class="font-label-caps text-[9px] font-bold uppercase ' + (a.kind==='inline'?'text-secondary':'text-outline') + '">' + (a.kind==='launch'?'open':'inline') + '</span>' +
+            '<span class="font-label-caps text-[9px] font-bold uppercase ' + (a.kind==='launch'?'text-outline':'text-secondary') + '">' + (a.kind==='launch'?'open':(a.kind==='checklist'?'list':'inline')) + '</span>' +
           '</button>';
         });
         html += '</div>';
@@ -484,7 +484,69 @@
         .getActionFormData();
     }
 
-    function handlePick(id){ var a = actionById(id); if (!a) return; if (a.kind==='launch'){ closeSheet(); launchForm(a.form); return; } openInlineForm(a); }
+    // ============ Putaway checklist (Stitch layout; SHELL — write wiring is P2) ============
+    function renderPutaway(queue){
+      var items = queue || [];
+      var rowsHtml = items.map(function(it, i){
+        return '<div class="flex items-center justify-between gap-2 py-3 ' + (i ? 'border-t border-outline-variant/40' : '') + '">' +
+          '<div class="flex items-center gap-3 min-w-0">' +
+            '<span class="material-symbols-outlined text-outline-variant js-pa-check" data-i="' + i + '" style="cursor:pointer;">radio_button_unchecked</span>' +
+            '<div class="min-w-0"><div class="text-[14px] font-semibold text-on-surface truncate">' + esc(it.material || '—') + '</div>' +
+            '<div class="flex items-center gap-1.5 mt-0.5"><span class="font-mono text-[11px] px-1.5 py-0.5 rounded bg-secondary-container/15 text-secondary">' + esc(it.lot || '—') + '</span>' +
+            '<span class="text-[11px] text-on-surface-variant">· ' + esc(it.qty) + '</span></div></div>' +
+          '</div>' +
+          '<button class="js-pa-scan shrink-0 flex items-center gap-1 px-3 py-2 border border-outline-variant rounded-lg text-[12px] font-semibold text-secondary" data-i="' + i + '">' +
+            '<span class="material-symbols-outlined text-[16px]">qr_code_scanner</span> Scan rack</button>' +
+        '</div>';
+      }).join('');
+
+      sheet.innerHTML =
+        '<div class="flex justify-between items-start mb-1"><div>' +
+          '<h2 class="font-headline text-[20px] font-bold">Putaway</h2>' +
+          '<p class="text-[12px] text-on-surface-variant">' + items.length + ' item' + (items.length===1?'':'s') + ' to store</p></div>' +
+          '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>' +
+        '<div class="bg-surface-container-low rounded-lg p-3 my-3"><div class="flex justify-between text-[12px] font-semibold mb-1">' +
+          '<span id="paProgress">0 of ' + items.length + ' placed</span><span class="text-secondary">0%</span></div>' +
+          '<div class="h-1.5 bg-surface-variant rounded-full overflow-hidden"><div id="paBar" class="h-full bg-primary" style="width:0%"></div></div></div>' +
+        (items.length ? rowsHtml : '<div class="text-[13px] text-on-surface-variant text-center py-8">Nothing awaiting putaway.</div>') +
+        '<div class="mt-5 p-3 rounded-lg bg-secondary-container/10 text-[12px] text-on-surface-variant">' +
+          '<span class="material-symbols-outlined text-[15px] align-middle text-secondary">info</span> ' +
+          'Rack scanning + placement write lands in P2. This is the live queue preview.</div>' +
+        '<button id="paConfirm" class="w-full min-h-[48px] rounded-lg bg-primary text-on-primary font-bold mt-4 opacity-60" disabled>Confirm putaways (P2)</button>';
+
+      document.getElementById('sheetClose').addEventListener('click', closeSheet);
+      // Shell interactions: checking an item updates the progress bar (no write).
+      var placed = 0;
+      Array.prototype.forEach.call(sheet.querySelectorAll('.js-pa-check'), function(el){
+        el.addEventListener('click', function(){
+          var on = el.textContent.trim() === 'check_circle';
+          el.textContent = on ? 'radio_button_unchecked' : 'check_circle';
+          el.className = 'material-symbols-outlined js-pa-check ' + (on ? 'text-outline-variant' : 'text-[#16a34a]');
+          el.style.cursor = 'pointer';
+          placed += on ? -1 : 1;
+          var pct = items.length ? Math.round(placed/items.length*100) : 0;
+          document.getElementById('paProgress').textContent = placed + ' of ' + items.length + ' placed';
+          document.getElementById('paBar').style.width = pct + '%';
+        });
+      });
+      Array.prototype.forEach.call(sheet.querySelectorAll('.js-pa-scan'), function(el){
+        el.addEventListener('click', function(){ alert('QR rack scan is coming in P2.'); });
+      });
+    }
+    function openPutaway(){
+      sheet.innerHTML = '<div class="text-on-surface-variant text-[13px] py-6 text-center">Loading putaway queue…</div>'; openSheet();
+      google.script.run
+        .withSuccessHandler(function(q){ renderPutaway(q || []); })
+        .withFailureHandler(function(){ renderPutaway([]); })
+        .getPutawayQueue();
+    }
+
+    function handlePick(id){
+      var a = actionById(id); if (!a) return;
+      if (a.kind==='launch'){ closeSheet(); launchForm(a.form); return; }
+      if (a.kind==='checklist'){ openPutaway(); return; }
+      openInlineForm(a);
+    }
 
     function openPicker(){ renderPicker(); openSheet(); }
     document.getElementById('fab').addEventListener('click', openPicker);

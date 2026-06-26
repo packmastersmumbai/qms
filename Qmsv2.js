@@ -188,10 +188,12 @@ var QMSV2_ACTIONS = [
   // Ship
   { id:'dispatch',    label:'Dispatch',        group:'Ship',    kind:'launch', form:'Dispatch' },
   // Move — the P1 proof-of-write (T6)
-  { id:'move',        label:'Move / Putaway',  group:'Move',    kind:'inline', serverFn:'runAction',
+  { id:'move',        label:'Move Stock',      group:'Move',    kind:'inline', serverFn:'runAction',
     fields:[{ name:'material', type:'material' }, { name:'lot', type:'text' },
             { name:'fromLoc', type:'location' }, { name:'toLoc', type:'location' },
             { name:'qty', type:'number' }] },
+  // Putaway checklist — shell built (Stitch layout); write wiring deferred to P2.
+  { id:'putaway',     label:'Putaway Checklist', group:'Move',  kind:'checklist' },
   // Resolve
   { id:'ncr',         label:'Raise NCR',       group:'Resolve', kind:'launch', form:'NCR' },
   { id:'custreturn',  label:'Customer Return', group:'Resolve', kind:'launch', form:'CustomerReturn' },
@@ -226,6 +228,22 @@ function getActionFormData() {
     return { id: String(l.id), label: String(l.label || l.id) };
   });
   return { materials: materials, locations: locs, stock: summary };
+}
+
+// Putaway queue — lots currently sitting at an inbound/quarantine location that
+// await placement. SHELL DATA (read-only): surfaces real stock rows whose
+// location looks like a receiving/inbound spot so the checklist has live items.
+// The actual placement write (Scan rack → recordLocationTransfer) is P2.
+function getPutawayQueue() {
+  var summary = getStockSummary() || [];
+  var INBOUND = /(GATE|INBOUND|RECEIV|QUARANT|IQC|HOLD|STAGE|UNSORT)/i;
+  var rows = summary.filter(function(s){ return INBOUND.test(String(s.locationId || '')); });
+  // Fallback: if nothing matches an inbound pattern, show the most recent stock
+  // rows so the shell is never empty in a demo/pilot sheet.
+  if (!rows.length) rows = summary.slice(0, 8);
+  return rows.slice(0, 25).map(function(s){
+    return { material: s.materialCode, lot: s.batchOrLotNo, from: s.locationId, qty: s.balance };
+  });
 }
 
 // On-hand for a material+lot+location, for the inline Move form's reference.

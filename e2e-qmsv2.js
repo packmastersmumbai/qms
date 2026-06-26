@@ -157,6 +157,7 @@ var ACTIONS = [
   { id:'rework', group:'Make', kind:'launch', form:'Rework' },
   { id:'dispatch', group:'Ship', kind:'launch', form:'Dispatch' },
   { id:'move', group:'Move', kind:'inline', fields:[{name:'fromLoc'},{name:'toLoc'},{name:'qty'}] },
+  { id:'putaway', group:'Move', kind:'checklist' },
   { id:'ncr', group:'Resolve', kind:'launch', form:'NCR' },
   { id:'custreturn', group:'Resolve', kind:'launch', form:'CustomerReturn' },
   { id:'scrap', group:'Resolve', kind:'inline', fields:[{name:'qty'}] }
@@ -171,6 +172,8 @@ check('inline actions have fields', ACTIONS.filter(function(a){ return a.kind===
 check('exactly one Move action (P1 proof)', ACTIONS.filter(function(a){ return a.id==='move'; }).length === 1);
 check('Move is inline with from+to+qty', (function(){ var m = ACTIONS.filter(function(a){return a.id==='move';})[0]; var names = m.fields.map(function(f){return f.name;}); return m.kind==='inline' && names.indexOf('fromLoc')>=0 && names.indexOf('toLoc')>=0 && names.indexOf('qty')>=0; })());
 check('action ids unique', (function(){ var s={}; for (var i=0;i<ACTIONS.length;i++){ if (s[ACTIONS[i].id]) return 'dup '+ACTIONS[i].id; s[ACTIONS[i].id]=1; } return true; })());
+check('kind is one of launch|inline|checklist', ACTIONS.every(function(a){ return ['launch','inline','checklist'].indexOf(a.kind) !== -1; }));
+check('putaway is a checklist action', (function(){ var p = ACTIONS.filter(function(a){return a.id==='putaway';})[0]; return p && p.kind==='checklist'; })());
 
 console.log('----- ' + pass + '/' + total + ' passed -----');
 process.exit(pass === total ? 0 : 1);
