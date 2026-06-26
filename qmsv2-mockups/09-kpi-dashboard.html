@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PM QMS | Quality KPIs</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@400;500;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface-container-high": "#e2e8f8",
+                "surface-bright": "#f9f9ff",
+                "outline-variant": "#c6c5d3",
+                "primary-fixed-dim": "#bbc3ff",
+                "error": "#ba1a1a",
+                "on-secondary-fixed-variant": "#004397",
+                "on-surface-variant": "#454651",
+                "on-error-container": "#93000a",
+                "outline": "#767682",
+                "on-primary-container": "#7c88dc",
+                "primary": "#000747",
+                "tertiary": "#2a0500",
+                "on-primary-fixed-variant": "#333f8f",
+                "surface-container-highest": "#dce2f3",
+                "on-error": "#ffffff",
+                "on-background": "#151c27",
+                "on-secondary-container": "#fefcff",
+                "background": "#f9f9ff",
+                "on-tertiary-container": "#d27458",
+                "surface-container-lowest": "#ffffff",
+                "tertiary-fixed-dim": "#ffb59f",
+                "secondary-fixed": "#d8e2ff",
+                "on-surface": "#151c27",
+                "surface": "#f9f9ff",
+                "secondary": "#0057c0",
+                "on-tertiary": "#ffffff",
+                "surface-container-low": "#f0f3ff",
+                "surface-tint": "#4c57a9",
+                "inverse-surface": "#2a313d",
+                "inverse-primary": "#bbc3ff",
+                "inverse-on-surface": "#ebf1ff",
+                "primary-fixed": "#dfe0ff",
+                "secondary-fixed-dim": "#aec6ff",
+                "on-primary-fixed": "#000d60",
+                "on-primary": "#ffffff",
+                "secondary-container": "#006ff0",
+                "primary-container": "#0d1b6e",
+                "tertiary-fixed": "#ffdbd1",
+                "on-tertiary-fixed-variant": "#793019",
+                "on-tertiary-fixed": "#3b0a00",
+                "surface-dim": "#d3daea",
+                "surface-container": "#e7eefe",
+                "on-secondary": "#ffffff",
+                "surface-variant": "#dce2f3",
+                "tertiary-container": "#4e1000",
+                "error-container": "#ffdad6",
+                "on-secondary-fixed": "#001a43",
+                "status-green": "#10b981",
+                "status-red": "#ef4444",
+                "status-amber": "#f59e0b",
+                "status-gray": "#9ca3af",
+                "status-blue": "#3b82f6"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "pipeline-gap": "4px",
+                "margin-desktop": "32px",
+                "margin-mobile": "16px",
+                "touch-target-min": "48px",
+                "gutter": "16px",
+                "base": "8px"
+            },
+            "fontFamily": {
+                "body-lg": ["Inter", "sans-serif"],
+                "label-caps": ["Public Sans", "sans-serif"],
+                "body-sm": ["Inter", "sans-serif"],
+                "interactive-label": ["Public Sans", "sans-serif"],
+                "headline-md": ["Plus Jakarta Sans", "sans-serif"],
+                "display-lg": ["Plus Jakarta Sans", "sans-serif"],
+                "mono": ["JetBrains Mono", "monospace"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.05em;
+        }
+        /* Custom Scrollbar for Industrial Feel */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c6c5d3; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #767682; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-lg h-full flex overflow-hidden">
+<!-- SideNavBar (Desktop) -->
+<aside class="hidden md:flex flex-col h-full w-64 bg-surface border-r border-outline-variant p-gutter gap-pipeline-gap shrink-0">
+<div class="flex flex-col gap-2 mb-6">
+<h1 class="font-headline-md text-headline-md font-black text-primary uppercase tracking-tight">PM QMS v2</h1>
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest opacity-70">Quality Cockpit</p>
+</div>
+<button class="bg-primary text-on-primary h-touch-target-min rounded-lg flex items-center justify-center gap-2 font-interactive-label text-interactive-label hover:opacity-90 transition-all active:scale-95 mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+            + New
+        </button>
+<nav class="flex-1 flex flex-col gap-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">inventory</span>
+<span class="font-interactive-label text-interactive-label">GRN</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-interactive-label text-interactive-label">IQC</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+<span class="font-interactive-label text-interactive-label">IPQC</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">verified</span>
+<span class="font-interactive-label text-interactive-label">OQC</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-interactive-label text-interactive-label">Dispatch</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">factory</span>
+<span class="font-interactive-label text-interactive-label">Production</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-interactive-label text-interactive-label">NCR</span>
+</a>
+<div class="mt-auto pt-6 flex flex-col gap-1 border-t border-outline-variant">
+<a class="flex items-center gap-3 px-3 py-2 bg-secondary-container text-on-secondary-container rounded-lg font-bold transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-interactive-label text-interactive-label">My Work</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-interactive-label text-interactive-label">All</span>
+</a>
+</div>
+</nav>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="bg-primary text-on-primary h-touch-target-min flex items-center justify-between px-margin-desktop shrink-0 z-40">
+<div class="flex items-center gap-6">
+<h2 class="font-headline-md text-headline-md font-bold text-on-primary tracking-tight">Quality KPIs</h2>
+<div class="hidden md:flex bg-primary-container rounded p-1 gap-1">
+<button class="px-3 py-0.5 text-on-primary/70 font-label-caps text-label-caps hover:text-on-primary transition-colors">7D</button>
+<button class="px-3 py-0.5 bg-primary text-on-primary rounded font-label-caps text-label-caps shadow-sm">30D</button>
+<button class="px-3 py-0.5 text-on-primary/70 font-label-caps text-label-caps hover:text-on-primary transition-colors">90D</button>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="bg-secondary-container/20 border border-secondary-container text-secondary-fixed-dim px-2 py-0.5 rounded font-label-caps text-[10px] uppercase">Manager</span>
+<div class="flex items-center bg-surface-container-highest text-primary px-3 py-1 rounded-full gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-primary">person</span>
+</div>
+<span class="font-interactive-label text-[13px] font-bold">BBM (Admin)</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-primary-container rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-primary-container rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-desktop bg-background pb-24 md:pb-margin-desktop">
+<!-- KPI Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+<!-- 1. IQC PASS % -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-green"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">IQC PASS %</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-primary">100.0</span>
+<span class="font-label-caps text-on-surface-variant">%</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="material-symbols-outlined text-status-green text-[14px]">check_circle</span>
+<span class="font-medium text-status-green">On target</span>
+</div>
+</div>
+<!-- 2. FIRST-PASS YIELD -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-red"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">FIRST-PASS YIELD</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-primary">75.0</span>
+<span class="font-label-caps text-on-surface-variant">%</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="material-symbols-outlined text-status-red text-[14px]">trending_down</span>
+<span class="font-medium text-status-red">17.0pp below target</span>
+</div>
+</div>
+<!-- 3. DISPATCH TAT -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-gray"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">DISPATCH TAT</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-on-surface-variant/40">--</span>
+<span class="font-label-caps text-on-surface-variant/40">d</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="material-symbols-outlined text-on-surface-variant/40 text-[14px]">hourglass_empty</span>
+<span class="font-medium text-on-surface-variant/40 italic">No data</span>
+</div>
+</div>
+<!-- 4. NCR RESOLVE DAYS -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-gray"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">NCR RESOLVE DAYS</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-on-surface-variant/40">--</span>
+<span class="font-label-caps text-on-surface-variant/40">d</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="font-medium text-on-surface-variant/40 italic">System synchronization pending</span>
+</div>
+</div>
+<!-- 5. SUPPLIER OTIF -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-gray"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">SUPPLIER OTIF</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-on-surface-variant/40">--</span>
+<span class="font-label-caps text-on-surface-variant/40">%</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="font-medium text-on-surface-variant/40 italic">No valid records</span>
+</div>
+</div>
+<!-- 6. TOP DEFECT -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-blue"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">TOP DEFECT</span>
+<div class="flex items-baseline gap-2 mt-auto">
+<span class="metric-value text-4xl font-bold text-primary">IPQC</span>
+<span class="bg-primary/10 text-primary px-2 py-0.5 rounded font-mono font-bold text-sm">(1)</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="material-symbols-outlined text-status-blue text-[14px]">info</span>
+<span class="font-medium text-status-blue">Source: Production Line B</span>
+</div>
+</div>
+<!-- 7. FIFO COMPLIANCE -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-red"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">FIFO COMPLIANCE</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-primary">56.8</span>
+<span class="font-label-caps text-on-surface-variant">%</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="material-symbols-outlined text-status-red text-[14px]">warning</span>
+<span class="font-medium text-status-red">38.2pp below target</span>
+</div>
+</div>
+<!-- 8. AGED STOCK >30D -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-red"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">AGED STOCK &gt;30D</span>
+<div class="flex items-baseline gap-2 mt-auto">
+<span class="metric-value text-4xl font-bold text-primary">153</span>
+<span class="font-label-caps text-on-surface-variant">lots</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="material-symbols-outlined text-status-red text-[14px]">error_outline</span>
+<span class="font-medium text-status-red">153 over target</span>
+</div>
+</div>
+<!-- 9. MODULE DWELL -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-amber"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">MODULE DWELL</span>
+<div class="flex items-baseline gap-2 mt-auto">
+<span class="font-label-caps text-primary text-xl font-bold uppercase">IQC</span>
+<span class="metric-value text-4xl font-bold text-primary">9h</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="material-symbols-outlined text-status-amber text-[14px]">schedule</span>
+<span class="font-medium text-status-amber">Approaching limit (12h)</span>
+</div>
+</div>
+<!-- 10. IPQC REJECT % -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-green"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">IPQC REJECT %</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-primary">0.0</span>
+<span class="font-label-caps text-on-surface-variant">%</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="font-medium text-status-green">Within target</span>
+</div>
+</div>
+<!-- 11. CUSTOMER RETURN % -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-gray"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">CUSTOMER RETURN %</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-on-surface-variant/40">--</span>
+<span class="font-label-caps text-on-surface-variant/40">%</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="font-medium text-on-surface-variant/40 italic">Quarterly reporting only</span>
+</div>
+</div>
+<!-- 12. NCR QTY AFFECTED -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded relative overflow-hidden flex flex-col p-4 shadow-sm group hover:border-primary transition-colors">
+<div class="absolute top-0 left-0 w-full h-1 bg-status-gray"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase tracking-wider">NCR QTY AFFECTED</span>
+<div class="flex items-baseline gap-1 mt-auto">
+<span class="metric-value text-4xl font-bold text-on-surface-variant/40">--</span>
+<span class="font-label-caps text-on-surface-variant/40">U</span>
+</div>
+<div class="mt-4 flex items-center gap-2 text-[11px]">
+<span class="font-medium text-on-surface-variant/40 italic">No active NCRs in period</span>
+</div>
+</div>
+</div>
+<!-- Drill-down Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- FPY Trend Chart -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded p-6 shadow-sm">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-headline-md text-primary font-bold">FPY Weekly Trend</h3>
+<span class="text-xs font-label-caps text-on-surface-variant uppercase">Target: 92.0%</span>
+</div>
+<div class="h-48 flex items-end justify-between gap-2 px-2">
+<!-- Bar Chart (Simulated with Divs) -->
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-status-red rounded-t-sm h-[60%] group-hover:opacity-80 transition-opacity"></div>
+<span class="text-[10px] font-label-caps text-on-surface-variant">WK 41</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-status-red rounded-t-sm h-[75%] group-hover:opacity-80 transition-opacity"></div>
+<span class="text-[10px] font-label-caps text-on-surface-variant">WK 42</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-status-green rounded-t-sm h-[95%] group-hover:opacity-80 transition-opacity"></div>
+<span class="text-[10px] font-label-caps text-on-surface-variant">WK 43</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-status-red rounded-t-sm h-[75%] group-hover:opacity-80 transition-opacity"></div>
+<span class="text-[10px] font-label-caps text-on-surface-variant">WK 44</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group">
+<div class="w-full bg-status-amber rounded-t-sm h-[82%] group-hover:opacity-80 transition-opacity"></div>
+<span class="text-[10px] font-label-caps text-on-surface-variant">WK 45</span>
+</div>
+</div>
+</section>
+<!-- Supplier Defect Table -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded shadow-sm overflow-hidden flex flex-col">
+<div class="p-6 border-b border-outline-variant bg-surface-container-low">
+<h3 class="font-headline-md text-headline-md text-primary font-bold">Supplier Defect Analysis</h3>
+</div>
+<div class="flex-1 overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-variant/30 text-[10px] font-label-caps uppercase text-on-surface-variant tracking-wider">
+<th class="px-6 py-3 font-bold">Supplier Name</th>
+<th class="px-6 py-3 font-bold text-center">Defects</th>
+<th class="px-6 py-3 font-bold text-right">Trend</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-6 py-3 text-sm font-medium">PRECISION FORGE LTD</td>
+<td class="px-6 py-3 text-center"><span class="bg-error-container text-on-error-container px-2 py-0.5 rounded font-mono font-bold">12</span></td>
+<td class="px-6 py-3 text-right text-status-red"><span class="material-symbols-outlined text-[16px]">arrow_upward</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-6 py-3 text-sm font-medium">OMEGA CASTINGS</td>
+<td class="px-6 py-3 text-center"><span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded font-mono font-bold">08</span></td>
+<td class="px-6 py-3 text-right text-status-green"><span class="material-symbols-outlined text-[16px]">arrow_downward</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-6 py-3 text-sm font-medium">ADVANCED OPTICS</td>
+<td class="px-6 py-3 text-center"><span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded font-mono font-bold">03</span></td>
+<td class="px-6 py-3 text-right text-on-surface-variant/50"><span class="material-symbols-outlined text-[16px]">remove</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-6 py-3 text-sm font-medium">S-CORP COMPONENTS</td>
+<td class="px-6 py-3 text-center"><span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded font-mono font-bold">02</span></td>
+<td class="px-6 py-3 text-right text-status-green"><span class="material-symbols-outlined text-[16px]">arrow_downward</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+<!-- Multi-select Action Bar (Hidden by default, used for bulk) -->
+<div class="fixed bottom-margin-desktop left-1/2 -translate-x-1/2 bg-primary text-on-primary px-6 h-14 rounded-full flex items-center gap-6 shadow-xl transform translate-y-24 transition-transform duration-300 z-50" id="action-bar">
+<span class="font-label-caps text-label-caps">3 METRICS SELECTED</span>
+<div class="h-6 w-px bg-on-primary/20"></div>
+<button class="flex items-center gap-2 hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+<span class="font-interactive-label text-[13px]">Export CSV</span>
+</button>
+<button class="flex items-center gap-2 hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+<span class="font-interactive-label text-[13px]">Share Report</span>
+</button>
+<button class="ml-4 p-1 hover:bg-white/10 rounded-full" onclick="hideActionBar()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-touch-target-min px-margin-mobile bg-surface border-t border-outline-variant z-50 shadow-lg">
+<button class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps text-[10px]">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-[10px]">Trace</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insert_chart</span>
+<span class="font-label-caps text-[10px]">KPI</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-caps text-[10px]">Records</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-label-caps text-[10px]">User</span>
+</button>
+</nav>
+<script>
+        // Micro-interactions and state management
+        const actionBar = document.getElementById('action-bar');
+        
+        function toggleActionBar() {
+            actionBar.classList.toggle('translate-y-24');
+            actionBar.classList.toggle('translate-y-0');
+        }
+
+        function hideActionBar() {
+            actionBar.classList.add('translate-y-24');
+            actionBar.classList.remove('translate-y-0');
+        }
+
+        // Add event listeners to cards for multi-select simulation
+        document.querySelectorAll('.bg-surface-container-lowest').forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.toggle('ring-2');
+                card.classList.toggle('ring-primary');
+                
+                const selectedCount = document.querySelectorAll('.ring-primary').length;
+                if (selectedCount > 0) {
+                    actionBar.classList.remove('translate-y-24');
+                    actionBar.classList.add('translate-y-0');
+                } else {
+                    hideActionBar();
+                }
+            });
+        });
+
+        // Initialize active state logic based on path/intent
+        // Current Page: KPI Dashboard -> Map to KPI tab
+        console.log("Quality Cockpit KPI Initialized");
+    </script>
+</body></html>

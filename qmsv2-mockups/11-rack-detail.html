@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rack Detail · J12 Bulk RM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#4e1000",
+                    "surface-container-highest": "#dce2f3",
+                    "primary-fixed-dim": "#bbc3ff",
+                    "inverse-primary": "#bbc3ff",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#793019",
+                    "secondary-container": "#006ff0",
+                    "on-primary-fixed-variant": "#333f8f",
+                    "on-error-container": "#93000a",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#e7eefe",
+                    "on-secondary-container": "#fefcff",
+                    "surface": "#f9f9ff",
+                    "on-surface": "#151c27",
+                    "surface-container-high": "#e2e8f8",
+                    "primary": "#000747",
+                    "on-primary": "#ffffff",
+                    "primary-container": "#0d1b6e",
+                    "secondary": "#0057c0",
+                    "outline-variant": "#c6c5d3",
+                    "primary-fixed": "#dfe0ff",
+                    "on-tertiary-fixed": "#3b0a00",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed-dim": "#ffb59f",
+                    "surface-bright": "#f9f9ff",
+                    "surface-variant": "#dce2f3",
+                    "on-background": "#151c27",
+                    "background": "#f9f9ff",
+                    "on-tertiary-container": "#d27458",
+                    "secondary-fixed-dim": "#aec6ff",
+                    "on-primary-fixed": "#000d60",
+                    "error-container": "#ffdad6",
+                    "on-surface-variant": "#454651",
+                    "on-secondary-fixed": "#001a43",
+                    "outline": "#767682",
+                    "tertiary-fixed": "#ffdbd1",
+                    "secondary-fixed": "#d8e2ff",
+                    "inverse-surface": "#2a313d",
+                    "inverse-on-surface": "#ebf1ff",
+                    "tertiary": "#2a0500",
+                    "surface-dim": "#d3daea",
+                    "on-secondary-fixed-variant": "#004397",
+                    "on-error": "#ffffff",
+                    "surface-tint": "#4c57a9",
+                    "surface-container-low": "#f0f3ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-desktop": "32px",
+                    "pipeline-gap": "4px",
+                    "touch-target-min": "48px",
+                    "gutter": "16px",
+                    "margin-mobile": "16px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "interactive-label": ["Public Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "label-caps": ["Public Sans"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "body-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "mono": ["JetBrains Mono", "monospace"]
+            },
+            "fontSize": {
+                    "interactive-label": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .aged-stripes {
+            background-image: repeating-linear-gradient(45deg, rgba(186, 26, 26, 0.05) 0, rgba(186, 26, 26, 0.05) 10px, transparent 10px, transparent 20px);
+        }
+        .pipeline-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .pipeline-line {
+            height: 2px;
+            flex-grow: 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-lg min-h-screen pb-[100px]">
+<!-- TopAppBar -->
+<header class="bg-primary-container text-on-primary-fixed fixed top-0 w-full z-50 flex items-center px-margin-mobile h-[72px] shadow-md">
+<button class="mr-4 p-2 hover:bg-primary/20 rounded-full transition-colors">
+<span class="material-symbols-outlined text-on-primary">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="font-headline-md text-headline-md text-on-primary leading-tight">Rack J12 · Bulk RM</h1>
+<p class="text-xs font-label-caps opacity-80 text-on-primary">1ST FLOOR · AISLE J</p>
+</div>
+<div class="ml-auto">
+<span class="material-symbols-outlined text-on-primary">qr_code_scanner</span>
+</div>
+</header>
+<main class="pt-[88px] px-margin-mobile max-w-3xl mx-auto">
+<!-- Occupancy Summary -->
+<section class="mb-gutter">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm">
+<div class="flex justify-between items-end mb-4">
+<div>
+<p class="font-label-caps text-on-surface-variant mb-1">RACK OCCUPANCY</p>
+<h2 class="font-mono text-4xl font-bold text-primary-container">78%</h2>
+</div>
+<div class="text-right">
+<p class="font-body-sm text-on-surface-variant">6 of 8 bins occupied</p>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden flex">
+<div class="bg-secondary h-full" style="width: 78%"></div>
+</div>
+</div>
+</section>
+<!-- Bin List -->
+<section class="space-y-base">
+<div class="flex items-center justify-between px-1 mb-2">
+<h3 class="font-label-caps text-on-surface-variant">BIN ALLOCATION (8 SLOTS)</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">filter_list</span>
+</div>
+<!-- Bin 01: Fresh (Emerald) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg flex items-stretch overflow-hidden shadow-sm h-touch-target-min min-h-[100px] transition-transform active:scale-[0.99]">
+<div class="w-1 bg-[#10b981]"></div>
+<div class="p-3 flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-headline-md text-sm text-on-surface">HDPE Pellets · Grade A</p>
+<span class="font-mono text-[10px] bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full mt-1 inline-block">L-2399-A</span>
+</div>
+<div class="text-right">
+<p class="font-mono text-base font-bold text-primary">1000 kg</p>
+<p class="font-mono text-[10px] text-on-surface-variant">AGE: 2d</p>
+</div>
+</div>
+<!-- Pipeline Tracker -->
+<div class="flex items-center gap-1 mt-2">
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+</div>
+</div>
+</div>
+<!-- Bin 02: Aged (Red/Stripes) -->
+<div class="bg-surface-container-lowest aged-stripes border border-error/30 rounded-lg flex items-stretch overflow-hidden shadow-sm h-touch-target-min min-h-[100px] relative transition-transform active:scale-[0.99]">
+<div class="w-1 bg-error"></div>
+<div class="p-3 flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-headline-md text-sm text-on-surface">PVC Resin · Industrial</p>
+<span class="font-mono text-[10px] bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full mt-1 inline-block">L-1842-X</span>
+</div>
+<div class="text-right">
+<p class="font-mono text-base font-bold text-primary">850 kg</p>
+<span class="bg-error text-white font-label-caps text-[9px] px-1.5 py-0.5 rounded mt-1 inline-block">AGED &gt;30d</span>
+</div>
+</div>
+<!-- Pipeline Tracker (Advanced) -->
+<div class="flex items-center gap-1 mt-2">
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+</div>
+</div>
+</div>
+<!-- Bin 03: Mid (Amber) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg flex items-stretch overflow-hidden shadow-sm h-touch-target-min min-h-[100px] transition-transform active:scale-[0.99]">
+<div class="w-1 bg-amber-500"></div>
+<div class="p-3 flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-headline-md text-sm text-on-surface">LDPE Film Roll</p>
+<span class="font-mono text-[10px] bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full mt-1 inline-block">L-2210-C</span>
+</div>
+<div class="text-right">
+<p class="font-mono text-base font-bold text-primary">500 kg</p>
+<p class="font-mono text-[10px] text-on-surface-variant">AGE: 15d</p>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-2 opacity-50">
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+</div>
+</div>
+</div>
+<!-- Empty Bin 04 -->
+<div class="border-2 border-dashed border-outline-variant rounded-lg flex items-center justify-center p-6 h-touch-target-min min-h-[100px] group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex flex-col items-center gap-1 text-outline">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">add_circle</span>
+<p class="font-body-sm">Empty — tap to assign</p>
+</div>
+</div>
+<!-- Bin 05: Fresh -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg flex items-stretch overflow-hidden shadow-sm h-touch-target-min min-h-[100px] transition-transform active:scale-[0.99]">
+<div class="w-1 bg-[#10b981]"></div>
+<div class="p-3 flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-headline-md text-sm text-on-surface">Polypropylene Granules</p>
+<span class="font-mono text-[10px] bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full mt-1 inline-block">L-2401-B</span>
+</div>
+<div class="text-right">
+<p class="font-mono text-base font-bold text-primary">1200 kg</p>
+<p class="font-mono text-[10px] text-on-surface-variant">AGE: 1d</p>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-2">
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+</div>
+</div>
+</div>
+<!-- Bin 06: Mid -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg flex items-stretch overflow-hidden shadow-sm h-touch-target-min min-h-[100px] transition-transform active:scale-[0.99]">
+<div class="w-1 bg-amber-500"></div>
+<div class="p-3 flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-headline-md text-sm text-on-surface">TPE Base Mix</p>
+<span class="font-mono text-[10px] bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full mt-1 inline-block">L-2105-D</span>
+</div>
+<div class="text-right">
+<p class="font-mono text-base font-bold text-primary">400 kg</p>
+<p class="font-mono text-[10px] text-on-surface-variant">AGE: 22d</p>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-2">
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+</div>
+</div>
+</div>
+<!-- Empty Bin 07 -->
+<div class="border-2 border-dashed border-outline-variant rounded-lg flex items-center justify-center p-6 h-touch-target-min min-h-[100px] group hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex flex-col items-center gap-1 text-outline">
+<span class="material-symbols-outlined text-2xl">add_circle</span>
+<p class="font-body-sm">Empty — tap to assign</p>
+</div>
+</div>
+<!-- Bin 08: Mid -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg flex items-stretch overflow-hidden shadow-sm h-touch-target-min min-h-[100px] transition-transform active:scale-[0.99]">
+<div class="w-1 bg-amber-500"></div>
+<div class="p-3 flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-headline-md text-sm text-on-surface">Color Masterbatch</p>
+<span class="font-mono text-[10px] bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded-full mt-1 inline-block">L-2288-E</span>
+</div>
+<div class="text-right">
+<p class="font-mono text-base font-bold text-primary">150 kg</p>
+<p class="font-mono text-[10px] text-on-surface-variant">AGE: 18d</p>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-2">
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-primary-container"></div>
+<div class="pipeline-line bg-primary-container"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+<div class="pipeline-line bg-outline-variant"></div>
+<div class="pipeline-dot bg-outline-variant"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar (Shared Component Style) -->
+<footer class="fixed bottom-0 w-full bg-primary-container z-50 h-[80px] flex justify-around items-center px-margin-mobile border-t border-white/10 shadow-lg">
+<button class="flex flex-col items-center justify-center text-on-primary w-full h-full hover:bg-white/5 active:scale-95 transition-all">
+<span class="material-symbols-outlined mb-1">move_item</span>
+<span class="font-interactive-label text-xs uppercase tracking-wider">Move lot</span>
+</button>
+<div class="w-px h-10 bg-white/10"></div>
+<button class="flex flex-col items-center justify-center text-on-primary w-full h-full hover:bg-white/5 active:scale-95 transition-all">
+<span class="material-symbols-outlined mb-1">input</span>
+<span class="font-interactive-label text-xs uppercase tracking-wider">Putaway here</span>
+</button>
+</footer>
+<!-- FAB for quick barcode access (Contextual) -->
+<button class="fixed bottom-24 right-4 bg-secondary text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">barcode_scanner</span>
+</button>
+<script>
+        // Micro-interactions for bin cards
+        document.querySelectorAll('.bg-surface-container-lowest').forEach(card => {
+            card.addEventListener('click', () => {
+                // Flash interaction
+                card.classList.add('bg-secondary-container/10');
+                setTimeout(() => {
+                    card.classList.remove('bg-secondary-container/10');
+                }, 200);
+            });
+        });
+    </script>
+</body></html>

@@ -1,3 +1,32 @@
+<!--
+========================================================================
+DESIGN AUTHORITY (updated 2026-06-27) — READ FIRST
+========================================================================
+The SINGLE source of truth for QMS v2 cockpit styling is the Stitch
+design-system "Industrial Quality Management System":
+  asset  assets/f1c072ac30ee4901b96547757f18a349
+  project 10290620691745788406
+Build screens VERBATIM to that design-system's design-md. Reconciled
+deltas vs the legacy tokens below (Stitch wins on every conflict):
+  - primary            #000747   (was #0D1B6E)
+  - primary-container  #0d1b6e   (the navy used on top bar / buttons / pipeline-done)
+  - secondary / link   #0070f3
+  - surfaces           Material tiers: surface-container-lowest #ffffff,
+                       -low #f0f3ff, #e7eefe, -high #e2e8f8, -highest #dce2f3
+                       on background #f9f9ff
+  - fonts              Plus Jakarta Sans (display/headline), Inter (body),
+                       Public Sans (labels/interactive), mono for numbers/ids
+  - DESKTOP IS SUPPORTED: 12-col grid + left side-nav (NOT 430px-only).
+  - Elevation: Level-1 flat cards (1px outline), Level-2 ambient shadow on
+    hover/drag/modals. Status = 2–4px color strip on card edge.
+  - 48px min touch target (gloved use). Pipeline: navy=done, electric-blue=active.
+Per-screen specs live in qmsv2-mockups/*.design.md (each cites its Stitch screen).
+The YAML + prose BELOW is the legacy PackMasters-QMS spec, kept for the
+component patterns (Form Field, Toggle Row, Disposition Grid, Submit) — but
+where it says "#0D1B6E primary", "430px mobile-only", or "no shadows", the
+Stitch authority above overrides it.
+========================================================================
+-->
 ---
 version: alpha
 name: PackMasters-QMS

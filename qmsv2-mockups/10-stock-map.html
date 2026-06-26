@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PM QMS - Stock Map</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;700&amp;family=Roboto+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#3b0a00",
+                        "outline-variant": "#c6c5d3",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#bbc3ff",
+                        "on-primary-fixed": "#000d60",
+                        "on-primary-fixed-variant": "#333f8f",
+                        "on-tertiary-fixed-variant": "#793019",
+                        "on-surface": "#151c27",
+                        "on-secondary-fixed-variant": "#004397",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#7c88dc",
+                        "primary-container": "#0d1b6e",
+                        "surface-dim": "#d3daea",
+                        "secondary-container": "#006ff0",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#ffdbd1",
+                        "error": "#ba1a1a",
+                        "surface": "#f9f9ff",
+                        "on-background": "#151c27",
+                        "surface-bright": "#f9f9ff",
+                        "primary": "#000747",
+                        "surface-container-high": "#e2e8f8",
+                        "surface-container-low": "#f0f3ff",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#4e1000",
+                        "inverse-primary": "#bbc3ff",
+                        "on-secondary-container": "#fefcff",
+                        "surface-container": "#e7eefe",
+                        "outline": "#767682",
+                        "on-surface-variant": "#454651",
+                        "surface-variant": "#dce2f3",
+                        "inverse-on-surface": "#ebf1ff",
+                        "background": "#f9f9ff",
+                        "secondary-fixed": "#d8e2ff",
+                        "primary-fixed": "#dfe0ff",
+                        "secondary-fixed-dim": "#aec6ff",
+                        "inverse-surface": "#2a313d",
+                        "on-tertiary-container": "#d27458",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#0057c0",
+                        "on-secondary-fixed": "#001a43",
+                        "on-secondary": "#ffffff",
+                        "status-fresh": "#10b981",
+                        "status-aging": "#f59e0b",
+                        "status-critical": "#ef4444"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "margin-desktop": "32px",
+                        "pipeline-gap": "4px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "interactive-label": ["Public Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "label-caps": ["Public Sans"],
+                        "mono": ["Roboto Mono"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .mono-text { font-family: 'Roboto Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c6c5d3; border-radius: 3px; }
+        .treemap-node:hover { filter: brightness(1.1); transform: scale(0.995); z-index: 10; transition: all 0.2s; }
+        .floorplan-zone { transition: background-color 0.3s ease; cursor: pointer; }
+        .floorplan-zone:hover { outline: 2px solid #0070f3; outline-offset: -2px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-sm overflow-hidden h-screen flex">
+<!-- Side Navigation Bar -->
+<aside class="h-screen w-64 fixed left-0 top-0 flex flex-col py-base bg-surface-container-low border-r border-outline-variant z-50">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded flex items-center justify-center text-white font-bold">Q</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">PM QMS v2</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant opacity-70">Quality Cockpit</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<!-- GRN - Inventory related mapping to the active Stock Map intent -->
+<a class="flex items-center gap-base px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-interactive-label text-interactive-label">Stock Map</span>
+</a>
+<a class="flex items-center gap-base px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="input">input</span>
+<span class="font-interactive-label text-interactive-label">GRN</span>
+</a>
+<a class="flex items-center gap-base px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="font-interactive-label text-interactive-label">IQC</span>
+</a>
+<a class="flex items-center gap-base px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="font-interactive-label text-interactive-label">IPQC</span>
+</a>
+<a class="flex items-center gap-base px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-interactive-label text-interactive-label">OQC</span>
+</a>
+<a class="flex items-center gap-base px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-interactive-label text-interactive-label">Dispatch</span>
+</a>
+<a class="flex items-center gap-base px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="report_problem">report_problem</span>
+<span class="font-interactive-label text-interactive-label">NCR</span>
+</a>
+</nav>
+<div class="px-3 mt-auto border-t border-outline-variant pt-4 pb-2">
+<div class="flex gap-2 mb-4">
+<button class="flex-1 py-2 bg-surface-container-highest rounded text-on-surface-variant text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="task">task</span> My Work
+                </button>
+<button class="flex-1 py-2 bg-primary rounded text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span> New
+                </button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 flex flex-col h-screen">
+<!-- Top App Bar -->
+<header class="flex justify-between items-center h-16 w-full px-margin-desktop bg-surface border-b border-outline-variant z-40">
+<div class="flex items-center gap-6">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Stock Map · 1st Floor</h2>
+<div class="flex items-center h-10 bg-surface-container rounded-lg px-1 p-0.5">
+<button class="px-4 py-1.5 rounded-md text-xs font-bold bg-white shadow-sm text-primary">GF</button>
+<button class="px-4 py-1.5 rounded-md text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all">1F</button>
+<button class="px-4 py-1.5 rounded-md text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-all">2F</button>
+</div>
+<div class="flex items-center h-10 border border-outline-variant rounded-lg overflow-hidden">
+<button class="px-3 h-full border-r border-outline-variant bg-surface-container-highest flex items-center gap-2 text-xs font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="grid_view">grid_view</span> Treemap
+                    </button>
+<button class="px-3 h-full flex items-center gap-2 text-xs font-bold text-on-surface-variant hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="map">map</span> Floor Plan
+                    </button>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Color-By:</span>
+<select class="bg-transparent border-none text-xs font-bold text-secondary focus:ring-0 cursor-pointer">
+<option>FIFO Age</option>
+<option>Fill %</option>
+</select>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-3 bg-surface-container-low pl-3 pr-1 py-1 rounded-full border border-outline-variant">
+<span class="text-xs font-bold text-primary tracking-tighter">MANAGER</span>
+<div class="flex items-center gap-2">
+<span class="text-xs font-medium text-on-surface-variant">Admin Persona</span>
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container text-xs font-bold">AP</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Dynamic Content Body -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left Half: Treemap (FIFO Focus) -->
+<section class="w-1/2 p-4 flex flex-col gap-2 border-r border-outline-variant overflow-hidden">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant">INVENTORY DISTRIBUTION (FIFO AGE)</h3>
+<div class="flex gap-4">
+<div class="flex items-center gap-1.5">
+<div class="w-2.5 h-2.5 bg-status-fresh"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">FRESH (&lt; 7d)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="w-2.5 h-2.5 bg-status-aging"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">AGING (7-30d)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="w-2.5 h-2.5 bg-status-critical"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">CRITICAL (&gt; 30d)</span>
+</div>
+</div>
+</div>
+<!-- Treemap Grid -->
+<div class="flex-1 grid grid-cols-12 grid-rows-6 gap-0.5 bg-outline-variant border border-outline-variant">
+<div class="col-span-6 row-span-4 bg-status-fresh p-2 treemap-node flex flex-col justify-between">
+<span class="text-[10px] font-bold text-white uppercase leading-tight">Resin HDPE-40</span>
+<span class="mono-text text-sm font-bold text-white">4,200 kg</span>
+</div>
+<div class="col-span-3 row-span-3 bg-status-fresh p-2 treemap-node flex flex-col justify-between">
+<span class="text-[10px] font-bold text-white uppercase leading-tight">Catalyst C-12</span>
+<span class="mono-text text-xs font-bold text-white">850 kg</span>
+</div>
+<div class="col-span-3 row-span-2 bg-status-aging p-2 treemap-node flex flex-col justify-between">
+<span class="text-[10px] font-bold text-white uppercase leading-tight">Additive T-4</span>
+<span class="mono-text text-xs font-bold text-white">320 kg</span>
+</div>
+<div class="col-span-3 row-span-1 bg-status-critical p-2 treemap-node flex flex-col justify-between">
+<span class="text-[10px] font-bold text-white uppercase leading-tight">Scrap-PM1</span>
+<span class="mono-text text-xs font-bold text-white">120 kg</span>
+</div>
+<div class="col-span-3 row-span-2 bg-status-fresh p-2 treemap-node flex flex-col justify-between">
+<span class="text-[10px] font-bold text-white uppercase leading-tight">Packaging-A</span>
+<span class="mono-text text-xs font-bold text-white">2,100 units</span>
+</div>
+<div class="col-span-4 row-span-2 bg-status-fresh p-2 treemap-node flex flex-col justify-between">
+<span class="text-[10px] font-bold text-white uppercase leading-tight">Pre-Mix B-Grade</span>
+<span class="mono-text text-sm font-bold text-white">2,800 kg</span>
+</div>
+<div class="col-span-2 row-span-2 bg-status-aging p-2 treemap-node flex flex-col justify-between">
+<span class="text-[10px] font-bold text-white uppercase leading-tight">Solvent S</span>
+<span class="mono-text text-xs font-bold text-white">450 L</span>
+</div>
+<div class="col-span-6 row-span-1 bg-status-fresh p-2 treemap-node flex flex-col justify-center items-center">
+<span class="text-[10px] font-bold text-white uppercase tracking-tighter">Misc Consumables · 1,405 Items</span>
+</div>
+<div class="col-span-3 row-span-1 bg-status-fresh p-2 treemap-node"></div>
+<div class="col-span-3 row-span-1 bg-status-aging p-2 treemap-node"></div>
+</div>
+</section>
+<!-- Right Half: Floor Plan (Heatmap Fill %) -->
+<section class="w-1/2 p-4 flex flex-col gap-2 overflow-hidden bg-surface-container-lowest">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant">FACILITY LAYOUT (FILL %)</h3>
+<div class="flex gap-2">
+<span class="text-[10px] font-bold text-on-surface-variant">0%</span>
+<div class="w-32 h-2.5 bg-gradient-to-r from-surface-container-highest via-secondary/40 to-primary"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">100%</span>
+</div>
+</div>
+<!-- CAD-style Floor Plan Visualization -->
+<div class="flex-1 relative border-2 border-outline-variant bg-[#f1f3f9] p-4 flex flex-col gap-4 overflow-auto">
+<!-- Top Section: Bulk Storage & Lab -->
+<div class="flex gap-4 h-24">
+<div class="flex-1 border border-outline bg-white flex flex-col">
+<span class="bg-outline text-[9px] font-bold text-white px-2 py-0.5 w-fit">LAB / QA ROOM</span>
+<div class="flex-1 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline-variant" data-icon="biotech">biotech</span>
+</div>
+</div>
+<div class="flex-[3] grid grid-cols-12 gap-px bg-outline">
+<!-- BULK RM J01-J25 strip -->
+<div class="col-span-12 h-4 bg-outline flex items-center justify-center">
+<span class="text-[8px] font-bold text-white uppercase">BULK STORAGE J01-J25</span>
+</div>
+<div class="col-span-1 h-12 floorplan-zone bg-primary"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-primary opacity-90"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-secondary"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-secondary opacity-60"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-secondary opacity-40"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-surface-container-high"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-surface-container-high"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-secondary opacity-80"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-primary opacity-75"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-primary opacity-95"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-secondary opacity-50"></div>
+<div class="col-span-1 h-12 floorplan-zone bg-surface-container-high"></div>
+</div>
+</div>
+<!-- Middle Section: Production Lines & Processing -->
+<div class="flex gap-4 h-48">
+<div class="w-1/4 flex flex-col gap-2">
+<div class="h-1/3 border border-outline bg-white flex flex-col floorplan-zone">
+<span class="bg-outline text-[9px] font-bold text-white px-2 py-0.5">PM A</span>
+<div class="flex-1 flex items-center justify-center mono-text text-xs text-primary font-bold">88%</div>
+</div>
+<div class="h-1/3 border border-outline bg-white flex flex-col floorplan-zone">
+<span class="bg-outline text-[9px] font-bold text-white px-2 py-0.5">PM B</span>
+<div class="flex-1 flex items-center justify-center mono-text text-xs text-primary font-bold">42%</div>
+</div>
+<div class="h-1/3 border border-outline bg-white flex flex-col floorplan-zone">
+<span class="bg-outline text-[9px] font-bold text-white px-2 py-0.5">PM C</span>
+<div class="flex-1 flex items-center justify-center mono-text text-xs text-primary font-bold">12%</div>
+</div>
+</div>
+<div class="w-2/4 grid grid-cols-3 gap-4">
+<div class="border border-outline bg-white/50 border-dashed flex items-center justify-center relative">
+<div class="absolute inset-2 bg-secondary opacity-20 border border-secondary"></div>
+<span class="text-[10px] font-bold text-primary transform -rotate-90">LINE 1</span>
+</div>
+<div class="border border-outline bg-white/50 border-dashed flex items-center justify-center relative">
+<div class="absolute inset-2 bg-primary opacity-30 border border-primary"></div>
+<span class="text-[10px] font-bold text-primary transform -rotate-90">LINE 2</span>
+</div>
+<div class="border border-outline bg-white/50 border-dashed flex items-center justify-center relative">
+<div class="absolute inset-2 bg-secondary opacity-10 border border-secondary"></div>
+<span class="text-[10px] font-bold text-primary transform -rotate-90">LINE 3</span>
+</div>
+</div>
+<div class="w-1/4 border border-error bg-error-container/20 flex flex-col floorplan-zone">
+<span class="bg-error text-[9px] font-bold text-white px-2 py-0.5 uppercase">Scrap Area</span>
+<div class="flex-1 flex flex-col items-center justify-center text-error">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+<span class="mono-text text-[10px] font-bold">92% CAP</span>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Buffer & Finished Goods -->
+<div class="flex gap-4 h-32 mt-auto">
+<div class="w-2/3 border border-primary bg-white flex flex-col">
+<div class="p-1 bg-primary text-white flex justify-between items-center">
+<span class="text-[9px] font-bold uppercase">Buffer Pallets M01-M24</span>
+<span class="text-[8px] opacity-70">Grid M-Series</span>
+</div>
+<div class="flex-1 grid grid-cols-6 grid-rows-2 gap-1 p-1">
+<div class="bg-primary floorplan-zone"></div>
+<div class="bg-primary opacity-80 floorplan-zone"></div>
+<div class="bg-surface-container-high floorplan-zone"></div>
+<div class="bg-secondary floorplan-zone"></div>
+<div class="bg-secondary opacity-60 floorplan-zone"></div>
+<div class="bg-primary opacity-90 floorplan-zone"></div>
+<div class="bg-primary floorplan-zone"></div>
+<div class="bg-surface-container-high floorplan-zone"></div>
+<div class="bg-surface-container-high floorplan-zone"></div>
+<div class="bg-surface-container-high floorplan-zone"></div>
+<div class="bg-secondary opacity-40 floorplan-zone"></div>
+<div class="bg-primary floorplan-zone"></div>
+</div>
+</div>
+<div class="w-1/3 border-2 border-primary bg-primary/10 flex flex-col items-center justify-center floorplan-zone">
+<span class="text-[10px] font-bold text-primary uppercase">Finished Goods</span>
+<span class="mono-text text-sm font-bold text-primary">65%</span>
+<div class="w-3/4 h-1 bg-outline-variant mt-2">
+<div class="w-2/3 h-full bg-primary"></div>
+</div>
+</div>
+</div>
+<!-- Layout Annotations -->
+<div class="absolute bottom-1 right-2 text-[8px] font-bold text-outline uppercase tracking-widest pointer-events-none">
+                        Ref: QMS-FP-1F-V2.04
+                    </div>
+</div>
+</section>
+</div>
+<!-- Sticky Multi-select Action Bar (Contextual) -->
+<footer class="h-14 bg-primary text-white flex items-center px-margin-desktop justify-between border-t border-outline">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary-fixed" data-icon="info">info</span>
+<span class="font-interactive-label text-interactive-label">Total Occupancy: <span class="mono-text">74.2%</span></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-status-fresh" data-icon="schedule">schedule</span>
+<span class="font-interactive-label text-interactive-label">Next FIFO Pull: <span class="mono-text">14:00</span></span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="flex items-center gap-2 px-4 h-10 border border-white/20 hover:bg-white/10 transition-colors rounded">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+<span class="text-xs font-bold uppercase tracking-wider">Export Report</span>
+</button>
+<button class="flex items-center gap-2 px-6 h-10 bg-secondary hover:bg-secondary-container transition-colors rounded text-white shadow-lg">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+<span class="text-xs font-bold uppercase tracking-wider">Modify Allocation</span>
+</button>
+</div>
+</footer>
+</main>
+<script>
+        // Simple Micro-interactions for Treemap Nodes
+        document.querySelectorAll('.treemap-node').forEach(node => {
+            node.addEventListener('mouseenter', () => {
+                const label = node.querySelector('span');
+                if (label) label.classList.add('underline');
+            });
+            node.addEventListener('mouseleave', () => {
+                const label = node.querySelector('span');
+                if (label) label.classList.remove('underline');
+            });
+        });
+
+        // Floorplan Selection Logic Placeholder
+        document.querySelectorAll('.floorplan-zone').forEach(zone => {
+            zone.addEventListener('click', (e) => {
+                // Highlight the selected zone
+                document.querySelectorAll('.floorplan-zone').forEach(z => z.classList.remove('ring-2', 'ring-secondary', 'z-10'));
+                zone.classList.add('ring-2', 'ring-secondary', 'z-10');
+            });
+        });
+    </script>
+</body></html>

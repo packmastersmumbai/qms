@@ -11,6 +11,9 @@ _unused/**
 .git/**
 .playwright-cli/**
 stitchhtml/**
+qmsv2-mockups/**
+*.design.md
+DESIGN-QMSV2-STITCH.md
 node_modules/**
 package.json
 package-lock.json
