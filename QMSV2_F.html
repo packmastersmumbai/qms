@@ -1,389 +1,418 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html lang="en" class="light">
 <head>
-  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cockpit — Pack Masters QMS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=Public+Sans:wght@500;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: { extend: {
+        colors: {
+          "primary": "#0d1b6e",                 // Pack Masters navy (DESIGN.md anchor, per Stitch container)
+          "primary-container": "#0d1b6e",
+          "on-primary": "#ffffff",
+          "on-primary-container": "#7c88dc",
+          "secondary": "#0057c0",
+          "secondary-container": "#006ff0",
+          "on-secondary-container": "#fefcff",
+          "background": "#f9f9ff",
+          "surface": "#f9f9ff",
+          "surface-container-lowest": "#ffffff",
+          "surface-container-low": "#f0f3ff",
+          "surface-container": "#e7eefe",
+          "surface-container-high": "#e2e8f8",
+          "surface-container-highest": "#dce2f3",
+          "surface-variant": "#dce2f3",
+          "on-surface": "#151c27",
+          "on-surface-variant": "#454651",
+          "on-background": "#151c27",
+          "outline": "#767682",
+          "outline-variant": "#c6c5d3",
+          "error": "#ba1a1a",
+          "error-container": "#ffdad6",
+          "on-error-container": "#93000a",
+          "inverse-on-surface": "#ebf1ff"
+        },
+        borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+        spacing: { "touch-target-min": "48px", "pipeline-gap": "4px", "margin-desktop": "32px", "margin-mobile": "16px", "base": "8px", "gutter": "16px" },
+        fontFamily: {
+          "display": ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+          "headline": ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+          "label-caps": ["Public Sans", "system-ui", "sans-serif"],
+          "body": ["Inter", "system-ui", "sans-serif"],
+          "mono": ["JetBrains Mono", "monospace"]
+        }
+      }}
+    };
+  </script>
   <style>
-    /* DESIGN.md tokens (authority) — white canvas, navy anchor, electric-blue link. */
-    :root{
-      --primary:#0D1B6E; --on-primary:#FFFFFF; --link:#0070F3;
-      --ink:#0F172A; --body:#374151; --muted:#6B7280; --faint:#94A3B8;
-      --canvas:#F5F7FA; --surface:#FFFFFF; --hairline:#E5E7EB;
-      --fail:#DC2626;
-    }
-    *{box-sizing:border-box;}
-    body{font-family:'Inter',system-ui,sans-serif; background:var(--canvas); color:var(--ink);
-      margin:0; min-height:100dvh; -webkit-tap-highlight-color:transparent;}
-    .topbar{position:sticky; top:0; z-index:10; background:var(--primary); color:var(--on-primary);
-      display:flex; align-items:center; justify-content:space-between;
-      padding:0 16px; height:52px;}
-    .topbar h1{font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700;
-      letter-spacing:-0.3px; margin:0;}
-    .who{min-height:44px; display:flex; align-items:center; gap:8px;}
-    .who select{font-family:'Inter',sans-serif; font-size:13px; font-weight:600;
-      color:var(--on-primary); background:rgba(255,255,255,.12);
-      border:1px solid rgba(255,255,255,.25); border-radius:8px;
-      padding:8px 10px; min-height:36px; max-width:170px; -webkit-appearance:none;}
-    .who-role{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
-      color:var(--on-primary); opacity:.7; white-space:nowrap;}
-    .wrap{max-width:760px; margin:0 auto; padding:0 16px 96px;}
-    .board-empty{color:var(--muted); font-size:14px; text-align:center; padding:48px 16px;
-      border:1px dashed var(--hairline); border-radius:12px; background:var(--surface); margin-top:16px;}
-    .mono{font-family:'JetBrains Mono',monospace;}
-
-    /* Doc-type tab row */
-    .tabs{position:sticky; top:52px; z-index:9; background:var(--canvas);
-      display:flex; overflow-x:auto; border-bottom:1px solid var(--hairline);
-      -ms-overflow-style:none; scrollbar-width:none;}
-    .tabs::-webkit-scrollbar{display:none;}
-    .tab{flex:0 0 auto; min-height:44px; padding:0 16px; display:flex; align-items:center;
-      font-size:14px; font-weight:600; color:var(--muted); background:none; border:none;
-      border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer;}
-    .tab.active{color:var(--primary); border-bottom-color:var(--primary);}
-    .tab .cnt{margin-left:6px; font-size:11px; font-weight:700; color:var(--faint);}
-
-    /* Card-level filter pills */
-    .filters{display:flex; gap:6px; padding:12px 0 4px;}
-    .pill{min-height:32px; padding:6px 14px; border-radius:9999px; border:1px solid var(--hairline);
-      background:var(--surface); color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;}
-    .pill.active{background:var(--primary); color:var(--on-primary); border-color:var(--primary);}
-
-    /* Status sections */
-    .section{margin-top:20px;}
-    .section h3{font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
-      color:var(--muted); margin:0 0 10px; display:flex; align-items:center; gap:8px;}
-    .dot{width:8px; height:8px; border-radius:9999px;}
-    .dot.fail{background:var(--fail);} .dot.prog{background:var(--link);} .dot.pass{background:#16A34A;}
-    .grid{display:grid; grid-template-columns:1fr; gap:12px;}
-    @media(min-width:640px){ .grid{grid-template-columns:1fr 1fr;} }
-
-    /* Card */
-    .card{position:relative; background:var(--surface); border:1px solid var(--hairline);
-      border-radius:12px; padding:14px 14px 14px 16px; overflow:hidden;
-      box-shadow:0 1px 2px rgba(15,23,42,.04);}
-    .card.overdue::before{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--fail);}
-    .card .hd{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
-    .badge{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
-      padding:2px 8px; border-radius:4px; width:fit-content;}
-    .badge.fail{color:var(--fail); background:#FEE2E2;}
-    .badge.prog{color:var(--link); background:#D3E5FF;}
-    .badge.pass{color:#15803D; background:#DCFCE7;}
-    .docno{font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:500; color:var(--ink); margin-top:4px;}
-    .desc{font-size:13px; color:var(--body); margin:8px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-    .age{font-size:11px; color:var(--faint); margin-top:2px;}
-
-    /* Pipeline tracker */
-    .pipe{display:flex; justify-content:space-between; align-items:flex-start;
-      margin-top:12px; padding-top:10px; border-top:1px solid var(--hairline);}
-    .node{display:flex; flex-direction:column; align-items:center; gap:4px; flex:1;}
-    .node .bead{width:11px; height:11px; border-radius:9999px; background:#E2E8F0; border:1px solid var(--hairline);}
-    .node.done .bead{background:var(--primary); border-color:var(--primary);}
-    .node.current .bead{background:var(--surface); border:2px solid var(--link);}
-    .node span{font-family:'JetBrains Mono',monospace; font-size:8px; text-transform:uppercase;
-      color:var(--faint); letter-spacing:.02em;}
-    .node.current span{color:var(--link); font-weight:700;}
-    .node.done span{color:var(--body);}
-
-    /* FAB + action picker */
-    .fab{position:fixed; right:18px; bottom:24px; z-index:20; width:56px; height:56px;
-      border-radius:9999px; background:var(--primary); color:var(--on-primary); border:none;
-      font-size:28px; line-height:1; cursor:pointer; box-shadow:0 6px 16px rgba(13,27,110,.35);}
-    .sheet-backdrop{position:fixed; inset:0; z-index:30; background:rgba(15,23,42,.45);
-      display:none; align-items:flex-end; justify-content:center;}
-    .sheet-backdrop.open{display:flex;}
-    .sheet{background:var(--surface); width:100%; max-width:760px; max-height:82vh; overflow-y:auto;
-      border-radius:16px 16px 0 0; padding:16px 16px 28px;}
-    .sheet h2{font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:700;
-      margin:4px 0 14px;}
-    .grp-label{font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
-      color:var(--muted); margin:16px 0 8px;}
-    .tiles{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
-    @media(min-width:480px){ .tiles{grid-template-columns:1fr 1fr 1fr;} }
-    .tile{min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:8px;
-      padding:12px; border:1px solid var(--hairline); border-radius:10px; background:var(--surface);
-      font-size:14px; font-weight:600; color:var(--ink); cursor:pointer; text-align:left;}
-    .tile .kind{font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
-      color:var(--faint);}
-    .tile.inline .kind{color:var(--link);}
-    .field{margin-top:12px;}
-    .field label{display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px;}
-    .field input, .field select{width:100%; min-height:44px; padding:10px 12px; font-size:15px;
-      border:1px solid var(--hairline-strong,#CBD5E1); border-radius:10px; background:var(--surface);
-      color:var(--ink); -webkit-appearance:none;}
-    .sheet-actions{display:flex; gap:10px; margin-top:18px;}
-    .btn{flex:1; min-height:48px; border-radius:10px; border:none; font-size:15px; font-weight:700; cursor:pointer;}
-    .btn-primary{background:var(--primary); color:var(--on-primary);}
-    .btn-ghost{background:var(--surface); color:var(--body); border:1px solid var(--hairline);}
-    .onhand{font-size:12px; color:var(--muted); margin-top:4px;}
+    body { min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* staggered card reveal */
+    @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .card-in { animation: cardIn .28s cubic-bezier(.2,.7,.3,1) both; }
   </style>
 </head>
-<body>
-  <header class="topbar">
-    <h1 id="homeBtn" style="cursor:pointer;" title="Back to Home">← QMS Cockpit</h1>
-    <div class="who" id="whoSlot">
-      <span class="who-role" id="whoRole"></span>
-      <select id="opSelect" aria-label="Select operator"><option value="">Loading…</option></select>
+<body class="bg-background text-on-background font-body text-[14px] flex flex-col h-screen">
+
+  <!-- Top bar -->
+  <header class="bg-primary text-on-primary flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-touch-target-min sticky top-0 z-50 shrink-0">
+    <button id="homeBtn" class="flex items-center gap-2 font-headline text-[18px] font-bold active:scale-95 transition-transform" title="Back to Home">
+      <span class="material-symbols-outlined">arrow_back</span>
+      <span class="hidden sm:inline">PM QMS</span>
+      <span class="text-on-primary/60 text-[12px] font-body font-medium hidden md:inline">v2 · Cockpit</span>
+    </button>
+    <div class="flex items-center gap-2">
+      <span id="whoRole" class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-primary/60"></span>
+      <div class="flex items-center bg-primary-container rounded-full pl-3 pr-1 py-1 gap-1 border border-white/20">
+        <span class="material-symbols-outlined text-[18px] text-on-primary/70">person</span>
+        <select id="opSelect" aria-label="Select operator"
+          class="bg-transparent text-on-primary text-[13px] font-medium border-0 focus:ring-0 py-1 pr-7 max-w-[130px] cursor-pointer">
+          <option value="">Loading…</option>
+        </select>
+      </div>
     </div>
   </header>
 
-  <div class="tabs" id="tabRow"></div>
+  <div class="flex-1 flex overflow-hidden">
 
-  <main class="wrap">
-    <div class="filters" id="filterRow">
-      <button class="pill active" data-filter="all">All</button>
-      <button class="pill" data-filter="urgent">Urgent</button>
-    </div>
-    <!-- Board render target -->
-    <div id="qmsv2Root" class="board-empty">Loading board…</div>
-  </main>
+    <!-- Side nav (desktop) -->
+    <nav class="hidden md:flex flex-col h-full p-gutter gap-pipeline-gap w-60 bg-surface-container-lowest border-r border-outline-variant shrink-0 overflow-y-auto">
+      <div class="flex items-center gap-3 mb-4 px-2">
+        <div class="w-10 h-10 rounded-lg bg-primary text-on-primary grid place-items-center font-display font-extrabold text-[18px]">PM</div>
+        <div>
+          <h2 class="font-headline text-[16px] font-extrabold text-primary leading-none">PM QMS v2</h2>
+          <p class="text-[12px] text-on-surface-variant">Quality Cockpit</p>
+        </div>
+      </div>
+      <button id="sideNew" class="bg-primary text-on-primary w-full h-touch-target-min rounded-lg flex items-center justify-center gap-2 font-label-caps text-[14px] font-bold mb-2 hover:opacity-90 active:scale-[.98] transition">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">add</span> New Action
+      </button>
+      <div id="sideTabs" class="flex-1 flex flex-col gap-1"></div>
+    </nav>
 
-  <button class="fab" id="fab" aria-label="New action">+</button>
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto pb-28 md:pb-8">
 
-  <div class="sheet-backdrop" id="sheetBackdrop">
-    <div class="sheet" id="sheet"><!-- picker or inline form rendered here --></div>
+      <!-- Doc-type tabs (mobile) + filter row -->
+      <div class="sticky top-0 bg-background/95 backdrop-blur z-30 border-b border-outline-variant">
+        <div class="px-margin-mobile md:px-margin-desktop py-3">
+          <div id="filterRow" class="inline-flex bg-surface-container-high rounded-full p-1 border border-outline-variant/50 gap-0.5">
+            <button data-filter="all" class="filter-pill px-4 py-1.5 rounded-full text-[14px] font-medium transition">All</button>
+            <button data-filter="urgent" class="filter-pill px-4 py-1.5 rounded-full text-[14px] font-medium transition">Urgent</button>
+          </div>
+        </div>
+        <div id="tabRow" class="md:hidden px-margin-mobile flex overflow-x-auto hide-scrollbar border-t border-outline-variant/30"></div>
+      </div>
+
+      <div id="qmsv2Root" class="p-margin-mobile md:p-margin-desktop max-w-5xl mx-auto">
+        <div class="text-on-surface-variant text-[14px] text-center py-16">Loading board…</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-[68px] px-margin-mobile bg-surface-container-highest border-t border-outline-variant z-40 shadow-[0_-2px_8px_rgba(21,28,39,.06)]">
+    <button id="bnHome" class="flex flex-col items-center justify-center text-on-surface-variant min-w-[56px] gap-0.5">
+      <span class="material-symbols-outlined">home</span><span class="text-[10px] font-label-caps">Home</span>
+    </button>
+    <button id="bnRecords" class="flex flex-col items-center justify-center text-on-surface-variant min-w-[56px] gap-0.5">
+      <span class="material-symbols-outlined">history</span><span class="text-[10px] font-label-caps">Records</span>
+    </button>
+    <div class="w-14"></div>
+    <button id="bnTrace" class="flex flex-col items-center justify-center text-on-surface-variant min-w-[56px] gap-0.5">
+      <span class="material-symbols-outlined">analytics</span><span class="text-[10px] font-label-caps">Trace</span>
+    </button>
+    <button id="bnKpi" class="flex flex-col items-center justify-center text-on-surface-variant min-w-[56px] gap-0.5">
+      <span class="material-symbols-outlined">insert_chart</span><span class="text-[10px] font-label-caps">KPIs</span>
+    </button>
+  </nav>
+
+  <!-- FAB (mobile) -->
+  <button id="fab" aria-label="New action"
+    class="md:hidden fixed bottom-[52px] left-1/2 -translate-x-1/2 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg grid place-items-center z-50 active:scale-95 transition border-4 border-background">
+    <span class="material-symbols-outlined text-[28px]" style="font-variation-settings:'FILL' 1;">add</span>
+  </button>
+
+  <!-- Action sheet / inline form -->
+  <div id="sheetBackdrop" class="fixed inset-0 z-[60] bg-on-background/40 hidden items-end md:items-center justify-center">
+    <div id="sheet" class="bg-surface-container-lowest w-full max-w-lg max-h-[86vh] overflow-y-auto rounded-t-2xl md:rounded-2xl p-5 pb-8"></div>
   </div>
 
   <script>
-    // T3: identity dropdown (from getQmsv2Operators) → currentRole → board.
-    // Selection persists to localStorage; switching re-requests the board for
-    // that role's primary tab ("My Work"). Kanban render lands in T4.
+    // ============ data + state ============
     var LS_KEY = 'pmQmsOperator';
-    // All 7 doc-type tabs for every user (locked decision); role only defaults + filters.
     var DOC_TYPES = ['GRN','IQC','IPQC','OQC','Dispatch','Production','NCR'];
+    var TAB_ICONS = { GRN:'inventory_2', IQC:'biotech', IPQC:'precision_manufacturing', OQC:'verified', Dispatch:'local_shipping', Production:'factory', NCR:'report_problem' };
     var STAGE_LABELS = ['GRN','IQC','PUTAWAY','ISSUE','OQC','DISP'];
 
-    var roleStageMap = null;   // cockpitRole -> [docTypes]
-    var operators = [];        // [{name, role, shift, cockpitRole}]
-    var currentOp = null;
-    var currentRole = 'manager';
-    var currentType = 'GRN';
-    var currentFilter = 'all';
+    var roleStageMap = null, operators = [], currentOp = null;
+    var currentRole = 'manager', currentType = 'GRN', currentFilter = 'all';
+    var actionRegistry = null, formData = null;
 
-    var root   = document.getElementById('qmsv2Root');
-    var sel    = document.getElementById('opSelect');
+    var root = document.getElementById('qmsv2Root');
+    var sel = document.getElementById('opSelect');
     var roleEl = document.getElementById('whoRole');
     var tabRow = document.getElementById('tabRow');
+    var sideTabs = document.getElementById('sideTabs');
+    var backdrop = document.getElementById('sheetBackdrop');
+    var sheet = document.getElementById('sheet');
 
-    function primaryTabFor(role){
-      var tabs = roleStageMap && roleStageMap[role];
-      return (tabs && tabs.length) ? tabs[0] : 'GRN';
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    function primaryTabFor(role){ var t = roleStageMap && roleStageMap[role]; return (t && t.length) ? t[0] : 'GRN'; }
+
+    // ============ navigation (full-page swap; navigateTo not in form scope) ============
+    function launchForm(formName){
+      google.script.run
+        .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function(){ alert('Could not open ' + formName); })
+        .getFormHtml(formName);
     }
 
-    function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-
-    function renderTabs(){
-      tabRow.innerHTML = '';
-      DOC_TYPES.forEach(function(t){
-        var b = document.createElement('button');
-        b.className = 'tab' + (t === currentType ? ' active' : '');
-        b.textContent = t;
-        b.addEventListener('click', function(){ currentType = t; renderTabs(); loadBoard(); });
-        tabRow.appendChild(b);
-      });
-    }
-
-    // Build a 6-node pipeline tracker from a card's stage index.
-    function pipelineHtml(stage){
-      var html = '<div class="pipe">';
-      for (var i = 0; i < STAGE_LABELS.length; i++){
-        var cls = i < stage ? 'done' : (i === stage ? 'current' : '');
-        html += '<div class="node ' + cls + '"><div class="bead"></div><span>' +
-          STAGE_LABELS[i] + '</span></div>';
+    // ============ tabs ============
+    function tabBtn(t, mobile){
+      var active = t === currentType;
+      var b = document.createElement('button');
+      if (mobile){
+        b.className = 'min-w-fit px-4 h-touch-target-min flex items-center gap-1.5 text-[14px] font-medium whitespace-nowrap border-b-2 ' +
+          (active ? 'text-primary border-primary font-semibold' : 'text-on-surface-variant border-transparent');
+      } else {
+        b.className = 'flex items-center gap-3 px-3 h-11 rounded-lg transition ' +
+          (active ? 'bg-secondary-container/15 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-low');
       }
-      return html + '</div>';
+      b.innerHTML = '<span class="material-symbols-outlined text-[20px]">' + (TAB_ICONS[t]||'tab') + '</span>' +
+        '<span class="font-label-caps text-[14px]">' + t + '</span>';
+      b.addEventListener('click', function(){ currentType = t; renderTabs(); loadBoard(); });
+      return b;
+    }
+    function renderTabs(){
+      tabRow.innerHTML = ''; sideTabs.innerHTML = '';
+      DOC_TYPES.forEach(function(t){ tabRow.appendChild(tabBtn(t, true)); sideTabs.appendChild(tabBtn(t, false)); });
     }
 
-    function cardHtml(card, tone){
-      var overdue = card.overdue ? ' overdue' : '';
+    // ============ pipeline tracker ============
+    function pipelineHtml(stage){
+      var nodes = STAGE_LABELS.map(function(lbl, i){
+        var bead, txt;
+        if (i < stage){ bead = 'bg-primary border-primary'; txt = 'text-on-surface-variant'; }
+        else if (i === stage){ bead = 'bg-surface-container-lowest border-2 border-secondary'; txt = 'text-secondary font-bold'; }
+        else { bead = 'bg-surface-variant border border-outline-variant/50'; txt = 'text-outline'; }
+        return '<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-0.5 z-10">' +
+          '<div class="w-3 h-3 rounded-full ring-2 ring-surface-container-lowest ' + bead + '"></div>' +
+          '<span class="font-mono text-[8px] uppercase ' + txt + '">' + lbl + '</span></div>';
+      }).join('');
+      var pct = Math.max(0, Math.min(100, (stage / (STAGE_LABELS.length - 1)) * 100));
+      return '<div class="mt-3 pt-3 border-t border-outline-variant/30">' +
+        '<div class="flex justify-between items-start relative">' +
+        '<div class="absolute top-[5px] left-2 right-2 h-0.5 bg-surface-variant"></div>' +
+        '<div class="absolute top-[5px] left-2 h-0.5 bg-primary" style="width:calc(' + pct + '% - 8px)"></div>' +
+        nodes + '</div></div>';
+    }
+
+    // ============ card ============
+    function badgeClasses(tone){
+      if (tone === 'fail') return 'text-error bg-error-container';
+      if (tone === 'pass') return 'text-[#15803d] bg-[#dcfce7]';
+      return 'text-secondary bg-secondary-container/15';
+    }
+    function cardHtml(card, tone, idx){
       var age = card.ageDays != null ? (card.ageDays + 'd ago') : '';
-      return '<div class="card' + overdue + '">' +
-        '<div class="hd"><div>' +
-          '<span class="badge ' + tone + '">' + esc(card.status) + '</span>' +
-          '<div class="docno">' + esc(card.docNo) + '</div>' +
-        '</div></div>' +
-        '<p class="desc">' + esc(card.name || '—') + '</p>' +
-        (age ? '<div class="age">' + age + '</div>' : '') +
+      var edge = card.overdue ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>' : '';
+      return '<button class="card-in text-left w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-4 pl-5 relative overflow-hidden shadow-sm ' +
+        'hover:shadow-md hover:border-secondary/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[.99] transition cursor-pointer" ' +
+        'style="animation-delay:' + (idx*40) + 'ms">' + edge +
+        '<div class="flex justify-between items-start gap-2">' +
+          '<div class="flex flex-col gap-1 min-w-0">' +
+            '<span class="font-label-caps text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded w-fit ' + badgeClasses(tone) + '">' + esc(card.status) + '</span>' +
+            '<span class="font-mono text-[13px] font-medium text-on-surface">' + esc(card.docNo) + '</span>' +
+          '</div>' +
+          (age ? '<span class="text-[11px] text-outline whitespace-nowrap shrink-0">' + age + '</span>' : '') +
+        '</div>' +
+        '<p class="text-[13px] text-on-surface-variant mt-2 truncate">' + esc(card.name || '—') + '</p>' +
         pipelineHtml(card.stage || 0) +
-      '</div>';
+      '</button>';
     }
 
-    function sectionHtml(title, dotCls, cards, tone){
+    function sectionHtml(title, dot, cards, tone, startIdx){
       if (!cards.length) return '';
-      var inner = cards.map(function(c){ return cardHtml(c, tone); }).join('');
-      return '<section class="section"><h3><span class="dot ' + dotCls + '"></span>' +
-        title + ' · ' + cards.length + '</h3><div class="grid">' + inner + '</div></section>';
+      var inner = cards.map(function(c, i){ return cardHtml(c, tone, startIdx + i); }).join('');
+      return '<section class="mb-7">' +
+        '<h3 class="font-label-caps text-[12px] font-bold uppercase tracking-wider text-on-surface-variant mb-3 flex items-center gap-2">' +
+        '<span class="w-2 h-2 rounded-full ' + dot + '"></span>' + title + ' · ' + cards.length + '</h3>' +
+        '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">' + inner + '</div></section>';
     }
 
-    function applyFilter(cards){
-      if (currentFilter === 'urgent') return cards.filter(function(c){ return c.overdue; });
-      return cards;
-    }
+    function applyFilter(cards){ return currentFilter === 'urgent' ? cards.filter(function(c){ return c.overdue; }) : cards; }
 
     function renderBoard(board){
       var cols = board.columns;
-      // ACTION REQUIRED = overdue pending first, then remaining pending.
       var pending = applyFilter(cols.pending);
       var overdue = pending.filter(function(c){ return c.overdue; });
       var pendingRest = pending.filter(function(c){ return !c.overdue; });
       var inProg = applyFilter(cols.inProgress);
       var done = applyFilter(cols.done);
 
-      var html = '';
-      html += sectionHtml('Action Required', 'fail', overdue, 'fail');
-      html += sectionHtml('Pending', 'prog', pendingRest, 'prog');
-      html += sectionHtml('In Progress', 'prog', inProg, 'prog');
-      html += sectionHtml('Done', 'pass', done, 'pass');
+      var i = 0, html = '';
+      html += sectionHtml('Action Required', 'bg-error', overdue, 'fail', i); i += overdue.length;
+      html += sectionHtml('Pending', 'bg-secondary', pendingRest, 'prog', i); i += pendingRest.length;
+      html += sectionHtml('In Progress', 'bg-secondary', inProg, 'prog', i); i += inProg.length;
+      html += sectionHtml('Done', 'bg-[#16a34a]', done, 'pass', i);
 
       if (!html){
-        root.className = 'board-empty';
-        root.textContent = currentFilter === 'urgent'
-          ? 'Nothing urgent in ' + currentType + '.'
-          : 'No ' + currentType + ' records.';
+        root.innerHTML = '<div class="text-on-surface-variant text-[14px] text-center py-16">' +
+          (currentFilter === 'urgent' ? 'Nothing urgent in ' + currentType + '.' : 'No ' + currentType + ' records.') + '</div>';
         return;
       }
-      root.className = '';
       root.innerHTML = html;
     }
 
     function loadBoard(){
-      root.className = 'board-empty';
-      root.textContent = 'Loading board…';
+      root.innerHTML = '<div class="text-on-surface-variant text-[14px] text-center py-16">Loading board…</div>';
       google.script.run
-        .withSuccessHandler(function(board){
-          if (!board || !board.columns){ root.textContent = 'No board data.'; return; }
-          renderBoard(board);
-        })
-        .withFailureHandler(function(err){
-          root.className = 'board-empty';
-          root.textContent = 'Board load failed: ' + (err && err.message ? err.message : err);
-        })
+        .withSuccessHandler(function(board){ if (!board || !board.columns){ root.textContent='No board data.'; return; } renderBoard(board); })
+        .withFailureHandler(function(err){ root.innerHTML = '<div class="text-error text-[13px] text-center py-12">Board load failed: ' + esc(err && err.message ? err.message : err) + '</div>'; })
         .getQmsv2Board(currentType, currentRole);
     }
 
+    // ============ identity ============
     function applyOperator(op){
       currentOp = op;
       currentRole = (op && op.cockpitRole) || 'manager';
       currentType = primaryTabFor(currentRole);
       roleEl.textContent = currentRole;
       try { if (op) localStorage.setItem(LS_KEY, op.name); } catch(e){}
-      renderTabs();
-      loadBoard();
+      renderTabs(); loadBoard();
     }
-
-    // Filter pills
-    document.getElementById('filterRow').addEventListener('click', function(e){
-      var btn = e.target.closest('.pill'); if (!btn) return;
-      currentFilter = btn.getAttribute('data-filter');
-      Array.prototype.forEach.call(this.children, function(p){ p.classList.remove('active'); });
-      btn.classList.add('active');
-      loadBoard();
-    });
-
     sel.addEventListener('change', function(){
       var op = operators.filter(function(o){ return o.name === sel.value; })[0];
       if (op) applyOperator(op);
     });
-
     function loadOperators(){
       google.script.run
         .withSuccessHandler(function(ops){
-          operators = ops || [];
-          sel.innerHTML = '';
-          if (!operators.length){
-            sel.innerHTML = '<option value="">No operators</option>';
-            root.textContent = 'No operators configured.';
-            return;
-          }
-          operators.forEach(function(o){
-            var opt = document.createElement('option');
-            opt.value = o.name; opt.textContent = o.name;
-            sel.appendChild(opt);
-          });
-          // Restore prior selection; else first operator.
-          var saved = null;
-          try { saved = localStorage.getItem(LS_KEY); } catch(e){}
-          var chosen = (saved && operators.filter(function(o){ return o.name === saved; })[0]) || operators[0];
-          sel.value = chosen.name;
-          applyOperator(chosen);
+          operators = ops || []; sel.innerHTML = '';
+          if (!operators.length){ sel.innerHTML = '<option value="">No operators</option>'; return; }
+          operators.forEach(function(o){ var opt = document.createElement('option'); opt.value=o.name; opt.textContent=o.name; sel.appendChild(opt); });
+          var saved = null; try { saved = localStorage.getItem(LS_KEY); } catch(e){}
+          var chosen = (saved && operators.filter(function(o){ return o.name===saved; })[0]) || operators[0];
+          sel.value = chosen.name; applyOperator(chosen);
         })
-        .withFailureHandler(function(err){
-          root.textContent = 'Operator load failed: ' + (err && err.message ? err.message : err);
-        })
+        .withFailureHandler(function(err){ root.innerHTML = '<div class="text-error text-center py-12">Operator load failed: ' + esc(err && err.message) + '</div>'; })
         .getQmsv2Operators();
     }
 
-    // ---- Action picker (T5) ----
-    var actionRegistry = null;   // { groups:[], actions:[] }
-    var formData = null;         // { materials, locations, stock } — lazy
-    var backdrop = document.getElementById('sheetBackdrop');
-    var sheet = document.getElementById('sheet');
+    // ============ filter pills ============
+    function paintFilters(){
+      Array.prototype.forEach.call(document.querySelectorAll('.filter-pill'), function(p){
+        var on = p.getAttribute('data-filter') === currentFilter;
+        p.className = 'filter-pill px-4 py-1.5 rounded-full text-[14px] font-medium transition ' +
+          (on ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-variant');
+      });
+    }
+    document.getElementById('filterRow').addEventListener('click', function(e){
+      var b = e.target.closest('.filter-pill'); if (!b) return;
+      currentFilter = b.getAttribute('data-filter'); paintFilters(); loadBoard();
+    });
 
-    function openSheet(){ backdrop.classList.add('open'); }
-    function closeSheet(){ backdrop.classList.remove('open'); sheet.innerHTML = ''; }
+    // ============ action picker ============
+    function openSheet(){ backdrop.classList.remove('hidden'); backdrop.classList.add('flex'); }
+    function closeSheet(){ backdrop.classList.add('hidden'); backdrop.classList.remove('flex'); sheet.innerHTML=''; }
 
     function renderPicker(){
-      if (!actionRegistry){ sheet.innerHTML = '<h2>Loading actions…</h2>'; return; }
-      var html = '<h2>New Action</h2>';
+      if (!actionRegistry){ sheet.innerHTML = '<h2 class="font-headline text-[18px] font-bold">Loading…</h2>'; return; }
+      var html = '<div class="flex justify-between items-center mb-4"><h2 class="font-headline text-[20px] font-bold">New Action</h2>' +
+        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>';
       actionRegistry.groups.forEach(function(g){
-        var inGroup = actionRegistry.actions.filter(function(a){ return a.group === g; });
-        if (!inGroup.length) return;
-        html += '<div class="grp-label">' + g + '</div><div class="tiles">';
-        inGroup.forEach(function(a){
-          html += '<button class="tile ' + a.kind + '" data-id="' + a.id + '">' +
+        var inG = actionRegistry.actions.filter(function(a){ return a.group===g; });
+        if (!inG.length) return;
+        html += '<div class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mt-4 mb-2">' + g + '</div>' +
+          '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">';
+        inG.forEach(function(a){
+          html += '<button data-id="' + a.id + '" class="tile flex items-center justify-between gap-2 p-3 min-h-[48px] border border-outline-variant rounded-lg ' +
+            'text-[14px] font-semibold text-on-surface hover:bg-surface-container-low hover:border-secondary/40 active:scale-[.98] transition text-left">' +
             '<span>' + esc(a.label) + '</span>' +
-            '<span class="kind">' + (a.kind === 'launch' ? 'open' : 'inline') + '</span>' +
+            '<span class="font-label-caps text-[9px] font-bold uppercase ' + (a.kind==='inline'?'text-secondary':'text-outline') + '">' + (a.kind==='launch'?'open':'inline') + '</span>' +
           '</button>';
         });
         html += '</div>';
       });
       sheet.innerHTML = html;
+      document.getElementById('sheetClose').addEventListener('click', closeSheet);
     }
 
-    function actionById(id){
-      return actionRegistry.actions.filter(function(a){ return a.id === id; })[0];
-    }
+    function actionById(id){ return actionRegistry.actions.filter(function(a){ return a.id===id; })[0]; }
 
-    // T5: render a config-driven inline form. T6 wires Move's real submit.
     function renderInlineForm(action){
-      var html = '<h2>' + esc(action.label) + '</h2>';
+      var html = '<div class="flex justify-between items-center mb-3"><h2 class="font-headline text-[20px] font-bold">' + esc(action.label) + '</h2>' +
+        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>';
       (action.fields || []).forEach(function(f){
-        html += '<div class="field"><label>' + esc(f.name) + '</label>';
+        html += '<div class="mt-3"><label class="block text-[12px] font-semibold text-on-surface-variant mb-1 capitalize">' + esc(f.name) + '</label>';
+        var cls = 'w-full min-h-[44px] px-3 py-2.5 text-[15px] border border-outline-variant rounded-lg bg-surface-container-lowest focus:ring-2 focus:ring-secondary focus:border-secondary';
         if (f.type === 'material'){
-          html += '<select data-field="' + f.name + '" id="f_' + f.name + '"><option value="">Select material…</option>' +
-            ((formData && formData.materials) || []).map(function(m){
-              return '<option value="' + esc(m.code) + '">' + esc(m.code) + '</option>'; }).join('') +
-            '</select>';
+          html += '<select data-field="' + f.name + '" id="f_' + f.name + '" class="' + cls + '"><option value="">Select material…</option>' +
+            ((formData&&formData.materials)||[]).map(function(m){ return '<option value="' + esc(m.code) + '">' + esc(m.code) + '</option>'; }).join('') + '</select>';
         } else if (f.type === 'location'){
-          html += '<select data-field="' + f.name + '" id="f_' + f.name + '"><option value="">Select location…</option>' +
-            ((formData && formData.locations) || []).map(function(l){
-              return '<option value="' + esc(l.id) + '">' + esc(l.label) + '</option>'; }).join('') +
-            '</select>';
+          html += '<select data-field="' + f.name + '" id="f_' + f.name + '" class="' + cls + '"><option value="">Select location…</option>' +
+            ((formData&&formData.locations)||[]).map(function(l){ return '<option value="' + esc(l.id) + '">' + esc(l.label) + '</option>'; }).join('') + '</select>';
         } else if (f.type === 'number'){
-          html += '<input type="number" inputmode="decimal" data-field="' + f.name + '" id="f_' + f.name + '" min="0" step="any">';
+          html += '<input type="number" inputmode="decimal" min="0" step="any" data-field="' + f.name + '" id="f_' + f.name + '" class="' + cls + '">';
         } else {
-          html += '<input type="text" data-field="' + f.name + '" id="f_' + f.name + '">';
+          html += '<input type="text" data-field="' + f.name + '" id="f_' + f.name + '" class="' + cls + '">';
         }
         html += '</div>';
       });
-      html += '<div class="onhand" id="onhand"></div>';
-      html += '<div class="sheet-actions">' +
-        '<button class="btn btn-ghost" id="cancelAct">Cancel</button>' +
-        '<button class="btn btn-primary" id="submitAct" data-id="' + action.id + '">Confirm</button>' +
-      '</div>';
+      html += '<div id="onhand" class="text-[12px] text-on-surface-variant mt-2"></div>' +
+        '<div class="flex gap-3 mt-5">' +
+        '<button id="cancelAct" class="flex-1 min-h-[48px] rounded-lg border border-outline-variant text-on-surface-variant font-bold">Cancel</button>' +
+        '<button id="submitAct" data-id="' + action.id + '" class="flex-1 min-h-[48px] rounded-lg bg-primary text-on-primary font-bold active:scale-[.98] transition">Confirm</button>' +
+        '</div>';
       sheet.innerHTML = html;
+      document.getElementById('sheetClose').addEventListener('click', closeSheet);
       document.getElementById('cancelAct').addEventListener('click', closeSheet);
-      // T6 attaches the real submit + on-hand for 'move'; placeholder otherwise.
-      if (typeof wireInlineSubmit === 'function') wireInlineSubmit(action);
+      wireInlineSubmit(action);
+    }
+
+    function wireInlineSubmit(action){
+      var onhandEl = document.getElementById('onhand');
+      var matEl = document.getElementById('f_material'), fromEl = document.getElementById('f_fromLoc'), lotEl = document.getElementById('f_lot');
+      function refreshOnHand(){
+        if (!onhandEl || !matEl || !fromEl) return;
+        var m = matEl.value, f = fromEl.value, lot = lotEl ? lotEl.value : '';
+        if (!m || !f){ onhandEl.textContent=''; return; }
+        onhandEl.textContent = 'On-hand at source: …';
+        google.script.run.withSuccessHandler(function(bal){ onhandEl.textContent = 'On-hand at source: ' + bal; })
+          .withFailureHandler(function(){ onhandEl.textContent=''; }).getOnHand(m, lot, f);
+      }
+      if (matEl) matEl.addEventListener('change', refreshOnHand);
+      if (fromEl) fromEl.addEventListener('change', refreshOnHand);
+      if (lotEl) lotEl.addEventListener('change', refreshOnHand);
+
+      var btn = document.getElementById('submitAct');
+      btn.addEventListener('click', function(){
+        var payload = { by: currentOp ? currentOp.name : '' }, ok = true;
+        (action.fields||[]).forEach(function(f){ var el = document.getElementById('f_'+f.name); var v = el?el.value:''; payload[f.name]=v; if (f.type!=='text' && !v) ok=false; });
+        if (!ok){ alert('Please fill all fields.'); return; }
+        if (action.id==='move' && payload.fromLoc===payload.toLoc){ alert('Source and destination must differ.'); return; }
+        btn.disabled = true; btn.textContent = 'Working…';
+        google.script.run
+          .withSuccessHandler(function(res){
+            btn.disabled=false; btn.textContent='Confirm';
+            if (res && res.success){ closeSheet(); formData=null; loadBoard(); alert(action.label + ' done' + (res.transferId?' · '+res.transferId:'')); }
+            else { alert('Failed: ' + ((res&&res.error)||'unknown error')); }
+          })
+          .withFailureHandler(function(err){ btn.disabled=false; btn.textContent='Confirm'; alert('Error: ' + (err&&err.message?err.message:err)); })
+          .runAction(action.id, payload);
+      });
     }
 
     function openInlineForm(action){
-      sheet.innerHTML = '<h2>Loading…</h2>';
+      sheet.innerHTML = '<h2 class="font-headline text-[18px] font-bold">Loading…</h2>'; openSheet();
       if (formData){ renderInlineForm(action); return; }
       google.script.run
         .withSuccessHandler(function(fd){ formData = fd || {}; renderInlineForm(action); })
@@ -391,95 +420,25 @@
         .getActionFormData();
     }
 
-    // Launch a Tier-2 form the same way other forms route: fetch its HTML and
-    // full-page swap (getFormHtml + document.write). navigateTo is NOT in scope
-    // here — each form is a full page, not an in-SPA injection.
-    function launchForm(formName){
-      google.script.run
-        .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
-        .withFailureHandler(function(){ closeSheet(); alert('Could not open ' + formName); })
-        .getFormHtml(formName);
-    }
+    function handlePick(id){ var a = actionById(id); if (!a) return; if (a.kind==='launch'){ closeSheet(); launchForm(a.form); return; } openInlineForm(a); }
 
-    // T6: wire the inline form's submit. P1 enables 'move' end-to-end; other
-    // inline actions confirm but the server guards them as not-yet-enabled.
-    function wireInlineSubmit(action){
-      var onhandEl = document.getElementById('onhand');
-      var matEl  = document.getElementById('f_material');
-      var fromEl = document.getElementById('f_fromLoc');
-      var lotEl  = document.getElementById('f_lot');
+    function openPicker(){ renderPicker(); openSheet(); }
+    document.getElementById('fab').addEventListener('click', openPicker);
+    document.getElementById('sideNew').addEventListener('click', openPicker);
+    backdrop.addEventListener('click', function(e){ if (e.target===backdrop) closeSheet(); });
+    sheet.addEventListener('click', function(e){ var t = e.target.closest('.tile'); if (t) handlePick(t.getAttribute('data-id')); });
 
-      // Live on-hand reference for the chosen material + source location.
-      function refreshOnHand(){
-        if (!onhandEl || !matEl || !fromEl) return;
-        var m = matEl.value, f = fromEl.value, lot = lotEl ? lotEl.value : '';
-        if (!m || !f){ onhandEl.textContent = ''; return; }
-        onhandEl.textContent = 'On-hand: …';
-        google.script.run
-          .withSuccessHandler(function(bal){ onhandEl.textContent = 'On-hand at source: ' + bal; })
-          .withFailureHandler(function(){ onhandEl.textContent = ''; })
-          .getOnHand(m, lot, f);
-      }
-      if (matEl)  matEl.addEventListener('change', refreshOnHand);
-      if (fromEl) fromEl.addEventListener('change', refreshOnHand);
-      if (lotEl)  lotEl.addEventListener('change', refreshOnHand);
-
-      var submitBtn = document.getElementById('submitAct');
-      submitBtn.addEventListener('click', function(){
-        var payload = { by: currentOp ? currentOp.name : '' };
-        var ok = true;
-        (action.fields || []).forEach(function(f){
-          var el = document.getElementById('f_' + f.name);
-          var v = el ? el.value : '';
-          payload[f.name] = v;
-          if (f.type !== 'text' && !v) ok = false;   // required (lot optional/text)
-        });
-        if (!ok){ alert('Please fill all fields.'); return; }
-        if (action.id === 'move' && payload.fromLoc === payload.toLoc){
-          alert('Source and destination must differ.'); return;
-        }
-        submitBtn.disabled = true; submitBtn.textContent = 'Working…';
-        google.script.run
-          .withSuccessHandler(function(res){
-            submitBtn.disabled = false; submitBtn.textContent = 'Confirm';
-            if (res && res.success){
-              closeSheet();
-              formData = null;  // stock changed → refresh dropdown source next open
-              loadBoard();
-              alert((action.label) + ' done' + (res.transferId ? ' · ' + res.transferId : ''));
-            } else {
-              alert('Failed: ' + ((res && res.error) || 'unknown error'));
-            }
-          })
-          .withFailureHandler(function(err){
-            submitBtn.disabled = false; submitBtn.textContent = 'Confirm';
-            alert('Error: ' + (err && err.message ? err.message : err));
-          })
-          .runAction(action.id, payload);
-      });
-    }
-
-    function handlePick(id){
-      var a = actionById(id); if (!a) return;
-      if (a.kind === 'launch'){ closeSheet(); launchForm(a.form); return; }
-      openInlineForm(a);
-    }
-
-    document.getElementById('fab').addEventListener('click', function(){
-      renderPicker(); openSheet();
-    });
+    // ============ nav buttons ============
     document.getElementById('homeBtn').addEventListener('click', function(){ launchForm('Landing'); });
-    backdrop.addEventListener('click', function(e){ if (e.target === backdrop) closeSheet(); });
-    sheet.addEventListener('click', function(e){
-      var tile = e.target.closest('.tile'); if (tile){ handlePick(tile.getAttribute('data-id')); }
-    });
+    document.getElementById('bnHome').addEventListener('click', function(){ launchForm('Landing'); });
+    document.getElementById('bnRecords').addEventListener('click', function(){ launchForm('Records'); });
+    document.getElementById('bnTrace').addEventListener('click', function(){ launchForm('Trace'); });
+    document.getElementById('bnKpi').addEventListener('click', function(){ launchForm('KPI'); });
 
-    // Load the role→tab map first (so primaryTabFor is correct), then operators.
+    // ============ init ============
     (function init(){
-      google.script.run
-        .withSuccessHandler(function(reg){ actionRegistry = reg; })
-        .getQmsv2Actions();
-
+      paintFilters();
+      google.script.run.withSuccessHandler(function(reg){ actionRegistry = reg; }).getQmsv2Actions();
       google.script.run
         .withSuccessHandler(function(map){ roleStageMap = map || {}; loadOperators(); })
         .withFailureHandler(function(){ roleStageMap = {}; loadOperators(); })
