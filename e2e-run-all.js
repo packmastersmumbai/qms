@@ -2,7 +2,16 @@
 // Usage: node e2e-run-all.js   (requires a fresh e2e-storageState.json — see e2e-README.md)
 const { spawnSync } = require('child_process');
 
-const SUITES = ['e2e-production.js', 'e2e-oqc-dispatch.js'];
+const SUITES = [
+  'e2e-landing.js',
+  'e2e-grn.js',
+  'e2e-grn-iqc.js',
+  'e2e-oqc-dispatch.js',
+  'e2e-production.js',
+  'e2e-ncr-records-trace.js',
+  'e2e-masters-kpi-warehouse.js',
+  'e2e-lowstock-logic.js',
+];
 let allOk = true;
 
 for (const suite of SUITES) {
