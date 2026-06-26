@@ -1,7 +1,18 @@
 # DESIGN-QMSV2-STITCH.md — Stitch cockpit mockups (QMS v2)
 
 **Source:** Google Stitch, project `PM QMS v2` (`10290620691745788406`), design-system asset `f1c072ac30ee4901b96547757f18a349`. Captured 2026-06-26.
-**Status:** 14 mockups, **re-skinned to the Pack Masters brand**. 12 core (6 screens × mobile+desktop) + 2 added (Rack Detail, Putaway Checklist). Home revised with labeled 6-stage pipeline + doc-type tabs.
+**Status:** 19+ mockups, **re-skinned to the Pack Masters brand**. 12 core (6 screens × mobile+desktop) + Rack Detail + Putaway Checklist + revised Home (labeled pipeline + doc-type tabs) + **5 added: Re-order Levels, Stock Alerts, IPQC round-entry, IQC inspection, OQC release** (all mobile, compact/clean, on-brand).
+
+## Inventory + QC form screens (added)
+| Screen | Key features (verified) |
+|---|---|
+| Re-order Levels | dense editable list, mono codes/qty, on-hand vs reorder, red edge when low, save bar |
+| Stock Alerts | OUT/LOW severity, shortfall in red, inline Reorder/Issue-PO, out-of-stock-first sort |
+| IPQC round-entry | live timer (mono), session bar, PASS/FAIL/NA + numeric params, leak/avg-weight, Save Round + Close Session |
+| IQC inspection | 12 params + CCP tags, Set-ALL bar, Disposition Split (must-equal-qty), 2×2 disposition, item nav |
+| OQC release | 5-item checklist, suggested-decision hint, 2×2 decision, conditional FG-location dropdown, video+remarks |
+
+Note: IPQC/IQC/OQC are spec Tier-2 (existing app launched, not rewritten). These compact redesigns are **design references** — adopt only if you decide to rebuild them rather than launch the existing forms.
 **Pairs with:** [PLAN-QMSV2.md](PLAN-QMSV2.md) (logic) · [DESIGN.md](DESIGN.md) (the **authoritative**, GAS-tuned brand system).
 
 > ✅ **RESOLVED.** Stitch initially invented its own "Industrial Blue" theme. It has been **re-skinned to the real Pack Masters brand** ([DESIGN.md](DESIGN.md)): navy `#0D1B6E`, electric-blue `#0070F3`, Plus Jakarta Sans / Inter / JetBrains Mono, 44px targets, 430px phone-first column — all GAS-critical rules pushed into the Stitch design system and applied to all 12 screens. **`DESIGN.md` is the authority for the build; this file is the mockup index + Stitch token mirror.** When building `QMSV2_F.html`, follow `DESIGN.md`. The section below preserves Stitch's *original* tokens for reference only — superseded by the Pack Masters re-skin.
