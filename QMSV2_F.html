@@ -499,26 +499,70 @@
     function openSheet(){ backdrop.classList.remove('hidden'); backdrop.classList.add('flex'); }
     function closeSheet(){ backdrop.classList.add('hidden'); backdrop.classList.remove('flex'); sheet.innerHTML=''; }
 
+    // Group metadata — verbatim from Stitch 02-action-picker (icon + subtitle).
+    var GROUP_META = {
+      Receive: { icon:'inventory',                sub:'Inbound materials & GRN' },
+      Inspect: { icon:'biotech',                  sub:'IQC, IPQC, OQC forms' },
+      Make:    { icon:'precision_manufacturing',  sub:'Production runs & batches' },
+      Ship:    { icon:'local_shipping',           sub:'Dispatch & logistics' },
+      Move:    { icon:'swap_horiz',               sub:'Internal transfers & putaway' },
+      Resolve: { icon:'report_problem',           sub:'Address non-conformances' }
+    };
+
+    // Level 1 — group rows (verbatim Stitch markup; Receive=navy fill, Resolve=error).
     function renderPicker(){
-      if (!actionRegistry){ sheet.innerHTML = '<h2 class="font-headline text-[18px] font-bold">Loading…</h2>'; return; }
-      var html = '<div class="flex justify-between items-center mb-4"><h2 class="font-headline text-[20px] font-bold">New Action</h2>' +
-        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>';
+      if (!actionRegistry){ sheet.innerHTML = '<h2 class="font-display-lg-mobile text-display-lg-mobile text-primary">Loading…</h2>'; return; }
+      var html = '<div class="flex justify-between items-start mb-4"><div>' +
+        '<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary mb-1">Quick Actions</h1>' +
+        '<p class="font-body-sm text-body-sm text-on-surface-variant">Select an operation to begin.</p></div>' +
+        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>' +
+        '<div class="flex flex-col gap-base">';
       actionRegistry.groups.forEach(function(g){
         var inG = actionRegistry.actions.filter(function(a){ return a.group===g; });
         if (!inG.length) return;
-        html += '<div class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mt-4 mb-2">' + g + '</div>' +
-          '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">';
-        inG.forEach(function(a){
-          html += '<button data-id="' + a.id + '" class="tile flex items-center justify-between gap-2 p-3 min-h-[48px] border border-outline-variant rounded-lg ' +
-            'text-[14px] font-semibold text-on-surface hover:bg-surface-container-low hover:border-secondary/40 active:scale-[.98] transition text-left">' +
-            '<span>' + esc(a.label) + '</span>' +
-            '<span class="font-label-caps text-[9px] font-bold uppercase ' + (a.kind==='launch'?'text-outline':'text-secondary') + '">' + (a.kind==='launch'?'open':(a.kind==='checklist'?'list':'inline')) + '</span>' +
-          '</button>';
-        });
-        html += '</div>';
+        var m = GROUP_META[g] || { icon:'tab', sub:'' };
+        var isReceive = g === 'Receive', isResolve = g === 'Resolve';
+        var shell = isReceive ? 'bg-primary-container text-on-primary hover:bg-primary-fixed-variant'
+                  : isResolve ? 'bg-error-container text-on-error-container border border-error/20 hover:bg-error-container/80 mt-2'
+                  : 'bg-surface text-primary border border-outline-variant hover:bg-surface-variant';
+        var tile = isReceive ? 'bg-on-primary/10' : isResolve ? 'bg-error/10' : 'bg-surface-container-high';
+        var ico  = isReceive ? '' : isResolve ? 'text-error' : 'text-primary';
+        var subc = isReceive ? 'text-on-primary-container' : isResolve ? 'text-error/80' : 'text-on-surface-variant';
+        var chev = isReceive ? 'text-on-primary-container' : isResolve ? 'text-error/60' : 'text-outline';
+        var lbl  = isResolve ? 'Resolve NCR' : g;
+        html += '<button data-group="' + g + '" class="js-group w-full flex items-center p-4 rounded-lg min-h-[64px] shadow-sm group active:scale-95 transition ' + shell + '">' +
+          '<div class="w-12 h-12 rounded flex items-center justify-center mr-4 ' + tile + '">' +
+            '<span class="material-symbols-outlined text-[28px] ' + ico + '">' + m.icon + '</span></div>' +
+          '<div class="flex flex-col items-start flex-grow">' +
+            '<span class="font-interactive-label text-interactive-label font-bold">' + esc(lbl) + '</span>' +
+            '<span class="font-body-sm text-body-sm ' + subc + '">' + esc(m.sub) + '</span></div>' +
+          '<span class="material-symbols-outlined ' + chev + '">chevron_right</span></button>';
       });
+      html += '</div>';
       sheet.innerHTML = html;
       document.getElementById('sheetClose').addEventListener('click', closeSheet);
+    }
+
+    // Level 2 — the chosen group's actions (back arrow → picker).
+    function renderGroupActions(g){
+      var inG = actionRegistry.actions.filter(function(a){ return a.group===g; });
+      var html = '<div class="flex items-center gap-2 mb-4">' +
+        '<button id="grpBack" class="material-symbols-outlined text-on-surface-variant">arrow_back</button>' +
+        '<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary">' + esc(g==='Resolve'?'Resolve':g) + '</h1>' +
+        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant ml-auto">close</button></div>' +
+        '<div class="flex flex-col gap-base">';
+      inG.forEach(function(a){
+        var kindLabel = a.kind==='launch' ? 'Opens form' : a.kind==='checklist' ? 'Checklist' : 'Quick entry';
+        html += '<button data-id="' + a.id + '" class="tile w-full bg-surface text-primary border border-outline-variant flex items-center p-4 rounded-lg min-h-[64px] hover:bg-surface-variant shadow-sm active:scale-95 transition text-left">' +
+          '<div class="flex flex-col items-start flex-grow">' +
+            '<span class="font-interactive-label text-interactive-label font-bold text-primary">' + esc(a.label) + '</span>' +
+            '<span class="font-body-sm text-body-sm text-on-surface-variant">' + kindLabel + '</span></div>' +
+          '<span class="material-symbols-outlined text-outline">chevron_right</span></button>';
+      });
+      html += '</div>';
+      sheet.innerHTML = html;
+      document.getElementById('sheetClose').addEventListener('click', closeSheet);
+      document.getElementById('grpBack').addEventListener('click', function(){ renderPicker(); });
     }
 
     function actionById(id){ return actionRegistry.actions.filter(function(a){ return a.id===id; })[0]; }
@@ -663,7 +707,10 @@
     document.getElementById('fab').addEventListener('click', openPicker);
     document.getElementById('sideNew').addEventListener('click', openPicker);
     backdrop.addEventListener('click', function(e){ if (e.target===backdrop) closeSheet(); });
-    sheet.addEventListener('click', function(e){ var t = e.target.closest('.tile'); if (t) handlePick(t.getAttribute('data-id')); });
+    sheet.addEventListener('click', function(e){
+      var grp = e.target.closest('.js-group'); if (grp){ renderGroupActions(grp.getAttribute('data-group')); return; }
+      var t = e.target.closest('.tile'); if (t) handlePick(t.getAttribute('data-id'));
+    });
 
     // ============ nav buttons ============
     document.getElementById('homeBtn').addEventListener('click', function(){ launchForm('Landing'); });
