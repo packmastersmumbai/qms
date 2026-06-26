@@ -100,11 +100,18 @@ function statusToColumn_(type, status) {
   return 'inProgress';
 }
 
-// Age in whole days from a record's display date string (formatDate output).
+// Age in whole days from a record's display date string.
+// getRecordsList emits dates via formatDate -> "DD-Mmm-YYYY". Some logs (e.g.
+// IPQC) carry a non-date in col 2, so date can be a bare/unparseable string
+// that Date() coerces to ~1970, fabricating a huge age (and false overdue).
+// Guard: only trust the known formatDate shape; anything else = unknown age (0).
 function recordAgeDays_(dateStr) {
   if (!dateStr) return 0;
+  if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(String(dateStr).trim())) return 0;
   var d = new Date(dateStr);
   if (isNaN(d.getTime())) return 0;
+  // Reject implausible dates (before 2020) — defends against epoch coercion.
+  if (d.getFullYear() < 2020) return 0;
   var ms = (new Date()).getTime() - d.getTime();
   return ms > 0 ? Math.floor(ms / 86400000) : 0;
 }

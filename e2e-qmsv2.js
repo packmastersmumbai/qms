@@ -38,13 +38,22 @@ function resolveCockpitRole(sheetRole) {
   return 'storage';
 }
 
+// Age guard mirrors Qmsv2.js recordAgeDays_ — only trust DD-Mmm-YYYY, reject pre-2020.
+function ageDaysFrom(dateStr, todayMs) {
+  if (!dateStr) return 0;
+  if (!/^\d{2}-[A-Za-z]{3}-\d{4}$/.test(String(dateStr).trim())) return 0;
+  var d = new Date(dateStr);
+  if (isNaN(d.getTime()) || d.getFullYear() < 2020) return 0;
+  var ms = todayMs - d.getTime();
+  return ms > 0 ? Math.floor(ms / 86400000) : 0;
+}
+
 // Pure board builder: takes records + a fixed "today" so age math is deterministic.
 function buildBoard(type, role, records, todayMs) {
   var threshold = OVERDUE_DAYS[type] || 3;
   var columns = { pending: [], inProgress: [], done: [] };
   records.forEach(function (r) {
-    var d = new Date(r.date);
-    var ageDays = isNaN(d.getTime()) ? 0 : Math.max(0, Math.floor((todayMs - d.getTime()) / 86400000));
+    var ageDays = ageDaysFrom(r.date, todayMs);
     var col = statusToColumn(type, r.status);
     columns[col].push({
       docNo: r.docNo, name: r.name, status: r.status, date: r.date,
@@ -65,7 +74,12 @@ var pass = 0, total = 0;
 function check(name, cond) { total++; var ok = cond === true; console.log((ok ? 'PASS' : 'FAIL') + '  ' + name + (ok ? '' : '  — ' + cond)); if (ok) pass++; }
 
 var TODAY = new Date('2026-06-26T12:00:00').getTime();
-function daysAgo(n) { return new Date(TODAY - n * 86400000).toISOString().slice(0, 10); }
+var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Emit formatDate's "DD-Mmm-YYYY" so the age guard accepts it (matches Records.js).
+function daysAgo(n) {
+  var d = new Date(TODAY - n * 86400000);
+  return String(d.getDate()).padStart(2, '0') + '-' + MON[d.getMonth()] + '-' + d.getFullYear();
+}
 
 // --- statusToStage ---
 check('GRN pending → stage 0', statusToStage('GRN', 'IQC Pending') === 0 || 'got ' + statusToStage('GRN', 'IQC Pending'));
@@ -112,6 +126,23 @@ check('floor-2 → storage (fallback)', resolveCockpitRole('floor-2') === 'stora
 check('qa → inspector', resolveCockpitRole('qa') === 'inspector');
 check('dispatch → dispatch', resolveCockpitRole('dispatch') === 'dispatch');
 check('empty role → storage', resolveCockpitRole('') === 'storage');
+
+// --- age guard (T4 bug fix) — bad dates must NOT fabricate age/overdue ---
+check('valid DD-Mmm-YYYY parses', ageDaysFrom('21-Jun-2026', TODAY) === 5 || 'got ' + ageDaysFrom('21-Jun-2026', TODAY));
+check('empty date → 0', ageDaysFrom('', TODAY) === 0);
+check('ISO date (wrong shape) → 0', ageDaysFrom('2026-06-21', TODAY) === 0);
+check('bare number string → 0', ageDaysFrom('45123', TODAY) === 0);
+check('garbage string → 0', ageDaysFrom('OPEN', TODAY) === 0);
+check('pre-2020 plausible-shape → 0', ageDaysFrom('01-Jan-1970', TODAY) === 0);
+
+// IPQC-style records with non-date in date field must not all flag overdue.
+var ipqc = [
+  { docNo: 'IP-1', name: 'X', status: 'OPEN', date: '45123' },
+  { docNo: 'IP-2', name: 'Y', status: 'OPEN', date: '' }
+];
+var ipqcBoard = buildBoard('IPQC', 'storage', ipqc, TODAY);
+check('IPQC bad-date cards not overdue', ipqcBoard.columns.pending.every(function (c) { return c.overdue === false; }) || 'some overdue');
+check('IPQC bad-date age = 0', ipqcBoard.columns.pending.every(function (c) { return c.ageDays === 0; }) || 'nonzero age');
 
 console.log('----- ' + pass + '/' + total + ' passed -----');
 process.exit(pass === total ? 0 : 1);

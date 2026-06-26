@@ -31,10 +31,63 @@
       padding:8px 10px; min-height:36px; max-width:170px; -webkit-appearance:none;}
     .who-role{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
       color:var(--on-primary); opacity:.7; white-space:nowrap;}
-    .wrap{max-width:560px; margin:0 auto; padding:16px;}
+    .wrap{max-width:760px; margin:0 auto; padding:0 16px 96px;}
     .board-empty{color:var(--muted); font-size:14px; text-align:center; padding:48px 16px;
-      border:1px dashed var(--hairline); border-radius:12px; background:var(--surface);}
+      border:1px dashed var(--hairline); border-radius:12px; background:var(--surface); margin-top:16px;}
     .mono{font-family:'JetBrains Mono',monospace;}
+
+    /* Doc-type tab row */
+    .tabs{position:sticky; top:52px; z-index:9; background:var(--canvas);
+      display:flex; overflow-x:auto; border-bottom:1px solid var(--hairline);
+      -ms-overflow-style:none; scrollbar-width:none;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{flex:0 0 auto; min-height:44px; padding:0 16px; display:flex; align-items:center;
+      font-size:14px; font-weight:600; color:var(--muted); background:none; border:none;
+      border-bottom:2px solid transparent; white-space:nowrap; cursor:pointer;}
+    .tab.active{color:var(--primary); border-bottom-color:var(--primary);}
+    .tab .cnt{margin-left:6px; font-size:11px; font-weight:700; color:var(--faint);}
+
+    /* Card-level filter pills */
+    .filters{display:flex; gap:6px; padding:12px 0 4px;}
+    .pill{min-height:32px; padding:6px 14px; border-radius:9999px; border:1px solid var(--hairline);
+      background:var(--surface); color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;}
+    .pill.active{background:var(--primary); color:var(--on-primary); border-color:var(--primary);}
+
+    /* Status sections */
+    .section{margin-top:20px;}
+    .section h3{font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+      color:var(--muted); margin:0 0 10px; display:flex; align-items:center; gap:8px;}
+    .dot{width:8px; height:8px; border-radius:9999px;}
+    .dot.fail{background:var(--fail);} .dot.prog{background:var(--link);} .dot.pass{background:#16A34A;}
+    .grid{display:grid; grid-template-columns:1fr; gap:12px;}
+    @media(min-width:640px){ .grid{grid-template-columns:1fr 1fr;} }
+
+    /* Card */
+    .card{position:relative; background:var(--surface); border:1px solid var(--hairline);
+      border-radius:12px; padding:14px 14px 14px 16px; overflow:hidden;
+      box-shadow:0 1px 2px rgba(15,23,42,.04);}
+    .card.overdue::before{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--fail);}
+    .card .hd{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+    .badge{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+      padding:2px 8px; border-radius:4px; width:fit-content;}
+    .badge.fail{color:var(--fail); background:#FEE2E2;}
+    .badge.prog{color:var(--link); background:#D3E5FF;}
+    .badge.pass{color:#15803D; background:#DCFCE7;}
+    .docno{font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:500; color:var(--ink); margin-top:4px;}
+    .desc{font-size:13px; color:var(--body); margin:8px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .age{font-size:11px; color:var(--faint); margin-top:2px;}
+
+    /* Pipeline tracker */
+    .pipe{display:flex; justify-content:space-between; align-items:flex-start;
+      margin-top:12px; padding-top:10px; border-top:1px solid var(--hairline);}
+    .node{display:flex; flex-direction:column; align-items:center; gap:4px; flex:1;}
+    .node .bead{width:11px; height:11px; border-radius:9999px; background:#E2E8F0; border:1px solid var(--hairline);}
+    .node.done .bead{background:var(--primary); border-color:var(--primary);}
+    .node.current .bead{background:var(--surface); border:2px solid var(--link);}
+    .node span{font-family:'JetBrains Mono',monospace; font-size:8px; text-transform:uppercase;
+      color:var(--faint); letter-spacing:.02em;}
+    .node.current span{color:var(--link); font-weight:700;}
+    .node.done span{color:var(--body);}
   </style>
 </head>
 <body>
@@ -46,8 +99,14 @@
     </div>
   </header>
 
+  <div class="tabs" id="tabRow"></div>
+
   <main class="wrap">
-    <!-- Board mount point — kanban + cards land here in T3/T4. -->
+    <div class="filters" id="filterRow">
+      <button class="pill active" data-filter="all">All</button>
+      <button class="pill" data-filter="urgent">Urgent</button>
+    </div>
+    <!-- Board render target -->
     <div id="qmsv2Root" class="board-empty">Loading board…</div>
   </main>
 
@@ -56,19 +115,102 @@
     // Selection persists to localStorage; switching re-requests the board for
     // that role's primary tab ("My Work"). Kanban render lands in T4.
     var LS_KEY = 'pmQmsOperator';
+    // All 7 doc-type tabs for every user (locked decision); role only defaults + filters.
+    var DOC_TYPES = ['GRN','IQC','IPQC','OQC','Dispatch','Production','NCR'];
+    var STAGE_LABELS = ['GRN','IQC','PUTAWAY','ISSUE','OQC','DISP'];
+
     var roleStageMap = null;   // cockpitRole -> [docTypes]
     var operators = [];        // [{name, role, shift, cockpitRole}]
     var currentOp = null;
     var currentRole = 'manager';
     var currentType = 'GRN';
+    var currentFilter = 'all';
 
     var root   = document.getElementById('qmsv2Root');
     var sel    = document.getElementById('opSelect');
     var roleEl = document.getElementById('whoRole');
+    var tabRow = document.getElementById('tabRow');
 
     function primaryTabFor(role){
       var tabs = roleStageMap && roleStageMap[role];
       return (tabs && tabs.length) ? tabs[0] : 'GRN';
+    }
+
+    function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+    function renderTabs(){
+      tabRow.innerHTML = '';
+      DOC_TYPES.forEach(function(t){
+        var b = document.createElement('button');
+        b.className = 'tab' + (t === currentType ? ' active' : '');
+        b.textContent = t;
+        b.addEventListener('click', function(){ currentType = t; renderTabs(); loadBoard(); });
+        tabRow.appendChild(b);
+      });
+    }
+
+    // Build a 6-node pipeline tracker from a card's stage index.
+    function pipelineHtml(stage){
+      var html = '<div class="pipe">';
+      for (var i = 0; i < STAGE_LABELS.length; i++){
+        var cls = i < stage ? 'done' : (i === stage ? 'current' : '');
+        html += '<div class="node ' + cls + '"><div class="bead"></div><span>' +
+          STAGE_LABELS[i] + '</span></div>';
+      }
+      return html + '</div>';
+    }
+
+    function cardHtml(card, tone){
+      var overdue = card.overdue ? ' overdue' : '';
+      var age = card.ageDays != null ? (card.ageDays + 'd ago') : '';
+      return '<div class="card' + overdue + '">' +
+        '<div class="hd"><div>' +
+          '<span class="badge ' + tone + '">' + esc(card.status) + '</span>' +
+          '<div class="docno">' + esc(card.docNo) + '</div>' +
+        '</div></div>' +
+        '<p class="desc">' + esc(card.name || '—') + '</p>' +
+        (age ? '<div class="age">' + age + '</div>' : '') +
+        pipelineHtml(card.stage || 0) +
+      '</div>';
+    }
+
+    function sectionHtml(title, dotCls, cards, tone){
+      if (!cards.length) return '';
+      var inner = cards.map(function(c){ return cardHtml(c, tone); }).join('');
+      return '<section class="section"><h3><span class="dot ' + dotCls + '"></span>' +
+        title + ' · ' + cards.length + '</h3><div class="grid">' + inner + '</div></section>';
+    }
+
+    function applyFilter(cards){
+      if (currentFilter === 'urgent') return cards.filter(function(c){ return c.overdue; });
+      return cards;
+    }
+
+    function renderBoard(board){
+      var cols = board.columns;
+      // ACTION REQUIRED = overdue pending first, then remaining pending.
+      var pending = applyFilter(cols.pending);
+      var overdue = pending.filter(function(c){ return c.overdue; });
+      var pendingRest = pending.filter(function(c){ return !c.overdue; });
+      var inProg = applyFilter(cols.inProgress);
+      var done = applyFilter(cols.done);
+
+      var html = '';
+      html += sectionHtml('Action Required', 'fail', overdue, 'fail');
+      html += sectionHtml('Pending', 'prog', pendingRest, 'prog');
+      html += sectionHtml('In Progress', 'prog', inProg, 'prog');
+      html += sectionHtml('Done', 'pass', done, 'pass');
+
+      if (!html){
+        root.className = 'board-empty';
+        root.textContent = currentFilter === 'urgent'
+          ? 'Nothing urgent in ' + currentType + '.'
+          : 'No ' + currentType + ' records.';
+        return;
+      }
+      root.className = '';
+      root.innerHTML = html;
     }
 
     function loadBoard(){
@@ -77,13 +219,10 @@
       google.script.run
         .withSuccessHandler(function(board){
           if (!board || !board.columns){ root.textContent = 'No board data.'; return; }
-          var c = board.counts || {};
-          root.innerHTML = 'Board OK · <span class="mono">' + board.type + '</span> · role ' +
-            '<span class="mono">' + currentRole + '</span> · ' +
-            (c.total||0) + ' records (' + (c.pending||0) + ' pending, ' +
-            (c.inProgress||0) + ' in-progress, ' + (c.done||0) + ' done)';
+          renderBoard(board);
         })
         .withFailureHandler(function(err){
+          root.className = 'board-empty';
           root.textContent = 'Board load failed: ' + (err && err.message ? err.message : err);
         })
         .getQmsv2Board(currentType, currentRole);
@@ -95,8 +234,18 @@
       currentType = primaryTabFor(currentRole);
       roleEl.textContent = currentRole;
       try { if (op) localStorage.setItem(LS_KEY, op.name); } catch(e){}
+      renderTabs();
       loadBoard();
     }
+
+    // Filter pills
+    document.getElementById('filterRow').addEventListener('click', function(e){
+      var btn = e.target.closest('.pill'); if (!btn) return;
+      currentFilter = btn.getAttribute('data-filter');
+      Array.prototype.forEach.call(this.children, function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      loadBoard();
+    });
 
     sel.addEventListener('change', function(){
       var op = operators.filter(function(o){ return o.name === sel.value; })[0];
