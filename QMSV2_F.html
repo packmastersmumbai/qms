@@ -401,6 +401,64 @@
         .getFormHtml(formName);
     }
 
+    // T6: wire the inline form's submit. P1 enables 'move' end-to-end; other
+    // inline actions confirm but the server guards them as not-yet-enabled.
+    function wireInlineSubmit(action){
+      var onhandEl = document.getElementById('onhand');
+      var matEl  = document.getElementById('f_material');
+      var fromEl = document.getElementById('f_fromLoc');
+      var lotEl  = document.getElementById('f_lot');
+
+      // Live on-hand reference for the chosen material + source location.
+      function refreshOnHand(){
+        if (!onhandEl || !matEl || !fromEl) return;
+        var m = matEl.value, f = fromEl.value, lot = lotEl ? lotEl.value : '';
+        if (!m || !f){ onhandEl.textContent = ''; return; }
+        onhandEl.textContent = 'On-hand: …';
+        google.script.run
+          .withSuccessHandler(function(bal){ onhandEl.textContent = 'On-hand at source: ' + bal; })
+          .withFailureHandler(function(){ onhandEl.textContent = ''; })
+          .getOnHand(m, lot, f);
+      }
+      if (matEl)  matEl.addEventListener('change', refreshOnHand);
+      if (fromEl) fromEl.addEventListener('change', refreshOnHand);
+      if (lotEl)  lotEl.addEventListener('change', refreshOnHand);
+
+      var submitBtn = document.getElementById('submitAct');
+      submitBtn.addEventListener('click', function(){
+        var payload = { by: currentOp ? currentOp.name : '' };
+        var ok = true;
+        (action.fields || []).forEach(function(f){
+          var el = document.getElementById('f_' + f.name);
+          var v = el ? el.value : '';
+          payload[f.name] = v;
+          if (f.type !== 'text' && !v) ok = false;   // required (lot optional/text)
+        });
+        if (!ok){ alert('Please fill all fields.'); return; }
+        if (action.id === 'move' && payload.fromLoc === payload.toLoc){
+          alert('Source and destination must differ.'); return;
+        }
+        submitBtn.disabled = true; submitBtn.textContent = 'Working…';
+        google.script.run
+          .withSuccessHandler(function(res){
+            submitBtn.disabled = false; submitBtn.textContent = 'Confirm';
+            if (res && res.success){
+              closeSheet();
+              formData = null;  // stock changed → refresh dropdown source next open
+              loadBoard();
+              alert((action.label) + ' done' + (res.transferId ? ' · ' + res.transferId : ''));
+            } else {
+              alert('Failed: ' + ((res && res.error) || 'unknown error'));
+            }
+          })
+          .withFailureHandler(function(err){
+            submitBtn.disabled = false; submitBtn.textContent = 'Confirm';
+            alert('Error: ' + (err && err.message ? err.message : err));
+          })
+          .runAction(action.id, payload);
+      });
+    }
+
     function handlePick(id){
       var a = actionById(id); if (!a) return;
       if (a.kind === 'launch'){ closeSheet(); launchForm(a.form); return; }

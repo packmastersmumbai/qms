@@ -12,6 +12,7 @@ const SUITES = [
   'e2e-masters-kpi-warehouse.js',
   'e2e-lowstock-logic.js',
   'e2e-qmsv2.js',
+  'e2e-qmsv2-move.js',   // LIVE self-reverting move (writes + undoes LOCATION_TRANSFER)
 ];
 let allOk = true;
 

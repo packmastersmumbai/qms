@@ -227,3 +227,32 @@ function getActionFormData() {
   });
   return { materials: materials, locations: locs, stock: summary };
 }
+
+// On-hand for a material+lot+location, for the inline Move form's reference.
+// lot may be blank (move whole-material at a location); getStockBalance_ keys
+// on exact material|lot|location.
+function getOnHand(materialCode, lot, locationId) {
+  return getStockBalance_(materialCode, lot || '', locationId);
+}
+
+/**
+ * runAction(actionId, payload) — Tier-1 action dispatch (T6).
+ * P1 wires only 'move' end-to-end → recordLocationTransfer (writes STOCK_LEDGER).
+ * Other inline actions are declared in the registry but guarded here until
+ * their phase. Always returns { success, ... } | { success:false, error }.
+ */
+function runAction(actionId, payload) {
+  payload = payload || {};
+  if (actionId === 'move') {
+    return recordLocationTransfer({
+      materialCode:   payload.material,
+      batchOrLotNo:   payload.lot || '',
+      fromLocationId: payload.fromLoc,
+      toLocationId:   payload.toLoc,
+      qty:            payload.qty,
+      reason:         'QMSv2 Move',
+      transferredBy:  payload.by || ''
+    });
+  }
+  return { success: false, error: 'Action "' + actionId + '" is not enabled in P1.' };
+}
