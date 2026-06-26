@@ -28,6 +28,16 @@ function statusToColumn(type, status) {
 
 var OVERDUE_DAYS = { GRN: 2, IQC: 2, IPQC: 1, OQC: 2, Dispatch: 3, Production: 5, NCR: 7 };
 
+// T3: OPERATORS-sheet role (chokepoint duty) → cockpit role. Mirrors Qmsv2.js.
+function resolveCockpitRole(sheetRole) {
+  var r = String(sheetRole || '').toLowerCase().trim();
+  if (r === 'owner' || r === 'admin' || r === 'manager') return 'manager';
+  if (r === 'gate') return 'gate';
+  if (r === 'qa' || r === 'inspector' || r === 'lab')    return 'inspector';
+  if (r === 'dispatch')                                  return 'dispatch';
+  return 'storage';
+}
+
 // Pure board builder: takes records + a fixed "today" so age math is deterministic.
 function buildBoard(type, role, records, todayMs) {
   var threshold = OVERDUE_DAYS[type] || 3;
@@ -92,6 +102,16 @@ check('old pending card flagged overdue', card && card.overdue === true || 'over
 check('recent pending card NOT overdue', board.columns.pending.find(function (c) { return c.docNo === 'GRN-002'; }).overdue === false);
 check('done card never overdue', board.columns.done[0].overdue === false);
 check('card stage index correct (pending GRN = 0)', card && card.stage === 0);
+
+// --- resolveCockpitRole (T3) — seeded OPERATORS roles map correctly ---
+check('owner → manager', resolveCockpitRole('owner') === 'manager');
+check('admin → manager', resolveCockpitRole('admin') === 'manager');
+check('gate → gate', resolveCockpitRole('gate') === 'gate');
+check('floor-1 → storage (fallback)', resolveCockpitRole('floor-1') === 'storage');
+check('floor-2 → storage (fallback)', resolveCockpitRole('floor-2') === 'storage');
+check('qa → inspector', resolveCockpitRole('qa') === 'inspector');
+check('dispatch → dispatch', resolveCockpitRole('dispatch') === 'dispatch');
+check('empty role → storage', resolveCockpitRole('') === 'storage');
 
 console.log('----- ' + pass + '/' + total + ' passed -----');
 process.exit(pass === total ? 0 : 1);

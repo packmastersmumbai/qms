@@ -27,9 +27,36 @@ function getRoleStageMap() {
   return QMSV2_ROLE_STAGES;
 }
 
-// Passthrough so the cockpit has one server namespace; getOperators lives in Scan.js.
+/**
+ * Resolve an OPERATORS-sheet role (location/duty value like 'gate','floor-1',
+ * 'admin','owner') to a cockpit role key in QMSV2_ROLE_STAGES.
+ * The sheet's 'role' column is chokepoint duty, NOT a cockpit role — this is
+ * the single mapping point. Unknown roles fall back to 'storage' (floor duty).
+ */
+function resolveCockpitRole_(sheetRole) {
+  var r = String(sheetRole || '').toLowerCase().trim();
+  if (r === 'owner' || r === 'admin' || r === 'manager') return 'manager';
+  if (r === 'gate') return 'gate';
+  if (r === 'qa' || r === 'inspector' || r === 'lab')    return 'inspector';
+  if (r === 'dispatch')                                  return 'dispatch';
+  // floor-1 / floor-2 / storage / anything else = floor storage duty
+  return 'storage';
+}
+
+/**
+ * Operators for the cockpit identity dropdown, each carrying a resolved
+ * cockpitRole so the client never has to know the sheet→role mapping.
+ * Shape: [{ name, role, shift, cockpitRole }].
+ */
 function getQmsv2Operators() {
-  return getOperators();
+  return (getOperators() || []).map(function (op) {
+    return {
+      name: op.name,
+      role: op.role,
+      shift: op.shift,
+      cockpitRole: resolveCockpitRole_(op.role)
+    };
+  });
 }
 
 /**
