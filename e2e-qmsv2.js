@@ -144,5 +144,33 @@ var ipqcBoard = buildBoard('IPQC', 'storage', ipqc, TODAY);
 check('IPQC bad-date cards not overdue', ipqcBoard.columns.pending.every(function (c) { return c.overdue === false; }) || 'some overdue');
 check('IPQC bad-date age = 0', ipqcBoard.columns.pending.every(function (c) { return c.ageDays === 0; }) || 'nonzero age');
 
+// --- action registry (T5) — mirrors Qmsv2.js QMSV2_ACTIONS shape contract ---
+var GROUPS = ['Receive','Inspect','Make','Ship','Move','Resolve'];
+var ACTIONS = [
+  { id:'grn', group:'Receive', kind:'launch', form:'GRN' },
+  { id:'iqc', group:'Inspect', kind:'launch', form:'IQC' },
+  { id:'ipqc', group:'Inspect', kind:'launch', form:'IPQC' },
+  { id:'oqc', group:'Inspect', kind:'launch', form:'OQC' },
+  { id:'sample', group:'Inspect', kind:'inline', fields:[{name:'material'}] },
+  { id:'production', group:'Make', kind:'launch', form:'Production' },
+  { id:'issue', group:'Make', kind:'inline', fields:[{name:'qty'}] },
+  { id:'rework', group:'Make', kind:'launch', form:'Rework' },
+  { id:'dispatch', group:'Ship', kind:'launch', form:'Dispatch' },
+  { id:'move', group:'Move', kind:'inline', fields:[{name:'fromLoc'},{name:'toLoc'},{name:'qty'}] },
+  { id:'ncr', group:'Resolve', kind:'launch', form:'NCR' },
+  { id:'custreturn', group:'Resolve', kind:'launch', form:'CustomerReturn' },
+  { id:'scrap', group:'Resolve', kind:'inline', fields:[{name:'qty'}] }
+];
+// Valid getFormHtml pageMap form names (must stay in sync with Code.js).
+var VALID_FORMS = ['GRN','IQC','OQC','IPQC','Production','Dispatch','NCR','CustomerReturn','Rework','Landing'];
+
+check('every action has id/group/kind', ACTIONS.every(function(a){ return a.id && a.group && a.kind; }));
+check('every group present in registry', GROUPS.every(function(g){ return ACTIONS.some(function(a){ return a.group === g; }); }));
+check('launch actions reference a valid form', ACTIONS.filter(function(a){ return a.kind==='launch'; }).every(function(a){ return VALID_FORMS.indexOf(a.form) !== -1; }) || 'invalid form ref');
+check('inline actions have fields', ACTIONS.filter(function(a){ return a.kind==='inline'; }).every(function(a){ return a.fields && a.fields.length; }));
+check('exactly one Move action (P1 proof)', ACTIONS.filter(function(a){ return a.id==='move'; }).length === 1);
+check('Move is inline with from+to+qty', (function(){ var m = ACTIONS.filter(function(a){return a.id==='move';})[0]; var names = m.fields.map(function(f){return f.name;}); return m.kind==='inline' && names.indexOf('fromLoc')>=0 && names.indexOf('toLoc')>=0 && names.indexOf('qty')>=0; })());
+check('action ids unique', (function(){ var s={}; for (var i=0;i<ACTIONS.length;i++){ if (s[ACTIONS[i].id]) return 'dup '+ACTIONS[i].id; s[ACTIONS[i].id]=1; } return true; })());
+
 console.log('----- ' + pass + '/' + total + ' passed -----');
 process.exit(pass === total ? 0 : 1);

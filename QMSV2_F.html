@@ -88,11 +88,43 @@
       color:var(--faint); letter-spacing:.02em;}
     .node.current span{color:var(--link); font-weight:700;}
     .node.done span{color:var(--body);}
+
+    /* FAB + action picker */
+    .fab{position:fixed; right:18px; bottom:24px; z-index:20; width:56px; height:56px;
+      border-radius:9999px; background:var(--primary); color:var(--on-primary); border:none;
+      font-size:28px; line-height:1; cursor:pointer; box-shadow:0 6px 16px rgba(13,27,110,.35);}
+    .sheet-backdrop{position:fixed; inset:0; z-index:30; background:rgba(15,23,42,.45);
+      display:none; align-items:flex-end; justify-content:center;}
+    .sheet-backdrop.open{display:flex;}
+    .sheet{background:var(--surface); width:100%; max-width:760px; max-height:82vh; overflow-y:auto;
+      border-radius:16px 16px 0 0; padding:16px 16px 28px;}
+    .sheet h2{font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; font-weight:700;
+      margin:4px 0 14px;}
+    .grp-label{font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+      color:var(--muted); margin:16px 0 8px;}
+    .tiles{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+    @media(min-width:480px){ .tiles{grid-template-columns:1fr 1fr 1fr;} }
+    .tile{min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:8px;
+      padding:12px; border:1px solid var(--hairline); border-radius:10px; background:var(--surface);
+      font-size:14px; font-weight:600; color:var(--ink); cursor:pointer; text-align:left;}
+    .tile .kind{font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+      color:var(--faint);}
+    .tile.inline .kind{color:var(--link);}
+    .field{margin-top:12px;}
+    .field label{display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px;}
+    .field input, .field select{width:100%; min-height:44px; padding:10px 12px; font-size:15px;
+      border:1px solid var(--hairline-strong,#CBD5E1); border-radius:10px; background:var(--surface);
+      color:var(--ink); -webkit-appearance:none;}
+    .sheet-actions{display:flex; gap:10px; margin-top:18px;}
+    .btn{flex:1; min-height:48px; border-radius:10px; border:none; font-size:15px; font-weight:700; cursor:pointer;}
+    .btn-primary{background:var(--primary); color:var(--on-primary);}
+    .btn-ghost{background:var(--surface); color:var(--body); border:1px solid var(--hairline);}
+    .onhand{font-size:12px; color:var(--muted); margin-top:4px;}
   </style>
 </head>
 <body>
   <header class="topbar">
-    <h1>QMS Cockpit</h1>
+    <h1 id="homeBtn" style="cursor:pointer;" title="Back to Home">← QMS Cockpit</h1>
     <div class="who" id="whoSlot">
       <span class="who-role" id="whoRole"></span>
       <select id="opSelect" aria-label="Select operator"><option value="">Loading…</option></select>
@@ -109,6 +141,12 @@
     <!-- Board render target -->
     <div id="qmsv2Root" class="board-empty">Loading board…</div>
   </main>
+
+  <button class="fab" id="fab" aria-label="New action">+</button>
+
+  <div class="sheet-backdrop" id="sheetBackdrop">
+    <div class="sheet" id="sheet"><!-- picker or inline form rendered here --></div>
+  </div>
 
   <script>
     // T3: identity dropdown (from getQmsv2Operators) → currentRole → board.
@@ -280,8 +318,110 @@
         .getQmsv2Operators();
     }
 
+    // ---- Action picker (T5) ----
+    var actionRegistry = null;   // { groups:[], actions:[] }
+    var formData = null;         // { materials, locations, stock } — lazy
+    var backdrop = document.getElementById('sheetBackdrop');
+    var sheet = document.getElementById('sheet');
+
+    function openSheet(){ backdrop.classList.add('open'); }
+    function closeSheet(){ backdrop.classList.remove('open'); sheet.innerHTML = ''; }
+
+    function renderPicker(){
+      if (!actionRegistry){ sheet.innerHTML = '<h2>Loading actions…</h2>'; return; }
+      var html = '<h2>New Action</h2>';
+      actionRegistry.groups.forEach(function(g){
+        var inGroup = actionRegistry.actions.filter(function(a){ return a.group === g; });
+        if (!inGroup.length) return;
+        html += '<div class="grp-label">' + g + '</div><div class="tiles">';
+        inGroup.forEach(function(a){
+          html += '<button class="tile ' + a.kind + '" data-id="' + a.id + '">' +
+            '<span>' + esc(a.label) + '</span>' +
+            '<span class="kind">' + (a.kind === 'launch' ? 'open' : 'inline') + '</span>' +
+          '</button>';
+        });
+        html += '</div>';
+      });
+      sheet.innerHTML = html;
+    }
+
+    function actionById(id){
+      return actionRegistry.actions.filter(function(a){ return a.id === id; })[0];
+    }
+
+    // T5: render a config-driven inline form. T6 wires Move's real submit.
+    function renderInlineForm(action){
+      var html = '<h2>' + esc(action.label) + '</h2>';
+      (action.fields || []).forEach(function(f){
+        html += '<div class="field"><label>' + esc(f.name) + '</label>';
+        if (f.type === 'material'){
+          html += '<select data-field="' + f.name + '" id="f_' + f.name + '"><option value="">Select material…</option>' +
+            ((formData && formData.materials) || []).map(function(m){
+              return '<option value="' + esc(m.code) + '">' + esc(m.code) + '</option>'; }).join('') +
+            '</select>';
+        } else if (f.type === 'location'){
+          html += '<select data-field="' + f.name + '" id="f_' + f.name + '"><option value="">Select location…</option>' +
+            ((formData && formData.locations) || []).map(function(l){
+              return '<option value="' + esc(l.id) + '">' + esc(l.label) + '</option>'; }).join('') +
+            '</select>';
+        } else if (f.type === 'number'){
+          html += '<input type="number" inputmode="decimal" data-field="' + f.name + '" id="f_' + f.name + '" min="0" step="any">';
+        } else {
+          html += '<input type="text" data-field="' + f.name + '" id="f_' + f.name + '">';
+        }
+        html += '</div>';
+      });
+      html += '<div class="onhand" id="onhand"></div>';
+      html += '<div class="sheet-actions">' +
+        '<button class="btn btn-ghost" id="cancelAct">Cancel</button>' +
+        '<button class="btn btn-primary" id="submitAct" data-id="' + action.id + '">Confirm</button>' +
+      '</div>';
+      sheet.innerHTML = html;
+      document.getElementById('cancelAct').addEventListener('click', closeSheet);
+      // T6 attaches the real submit + on-hand for 'move'; placeholder otherwise.
+      if (typeof wireInlineSubmit === 'function') wireInlineSubmit(action);
+    }
+
+    function openInlineForm(action){
+      sheet.innerHTML = '<h2>Loading…</h2>';
+      if (formData){ renderInlineForm(action); return; }
+      google.script.run
+        .withSuccessHandler(function(fd){ formData = fd || {}; renderInlineForm(action); })
+        .withFailureHandler(function(){ formData = { materials:[], locations:[] }; renderInlineForm(action); })
+        .getActionFormData();
+    }
+
+    // Launch a Tier-2 form the same way other forms route: fetch its HTML and
+    // full-page swap (getFormHtml + document.write). navigateTo is NOT in scope
+    // here — each form is a full page, not an in-SPA injection.
+    function launchForm(formName){
+      google.script.run
+        .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
+        .withFailureHandler(function(){ closeSheet(); alert('Could not open ' + formName); })
+        .getFormHtml(formName);
+    }
+
+    function handlePick(id){
+      var a = actionById(id); if (!a) return;
+      if (a.kind === 'launch'){ closeSheet(); launchForm(a.form); return; }
+      openInlineForm(a);
+    }
+
+    document.getElementById('fab').addEventListener('click', function(){
+      renderPicker(); openSheet();
+    });
+    document.getElementById('homeBtn').addEventListener('click', function(){ launchForm('Landing'); });
+    backdrop.addEventListener('click', function(e){ if (e.target === backdrop) closeSheet(); });
+    sheet.addEventListener('click', function(e){
+      var tile = e.target.closest('.tile'); if (tile){ handlePick(tile.getAttribute('data-id')); }
+    });
+
     // Load the role→tab map first (so primaryTabFor is correct), then operators.
     (function init(){
+      google.script.run
+        .withSuccessHandler(function(reg){ actionRegistry = reg; })
+        .getQmsv2Actions();
+
       google.script.run
         .withSuccessHandler(function(map){ roleStageMap = map || {}; loadOperators(); })
         .withFailureHandler(function(){ roleStageMap = {}; loadOperators(); })

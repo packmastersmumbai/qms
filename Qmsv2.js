@@ -161,3 +161,69 @@ function getQmsv2Board(type, role) {
     }
   };
 }
+
+// ---------------------------------------------------------------------------
+// Action registry (T5) — the "+" picker.
+//   kind:'launch' → client navigateTo(form); existing Tier-2 flow, NOT rebuilt.
+//   kind:'inline' → client renders a config-driven form; runAction handles submit.
+// Groups: Receive · Inspect · Make · Ship · Move · Resolve.
+// In P1 only 'move' is wired end-to-end (T6); other inline actions are
+// declared (so the picker is complete) but runAction guards them as not-yet.
+// ---------------------------------------------------------------------------
+var QMSV2_ACTIONS = [
+  // Receive
+  { id:'grn',        label:'Goods Receipt',   group:'Receive', kind:'launch', form:'GRN' },
+  // Inspect
+  { id:'iqc',        label:'Incoming QC',     group:'Inspect', kind:'launch', form:'IQC' },
+  { id:'ipqc',       label:'In-Process QC',   group:'Inspect', kind:'launch', form:'IPQC' },
+  { id:'oqc',        label:'Outgoing QC',     group:'Inspect', kind:'launch', form:'OQC' },
+  { id:'sample',     label:'Pull Sample',     group:'Inspect', kind:'inline', serverFn:'runAction',
+    fields:[{ name:'material', type:'material' }, { name:'lot', type:'text' }, { name:'qty', type:'number' }] },
+  // Make
+  { id:'production',  label:'Production Job',  group:'Make',    kind:'launch', form:'Production' },
+  { id:'issue',       label:'Issue RM',        group:'Make',    kind:'inline', serverFn:'runAction',
+    fields:[{ name:'material', type:'material' }, { name:'lot', type:'text' },
+            { name:'fromLoc', type:'location' }, { name:'qty', type:'number' }] },
+  { id:'rework',      label:'Rework Complete', group:'Make',    kind:'launch', form:'Rework' },
+  // Ship
+  { id:'dispatch',    label:'Dispatch',        group:'Ship',    kind:'launch', form:'Dispatch' },
+  // Move — the P1 proof-of-write (T6)
+  { id:'move',        label:'Move / Putaway',  group:'Move',    kind:'inline', serverFn:'runAction',
+    fields:[{ name:'material', type:'material' }, { name:'lot', type:'text' },
+            { name:'fromLoc', type:'location' }, { name:'toLoc', type:'location' },
+            { name:'qty', type:'number' }] },
+  // Resolve
+  { id:'ncr',         label:'Raise NCR',       group:'Resolve', kind:'launch', form:'NCR' },
+  { id:'custreturn',  label:'Customer Return', group:'Resolve', kind:'launch', form:'CustomerReturn' },
+  { id:'scrap',       label:'Scrap',           group:'Resolve', kind:'inline', serverFn:'runAction',
+    fields:[{ name:'material', type:'material' }, { name:'lot', type:'text' },
+            { name:'fromLoc', type:'location' }, { name:'qty', type:'number' }] }
+];
+
+// Group display order for the picker.
+var QMSV2_ACTION_GROUPS = ['Receive', 'Inspect', 'Make', 'Ship', 'Move', 'Resolve'];
+
+function getQmsv2Actions() {
+  return { groups: QMSV2_ACTION_GROUPS, actions: QMSV2_ACTIONS };
+}
+
+// Form-source data for inline action dropdowns (lazy — client requests when an
+// inline action opens). Shapes verified against Warehouse.js:
+//   getStockSummary -> [{materialCode, batchOrLotNo, locationId, balance}]
+//   getLocations    -> [{id, label, type, ...}]
+function getActionFormData() {
+  var summary = getStockSummary() || [];
+  // Distinct material codes that currently have stock.
+  var seen = {}, materials = [];
+  summary.forEach(function(s){
+    var code = String(s.materialCode || '').trim();
+    if (!code || seen[code]) return;
+    seen[code] = true;
+    materials.push({ code: code });
+  });
+  materials.sort(function(a, b){ return a.code < b.code ? -1 : 1; });
+  var locs = (getLocations() || []).map(function(l){
+    return { id: String(l.id), label: String(l.label || l.id) };
+  });
+  return { materials: materials, locations: locs, stock: summary };
+}
