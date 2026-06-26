@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PM QMS - Action Picker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&amp;family=Inter:wght@400;500;700&amp;family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"secondary-fixed": "#d8e2ff", "tertiary-fixed": "#ffdbd1", "on-primary-container": "#7c88dc", "primary-container": "#0d1b6e", "on-background": "#151c27", "inverse-surface": "#2a313d", "surface-container": "#e7eefe", "on-tertiary": "#ffffff", "tertiary-container": "#4e1000", "on-primary": "#ffffff", "surface-container-high": "#e2e8f8", "error-container": "#ffdad6", "inverse-on-surface": "#ebf1ff", "surface-container-lowest": "#ffffff", "inverse-primary": "#bbc3ff", surface: "#f9f9ff", "surface-tint": "#4c57a9", "primary-fixed": "#dfe0ff", error: "#ba1a1a", "outline-variant": "#c6c5d3", "on-tertiary-container": "#d27458", "surface-dim": "#d3daea", "on-surface": "#151c27", "primary-fixed-dim": "#bbc3ff", "on-secondary": "#ffffff", "surface-container-low": "#f0f3ff", "on-primary-fixed-variant": "#333f8f", "secondary-fixed-dim": "#aec6ff", "on-secondary-fixed": "#001a43", "surface-bright": "#f9f9ff", primary: "#000747", tertiary: "#2a0500", "surface-variant": "#dce2f3", secondary: "#0057c0", "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb59f", "on-secondary-container": "#fefcff", "on-surface-variant": "#454651", "secondary-container": "#006ff0", "surface-container-highest": "#dce2f3", "on-secondary-fixed-variant": "#004397", "on-tertiary-fixed": "#3b0a00", background: "#f9f9ff", "on-primary-fixed": "#000d60", "on-tertiary-fixed-variant": "#793019", "on-error-container": "#93000a", outline: "#767682"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"margin-desktop": "32px", "touch-target-min": "48px", "pipeline-gap": "4px", gutter: "16px", "margin-mobile": "16px", base: "8px"}, fontFamily: {"headline-md": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "interactive-label": ["Public Sans"], "body-sm": ["Inter"], "label-caps": ["Public Sans"], "body-lg": ["Inter"]}, fontSize: {"headline-md": ["20px", {lineHeight: "28px", fontWeight: "600"}], "display-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700"}], "interactive-label": ["16px", {lineHeight: "24px", fontWeight: "500"}], "body-sm": ["14px", {lineHeight: "20px", fontWeight: "400"}], "label-caps": ["12px", {lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}]}}}};</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background h-full flex flex-col font-body-lg">
+<!-- Top Navigation -->
+<header class="bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-headline-md text-headline-md font-body-lg text-body-lg docked full-width top-0 flat no shadows flex justify-between items-center w-full px-margin-mobile h-touch-target-min flex-shrink-0 z-50">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined w-touch-target-min h-touch-target-min flex items-center justify-center hover:bg-primary-container transition-colors rounded">menu</button>
+<span class="font-headline-md text-headline-md font-bold text-on-primary">PM QMS</span>
+</div>
+<div class="flex items-center">
+<button class="material-symbols-outlined w-touch-target-min h-touch-target-min flex items-center justify-center hover:bg-primary-container transition-colors rounded">search</button>
+<img alt="User Picker Avatar" class="w-8 h-8 rounded-full ml-2 object-cover border border-outline-variant" data-alt="A small circular avatar image showing a professional industrial worker in a hard hat, lit with bright, neutral lighting suitable for a corporate quality management system UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuRjUJUla-Rz82AI901w1ry4uQMIxkqlTRwlGHtRzCY2wC0rbNeFT-5fkrgsQIHSd0IqxauKP0lZ_vR_9uaYNFIyTuASnOcnX-h-EqlllngYfAQpwywlU2jICbPXh4DeugIKipw8xgOUv-j7dGLpeLj4QMo7kLdNiVotB-4PxPSj8OuIU21Sfk1GWPbB5zFdzEarM7EsV3H8uJeWPAlk8y6wJwyEaWZWJKhObg8UnL8r9i4oJVFauSO_tWE5IhmdPTfxCunI_GYs5n"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col p-margin-mobile gap-base overflow-y-auto pb-24">
+<div class="mb-4">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary mb-2">Quick Actions</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Select an operation to begin.</p>
+</div>
+<!-- Action Grid - Stacked for Mobile "Gloved" use -->
+<div class="flex flex-col gap-base">
+<!-- Receive -->
+<button class="w-full bg-primary-container text-on-primary flex items-center p-4 rounded-lg min-h-[64px] hover:bg-primary-fixed-variant transition-colors shadow-sm group active:scale-95 duration-100">
+<div class="w-12 h-12 rounded bg-on-primary/10 flex items-center justify-center mr-4 group-hover:bg-on-primary/20 transition-colors">
+<span class="material-symbols-outlined text-[28px]">inventory</span>
+</div>
+<div class="flex flex-col items-start flex-grow">
+<span class="font-interactive-label text-interactive-label font-bold">Receive</span>
+<span class="font-body-sm text-body-sm text-on-primary-container">Inbound materials &amp; GRN</span>
+</div>
+<span class="material-symbols-outlined text-on-primary-container">chevron_right</span>
+</button>
+<!-- Inspect -->
+<button class="w-full bg-surface text-primary border border-outline-variant flex items-center p-4 rounded-lg min-h-[64px] hover:bg-surface-variant transition-colors shadow-sm group active:scale-95 duration-100">
+<div class="w-12 h-12 rounded bg-surface-container-high flex items-center justify-center mr-4 group-hover:bg-outline-variant transition-colors">
+<span class="material-symbols-outlined text-[28px] text-primary">biotech</span>
+</div>
+<div class="flex flex-col items-start flex-grow">
+<span class="font-interactive-label text-interactive-label font-bold text-primary">Inspect</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">IQC, IPQC, OQC Forms</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+<!-- Make -->
+<button class="w-full bg-surface text-primary border border-outline-variant flex items-center p-4 rounded-lg min-h-[64px] hover:bg-surface-variant transition-colors shadow-sm group active:scale-95 duration-100">
+<div class="w-12 h-12 rounded bg-surface-container-high flex items-center justify-center mr-4 group-hover:bg-outline-variant transition-colors">
+<span class="material-symbols-outlined text-[28px] text-primary">precision_manufacturing</span>
+</div>
+<div class="flex flex-col items-start flex-grow">
+<span class="font-interactive-label text-interactive-label font-bold text-primary">Make</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Production runs &amp; batches</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+<!-- Ship -->
+<button class="w-full bg-surface text-primary border border-outline-variant flex items-center p-4 rounded-lg min-h-[64px] hover:bg-surface-variant transition-colors shadow-sm group active:scale-95 duration-100">
+<div class="w-12 h-12 rounded bg-surface-container-high flex items-center justify-center mr-4 group-hover:bg-outline-variant transition-colors">
+<span class="material-symbols-outlined text-[28px] text-primary">local_shipping</span>
+</div>
+<div class="flex flex-col items-start flex-grow">
+<span class="font-interactive-label text-interactive-label font-bold text-primary">Ship</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Dispatch &amp; logistics</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+<!-- Move -->
+<button class="w-full bg-surface text-primary border border-outline-variant flex items-center p-4 rounded-lg min-h-[64px] hover:bg-surface-variant transition-colors shadow-sm group active:scale-95 duration-100">
+<div class="w-12 h-12 rounded bg-surface-container-high flex items-center justify-center mr-4 group-hover:bg-outline-variant transition-colors">
+<span class="material-symbols-outlined text-[28px] text-primary">swap_horiz</span>
+</div>
+<div class="flex flex-col items-start flex-grow">
+<span class="font-interactive-label text-interactive-label font-bold text-primary">Move</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Internal transfers</span>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</button>
+<!-- Resolve (Critical Action) -->
+<button class="w-full bg-error-container text-on-error-container border border-error/20 flex items-center p-4 rounded-lg min-h-[64px] hover:bg-error-container/80 transition-colors shadow-sm group active:scale-95 duration-100 mt-2">
+<div class="w-12 h-12 rounded bg-error/10 flex items-center justify-center mr-4 group-hover:bg-error/20 transition-colors">
+<span class="material-symbols-outlined text-[28px] text-error">report_problem</span>
+</div>
+<div class="flex flex-col items-start flex-grow">
+<span class="font-interactive-label text-interactive-label font-bold text-error">Resolve NCR</span>
+<span class="font-body-sm text-body-sm text-error/80">Address non-conformances</span>
+</div>
+<span class="material-symbols-outlined text-error/60">chevron_right</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-touch-target-min px-margin-mobile bg-surface-container-highest dark:bg-inverse-surface border-t border-outline-variant shadow-lg z-50 font-label-caps text-label-caps-mobile pb-env-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant w-full h-full active:bg-surface-variant" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant w-full h-full active:bg-surface-variant" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="mt-1">Trace</span>
+</a>
+<!-- Active Action Picker is not inherently one of these tabs, but implies Dashboard/Home context, or just a distinct modal state. Assuming Home context for now. Let's make none active to focus on the action picker canvas, or keep Home active. Let's keep Home active. -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 h-[80%] active:bg-surface-variant shadow-inner" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="mt-1 font-bold">Action</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant w-full h-full active:bg-surface-variant" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="mt-1">Records</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant w-full h-full active:bg-surface-variant" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="mt-1">User</span>
+</a>
+</nav>
+<style>
+        /* Safe area padding for mobile notch/home indicator */
+        .pb-env-safe {
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+            height: calc(48px + env(safe-area-inset-bottom, 16px));
+        }
+    </style>
+</body></html>

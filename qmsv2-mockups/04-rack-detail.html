@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rack Location Details - PM QMS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#d8e2ff",
+                        "surface-container-high": "#e2e8f8",
+                        "surface-variant": "#dce2f3",
+                        "outline": "#767682",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#d27458",
+                        "surface": "#f9f9ff",
+                        "on-primary-fixed": "#000d60",
+                        "surface-bright": "#f9f9ff",
+                        "tertiary-fixed": "#ffdbd1",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb59f",
+                        "secondary-fixed-dim": "#aec6ff",
+                        "on-background": "#151c27",
+                        "inverse-on-surface": "#ebf1ff",
+                        "on-secondary-container": "#fefcff",
+                        "background": "#f9f9ff",
+                        "inverse-surface": "#2a313d",
+                        "on-tertiary-fixed-variant": "#793019",
+                        "primary-fixed": "#dfe0ff",
+                        "on-secondary-fixed-variant": "#004397",
+                        "secondary": "#0057c0",
+                        "on-surface": "#151c27",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "primary": "#000747",
+                        "primary-fixed-dim": "#bbc3ff",
+                        "on-tertiary-fixed": "#3b0a00",
+                        "inverse-primary": "#bbc3ff",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#4c57a9",
+                        "surface-dim": "#d3daea",
+                        "surface-container-highest": "#dce2f3",
+                        "surface-container-low": "#f0f3ff",
+                        "primary-container": "#0d1b6e",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c6c5d3",
+                        "surface-container": "#e7eefe",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#006ff0",
+                        "on-surface-variant": "#454651",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#001a43",
+                        "on-primary-fixed-variant": "#333f8f",
+                        "tertiary": "#2a0500",
+                        "on-primary-container": "#7c88dc",
+                        "tertiary-container": "#4e1000"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "pipeline-gap": "4px",
+                        "base": "8px",
+                        "gutter": "16px",
+                        "touch-target-min": "48px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "interactive-label": ["Public Sans"],
+                        "label-caps": ["Public Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "interactive-label": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .row-hover-effect { transition: background-color 0.2s ease; }
+        .row-hover-effect:active { background-color: theme('colors.surface-container-high'); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-lg min-h-screen flex flex-col md:hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- Header (Transactional - No Global Nav) -->
+<header class="bg-surface sticky top-0 z-10 px-margin-mobile pt-4 pb-3 border-b border-outline-variant/30 shadow-sm backdrop-blur-sm bg-surface/90">
+<div class="flex items-center gap-3">
+<button aria-label="Go back" class="h-touch-target-min w-10 flex items-center justify-center text-on-surface-variant active:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="font-headline-md text-headline-md font-mono tracking-tight text-on-surface">GF-RM-A1-R3</h1>
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+                    RM <span class="text-outline text-[10px]">●</span> Aisle 1 <span class="text-outline text-[10px]">●</span> Rack 3
+                </span>
+</div>
+<div class="ml-auto">
+<button aria-label="More options" class="h-touch-target-min w-10 flex items-center justify-center text-on-surface-variant active:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col px-margin-mobile py-4 gap-6 overflow-y-auto">
+<!-- Capacity Overview -->
+<section class="flex flex-col gap-2">
+<div class="flex justify-between items-end mb-1">
+<span class="font-interactive-label text-interactive-label text-on-surface">Rack Capacity</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">78% full · 0.4 m³ free</span>
+</div>
+<!-- Progress Bar: Amber for nearing capacity -->
+<div class="h-3 w-full bg-surface-container-highest rounded-full overflow-hidden border border-outline-variant/20 relative">
+<!-- Track overlay for subtle texture -->
+<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSJub25lIi8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMwMDAiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPgo8L3N2Zz4=')] opacity-50 mix-blend-multiply pointer-events-none"></div>
+<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="78" class="h-full bg-[#F59E0B] rounded-full transition-all duration-500 ease-out" role="progressbar" style="width: 78%;"></div>
+<!-- Warning threshold marker -->
+<div class="absolute top-0 bottom-0 left-[90%] w-px bg-error z-10" title="Critical Capacity Threshold (90%)"></div>
+</div>
+</section>
+<!-- Stored Here Section -->
+<section class="flex flex-col gap-3 flex-1 pb-24">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider mb-1 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">inventory_2</span>
+                Stored Here (3 Lots)
+            </h2>
+<div class="flex flex-col gap-2">
+<!-- Row 1: Red -->
+<div class="relative bg-surface-container-lowest rounded-lg border border-outline-variant/40 p-3 flex items-start gap-3 row-hover-effect cursor-pointer group active:scale-[0.99] transition-transform">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-error rounded-l-lg"></div>
+<div class="flex-1 min-w-0 pl-1 flex flex-col gap-1">
+<div class="flex justify-between items-start gap-2">
+<h3 class="font-interactive-label text-interactive-label text-on-surface truncate">HDPE Pellets</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">500 kg</span>
+</div>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="font-mono text-[13px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded">L-2399-A</span>
+<span class="font-label-caps text-[10px] bg-error-container text-on-error-container px-2 py-0.5 rounded-full uppercase tracking-wider">Apr · oldest</span>
+</div>
+</div>
+<div class="flex items-center self-center text-outline-variant opacity-0 group-active:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+<!-- Row 2: Amber -->
+<div class="relative bg-surface-container-lowest rounded-lg border border-outline-variant/40 p-3 flex items-start gap-3 row-hover-effect cursor-pointer group active:scale-[0.99] transition-transform">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-[#F59E0B] rounded-l-lg"></div>
+<div class="flex-1 min-w-0 pl-1 flex flex-col gap-1">
+<div class="flex justify-between items-start gap-2">
+<h3 class="font-interactive-label text-interactive-label text-on-surface truncate">Resin Polycarbonate</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">400 kg</span>
+</div>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="font-mono text-[13px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded">LOT-8892-A</span>
+<span class="font-label-caps text-[10px] bg-[#FEF3C7] text-[#92400E] px-2 py-0.5 rounded-full uppercase tracking-wider">Jun</span>
+</div>
+</div>
+<div class="flex items-center self-center text-outline-variant opacity-0 group-active:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+<!-- Row 3: Green -->
+<div class="relative bg-surface-container-lowest rounded-lg border border-outline-variant/40 p-3 flex items-start gap-3 row-hover-effect cursor-pointer group active:scale-[0.99] transition-transform">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-[#10B981] rounded-l-lg"></div>
+<div class="flex-1 min-w-0 pl-1 flex flex-col gap-1">
+<div class="flex justify-between items-start gap-2">
+<h3 class="font-interactive-label text-interactive-label text-on-surface truncate">Aluminum Ingot</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">300 kg</span>
+</div>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="font-mono text-[13px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded">B-7782</span>
+<span class="font-label-caps text-[10px] bg-[#D1FAE5] text-[#065F46] px-2 py-0.5 rounded-full uppercase tracking-wider">Jul</span>
+</div>
+</div>
+<div class="flex items-center self-center text-outline-variant opacity-0 group-active:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Contextual helper text -->
+<div class="mt-4 flex items-start gap-2 p-3 bg-surface-container-low rounded-lg border border-outline-variant/20">
+<span class="material-symbols-outlined text-outline text-[20px]" style="font-variation-settings: 'FILL' 1;">info</span>
+<p class="font-body-sm text-[13px] leading-snug text-on-surface-variant">Tap a row to reveal quick actions for that specific lot, such as cycle count or quarantine.</p>
+</div>
+</section>
+</main>
+<!-- Sticky Footer Actions -->
+<div class="fixed bottom-0 left-0 w-full bg-surface/95 backdrop-blur-md border-t border-outline-variant/30 p-margin-mobile shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-40">
+<div class="flex flex-col gap-3 max-w-md mx-auto">
+<!-- Primary Action -->
+<button class="w-full h-touch-target-min bg-primary-container text-on-primary-container font-interactive-label text-interactive-label rounded-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">input</span>
+                Putaway here
+            </button>
+<!-- Secondary Actions Row -->
+<div class="flex gap-3">
+<button class="flex-1 h-touch-target-min bg-transparent border border-outline text-on-surface font-interactive-label text-interactive-label rounded-lg flex items-center justify-center gap-2 active:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">output</span>
+                    Move out
+                </button>
+<button class="flex-1 h-touch-target-min bg-transparent border border-outline text-on-surface font-interactive-label text-interactive-label rounded-lg flex items-center justify-center gap-2 active:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+                    Issue
+                </button>
+</div>
+</div>
+</div>
+</body></html>

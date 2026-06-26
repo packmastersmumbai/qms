@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Putaway Checklist</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;family=Public+Sans:wght@500;700&amp;family=Fira+Code:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed-dim": "#aec6ff",
+                      "surface-tint": "#4c57a9",
+                      "error": "#ba1a1a",
+                      "on-tertiary-container": "#d27458",
+                      "surface-container-high": "#e2e8f8",
+                      "primary-fixed": "#dfe0ff",
+                      "outline": "#767682",
+                      "surface-bright": "#f9f9ff",
+                      "on-primary-fixed": "#000d60",
+                      "on-secondary": "#ffffff",
+                      "secondary-container": "#006ff0",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#bbc3ff",
+                      "primary-fixed-dim": "#bbc3ff",
+                      "on-secondary-fixed": "#001a43",
+                      "surface-container": "#e7eefe",
+                      "primary-container": "#0d1b6e",
+                      "on-background": "#151c27",
+                      "on-secondary-fixed-variant": "#004397",
+                      "on-tertiary-fixed": "#3b0a00",
+                      "outline-variant": "#c6c5d3",
+                      "inverse-surface": "#2a313d",
+                      "secondary": "#0057c0",
+                      "error-container": "#ffdad6",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-fixed": "#ffdbd1",
+                      "primary": "#000747",
+                      "inverse-on-surface": "#ebf1ff",
+                      "on-error-container": "#93000a",
+                      "surface": "#f9f9ff",
+                      "tertiary": "#2a0500",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed-variant": "#793019",
+                      "surface-dim": "#d3daea",
+                      "surface-container-low": "#f0f3ff",
+                      "surface-container-highest": "#dce2f3",
+                      "on-surface-variant": "#454651",
+                      "background": "#f9f9ff",
+                      "on-secondary-container": "#fefcff",
+                      "tertiary-fixed-dim": "#ffb59f",
+                      "on-primary-fixed-variant": "#333f8f",
+                      "on-primary-container": "#7c88dc",
+                      "on-surface": "#151c27",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed": "#d8e2ff",
+                      "tertiary-container": "#4e1000",
+                      "surface-variant": "#dce2f3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "base": "8px",
+                      "margin-mobile": "16px",
+                      "touch-target-min": "48px",
+                      "pipeline-gap": "4px",
+                      "margin-desktop": "32px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "display-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-caps": [
+                              "Public Sans"
+                      ],
+                      "display-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "interactive-label": [
+                              "Public Sans"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "mono": [
+                              "Fira Code", "monospace"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "interactive-label": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface h-full flex flex-col font-body-sm text-body-sm md:hidden">
+<!-- TopAppBar from JSON -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-outline-variant flex flex-col justify-center px-margin-mobile h-touch-target-min min-h-[64px]">
+<div class="flex items-center">
+<button aria-label="Go back" class="h-touch-target-min w-touch-target-min flex items-center justify-center -ml-3 text-primary active:opacity-80 transition-opacity hover:bg-surface-container rounded-full">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col ml-1">
+<h1 class="font-headline-md text-headline-md text-primary m-0 p-0 leading-tight">Putaway · <span class="font-mono text-base font-normal">GRN-2026-018</span></h1>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight mt-0.5">3 items to store</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto mt-[64px] mb-[80px] pb-margin-mobile">
+<!-- Progress Strip -->
+<div class="px-margin-mobile py-base bg-surface-container-low border-b border-outline-variant sticky top-0 z-40 shadow-sm">
+<div class="flex justify-between items-center mb-2">
+<span class="font-interactive-label text-interactive-label text-on-surface">1 of 3 placed</span>
+<span class="font-label-caps text-label-caps text-primary-container">33%</span>
+</div>
+<div class="h-1.5 w-full bg-outline-variant rounded-full overflow-hidden flex">
+<div class="h-full bg-primary-container rounded-full transition-all duration-500 ease-in-out" style="width: 33%;"></div>
+</div>
+</div>
+<!-- Checklist -->
+<div class="flex flex-col divide-y divide-outline-variant">
+<!-- Row 1 (Placed) -->
+<div class="flex items-center min-h-[72px] px-margin-mobile py-3 bg-surface-container-lowest transition-colors">
+<div class="flex-shrink-0 mr-4 h-touch-target-min w-[32px] flex items-center justify-center">
+<span class="material-symbols-outlined filled text-primary-container text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex-1 min-w-0 pr-4">
+<div class="font-interactive-label text-interactive-label text-on-surface truncate">Resin</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant flex items-center mt-0.5">
+<span class="font-mono text-xs bg-surface-container px-1 py-0.5 rounded text-on-surface">LOT-8892</span>
+<span class="mx-1.5">·</span>
+<span>400 kg</span>
+</div>
+</div>
+<div class="flex-shrink-0">
+<div class="flex items-center bg-[#e6f4ea] text-[#137333] px-2 py-1.5 rounded border border-[#ceead6]">
+<span class="font-mono text-xs mr-1 font-medium">→ GF-RM-A1-R3</span>
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</div>
+</div>
+<!-- Row 2 (Pending) -->
+<div class="flex items-center min-h-[72px] px-margin-mobile py-3 bg-surface transition-colors active:bg-surface-container-high">
+<div class="flex-shrink-0 mr-4 h-touch-target-min w-[32px] flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-[28px]">radio_button_unchecked</span>
+</div>
+<div class="flex-1 min-w-0 pr-4">
+<div class="font-interactive-label text-interactive-label text-on-surface truncate">Polycarbonate</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant flex items-center mt-0.5">
+<span class="font-mono text-xs bg-surface-container px-1 py-0.5 rounded text-on-surface">LOT-8893</span>
+<span class="mx-1.5">·</span>
+<span>200 kg</span>
+</div>
+</div>
+<div class="flex-shrink-0">
+<button class="h-9 px-3 border-2 border-primary-container text-primary-container rounded flex items-center font-interactive-label text-sm active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px] mr-1.5">qr_code_scanner</span>
+                        Scan rack
+                    </button>
+</div>
+</div>
+<!-- Row 3 (Pending) -->
+<div class="flex items-center min-h-[72px] px-margin-mobile py-3 bg-surface transition-colors active:bg-surface-container-high">
+<div class="flex-shrink-0 mr-4 h-touch-target-min w-[32px] flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-[28px]">radio_button_unchecked</span>
+</div>
+<div class="flex-1 min-w-0 pr-4">
+<div class="font-interactive-label text-interactive-label text-on-surface truncate">Aluminum Ingot</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant flex items-center mt-0.5">
+<span class="font-mono text-xs bg-surface-container px-1 py-0.5 rounded text-on-surface">LOT-8894</span>
+<span class="mx-1.5">·</span>
+<span>500 kg</span>
+</div>
+</div>
+<div class="flex-shrink-0">
+<button class="h-9 px-3 border-2 border-primary-container text-primary-container rounded flex items-center font-interactive-label text-sm active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px] mr-1.5">qr_code_scanner</span>
+                        Scan rack
+                    </button>
+</div>
+</div>
+</div>
+<!-- Utility Link -->
+<div class="px-margin-mobile mt-6 mb-4 flex justify-center">
+<button class="h-touch-target-min px-4 text-secondary flex items-center font-interactive-label text-interactive-label active:bg-surface-container rounded transition-colors">
+<span class="material-symbols-outlined text-[20px] mr-2">copy_all</span>
+                Same rack for all remaining
+            </button>
+</div>
+</main>
+<!-- Sticky Footer -->
+<div class="fixed bottom-0 w-full z-50 bg-surface border-t border-outline-variant p-margin-mobile shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<button class="w-full h-touch-target-min bg-primary-container text-white rounded flex items-center justify-center font-interactive-label text-interactive-label active:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+            Confirm 3 putaways
+        </button>
+</div>
+</body></html>

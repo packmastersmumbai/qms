@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PM QMS - Mobile Kanban</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed": "#dfe0ff",
+                      "primary-fixed-dim": "#bbc3ff",
+                      "on-tertiary-fixed": "#3b0a00",
+                      "inverse-on-surface": "#ebf1ff",
+                      "on-primary-container": "#7c88dc",
+                      "tertiary-fixed-dim": "#ffb59f",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed-variant": "#333f8f",
+                      "inverse-primary": "#bbc3ff",
+                      "on-background": "#151c27",
+                      "surface-variant": "#dce2f3",
+                      "surface-container-high": "#e2e8f8",
+                      "surface-container-highest": "#dce2f3",
+                      "surface-tint": "#4c57a9",
+                      "outline": "#767682",
+                      "background": "#f9f9ff",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "surface-container-low": "#f0f3ff",
+                      "outline-variant": "#c6c5d3",
+                      "on-surface-variant": "#454651",
+                      "on-tertiary-fixed-variant": "#793019",
+                      "tertiary": "#2a0500",
+                      "surface-container": "#e7eefe",
+                      "surface": "#f9f9ff",
+                      "on-tertiary-container": "#d27458",
+                      "error-container": "#ffdad6",
+                      "primary": "#000747",
+                      "inverse-surface": "#2a313d",
+                      "on-secondary-fixed": "#001a43",
+                      "on-secondary": "#ffffff",
+                      "secondary": "#0057c0",
+                      "primary-container": "#0d1b6e",
+                      "tertiary-container": "#4e1000",
+                      "on-surface": "#151c27",
+                      "secondary-container": "#006ff0",
+                      "on-error": "#ffffff",
+                      "secondary-fixed-dim": "#aec6ff",
+                      "secondary-fixed": "#d8e2ff",
+                      "surface-dim": "#d3daea",
+                      "on-secondary-fixed-variant": "#004397",
+                      "on-error-container": "#93000a",
+                      "on-secondary-container": "#fefcff",
+                      "on-primary-fixed": "#000d60",
+                      "error": "#ba1a1a",
+                      "surface-bright": "#f9f9ff",
+                      "tertiary-fixed": "#ffdbd1"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "touch-target-min": "48px",
+                      "pipeline-gap": "4px",
+                      "margin-desktop": "32px",
+                      "margin-mobile": "16px",
+                      "base": "8px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Public Sans"
+                      ],
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "interactive-label": [
+                              "Public Sans"
+                      ],
+                      "display-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "interactive-label": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background h-screen flex flex-col font-body-sm text-body-sm relative">
+<!-- TopNavBar -->
+<header class="bg-primary flex justify-between items-center w-full px-margin-desktop h-touch-target-min docked full-width top-0 z-50 text-on-primary">
+<div class="font-headline-md text-headline-md font-bold">PM QMS</div>
+<!-- Only visible on Web (hidden md:flex) per Shared Components Logic -->
+<nav class="hidden md:flex flex-1 justify-center gap-6 px-4">
+<a class="text-on-primary/70 hover:text-on-primary hover:bg-primary-container transition-colors px-2 py-1 flex items-center h-full" href="#">Records</a>
+<a class="text-on-primary/70 hover:text-on-primary hover:bg-primary-container transition-colors px-2 py-1 flex items-center h-full" href="#">Trace</a>
+<a class="text-on-primary/70 hover:text-on-primary hover:bg-primary-container transition-colors px-2 py-1 flex items-center h-full" href="#">KPI</a>
+<a class="text-on-primary/70 hover:text-on-primary hover:bg-primary-container transition-colors px-2 py-1 flex items-center h-full" href="#">Masters</a>
+</nav>
+<div class="flex items-center gap-3">
+<div class="hidden md:flex items-center bg-primary-container rounded-full px-3 py-1 gap-2 border border-outline/30">
+<span class="font-body-sm text-body-sm font-medium">BBM (Admin)</span>
+</div>
+<button class="h-touch-target-min w-10 flex items-center justify-center hover:bg-primary-container transition-colors rounded-full active:scale-95 duration-100 md:hidden">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button class="h-touch-target-min w-10 flex items-center justify-center hover:bg-primary-container transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="md:hidden flex items-center bg-primary-container rounded-full px-3 py-1 gap-2 border border-outline/30 ml-1">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="A small, professional avatar photo of a man in a modern industrial setting, clear lighting, bright background. Highly detailed, sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4KPPHijmtuQRGaL1KCWFOF_Sm9SeMehazaclDIsq0r4GQ60ZoPRx2qpUSoTtLAX_PcPEpX4rLdF2uBPHjZ9GvqMd7BW3maKnPnpZYymSSL08qI0d0Lg2pppcfGppDhLlCKTzDyoJu2NBrC6WCxbXOXHS6jDKo1yddv9G11IbSlJyUCD_jgqe1p5oS0go4QIfuhVk1Y26IaH7gRJ3vJ8JCC82mvV-KR_s1xCmCn8wGCu9v4TGDC8L1lKm3mjUgGaJoFgERCShjXGlm"/>
+<span class="font-body-sm text-body-sm font-medium whitespace-nowrap">Anuj · Storage</span>
+</div>
+<button class="hidden md:flex h-touch-target-min w-10 items-center justify-center hover:bg-primary-container transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<div class="flex-1 flex overflow-hidden">
+<!-- SideNavBar (Hidden on Mobile) -->
+<nav class="hidden md:flex flex-col h-full p-gutter gap-pipeline-gap docked left-0 h-full w-64 bg-surface border-r border-outline-variant z-40">
+<div class="flex items-center gap-3 mb-6 px-3">
+<img class="w-10 h-10 rounded" data-alt="A sleek, modern geometric factory logo in dark navy and electric blue on a white background. Minimalist industrial aesthetic, sharp edges." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDO02EpTOIQVR8BPW9c_eHOze41hvIo_1-H6FmAzaxANzRiZ0DI_ezYfDEYAbI92vHgf52Bef7btyEomCiwwD4l8Kg1BGT99hSzubjSl6W2X_QcH_Hi5T3z4mbJcGvtwicgiDy83qsC7s3NtGwRBB2l1AvuGkt_Sr6D5ZEZ9sPguofJrt75wn1M0Lqf5dB5Lyo60UNwHjiDkO15if9OwnZulOtEGDLN5R-9oCvCLyqtgWD9juhXlvAuCJ5ltr9Q-LbtBQfFbBdIfoAw"/>
+<div>
+<h2 class="font-headline-md text-headline-md font-black text-primary">PM QMS v2</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Quality Cockpit</p>
+</div>
+</div>
+<button class="bg-primary-container text-on-primary w-full h-touch-target-min rounded-lg flex items-center justify-center gap-2 font-interactive-label text-interactive-label mb-4 hover:bg-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="add" data-weight="fill" style="font-variation-settings: 'FILL' 1;">add</span>
+                + New
+            </button>
+<div class="flex-1 flex flex-col gap-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2 bg-secondary-container text-on-secondary-container rounded-lg font-bold hover:bg-surface-container-high transition-colors Active: translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="inventory">inventory</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">GRN</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="biotech">biotech</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">IQC</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">IPQC</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="verified">verified</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">OQC</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">Dispatch</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="factory">factory</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">Production</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="report_problem">report_problem</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">NCR</span>
+</a>
+</div>
+<div class="mt-auto border-t border-outline-variant pt-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">My Work</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-label-caps text-label-caps font-interactive-label text-interactive-label">All</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto pb-24 md:pb-8 relative">
+<!-- Filters & Navigation Sub-header (Mobile Only for Doc-type Tabs as per prompt, but rendering for all to match layout intent) -->
+<div class="sticky top-0 bg-background z-30 shadow-sm border-b border-outline-variant">
+<!-- Filter Row -->
+<div class="px-margin-mobile md:px-margin-desktop py-3 flex justify-center md:justify-start">
+<div class="flex bg-surface-container-high rounded-full p-1 border border-outline-variant/50">
+<button class="px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-interactive-label text-interactive-label font-medium shadow-sm">My Work</button>
+<button class="px-4 py-1.5 rounded-full text-on-surface-variant font-interactive-label text-interactive-label hover:bg-surface-variant transition-colors">All</button>
+<button class="px-4 py-1.5 rounded-full text-on-surface-variant font-interactive-label text-interactive-label hover:bg-surface-variant transition-colors">Urgent</button>
+</div>
+</div>
+<!-- Doc-type Tabs -->
+<div class="px-margin-mobile md:px-margin-desktop md:hidden flex overflow-x-auto hide-scrollbar border-t border-outline-variant/30">
+<button class="min-w-fit px-4 h-touch-target-min flex items-center font-interactive-label text-interactive-label text-primary border-b-2 border-primary font-semibold whitespace-nowrap">GRN</button>
+<button class="min-w-fit px-4 h-touch-target-min flex items-center font-interactive-label text-interactive-label text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap">IQC</button>
+<button class="min-w-fit px-4 h-touch-target-min flex items-center font-interactive-label text-interactive-label text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap">IPQC</button>
+<button class="min-w-fit px-4 h-touch-target-min flex items-center font-interactive-label text-interactive-label text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap">OQC</button>
+<button class="min-w-fit px-4 h-touch-target-min flex items-center font-interactive-label text-interactive-label text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap">Dispatch</button>
+<button class="min-w-fit px-4 h-touch-target-min flex items-center font-interactive-label text-interactive-label text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap">Production</button>
+<button class="min-w-fit px-4 h-touch-target-min flex items-center font-interactive-label text-interactive-label text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap">NCR</button>
+</div>
+</div>
+<div class="p-margin-mobile md:p-margin-desktop space-y-8 max-w-4xl mx-auto">
+<!-- Section: Action Required -->
+<section>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span> ACTION REQUIRED
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Overdue Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 shadow-sm relative overflow-hidden flex flex-col gap-3">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-error"></div>
+<div class="flex justify-between items-start pl-2">
+<div class="flex flex-col gap-1">
+<span class="font-label-caps text-[10px] uppercase tracking-wider text-error font-bold px-2 py-0.5 bg-error-container rounded-sm w-fit">NCR RAISED</span>
+<span class="font-mono text-sm font-medium text-on-surface">DOC-8829-X</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-lg">more_vert</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pl-2 truncate">Raw material batch failed initial stress test.</p>
+<!-- Pipeline Tracker -->
+<div class="mt-2 pl-2 pt-2 border-t border-outline-variant/30">
+<div class="flex justify-between items-center relative z-0">
+<!-- Line -->
+<div class="absolute top-1/2 left-2 right-2 h-0.5 bg-surface-variant -z-10 -translate-y-1/2"></div>
+<div class="absolute top-1/2 left-2 w-1/3 h-0.5 bg-primary-container -z-10 -translate-y-1/2"></div>
+<!-- Nodes -->
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-primary-container ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-on-surface-variant">GRN</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-primary-container ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-on-surface-variant">IQC</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-container-lowest border-2 border-secondary ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-secondary font-bold">PUTAWAY</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-outline-variant/50 ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-outline">ISSUE</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-outline-variant/50 ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-outline">OQC</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-outline-variant/50 ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-outline">DISP</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: In Progress -->
+<section>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> IN PROGRESS
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Standard Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 shadow-sm relative overflow-hidden flex flex-col gap-3">
+<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-secondary"></div>
+<div class="flex justify-between items-start pl-2">
+<div class="flex flex-col gap-1">
+<span class="font-label-caps text-[10px] uppercase tracking-wider text-secondary font-bold px-2 py-0.5 bg-secondary-container/20 rounded-sm w-fit">INSPECTION PENDING</span>
+<span class="font-mono text-sm font-medium text-on-surface">DOC-9012-A</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant text-lg">more_vert</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pl-2 truncate">Routine check for incoming steel coils.</p>
+<!-- Pipeline Tracker -->
+<div class="mt-2 pl-2 pt-2 border-t border-outline-variant/30">
+<div class="flex justify-between items-center relative z-0">
+<div class="absolute top-1/2 left-2 right-2 h-0.5 bg-surface-variant -z-10 -translate-y-1/2"></div>
+<div class="absolute top-1/2 left-2 w-[16%] h-0.5 bg-primary-container -z-10 -translate-y-1/2"></div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-primary-container ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-on-surface-variant">GRN</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-container-lowest border-2 border-secondary ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-secondary font-bold">IQC</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-outline-variant/50 ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-outline">PUTAWAY</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-outline-variant/50 ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-outline">ISSUE</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-outline-variant/50 ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-outline">OQC</span>
+</div>
+<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-outline-variant/50 ring-2 ring-surface-container-lowest"></div>
+<span class="font-mono text-[8px] uppercase text-outline">DISP</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- FAB (Mobile Only per context) -->
+<button class="md:hidden fixed bottom-24 right-4 w-14 h-14 bg-primary-container text-on-primary rounded-full shadow-lg flex items-center justify-center hover:bg-primary transition-colors active:scale-95 z-40 border border-outline/20">
+<span class="material-symbols-outlined text-2xl" data-icon="add" style="font-variation-settings: 'FILL' 1;">add</span>
+</button>
+</main>
+</div>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-[72px] px-margin-mobile bg-surface-container-highest border-t border-outline-variant shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 min-w-[64px] h-[44px] Active: scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-caps text-[10px] leading-none">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant min-w-[64px] h-[44px] active:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-[10px] leading-none">Trace</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant min-w-[64px] h-[44px] active:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="insert_chart">insert_chart</span>
+<span class="font-label-caps text-[10px] leading-none">KPI</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant min-w-[64px] h-[44px] active:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="history">history</span>
+<span class="font-label-caps text-[10px] leading-none">Records</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant min-w-[64px] h-[44px] active:bg-surface-variant rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5" data-icon="account_circle">account_circle</span>
+<span class="font-label-caps text-[10px] leading-none">User</span>
+</a>
+</nav>
+<style>
+        /* Hide scrollbar for horizontal scrolling tabs */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

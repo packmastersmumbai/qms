@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IPQC Round Entry</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary": "#2a0500",
+                        "secondary-container": "#006ff0",
+                        "secondary-fixed-dim": "#aec6ff",
+                        "primary-container": "#0d1b6e",
+                        "on-tertiary-fixed": "#3b0a00",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#bbc3ff",
+                        "surface-variant": "#dce2f3",
+                        "on-tertiary-fixed-variant": "#793019",
+                        "on-surface-variant": "#454651",
+                        "on-primary-fixed-variant": "#333f8f",
+                        "on-primary-container": "#7c88dc",
+                        "on-surface": "#151c27",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#151c27",
+                        "outline": "#767682",
+                        "on-secondary-fixed-variant": "#004397",
+                        "on-error-container": "#93000a",
+                        "secondary": "#0057c0",
+                        "surface-container-low": "#f0f3ff",
+                        "on-secondary-fixed": "#001a43",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#dce2f3",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "primary": "#000747",
+                        "on-primary-fixed": "#000d60",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#4e1000",
+                        "primary-fixed": "#dfe0ff",
+                        "tertiary-fixed": "#ffdbd1",
+                        "tertiary-fixed-dim": "#ffb59f",
+                        "on-tertiary-container": "#d27458",
+                        "inverse-surface": "#2a313d",
+                        "surface-container": "#e7eefe",
+                        "background": "#f9f9ff",
+                        "outline-variant": "#c6c5d3",
+                        "surface-bright": "#f9f9ff",
+                        "inverse-on-surface": "#ebf1ff",
+                        "surface-container-high": "#e2e8f8",
+                        "surface-dim": "#d3daea",
+                        "primary-fixed-dim": "#bbc3ff",
+                        "surface-tint": "#4c57a9",
+                        "error": "#ba1a1a",
+                        "surface": "#f9f9ff",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-secondary-container": "#fefcff",
+                        "brand-electric-blue": "#0070F3",
+                        "brand-navy": "#0D1B6E",
+                        "status-green": "#16a34a",
+                        "status-red": "#dc2626"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "margin-desktop": "32px",
+                        "touch-target-min": "48px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "pipeline-gap": "4px",
+                        "base": "8px"
+                    },
+                    fontFamily: {
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "interactive-label": ["Public Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"],
+                        "label-caps": ["Public Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "mono": ["Roboto Mono", "monospace"]
+                    },
+                    fontSize: {
+                        "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "interactive-label": ["16px", { lineHeight: "24px", fontWeight: "500" }],
+                        "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" }],
+                        "display-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .mono-text { font-family: 'Roboto Mono', monospace; }
+        .hairline-divider { border-bottom: 1px solid #e5e7eb; }
+        .pass-toggle:checked + div { background-color: #16a34a; border-color: #16a34a; color: white; }
+        .fail-toggle:checked + div { background-color: #dc2626; border-color: #dc2626; color: white; }
+        .na-toggle:checked + div { background-color: #6b7280; border-color: #6b7280; color: white; }
+        
+        /* Mobile max-width override for the specific column requirement */
+        @media (min-width: 430px) {
+            .mobile-container {
+                width: 430px;
+                margin-left: auto;
+                margin-right: auto;
+                position: relative;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                height: 100vh;
+                overflow: hidden;
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-gray-100 font-body-sm text-on-surface h-screen w-screen overflow-hidden flex justify-center">
+<main class="w-full h-full bg-surface mobile-container flex flex-col">
+<!-- 1. Header (Navy) -->
+<header class="bg-brand-navy text-on-primary flex flex-col shrink-0">
+<!-- Top App Bar -->
+<div class="flex items-center h-touch-target-min px-margin-mobile w-full">
+<button aria-label="Go Back" class="text-on-primary mr-4 hover:opacity-80 transition-opacity flex items-center justify-center w-8 h-8">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex-1">
+<h1 class="font-headline-md text-headline-md truncate">PM QMS v2</h1>
+</div>
+<div class="flex items-center space-x-2">
+<span class="bg-secondary-container text-on-secondary px-2 py-0.5 rounded text-xs font-bold font-mono">ROUND 3</span>
+</div>
+</div>
+<!-- Secondary Header Info -->
+<div class="flex justify-between items-center px-margin-mobile pb-3">
+<div class="flex items-center text-sm">
+<span class="material-symbols-outlined text-[16px] mr-1 opacity-70" data-icon="confirmation_number">confirmation_number</span>
+<span class="mono-text tracking-wider">B2605001</span>
+</div>
+<div class="flex items-center bg-[#0a155a] px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[16px] mr-1 text-red-400 animate-pulse" data-icon="timer">timer</span>
+<span class="mono-text text-red-400 font-bold" id="live-timer">00:14:32</span>
+</div>
+</div>
+</header>
+<!-- 2. Session Bar -->
+<div class="bg-surface-container-high py-2 px-margin-mobile flex items-center justify-between shrink-0 border-b border-outline-variant">
+<div class="flex items-center text-xs font-medium text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] mr-1">person</span>
+                Inspector: Anuj <span class="mx-1.5 opacity-50">•</span> Line 2 <span class="mx-1.5 opacity-50">•</span> 2 rounds done
+            </div>
+<button class="text-brand-electric-blue">
+<span class="material-symbols-outlined text-[18px]">info</span>
+</button>
+</div>
+<!-- 3. Parameter List (Dense, hairline dividers) -->
+<div class="flex-1 overflow-y-auto bg-surface pb-32">
+<!-- Visual Group -->
+<div class="px-margin-mobile py-2 bg-surface-container-low border-b border-outline-variant text-xs font-label-caps text-on-surface-variant sticky top-0 z-10 flex justify-between items-center">
+<span>VISUAL CHECKS</span>
+<span class="bg-surface-variant px-1.5 py-0.5 rounded text-[10px]">2 Items</span>
+</div>
+<!-- Item 1: Surface Finish (Pass) -->
+<div class="px-margin-mobile py-3 hairline-divider hover:bg-surface-container-low transition-colors">
+<div class="flex justify-between items-start mb-2">
+<div class="pr-4">
+<h3 class="font-medium text-sm text-on-surface">Surface Finish</h3>
+<p class="text-xs text-on-surface-variant mt-0.5">Std: No burrs/scratches</p>
+</div>
+</div>
+<div class="flex rounded-md shadow-sm w-full h-[36px]" role="group">
+<label class="flex-1 relative">
+<input checked="" class="sr-only pass-toggle" name="surface_finish" type="radio" value="pass"/>
+<div class="cursor-pointer h-full border border-gray-300 rounded-l-md flex items-center justify-center text-sm font-medium transition-colors bg-white text-gray-700 hover:bg-gray-50">Pass</div>
+</label>
+<label class="flex-1 relative">
+<input class="sr-only fail-toggle" name="surface_finish" type="radio" value="fail"/>
+<div class="cursor-pointer h-full border-t border-b border-r border-gray-300 flex items-center justify-center text-sm font-medium transition-colors bg-white text-gray-700 hover:bg-gray-50">Fail</div>
+</label>
+<label class="flex-1 relative">
+<input class="sr-only na-toggle" name="surface_finish" type="radio" value="na"/>
+<div class="cursor-pointer h-full border-t border-b border-r border-gray-300 rounded-r-md flex items-center justify-center text-sm font-medium transition-colors bg-white text-gray-700 hover:bg-gray-50">N/A</div>
+</label>
+</div>
+</div>
+<!-- Item 2: Color Match (Fail with remark) -->
+<div class="px-margin-mobile py-3 hairline-divider bg-red-50/30">
+<div class="flex justify-between items-start mb-2">
+<div class="pr-4 border-l-4 border-status-red pl-2 -ml-[18px]">
+<h3 class="font-medium text-sm text-on-surface">Color Match</h3>
+<p class="text-xs text-on-surface-variant mt-0.5">Std: PANTONE 286C</p>
+</div>
+</div>
+<div class="flex rounded-md shadow-sm w-full h-[36px] mb-2" role="group">
+<label class="flex-1 relative">
+<input class="sr-only pass-toggle" name="color_match" type="radio" value="pass"/>
+<div class="cursor-pointer h-full border border-gray-300 rounded-l-md flex items-center justify-center text-sm font-medium transition-colors bg-white text-gray-700 hover:bg-gray-50">Pass</div>
+</label>
+<label class="flex-1 relative">
+<input checked="" class="sr-only fail-toggle" name="color_match" type="radio" value="fail"/>
+<div class="cursor-pointer h-full border-t border-b border-r border-gray-300 flex items-center justify-center text-sm font-medium transition-colors bg-white text-gray-700 hover:bg-gray-50">Fail</div>
+</label>
+<label class="flex-1 relative">
+<input class="sr-only na-toggle" name="color_match" type="radio" value="na"/>
+<div class="cursor-pointer h-full border-t border-b border-r border-gray-300 rounded-r-md flex items-center justify-center text-sm font-medium transition-colors bg-white text-gray-700 hover:bg-gray-50">N/A</div>
+</label>
+</div>
+<!-- Inline Remark Field -->
+<div class="relative mt-2">
+<div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[16px] text-status-red">warning</span>
+</div>
+<input class="block w-full pl-8 pr-3 py-1.5 border border-red-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500 bg-white" placeholder="Add remark..." type="text" value="Variance in hue detected"/>
+</div>
+</div>
+<!-- Numeric Group -->
+<div class="px-margin-mobile py-2 bg-surface-container-low border-b border-outline-variant text-xs font-label-caps text-on-surface-variant sticky top-0 z-10 flex justify-between items-center mt-2">
+<span>DIMENSIONAL (NUMERIC)</span>
+<span class="bg-surface-variant px-1.5 py-0.5 rounded text-[10px]">2 Items</span>
+</div>
+<!-- Item 3: Diameter (Pass) -->
+<div class="px-margin-mobile py-3 hairline-divider hover:bg-surface-container-low transition-colors flex items-center justify-between">
+<div class="pr-2 flex-1">
+<h3 class="font-medium text-sm text-on-surface">Diameter (mm)</h3>
+<p class="text-xs text-on-surface-variant mt-0.5">Std: 12.5 ± 0.1</p>
+</div>
+<div class="w-[100px]">
+<div class="relative">
+<input class="block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-electric-blue focus:ring-brand-electric-blue sm:text-sm mono-text text-right font-medium text-status-green pr-8 bg-green-50/50" step="0.01" type="number" value="12.52"/>
+<div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[16px] text-status-green">check_circle</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Item 4: Wall Thickness (Fail) -->
+<div class="px-margin-mobile py-3 hairline-divider bg-red-50/30 flex items-center justify-between">
+<div class="pr-2 flex-1 border-l-4 border-status-red pl-2 -ml-[18px]">
+<h3 class="font-medium text-sm text-on-surface">Wall Thickness</h3>
+<p class="text-xs text-on-surface-variant mt-0.5">Std: 2.0 min</p>
+</div>
+<div class="w-[100px]">
+<div class="relative">
+<input class="block w-full rounded-md border-red-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm mono-text text-right font-bold text-status-red pr-8 bg-red-50" step="0.1" type="number" value="1.9"/>
+<div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[16px] text-status-red">error</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Special Group -->
+<div class="px-margin-mobile py-2 bg-surface-container-low border-b border-outline-variant text-xs font-label-caps text-on-surface-variant sticky top-0 z-10 flex justify-between items-center mt-2">
+<span>FUNCTIONAL &amp; WEIGHT</span>
+</div>
+<!-- Item 5: Leak Test -->
+<div class="px-margin-mobile py-3 hairline-divider hover:bg-surface-container-low transition-colors flex items-center justify-between">
+<div class="pr-2">
+<h3 class="font-medium text-sm text-on-surface flex items-center">
+<span class="material-symbols-outlined text-[16px] mr-1 text-brand-electric-blue">water_drop</span>
+                        Leak Test
+                    </h3>
+</div>
+<div class="flex rounded-md shadow-sm w-[180px] h-[32px]" role="group">
+<label class="flex-1 relative">
+<input class="sr-only pass-toggle" name="leak_test" type="radio" value="pass"/>
+<div class="cursor-pointer h-full border border-gray-300 rounded-l-md flex items-center justify-center text-xs font-medium transition-colors bg-white text-gray-700">P</div>
+</label>
+<label class="flex-1 relative">
+<input class="sr-only fail-toggle" name="leak_test" type="radio" value="fail"/>
+<div class="cursor-pointer h-full border-t border-b border-r border-gray-300 flex items-center justify-center text-xs font-medium transition-colors bg-white text-gray-700">F</div>
+</label>
+<label class="flex-1 relative">
+<input checked="" class="sr-only na-toggle" name="leak_test" type="radio" value="na"/>
+<div class="cursor-pointer h-full border-t border-b border-r border-gray-300 rounded-r-md flex items-center justify-center text-xs font-medium transition-colors bg-white text-gray-700">NA</div>
+</label>
+</div>
+</div>
+<!-- Item 6: Avg Weight (Collapsible) -->
+<div class="px-margin-mobile py-3 hairline-divider">
+<div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('weight-inputs').classList.toggle('hidden'); document.getElementById('weight-chevron').classList.toggle('rotate-180');">
+<div class="flex-1">
+<h3 class="font-medium text-sm text-on-surface flex items-center">
+<span class="material-symbols-outlined text-[16px] mr-1 text-brand-electric-blue">scale</span>
+                            Avg Weight (g)
+                        </h3>
+<p class="text-xs text-on-surface-variant mt-0.5">10 Samples req.</p>
+</div>
+<div class="flex items-center">
+<span class="text-xs font-mono bg-surface-container-high px-2 py-1 rounded mr-2">Avg: --</span>
+<span class="material-symbols-outlined text-gray-400 transition-transform duration-200" id="weight-chevron">expand_more</span>
+</div>
+</div>
+<!-- Collapsed Inputs -->
+<div class="hidden mt-3 grid grid-cols-2 gap-2 bg-surface-container-lowest p-2 rounded border border-outline-variant" id="weight-inputs">
+<div class="flex items-center text-xs">
+<label class="w-8 text-on-surface-variant font-mono">W01</label>
+<input class="flex-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-brand-electric-blue focus:ring-brand-electric-blue text-xs mono-text py-1 px-2" placeholder="0.00" type="number"/>
+</div>
+<div class="flex items-center text-xs">
+<label class="w-8 text-on-surface-variant font-mono">W02</label>
+<input class="flex-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-brand-electric-blue focus:ring-brand-electric-blue text-xs mono-text py-1 px-2" placeholder="0.00" type="number"/>
+</div>
+<div class="flex items-center text-xs">
+<label class="w-8 text-on-surface-variant font-mono">W03</label>
+<input class="flex-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-brand-electric-blue focus:ring-brand-electric-blue text-xs mono-text py-1 px-2" placeholder="0.00" type="number"/>
+</div>
+<div class="flex items-center text-xs">
+<label class="w-8 text-on-surface-variant font-mono">W04</label>
+<input class="flex-1 block w-full rounded-sm border-gray-300 shadow-sm focus:border-brand-electric-blue focus:ring-brand-electric-blue text-xs mono-text py-1 px-2" placeholder="0.00" type="number"/>
+</div>
+</div>
+</div>
+<!-- End Spacer -->
+<div class="h-8"></div>
+</div>
+<!-- 4. Sticky Bottom Actions -->
+<div class="absolute bottom-0 left-0 w-full bg-surface border-t border-outline-variant p-margin-mobile shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 flex flex-col space-y-3">
+<button class="w-full bg-brand-navy text-on-primary h-touch-target-min rounded-md font-interactive-label text-interactive-label flex items-center justify-center shadow-sm hover:bg-opacity-90 transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined mr-2">save</span>
+                Save Round 3
+            </button>
+<button class="w-full text-brand-electric-blue h-[36px] rounded-md font-interactive-label text-sm flex items-center justify-center hover:bg-blue-50 transition-colors">
+                Close Session
+            </button>
+</div>
+</main>
+<script>
+        // Simple script to keep the timer ticking for effect
+        setInterval(() => {
+            const timerEl = document.getElementById('live-timer');
+            if(timerEl) {
+                let parts = timerEl.innerText.split(':');
+                let s = parseInt(parts[2]) + 1;
+                let m = parseInt(parts[1]);
+                let h = parseInt(parts[0]);
+                
+                if(s >= 60) { s = 0; m++; }
+                if(m >= 60) { m = 0; h++; }
+                
+                timerEl.innerText = 
+                    String(h).padStart(2, '0') + ':' + 
+                    String(m).padStart(2, '0') + ':' + 
+                    String(s).padStart(2, '0');
+            }
+        }, 1000);
+    </script>
+</body></html>

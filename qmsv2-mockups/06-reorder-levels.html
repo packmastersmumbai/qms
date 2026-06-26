@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Re-order Levels</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Plus+Jakarta+Sans:wght@500;600;700&amp;family=Public+Sans:wght@500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#004397",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#ffdbd1",
+                    "surface": "#f9f9ff",
+                    "outline-variant": "#c6c5d3",
+                    "on-surface-variant": "#454651",
+                    "tertiary-fixed-dim": "#ffb59f",
+                    "primary-fixed": "#dfe0ff",
+                    "surface-dim": "#d3daea",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#333f8f",
+                    "surface-bright": "#f9f9ff",
+                    "background": "#f9f9ff",
+                    "outline": "#767682",
+                    "inverse-primary": "#bbc3ff",
+                    "primary-container": "#0d1b6e",
+                    "surface-container-low": "#f0f3ff",
+                    "secondary-fixed": "#d8e2ff",
+                    "on-primary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#7c88dc",
+                    "secondary": "#0057c0",
+                    "tertiary-container": "#4e1000",
+                    "surface-tint": "#4c57a9",
+                    "on-tertiary-fixed-variant": "#793019",
+                    "surface-container": "#e7eefe",
+                    "on-secondary": "#ffffff",
+                    "inverse-on-surface": "#ebf1ff",
+                    "on-primary-fixed": "#000d60",
+                    "surface-variant": "#dce2f3",
+                    "secondary-fixed-dim": "#aec6ff",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#dce2f3",
+                    "on-tertiary-fixed": "#3b0a00",
+                    "on-surface": "#151c27",
+                    "on-secondary-container": "#fefcff",
+                    "secondary-container": "#006ff0",
+                    "primary-fixed-dim": "#bbc3ff",
+                    "primary": "#000747",
+                    "on-background": "#151c27",
+                    "inverse-surface": "#2a313d",
+                    "on-tertiary-container": "#d27458",
+                    "surface-container-high": "#e2e8f8",
+                    "tertiary": "#2a0500",
+                    "on-secondary-fixed": "#001a43"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target-min": "48px",
+                    "base": "8px",
+                    "margin-mobile": "16px",
+                    "gutter": "16px",
+                    "pipeline-gap": "4px",
+                    "margin-desktop": "32px"
+            },
+            "fontFamily": {
+                    "display-lg-mobile": ["Plus Jakarta Sans"],
+                    "interactive-label": ["Public Sans"],
+                    "body-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "label-caps": ["Public Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "mono": ["JetBrains Mono", "monospace"]
+            },
+            "fontSize": {
+                    "display-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "interactive-label": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar hide for chips */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body-sm text-on-surface flex flex-col h-[884px] overflow-hidden">
+<!-- Fixed Header Area -->
+<header class="flex-none bg-surface z-50 shadow-sm border-b border-outline-variant">
+<!-- Top App Bar -->
+<div class="flex items-center h-12 px-margin-mobile w-full">
+<button aria-label="Go back" class="w-touch-target-min h-touch-target-min -ml-3 flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors rounded-full">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-on-surface ml-2 truncate">Re-order Levels</h1>
+</div>
+<!-- Search Bar -->
+<div class="px-margin-mobile pb-3">
+<div class="relative flex items-center h-12 bg-surface-container-lowest border border-outline-variant rounded-lg focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary transition-all">
+<span class="material-symbols-outlined text-outline ml-3">search</span>
+<input class="w-full h-full bg-transparent border-none focus:ring-0 text-body-lg text-on-surface placeholder:text-outline px-3" placeholder="Find material..." type="text"/>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex items-center gap-2 px-margin-mobile pb-3 overflow-x-auto no-scrollbar">
+<button class="flex-none h-8 px-4 rounded-full bg-primary-container text-on-primary font-interactive-label text-[14px] leading-tight transition-colors">All</button>
+<button class="flex-none h-8 px-4 rounded-full border border-outline text-on-surface-variant font-interactive-label text-[14px] leading-tight hover:bg-surface-container transition-colors">RM</button>
+<button class="flex-none h-8 px-4 rounded-full border border-outline text-on-surface-variant font-interactive-label text-[14px] leading-tight hover:bg-surface-container transition-colors">PM</button>
+<button class="flex-none h-8 px-4 rounded-full border border-outline text-on-surface-variant font-interactive-label text-[14px] leading-tight hover:bg-surface-container transition-colors">FG</button>
+</div>
+</header>
+<!-- Main Content List -->
+<main class="flex-1 overflow-y-auto pb-24">
+<div class="flex flex-col">
+<!-- Item 1: Low Stock -->
+<div class="relative flex items-center justify-between p-4 min-h-touch-target-min border-b border-outline-variant bg-surface group hover:bg-surface-container-lowest transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-error"></div>
+<div class="flex flex-col gap-1 flex-1 pl-2">
+<span class="font-interactive-label text-interactive-label text-on-surface">HDPE Pellets</span>
+<span class="font-mono text-xs text-outline">RM-102</span>
+</div>
+<div class="flex flex-col items-end gap-1.5 w-1/2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[13px] text-on-surface-variant">150 kg</span>
+<div aria-label="Low stock status" class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+<div class="flex items-center">
+<input aria-label="Re-order level for HDPE Pellets" class="w-16 h-8 text-right font-mono text-[13px] text-on-surface border border-outline-variant rounded bg-surface-container-lowest px-2 py-1 focus:border-secondary focus:ring-1 focus:ring-secondary transition-all" type="text" value="500"/>
+<span class="font-mono text-[13px] text-outline ml-1">kg</span>
+</div>
+</div>
+</div>
+<!-- Item 2: OK Stock -->
+<div class="relative flex items-center justify-between p-4 min-h-touch-target-min border-b border-outline-variant bg-surface group hover:bg-surface-container-lowest transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
+<div class="flex flex-col gap-1 flex-1 pl-2">
+<span class="font-interactive-label text-interactive-label text-on-surface">Resin</span>
+<span class="font-mono text-xs text-outline">RM-042</span>
+</div>
+<div class="flex flex-col items-end gap-1.5 w-1/2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[13px] text-on-surface-variant">1200 kg</span>
+<!-- Using semantic green for OK state as requested -->
+<div aria-label="OK stock status" class="w-2 h-2 rounded-full bg-[#059669]"></div>
+</div>
+<div class="flex items-center">
+<input aria-label="Re-order level for Resin" class="w-16 h-8 text-right font-mono text-[13px] text-on-surface border border-outline-variant rounded bg-surface-container-lowest px-2 py-1 focus:border-secondary focus:ring-1 focus:ring-secondary transition-all" type="text" value="400"/>
+<span class="font-mono text-[13px] text-outline ml-1">kg</span>
+</div>
+</div>
+</div>
+<!-- Item 3: Low Stock (Edge) -->
+<div class="relative flex items-center justify-between p-4 min-h-touch-target-min border-b border-outline-variant bg-surface group hover:bg-surface-container-lowest transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-error"></div>
+<div class="flex flex-col gap-1 flex-1 pl-2">
+<span class="font-interactive-label text-interactive-label text-on-surface">Steel Coil</span>
+<span class="font-mono text-xs text-outline">RM-089</span>
+</div>
+<div class="flex flex-col items-end gap-1.5 w-1/2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[13px] text-on-surface-variant">800 kg</span>
+<div aria-label="Low stock status" class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+<div class="flex items-center">
+<input aria-label="Re-order level for Steel Coil" class="w-16 h-8 text-right font-mono text-[13px] text-on-surface border border-outline-variant rounded bg-surface-container-lowest px-2 py-1 focus:border-secondary focus:ring-1 focus:ring-secondary transition-all" type="text" value="800"/>
+<span class="font-mono text-[13px] text-outline ml-1">kg</span>
+</div>
+</div>
+</div>
+<!-- Item 4: OK Stock -->
+<div class="relative flex items-center justify-between p-4 min-h-touch-target-min border-b border-outline-variant bg-surface group hover:bg-surface-container-lowest transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
+<div class="flex flex-col gap-1 flex-1 pl-2">
+<span class="font-interactive-label text-interactive-label text-on-surface">Polycarbonate</span>
+<span class="font-mono text-xs text-outline">RM-055</span>
+</div>
+<div class="flex flex-col items-end gap-1.5 w-1/2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[13px] text-on-surface-variant">2200 kg</span>
+<div aria-label="OK stock status" class="w-2 h-2 rounded-full bg-[#059669]"></div>
+</div>
+<div class="flex items-center">
+<input aria-label="Re-order level for Polycarbonate" class="w-16 h-8 text-right font-mono text-[13px] text-on-surface border border-outline-variant rounded bg-surface-container-lowest px-2 py-1 focus:border-secondary focus:ring-1 focus:ring-secondary transition-all" type="text" value="1000"/>
+<span class="font-mono text-[13px] text-outline ml-1">kg</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Bottom Bar -->
+<footer class="fixed bottom-0 w-full p-4 bg-surface border-t border-outline-variant shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40">
+<button class="w-full h-touch-target-min bg-primary-container text-on-primary font-interactive-label text-interactive-label rounded-lg opacity-40 cursor-not-allowed transition-all flex items-center justify-center" disabled="">
+            Save changes
+        </button>
+</footer>
+</body></html>

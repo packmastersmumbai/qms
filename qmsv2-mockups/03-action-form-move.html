@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Move Stock - Mobile QMS</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&amp;family=Inter:wght@400;500;700&amp;family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Inter Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config -->
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"secondary-fixed": "#d8e2ff", "tertiary-fixed": "#ffdbd1", "on-primary-container": "#7c88dc", "primary-container": "#0d1b6e", "on-background": "#151c27", "inverse-surface": "#2a313d", "surface-container": "#e7eefe", "on-tertiary": "#ffffff", "tertiary-container": "#4e1000", "on-primary": "#ffffff", "surface-container-high": "#e2e8f8", "error-container": "#ffdad6", "inverse-on-surface": "#ebf1ff", "surface-container-lowest": "#ffffff", "inverse-primary": "#bbc3ff", surface: "#f9f9ff", "surface-tint": "#4c57a9", "primary-fixed": "#dfe0ff", error: "#ba1a1a", "outline-variant": "#c6c5d3", "on-tertiary-container": "#d27458", "surface-dim": "#d3daea", "on-surface": "#151c27", "primary-fixed-dim": "#bbc3ff", "on-secondary": "#ffffff", "surface-container-low": "#f0f3ff", "on-primary-fixed-variant": "#333f8f", "secondary-fixed-dim": "#aec6ff", "on-secondary-fixed": "#001a43", "surface-bright": "#f9f9ff", primary: "#000747", tertiary: "#2a0500", "surface-variant": "#dce2f3", secondary: "#0057c0", "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb59f", "on-secondary-container": "#fefcff", "on-surface-variant": "#454651", "secondary-container": "#006ff0", "surface-container-highest": "#dce2f3", "on-secondary-fixed-variant": "#004397", "on-tertiary-fixed": "#3b0a00", background: "#f9f9ff", "on-primary-fixed": "#000d60", "on-tertiary-fixed-variant": "#793019", "on-error-container": "#93000a", outline: "#767682"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"margin-desktop": "32px", "touch-target-min": "48px", "pipeline-gap": "4px", gutter: "16px", "margin-mobile": "16px", base: "8px"}, fontFamily: {"headline-md": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "interactive-label": ["Public Sans"], "body-sm": ["Inter"], "label-caps": ["Public Sans"], "body-lg": ["Inter"]}, fontSize: {"headline-md": ["20px", {lineHeight: "28px", fontWeight: "600"}], "display-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700"}], "interactive-label": ["16px", {lineHeight: "24px", fontWeight: "500"}], "body-sm": ["14px", {lineHeight: "20px", fontWeight: "400"}], "label-caps": ["12px", {lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}]}}}};</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .slide-up {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface h-screen flex flex-col font-body-lg">
+<!-- Task Header (Suppressed main navs for linear task) -->
+<header class="h-[64px] bg-surface flex items-center justify-between px-margin-mobile border-b border-outline-variant sticky top-0 z-10 flex-shrink-0">
+<button class="w-[48px] h-[48px] flex items-center justify-center text-on-surface-variant active:bg-surface-variant rounded-full transition-colors -ml-3">
+<span class="material-symbols-outlined">close</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-on-surface text-center flex-1">Move Stock</h1>
+<div class="w-[48px] h-[48px]"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Scrollable Form Area -->
+<main class="flex-1 overflow-y-auto flex flex-col px-margin-mobile py-6 gap-6 pb-40">
+<!-- Material Picker -->
+<div class="flex flex-col gap-2">
+<label class="font-interactive-label text-interactive-label text-on-surface">Material</label>
+<div class="relative">
+<input class="w-full h-[48px] px-4 rounded border border-outline bg-surface-container-low text-on-surface font-body-lg focus:outline-none" readonly="" type="text" value="Resin, Polycarbonate (RP-400)"/>
+<span class="material-symbols-outlined absolute right-4 top-3 text-outline">arrow_drop_down</span>
+</div>
+</div>
+<!-- Lot/Batch Picker with On-Hand -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<label class="font-interactive-label text-interactive-label text-on-surface">Lot / Batch</label>
+<span class="font-body-sm text-body-sm text-primary flex items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 16px;">inventory_2</span>
+                    On-hand: 1,200 kg
+                </span>
+</div>
+<div class="relative">
+<input class="w-full h-[48px] px-4 rounded border border-outline bg-surface-container-low text-on-surface font-body-lg focus:outline-none" readonly="" type="text" value="LOT-8892-A"/>
+<span class="material-symbols-outlined absolute right-4 top-3 text-outline">arrow_drop_down</span>
+</div>
+</div>
+<div class="h-px bg-outline-variant w-full my-2"></div>
+<!-- From Location -->
+<div class="flex flex-col gap-2">
+<label class="font-interactive-label text-interactive-label text-on-surface">From Location</label>
+<div class="flex gap-3">
+<input class="flex-1 h-[48px] px-4 rounded border border-outline bg-surface-container-low text-on-surface font-body-lg focus:outline-none" readonly="" type="text" value="Floor-1, Zone B"/>
+<button aria-label="Scan From Location" class="h-[48px] w-[48px] flex-shrink-0 bg-surface-container-high border border-outline-variant rounded flex items-center justify-center text-primary active:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+</button>
+</div>
+</div>
+<!-- To Location -->
+<div class="flex flex-col gap-2">
+<label class="font-interactive-label text-interactive-label text-on-surface">To Location</label>
+<div class="flex gap-3">
+<input class="flex-1 h-[48px] px-4 rounded border-2 border-primary bg-surface-container-lowest text-on-surface font-body-lg focus:outline-none" placeholder="Scan or select destination" type="text" value="Floor-2, Silo 3"/>
+<button aria-label="Scan To Location" class="h-[48px] w-[48px] flex-shrink-0 bg-primary-container text-on-primary-container rounded flex items-center justify-center active:scale-95 transition-transform shadow-md">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+</button>
+</div>
+</div>
+<div class="h-px bg-outline-variant w-full my-2"></div>
+<!-- Quantity Input -->
+<div class="flex flex-col gap-3 mt-2">
+<label class="font-interactive-label text-interactive-label text-on-surface text-center">Move Quantity (kg)</label>
+<div class="relative w-full max-w-[200px] mx-auto">
+<input class="w-full h-[64px] rounded border-2 border-primary bg-surface-container-lowest text-on-surface font-display-lg-mobile text-display-lg-mobile text-center focus:outline-none shadow-inner" style="appearance: textfield;" type="number" value="500"/>
+<div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+<span class="font-interactive-label text-interactive-label text-outline">kg</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Bottom Review & Action Area -->
+<div class="bg-surface border-t border-outline-variant p-margin-mobile flex flex-col gap-4 fixed bottom-0 left-0 w-full z-20 shadow-[0_-8px_16px_rgba(0,0,0,0.05)] slide-up">
+<!-- Summary Review Card -->
+<div class="bg-secondary-fixed rounded-lg p-4 flex gap-3 items-start border-l-4 border-primary shadow-sm">
+<span class="material-symbols-outlined text-on-secondary-fixed mt-0.5">check_circle</span>
+<p class="font-body-sm text-body-sm text-on-secondary-fixed leading-tight">
+<strong>Review:</strong> Move <strong>500kg</strong> of Resin from <strong>Floor-1</strong> to <strong>Floor-2</strong>.
+            </p>
+</div>
+<!-- Confirm Button -->
+<button class="w-full h-[48px] bg-primary-container text-on-primary-container font-interactive-label text-interactive-label rounded flex items-center justify-center gap-2 hover:bg-primary hover:text-on-primary active:scale-95 transition-all shadow-md">
+<span class="material-symbols-outlined">move_up</span>
+            Confirm Move
+        </button>
+<!-- Mobile Bottom Safe Area padding (simulated) -->
+<div class="h-2"></div>
+</div>
+</body></html>

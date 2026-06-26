@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stock Map - PM QMS v2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&amp;family=Inter:wght@400;500;700&amp;family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"secondary-fixed": "#d8e2ff", "tertiary-fixed": "#ffdbd1", "on-primary-container": "#7c88dc", "primary-container": "#0d1b6e", "on-background": "#151c27", "inverse-surface": "#2a313d", "surface-container": "#e7eefe", "on-tertiary": "#ffffff", "tertiary-container": "#4e1000", "on-primary": "#ffffff", "surface-container-high": "#e2e8f8", "error-container": "#ffdad6", "inverse-on-surface": "#ebf1ff", "surface-container-lowest": "#ffffff", "inverse-primary": "#bbc3ff", surface: "#f9f9ff", "surface-tint": "#4c57a9", "primary-fixed": "#dfe0ff", error: "#ba1a1a", "outline-variant": "#c6c5d3", "on-tertiary-container": "#d27458", "surface-dim": "#d3daea", "on-surface": "#151c27", "primary-fixed-dim": "#bbc3ff", "on-secondary": "#ffffff", "surface-container-low": "#f0f3ff", "on-primary-fixed-variant": "#333f8f", "secondary-fixed-dim": "#aec6ff", "on-secondary-fixed": "#001a43", "surface-bright": "#f9f9ff", primary: "#000747", tertiary: "#2a0500", "surface-variant": "#dce2f3", secondary: "#0057c0", "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb59f", "on-secondary-container": "#fefcff", "on-surface-variant": "#454651", "secondary-container": "#006ff0", "surface-container-highest": "#dce2f3", "on-secondary-fixed-variant": "#004397", "on-tertiary-fixed": "#3b0a00", background: "#f9f9ff", "on-primary-fixed": "#000d60", "on-tertiary-fixed-variant": "#793019", "on-error-container": "#93000a", outline: "#767682"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"margin-desktop": "32px", "touch-target-min": "48px", "pipeline-gap": "4px", gutter: "16px", "margin-mobile": "16px", base: "8px"}, fontFamily: {"headline-md": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "interactive-label": ["Public Sans"], "body-sm": ["Inter"], "label-caps": ["Public Sans"], "body-lg": ["Inter"]}, fontSize: {"headline-md": ["20px", {lineHeight: "28px", fontWeight: "600"}], "display-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700"}], "interactive-label": ["16px", {lineHeight: "24px", fontWeight: "500"}], "body-sm": ["14px", {lineHeight: "20px", fontWeight: "400"}], "label-caps": ["12px", {lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}]}}}};</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for horizontal swipe */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:hidden pb-[80px]">
+<!-- Mobile Header -->
+<header class="bg-surface px-margin-mobile pt-gutter pb-base flex flex-col gap-base sticky top-0 z-40 border-b border-outline-variant">
+<div class="flex justify-between items-center h-touch-target-min">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary">Stock Map</h1>
+<button class="h-touch-target-min w-touch-target-min flex items-center justify-center text-primary bg-surface-container-high rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+<!-- Controls: Floor Selector & View Toggle -->
+<div class="flex gap-gutter items-center">
+<!-- Floor Selector -->
+<button class="flex-1 h-touch-target-min flex items-center justify-between px-gutter bg-surface-container border border-outline-variant rounded-lg font-interactive-label text-interactive-label text-on-surface">
+<span>Floor 2 - Assembly</span>
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+<!-- View Toggle -->
+<div class="flex h-touch-target-min bg-surface-container-high rounded-lg p-1">
+<button class="flex-1 flex items-center justify-center px-4 rounded-DEFAULT bg-primary-container text-on-primary-container shadow-sm">
+<span class="material-symbols-outlined">map</span>
+</button>
+<button class="flex-1 flex items-center justify-center px-4 rounded-DEFAULT text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area: Map & Details -->
+<main class="flex-1 flex flex-col relative overflow-hidden">
+<!-- Interactive Map Area (Zoomable/Pan simulation) -->
+<div class="flex-1 bg-surface-container relative overflow-auto no-scrollbar p-margin-mobile">
+<!-- Canvas representation of Floor Plan -->
+<div class="w-[600px] h-[600px] bg-surface rounded-xl border border-outline-variant relative shadow-sm">
+<!-- Zone A: High Fill (Primary Container) -->
+<div class="absolute top-4 left-4 w-48 h-32 bg-primary-container border-2 border-primary rounded-lg flex flex-col p-2 shadow-sm transform hover:scale-105 transition-transform">
+<span class="font-interactive-label text-interactive-label text-on-primary-container">Zone A1</span>
+<span class="font-body-sm text-body-sm text-on-primary-container opacity-80">Racks: 8/10</span>
+</div>
+<!-- Zone B: Warning/FIFO Age Issue (Tertiary) -->
+<div class="absolute top-4 right-4 w-64 h-48 bg-tertiary-fixed border-2 border-tertiary-fixed-dim rounded-lg flex flex-col p-2 shadow-sm opacity-90">
+<span class="font-interactive-label text-interactive-label text-on-tertiary-container">Zone B2</span>
+<span class="font-body-sm text-body-sm text-on-tertiary-container opacity-80">FIFO Alert</span>
+<div class="mt-auto h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-3/4"></div>
+</div>
+</div>
+<!-- Zone C: Empty/Available (Surface Variant) -->
+<div class="absolute bottom-4 left-4 w-32 h-64 bg-surface-variant border-2 border-outline-variant border-dashed rounded-lg flex items-center justify-center shadow-sm">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Empty Space</span>
+</div>
+<!-- Zone D: Critical Issue (Error Container) -->
+<div class="absolute bottom-4 right-4 w-48 h-48 bg-error-container border-2 border-error rounded-lg flex flex-col p-2 shadow-sm animate-pulse">
+<div class="flex justify-between items-start">
+<span class="font-interactive-label text-interactive-label text-on-error-container">Zone C4</span>
+<span class="material-symbols-outlined text-error">warning</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-error-container opacity-80">Overcapacity</span>
+</div>
+<!-- Aisle markers -->
+<div class="absolute top-1/2 left-0 w-full border-t-2 border-dashed border-outline opacity-50"></div>
+<div class="absolute top-0 left-1/2 h-full border-l-2 border-dashed border-outline opacity-50"></div>
+</div>
+</div>
+<!-- Bottom Sheet Details (Simulating a tapped zone) -->
+<div class="bg-surface rounded-t-xl border-t border-outline-variant shadow-lg absolute bottom-0 left-0 w-full flex flex-col z-30 transition-transform transform translate-y-0 max-h-[442px]">
+<div class="flex justify-center py-2">
+<div class="w-12 h-1 bg-outline-variant rounded-full"></div>
+</div>
+<div class="px-margin-mobile pb-margin-mobile flex-1 overflow-y-auto">
+<div class="flex justify-between items-center mb-4">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary">Zone A1 Details</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Raw Materials - Fast Movers</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-interactive-label text-interactive-label">
+                        80%
+                    </div>
+</div>
+<!-- Rack List -->
+<div class="flex flex-col gap-base">
+<!-- Rack Item -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex flex-col gap-2 relative overflow-hidden">
+<!-- Status Accent -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex justify-between items-center pl-2">
+<span class="font-interactive-label text-interactive-label text-on-surface">Rack 01-A</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">4/5 Lots</span>
+</div>
+</div>
+<!-- Rack Item -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex flex-col gap-2 relative overflow-hidden">
+<!-- Status Accent -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div class="flex justify-between items-center pl-2">
+<span class="font-interactive-label text-interactive-label text-on-surface">Rack 01-B</span>
+<span class="font-body-sm text-body-sm text-tertiary">FIFO Check Required</span>
+</div>
+</div>
+<!-- Rack Item -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex flex-col gap-2 relative overflow-hidden opacity-60">
+<!-- Status Accent -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline"></div>
+<div class="flex justify-between items-center pl-2">
+<span class="font-interactive-label text-interactive-label text-on-surface">Rack 01-C</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Empty</span>
+</div>
+</div>
+</div>
+<button class="w-full h-touch-target-min bg-primary text-on-primary rounded-lg font-interactive-label text-interactive-label mt-gutter flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">inventory_2</span>
+                    Log New Lot
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Shared Component) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-touch-target-min px-margin-mobile bg-surface bg-surface-container-highest dark:bg-inverse-surface border-t border-outline-variant shadow-lg z-50">
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-variant w-16 h-full transition-colors">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-variant w-16 h-full transition-colors">
+<span class="material-symbols-outlined mb-1">analytics</span>
+<span class="font-label-caps text-label-caps">Trace</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-variant w-16 h-full transition-colors">
+<span class="material-symbols-outlined mb-1">insert_chart</span>
+<span class="font-label-caps text-label-caps">KPI</span>
+</button>
+<!-- Active Tab: Records (Closest semantic match for Stock Map/Inventory) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:bg-surface-variant Active: scale-90 transition-transform duration-150 w-20 h-10 mt-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-label-caps text-label-caps">Records</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-variant w-16 h-full transition-colors">
+<span class="material-symbols-outlined mb-1">account_circle</span>
+<span class="font-label-caps text-label-caps">User</span>
+</button>
+</nav>
+</body></html>
