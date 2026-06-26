@@ -224,8 +224,9 @@
     function cardHtml(card, tone, idx){
       var age = card.ageDays != null ? (card.ageDays + 'd ago') : '';
       var edge = card.overdue ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>' : '';
-      return '<button class="card-in text-left w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-4 pl-5 relative overflow-hidden shadow-sm ' +
+      return '<button class="card js-card card-in text-left w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-4 pl-5 relative overflow-hidden shadow-sm ' +
         'hover:shadow-md hover:border-secondary/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[.99] transition cursor-pointer" ' +
+        'data-doc="' + esc(card.docNo) + '" data-stage="' + (card.stage||0) + '" data-status="' + esc(card.status) + '" data-name="' + esc(card.name||'') + '" ' +
         'style="animation-delay:' + (idx*40) + 'ms">' + edge +
         '<div class="flex justify-between items-start gap-2">' +
           '<div class="flex flex-col gap-1 min-w-0">' +
@@ -279,6 +280,69 @@
         .withFailureHandler(function(err){ root.innerHTML = '<div class="text-error text-[13px] text-center py-12">Board load failed: ' + esc(err && err.message ? err.message : err) + '</div>'; })
         .getQmsv2Board(currentType, currentRole);
     }
+
+    // ============ pipeline detail (card tap) ============
+    // Reuses the existing Trace engine (traceBatch) — no new server code.
+    function traceLane(title, rows, render){
+      if (!rows || !rows.length) return '';
+      return '<div class="mt-4"><div class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">' + title + '</div>' +
+        '<div class="flex flex-col gap-1.5">' + rows.map(render).join('') + '</div></div>';
+    }
+    function laneRow(docNo, sub, badge){
+      return '<div class="flex items-center justify-between gap-2 px-3 py-2 bg-surface-container-low rounded-lg">' +
+        '<div class="min-w-0"><div class="font-mono text-[12px] text-on-surface">' + esc(docNo) + '</div>' +
+        (sub ? '<div class="text-[11px] text-on-surface-variant truncate">' + esc(sub) + '</div>' : '') + '</div>' +
+        (badge ? '<span class="font-label-caps text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-secondary-container/15 text-secondary shrink-0">' + esc(badge) + '</span>' : '') +
+        '</div>';
+    }
+    function renderDetail(meta, trace){
+      var t = trace || {};
+      var up = (t.upstream && t.upstream.components) || [];
+      var ipqc = (t.thisBatch && t.thisBatch.ipqc) || [];
+      var dn = t.downstream || {};
+      var iss = t.issues || {};
+      var html = '<div class="flex justify-between items-start mb-1">' +
+        '<div><span class="font-label-caps text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-secondary-container/15 text-secondary">' + esc(meta.status) + '</span>' +
+        '<div class="font-mono text-[15px] font-semibold text-on-surface mt-1">' + esc(meta.doc) + '</div></div>' +
+        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>' +
+        '<p class="text-[13px] text-on-surface-variant mb-3">' + esc(meta.name || '—') + '</p>' +
+        '<div class="bg-surface-container-low rounded-lg p-3">' + pipelineHtml(meta.stage) + '</div>';
+
+      if (!trace || trace.success === false){
+        html += '<div class="text-[12px] text-on-surface-variant mt-4">Trace unavailable.</div>';
+      } else {
+        // Field names verified against Trace.js _computeTrace_ shapes.
+        html += traceLane('Upstream components', up, function(c){
+          var sub = (c.compDesc || '') + (c.totalIssued != null ? ' · ' + c.totalIssued + ' ' + (c.unit||'') : '');
+          return laneRow(c.compCode || '—', sub, c.type); });
+        html += traceLane('IPQC rounds', ipqc, function(r){ return laneRow(r.docNo, (r.inspector ? r.inspector + ' · ' : '') + (r.rounds ? r.rounds + ' rounds' : ''), r.status); });
+        html += traceLane('Downstream · OQC', dn.oqc || [], function(r){ return laneRow(r.docNo, r.customer || '', r.status); });
+        html += traceLane('Downstream · Dispatch', dn.dispatch || [], function(r){ return laneRow(r.docNo, r.customer || '', r.status); });
+        html += traceLane('Downstream · FG jobs', dn.fgJobs || [], function(r){ return laneRow(r.jobId, (r.fgCode || '') + (r.fgDesc ? ' · ' + r.fgDesc : ''), r.status); });
+        html += traceLane('Issues · NCR', iss.ncr || [], function(r){ return laneRow(r.docNo, r.source || '', r.status); });
+        html += traceLane('Issues · Returns', iss.customerReturn || [], function(r){ return laneRow(r.docNo, r.customer || '', r.status); });
+        var hasAny = up.length || ipqc.length || (dn.oqc||[]).length || (dn.dispatch||[]).length || (dn.fgJobs||[]).length || (iss.ncr||[]).length || (iss.customerReturn||[]).length;
+        if (!hasAny) html += '<div class="text-[12px] text-on-surface-variant mt-4">No linked records in trace window.</div>';
+      }
+      sheet.innerHTML = html;
+      document.getElementById('sheetClose').addEventListener('click', closeSheet);
+    }
+    function openDetail(meta){
+      sheet.innerHTML = '<div class="flex justify-between items-center mb-3"><h2 class="font-headline text-[18px] font-bold">' + esc(meta.doc) + '</h2>' +
+        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>' +
+        '<div class="text-on-surface-variant text-[13px] py-6 text-center">Loading trace…</div>';
+      openSheet();
+      var x = document.getElementById('sheetClose'); if (x) x.addEventListener('click', closeSheet);
+      google.script.run
+        .withSuccessHandler(function(trace){ renderDetail(meta, trace); })
+        .withFailureHandler(function(){ renderDetail(meta, null); })
+        .traceBatch(meta.doc);
+    }
+    root.addEventListener('click', function(e){
+      var c = e.target.closest('.js-card'); if (!c) return;
+      openDetail({ doc: c.getAttribute('data-doc'), stage: Number(c.getAttribute('data-stage')) || 0,
+        status: c.getAttribute('data-status'), name: c.getAttribute('data-name') });
+    });
 
     // ============ identity ============
     function applyOperator(op){
