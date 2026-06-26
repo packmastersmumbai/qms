@@ -60,7 +60,7 @@ Each card/doc shows its journey as a pipeline. Stages are **done (●, tap → t
 
 ### 3.6 Stock map — two lenses (toggle)
 - **(a) Treemap heatmap** — tiles **sized by qty/volume**, **colored by FIFO age OR fill%**, grouped by floor/section; tap a section header to zoom; tap a tile → actions; multi-select → batch. (Modeled on a stock-market treemap.) Needs **no new data** — renders from existing stock data.
-- **(b) Floor-plan view** — the user's **real hand-drawn ground-floor layout** as an interactive map. Zones: **BULK RM (J01–J25)**, **PACKAGING MATERIAL A/B/C**, **FINISHED GOODS**, **BUFFER PALLETS (M01–M24)**, **LINES 1–3**, **SCRAP**, **LAB/QA**, plus non-storage (office/stairs/lifts). FIFO/fill colored; **zone → rack → lot → act**. Optional **safety overlay** toggle (hazard zones, extinguishers, escape paths, assembly point — all present in the drawing). Needs a **new `FLOOR_LAYOUT` definition**.
+- **(b) Floor-plan view** — the user's **real hand-drawn 1st-floor layout** as an interactive map (Ground + 2nd floor, mostly similar, added later; `FLOOR_LAYOUT` is multi-floor). Zones: **BULK RM (J01–J25)**, **PACKAGING MATERIAL A/B/C**, **FINISHED GOODS**, **BUFFER PALLETS (M01–M24)**, **LINES 1–3**, **SCRAP**, **LAB/QA**, plus non-storage (office/stairs/lifts). FIFO/fill colored; **zone → rack → lot → act**. Optional **safety overlay** toggle (hazard zones, extinguishers, escape paths, assembly point — all present in the drawing). Needs a **new `FLOOR_LAYOUT` definition**.
 
 ### 3.7 Capacity / space model
 - Populate **`LOCATIONS.Capacity Qty` + `Capacity Unit`** (columns **exist but are blank** today).
@@ -249,13 +249,13 @@ Each phase ships independently; full E2E green before advancing.
 
 ---
 
-## 13. Open Questions (for human input before P1 build)
+## 13. Resolved Decisions (was Open Questions)
 
-1. **Floor scope:** is the hand-drawn **Ground floor** the only floor for v1, with 1F/2F `FLOOR_LAYOUT` provided later?
-2. **Role→stage matrix:** confirm which `OPERATORS` roles own which live stages (gate→GRN, inspector→IQC/IPQC/OQC, storage→Putaway/Move/Issue, dispatch→Dispatch, manager→all).
-3. **Rollout:** run QMS v2 as a **new home** with old forms still reachable (recommended), or replace the landing outright once P1 is stable?
-4. **Low-stock placement:** keep the existing Warehouse Low-Stock tab, or surface reorder alerts as a Stock-Map flag (recommended)?
-5. **Admin modules** (PO, Control Plan, Import CSV, Masters): live under the slim "View/Manage" bar (recommended), not the action picker?
+1. **Floor scope:** the provided hand-drawn plan is the **1st floor**. Ground + 2nd floor layouts come later and are **mostly similar** — `FLOOR_LAYOUT` must support multiple floors, seeded with 1F first.
+2. **Role→stage matrix (confirmed):** Gate→GRN(receive); Inspector→IQC/IPQC/OQC; Storage→Putaway/Move/Issue/Return; Dispatch→Dispatch; Manager→all (full board).
+3. **Rollout:** QMS v2 ships as a **new home with old forms still reachable** (incremental; landing not replaced outright).
+4. **Low-stock placement:** **both** — keep the existing Warehouse Low-Stock tab AND surface reorder alerts as a Stock-Map flag (P3, when stock map lands). No new work in P1.
+5. **Admin modules** (PO, Control Plan, Import CSV, Masters): live under a slim **"View/Manage" bar**, not the action picker. The picker is for floor *actions* only.
 
 ---
 
