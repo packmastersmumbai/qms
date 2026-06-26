@@ -567,29 +567,49 @@
 
     function actionById(id){ return actionRegistry.actions.filter(function(a){ return a.id===id; })[0]; }
 
+    // Inline form — field styling verbatim from Stitch 03-action-form-move.
     function renderInlineForm(action){
-      var html = '<div class="flex justify-between items-center mb-3"><h2 class="font-headline text-[20px] font-bold">' + esc(action.label) + '</h2>' +
-        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>';
+      // label nicer than the raw field name
+      var LABELS = { material:'Material', lot:'Lot / Batch', fromLoc:'From Location', toLoc:'To Location', qty:'Quantity' };
+      var SEL = 'w-full h-[48px] px-4 rounded border border-outline bg-surface-container-low text-on-surface font-body-lg focus:outline-none focus:border-2 focus:border-primary';
+      var html = '<div class="flex justify-between items-center mb-5"><h2 class="font-headline-md text-headline-md font-bold text-primary">' + esc(action.label) + '</h2>' +
+        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>' +
+        '<div class="flex flex-col gap-6">';
+
       (action.fields || []).forEach(function(f){
-        html += '<div class="mt-3"><label class="block text-[12px] font-semibold text-on-surface-variant mb-1 capitalize">' + esc(f.name) + '</label>';
-        var cls = 'w-full min-h-[44px] px-3 py-2.5 text-[15px] border border-outline-variant rounded-lg bg-surface-container-lowest focus:ring-2 focus:ring-secondary focus:border-secondary';
+        var lbl = LABELS[f.name] || f.name;
+        if (f.type === 'number'){
+          // Big centered quantity input (Stitch hero field).
+          html += '<div class="flex flex-col gap-3 mt-1"><label class="font-interactive-label text-interactive-label text-on-surface text-center">' + esc(lbl) + '</label>' +
+            '<div class="relative w-full max-w-[220px] mx-auto">' +
+            '<input type="number" inputmode="decimal" min="0" step="any" data-field="' + f.name + '" id="f_' + f.name + '" value="" placeholder="0" ' +
+            'class="w-full h-[64px] rounded border-2 border-primary bg-surface-container-lowest text-on-surface font-display-lg-mobile text-display-lg-mobile text-center focus:outline-none shadow-inner" style="appearance:textfield;"></div></div>';
+          return;
+        }
+        html += '<div class="flex flex-col gap-2"><label class="font-interactive-label text-interactive-label text-on-surface">' + esc(lbl) + '</label>';
         if (f.type === 'material'){
-          html += '<select data-field="' + f.name + '" id="f_' + f.name + '" class="' + cls + '"><option value="">Select material…</option>' +
-            ((formData&&formData.materials)||[]).map(function(m){ return '<option value="' + esc(m.code) + '">' + esc(m.code) + '</option>'; }).join('') + '</select>';
+          html += '<div class="relative"><select data-field="' + f.name + '" id="f_' + f.name + '" class="' + SEL + ' appearance-none pr-10"><option value="">Select material…</option>' +
+            ((formData&&formData.materials)||[]).map(function(m){ return '<option value="' + esc(m.code) + '">' + esc(m.code) + '</option>'; }).join('') +
+            '</select><span class="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none">arrow_drop_down</span></div>';
         } else if (f.type === 'location'){
-          html += '<select data-field="' + f.name + '" id="f_' + f.name + '" class="' + cls + '"><option value="">Select location…</option>' +
-            ((formData&&formData.locations)||[]).map(function(l){ return '<option value="' + esc(l.id) + '">' + esc(l.label) + '</option>'; }).join('') + '</select>';
-        } else if (f.type === 'number'){
-          html += '<input type="number" inputmode="decimal" min="0" step="any" data-field="' + f.name + '" id="f_' + f.name + '" class="' + cls + '">';
+          var emphasised = f.name === 'toLoc';
+          var selCls = emphasised ? SEL.replace('border border-outline', 'border-2 border-primary').replace('bg-surface-container-low', 'bg-surface-container-lowest') : SEL;
+          var qrCls = emphasised ? 'bg-primary-container text-on-primary-container shadow-md' : 'bg-surface-container-high border border-outline-variant text-primary';
+          html += '<div class="flex gap-3"><div class="relative flex-1"><select data-field="' + f.name + '" id="f_' + f.name + '" class="' + selCls + ' appearance-none pr-10"><option value="">Select location…</option>' +
+            ((formData&&formData.locations)||[]).map(function(l){ return '<option value="' + esc(l.id) + '">' + esc(l.label) + '</option>'; }).join('') +
+            '</select><span class="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none">arrow_drop_down</span></div>' +
+            '<button type="button" aria-label="Scan ' + esc(lbl) + '" class="h-[48px] w-[48px] flex-shrink-0 rounded flex items-center justify-center active:scale-95 transition ' + qrCls + '" onclick="alert(\'QR scan is coming in P2.\')">' +
+            '<span class="material-symbols-outlined">qr_code_scanner</span></button></div>';
         } else {
-          html += '<input type="text" data-field="' + f.name + '" id="f_' + f.name + '" class="' + cls + '">';
+          html += '<input type="text" data-field="' + f.name + '" id="f_' + f.name + '" class="' + SEL + '">';
         }
         html += '</div>';
       });
-      html += '<div id="onhand" class="text-[12px] text-on-surface-variant mt-2"></div>' +
-        '<div class="flex gap-3 mt-5">' +
-        '<button id="cancelAct" class="flex-1 min-h-[48px] rounded-lg border border-outline-variant text-on-surface-variant font-bold">Cancel</button>' +
-        '<button id="submitAct" data-id="' + action.id + '" class="flex-1 min-h-[48px] rounded-lg bg-primary text-on-primary font-bold active:scale-[.98] transition">Confirm</button>' +
+
+      html += '</div><div id="onhand" class="text-body-sm font-body-sm text-on-surface-variant mt-4 text-center"></div>' +
+        '<div class="flex gap-3 mt-6">' +
+        '<button id="cancelAct" class="flex-1 h-[48px] rounded border border-outline-variant text-on-surface-variant font-interactive-label text-interactive-label font-bold">Cancel</button>' +
+        '<button id="submitAct" data-id="' + action.id + '" class="flex-1 h-[48px] rounded bg-primary text-on-primary font-interactive-label text-interactive-label font-bold active:scale-95 transition">Confirm</button>' +
         '</div>';
       sheet.innerHTML = html;
       document.getElementById('sheetClose').addEventListener('click', closeSheet);
