@@ -60,7 +60,7 @@ REUSE (do NOT modify)
 | Rollout | new home, Landing keeps a link; do NOT replace Landing | spec §13 |
 | Cache | bump `getFormHtml` key on every HTML change | GAS gotcha |
 
-**Open question to confirm:** P1 board — show **all 7 doc-types as tabs** (even those with no role match for the current user), or only the current role's relevant tabs? *Recommend: show all tabs, default to the role's primary tab, "My Work" filters cards within.*
+**RESOLVED (2026-06-26):** P1 board shows **all 7 doc-type tabs** for every user; defaults to the current role's primary tab; "My Work" filters cards within. (User-confirmed.)
 
 ---
 

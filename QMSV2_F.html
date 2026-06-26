@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cockpit — Pack Masters QMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    /* DESIGN.md tokens (authority) — white canvas, navy anchor, electric-blue link. */
+    :root{
+      --primary:#0D1B6E; --on-primary:#FFFFFF; --link:#0070F3;
+      --ink:#0F172A; --body:#374151; --muted:#6B7280; --faint:#94A3B8;
+      --canvas:#F5F7FA; --surface:#FFFFFF; --hairline:#E5E7EB;
+      --fail:#DC2626;
+    }
+    *{box-sizing:border-box;}
+    body{font-family:'Inter',system-ui,sans-serif; background:var(--canvas); color:var(--ink);
+      margin:0; min-height:100dvh; -webkit-tap-highlight-color:transparent;}
+    .topbar{position:sticky; top:0; z-index:10; background:var(--primary); color:var(--on-primary);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 16px; height:52px;}
+    .topbar h1{font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:700;
+      letter-spacing:-0.3px; margin:0;}
+    .who{min-height:44px; display:flex; align-items:center; font-size:13px; font-weight:600;
+      color:var(--on-primary); opacity:.85;}
+    .wrap{max-width:560px; margin:0 auto; padding:16px;}
+    .board-empty{color:var(--muted); font-size:14px; text-align:center; padding:48px 16px;
+      border:1px dashed var(--hairline); border-radius:12px; background:var(--surface);}
+    .mono{font-family:'JetBrains Mono',monospace;}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h1>QMS Cockpit</h1>
+    <div class="who" id="whoSlot">—</div>
+  </header>
+
+  <main class="wrap">
+    <!-- Board mount point — kanban + cards land here in T3/T4. -->
+    <div id="qmsv2Root" class="board-empty">Loading board…</div>
+  </main>
+
+  <script>
+    // T2: prove the page mounts and the server RPC wiring is live.
+    // Role/identity dropdown (T3) and kanban render (T4) build on this root.
+    (function init(){
+      var root = document.getElementById('qmsv2Root');
+      google.script.run
+        .withSuccessHandler(function(board){
+          if (!board || !board.columns){ root.textContent = 'No board data.'; return; }
+          var c = board.counts || {};
+          root.innerHTML = 'Board OK · <span class="mono">' + board.type + '</span> · ' +
+            (c.total||0) + ' records (' + (c.pending||0) + ' pending, ' +
+            (c.inProgress||0) + ' in-progress, ' + (c.done||0) + ' done)';
+        })
+        .withFailureHandler(function(err){
+          root.textContent = 'Board load failed: ' + (err && err.message ? err.message : err);
+        })
+        .getQmsv2Board('GRN', 'manager');
+    })();
+  </script>
+</body>
+</html>

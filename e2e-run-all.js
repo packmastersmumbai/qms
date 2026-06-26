@@ -11,6 +11,7 @@ const SUITES = [
   'e2e-ncr-records-trace.js',
   'e2e-masters-kpi-warehouse.js',
   'e2e-lowstock-logic.js',
+  'e2e-qmsv2.js',
 ];
 let allOk = true;
 

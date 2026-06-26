@@ -314,12 +314,12 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v10_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v11_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;
   } catch (e) {}
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing', Recorder:'Recorder_F', Rework:'Rework_F', Scan:'Scan_F' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing', Recorder:'Recorder_F', Rework:'Rework_F', Scan:'Scan_F', QMSV2:'QMSV2_F' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();
