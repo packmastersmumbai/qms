@@ -132,23 +132,38 @@
     </nav>
 
     <!-- Main -->
-    <main class="flex-1 overflow-y-auto pb-28 md:pb-8">
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-background">
 
-      <!-- Doc-type tabs (mobile) + filter row -->
-      <div class="sticky top-0 bg-background/95 backdrop-blur z-30 border-b border-outline-variant">
-        <div class="px-margin-mobile md:px-margin-desktop py-3 flex items-center justify-between gap-2">
+      <!-- Desktop title bar (Stitch): doc name + Active chip + Filter/Export -->
+      <header class="hidden md:flex justify-between items-center px-margin-desktop py-4 bg-surface border-b border-outline-variant shrink-0">
+        <h2 class="font-display-lg text-display-lg text-on-surface flex items-center gap-3">
+          <span id="boardTitle">Board</span>
+          <span id="boardActive" class="bg-surface-container-high text-on-surface-variant text-sm px-2 py-1 rounded font-medium">0 Active</span>
+        </h2>
+        <div class="flex gap-2">
+          <button id="selectToggle" class="h-touch-target-min px-4 border border-outline-variant bg-surface text-primary rounded font-medium flex items-center gap-2 hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined">checklist</span> Select</button>
+          <button id="urgentToggle" class="h-touch-target-min px-4 border border-outline-variant bg-surface text-primary rounded font-medium flex items-center gap-2 hover:bg-surface-container-low transition-colors">
+            <span class="material-symbols-outlined">filter_list</span> <span id="urgentLabel">Urgent</span></button>
+        </div>
+      </header>
+
+      <!-- Mobile doc-type tabs + filter pills -->
+      <div class="md:hidden sticky top-0 bg-background/95 backdrop-blur z-30 border-b border-outline-variant">
+        <div class="px-margin-mobile py-3 flex items-center justify-between gap-2">
           <div id="filterRow" class="inline-flex bg-surface-container-high rounded-full p-1 border border-outline-variant/50 gap-0.5">
             <button data-filter="all" class="filter-pill px-4 py-1.5 rounded-full text-[14px] font-medium transition">All</button>
             <button data-filter="urgent" class="filter-pill px-4 py-1.5 rounded-full text-[14px] font-medium transition">Urgent</button>
           </div>
-          <button id="selectToggle" class="flex items-center gap-1.5 px-3 h-9 rounded-full border border-outline-variant text-[13px] font-semibold text-on-surface-variant hover:bg-surface-variant transition">
+          <button id="selectToggleM" class="flex items-center gap-1.5 px-3 h-9 rounded-full border border-outline-variant text-[13px] font-semibold text-on-surface-variant hover:bg-surface-variant transition">
             <span class="material-symbols-outlined text-[18px]">checklist</span><span class="hidden sm:inline">Select</span>
           </button>
         </div>
-        <div id="tabRow" class="md:hidden px-margin-mobile flex overflow-x-auto hide-scrollbar border-t border-outline-variant/30"></div>
+        <div id="tabRow" class="px-margin-mobile flex overflow-x-auto hide-scrollbar border-t border-outline-variant/30"></div>
       </div>
 
-      <div id="qmsv2Root" class="p-margin-mobile md:p-margin-desktop space-y-8 max-w-4xl mx-auto">
+      <!-- Kanban board area (horizontal columns) -->
+      <div id="qmsv2Root" class="flex-1 overflow-x-auto overflow-y-hidden p-gutter md:p-margin-desktop pb-28 md:pb-8">
         <div class="text-on-surface-variant text-[14px] text-center py-16">Loading board…</div>
       </div>
     </main>
@@ -203,6 +218,8 @@
     var DOC_TYPES = ['GRN','IQC','IPQC','OQC','Dispatch','Production','NCR'];
     var TAB_ICONS = { GRN:'inventory_2', IQC:'biotech', IPQC:'precision_manufacturing', OQC:'verified', Dispatch:'local_shipping', Production:'factory', NCR:'report_problem' };
     var STAGE_LABELS = ['GRN','IQC','PUTAWAY','ISSUE','OQC','DISP'];
+    var STAGE_SHORT  = ['GRN','IQC','PUT','ISS','OQC','DISP'];
+    var DOC_TITLES = { GRN:'Goods Receipt Notes (GRN)', IQC:'Incoming QC (IQC)', IPQC:'In-Process QC (IPQC)', OQC:'Outgoing QC (OQC)', Dispatch:'Dispatch', Production:'Production Jobs', NCR:'Non-Conformance (NCR)' };
 
     var roleStageMap = null, operators = [], currentOp = null;
     var currentRole = 'manager', currentType = 'GRN', currentFilter = 'all';
@@ -248,87 +265,87 @@
       DOC_TYPES.forEach(function(t){ tabRow.appendChild(tabBtn(t, true)); sideTabs.appendChild(tabBtn(t, false)); });
     }
 
-    // ============ pipeline tracker — VERBATIM Stitch markup (01-home-kanban) ============
+    // ============ mini segmented pipeline bar — Stitch desktop card (01b) ============
     function pipelineHtml(stage){
       var n = STAGE_LABELS.length;
-      var nodes = STAGE_LABELS.map(function(lbl, i){
-        var bead, txt;
-        if (i < stage){ bead = 'bg-primary-container'; txt = 'text-on-surface-variant'; }
-        else if (i === stage){ bead = 'bg-surface-container-lowest border-2 border-secondary'; txt = 'text-secondary font-bold'; }
-        else { bead = 'bg-surface-variant border border-outline-variant/50'; txt = 'text-outline'; }
-        return '<div class="flex flex-col items-center gap-1 bg-surface-container-lowest px-1">' +
-          '<div class="w-3 h-3 rounded-full ' + bead + ' ring-2 ring-surface-container-lowest"></div>' +
-          '<span class="font-mono text-[8px] uppercase ' + txt + '">' + lbl + '</span></div>';
-      }).join('');
-      // progress line width = fraction of stages completed (Stitch uses w-1/3 etc.)
-      var pct = n > 1 ? Math.round((stage / (n - 1)) * 100) : 0;
-      return '<div class="mt-2 pl-2 pt-2 border-t border-outline-variant/30">' +
-        '<div class="flex justify-between items-center relative z-0">' +
-        '<div class="absolute top-1/2 left-2 right-2 h-0.5 bg-surface-variant -z-10 -translate-y-1/2"></div>' +
-        '<div class="absolute top-1/2 left-2 h-0.5 bg-primary-container -z-10 -translate-y-1/2" style="width:calc(' + pct + '% - 1rem)"></div>' +
-        nodes + '</div></div>';
+      var segs = '', labels = '';
+      for (var i = 0; i < n; i++){
+        var done = i < stage, on = i === stage;
+        segs += '<div class="' + (done||on ? 'bg-primary-container' : 'bg-outline') + ' w-1/6' + (i < n-1 ? ' border-r border-surface' : '') + '"></div>';
+        labels += '<span class="' + (on ? 'font-bold text-primary' : '') + '">' + STAGE_SHORT[i] + '</span>';
+      }
+      return '<div class="w-full flex h-1.5 rounded-full overflow-hidden bg-surface-container-high mb-3 mt-3">' + segs + '</div>' +
+        '<div class="flex justify-between text-[10px] text-on-surface-variant font-medium uppercase tracking-wide">' + labels + '</div>';
     }
 
-    // ============ card — VERBATIM Stitch markup ============
-    // tone -> badge classes (Stitch: error-container / secondary-container/20 / pass)
-    function badgeClasses(tone){
-      if (tone === 'fail') return 'text-error bg-error-container';
-      if (tone === 'pass') return 'text-[#15803d] bg-[#dcfce7]';
-      return 'text-secondary bg-secondary-container/20';
+    // tone -> status accent strip color (Stitch desktop)
+    function stripColor(tone, overdue){
+      if (overdue) return 'bg-error';
+      if (tone === 'pass') return 'bg-[#16a34a]';
+      if (tone === 'prog') return 'bg-secondary';
+      return 'bg-tertiary-fixed-dim';
     }
+    // Stitch desktop card: docNo top-left, OVERDUE/age top-right, name, supplier, mini pipeline.
     function cardHtml(card, tone, idx){
       var age = card.ageDays != null ? (card.ageDays + 'd ago') : '';
-      var edge = card.overdue
-        ? '<div class="absolute left-0 top-0 bottom-0 w-[4px] bg-error"></div>'
-        : '<div class="absolute left-0 top-0 bottom-0 w-[4px] ' + (tone==='pass'?'bg-[#16a34a]':'bg-secondary') + '"></div>';
-      return '<button type="button" class="js-card card-in text-left w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-4 shadow-sm relative overflow-hidden flex flex-col gap-3 ' +
-        'hover:shadow-md hover:border-secondary/40 transition cursor-pointer" ' +
+      var topRight = card.overdue
+        ? '<span class="text-xs font-bold text-error bg-error-container px-1.5 py-0.5 rounded">OVERDUE</span>'
+        : (age ? '<span class="text-xs text-on-surface-variant">' + age + '</span>' : '');
+      return '<button type="button" class="js-card card-in text-left w-full bg-surface border border-outline-variant rounded shadow-sm hover:shadow-md transition-shadow relative overflow-hidden cursor-pointer p-4" ' +
         'data-doc="' + esc(card.docNo) + '" data-stage="' + (card.stage||0) + '" data-status="' + esc(card.status) + '" data-name="' + esc(card.name||'') + '" ' +
-        'style="animation-delay:' + (idx*40) + 'ms">' + edge +
-        '<div class="flex justify-between items-start pl-2">' +
-          '<div class="flex flex-col gap-1 min-w-0">' +
-            '<span class="font-label-caps text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-sm w-fit ' + badgeClasses(tone) + '">' + esc(card.status) + '</span>' +
-            '<span class="font-mono text-sm font-medium text-on-surface">' + esc(card.docNo) + '</span>' +
-          '</div>' +
-          (age ? '<span class="text-[11px] text-outline whitespace-nowrap shrink-0">' + age + '</span>'
-               : '<span class="material-symbols-outlined text-outline-variant text-lg">more_vert</span>') +
+        'style="animation-delay:' + (idx*30) + 'ms">' +
+        '<div class="absolute left-0 top-0 bottom-0 w-1 ' + stripColor(tone, card.overdue) + '"></div>' +
+        '<div class="flex justify-between items-start mb-2 pl-1">' +
+          '<span class="font-label-caps text-label-caps text-primary tracking-wider">' + esc(card.docNo) + '</span>' +
+          topRight +
         '</div>' +
-        '<p class="font-body-sm text-body-sm text-on-surface-variant pl-2 truncate">' + esc(card.name || '—') + '</p>' +
+        '<h4 class="font-interactive-label text-interactive-label text-on-surface mb-1 pl-1 truncate">' + esc(card.name || '—') + '</h4>' +
+        '<p class="font-body-sm text-body-sm text-on-surface-variant mb-1 pl-1">' + esc(card.status) + '</p>' +
         pipelineHtml(card.stage || 0) +
       '</button>';
     }
 
-    function sectionHtml(title, dot, cards, tone, startIdx){
-      if (!cards.length) return '';
-      var inner = cards.map(function(c, i){ return cardHtml(c, tone, startIdx + i); }).join('');
-      return '<section>' +
-        '<h3 class="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant mb-4 flex items-center gap-2">' +
-        '<span class="w-2 h-2 rounded-full ' + dot + '"></span>' + title.toUpperCase() + ' · ' + cards.length + '</h3>' +
-        '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' + inner + '</div></section>';
-    }
-
     function applyFilter(cards){ return currentFilter === 'urgent' ? cards.filter(function(c){ return c.overdue; }) : cards; }
 
+    // One kanban column: header (dot + title + count) + scrollable card area.
+    function columnHtml(title, dotColor, cards, tone, startIdx){
+      var inner = cards.length
+        ? cards.map(function(c, i){ return cardHtml(c, tone, startIdx + i); }).join('')
+        : '<div class="flex flex-col items-center justify-center text-center text-on-surface-variant/60 py-12 gap-2">' +
+          '<span class="material-symbols-outlined text-3xl">inbox</span><span class="text-sm">Nothing here</span></div>';
+      return '<div class="w-80 md:w-auto flex flex-col h-full bg-surface-container-lowest border border-outline-variant rounded-lg shrink-0">' +
+        '<div class="p-3 border-b border-outline-variant flex justify-between items-center bg-surface-bright rounded-t-lg">' +
+          '<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">' +
+            '<div class="w-3 h-3 rounded-full ' + dotColor + '"></div>' + title + '</h3>' +
+          '<span class="text-on-surface-variant font-medium bg-surface-container px-2 py-0.5 rounded text-sm">' + cards.length + '</span>' +
+        '</div>' +
+        '<div class="flex-1 overflow-y-auto p-2 space-y-3">' + inner + '</div></div>';
+    }
+
+    // Split server's {pending,inProgress,done} into Stitch's 4 columns.
+    // Completed = done but not terminal-released; Verified = released/dispatched/verified.
+    function splitColumns(board){
+      var c = board.columns;
+      var pending = applyFilter(c.pending);
+      var inProg = applyFilter(c.inProgress);
+      var doneAll = applyFilter(c.done);
+      var verified = doneAll.filter(function(x){ return /RELEAS|DISPATCH|VERIFI/i.test(x.status||''); });
+      var completed = doneAll.filter(function(x){ return !/RELEAS|DISPATCH|VERIFI/i.test(x.status||''); });
+      return { pending: pending, inProgress: inProg, completed: completed, verified: verified };
+    }
+
     function renderBoard(board){
-      var cols = board.columns;
-      var pending = applyFilter(cols.pending);
-      var overdue = pending.filter(function(c){ return c.overdue; });
-      var pendingRest = pending.filter(function(c){ return !c.overdue; });
-      var inProg = applyFilter(cols.inProgress);
-      var done = applyFilter(cols.done);
-
-      var i = 0, html = '';
-      html += sectionHtml('Action Required', 'bg-error', overdue, 'fail', i); i += overdue.length;
-      html += sectionHtml('Pending', 'bg-secondary', pendingRest, 'prog', i); i += pendingRest.length;
-      html += sectionHtml('In Progress', 'bg-secondary', inProg, 'prog', i); i += inProg.length;
-      html += sectionHtml('Done', 'bg-[#16a34a]', done, 'pass', i);
-
-      if (!html){
-        root.innerHTML = '<div class="text-on-surface-variant text-[14px] text-center py-16">' +
-          (currentFilter === 'urgent' ? 'Nothing urgent in ' + currentType + '.' : 'No ' + currentType + ' records.') + '</div>';
-        return;
-      }
+      var s = splitColumns(board);
+      var i = 0, html = '<div class="flex gap-gutter h-full min-w-max md:min-w-0 md:grid md:grid-cols-4">';
+      html += columnHtml('Pending',     'bg-outline',  s.pending,    'pending', i); i += s.pending.length;
+      html += columnHtml('In Progress', 'bg-secondary',s.inProgress, 'prog',    i); i += s.inProgress.length;
+      html += columnHtml('Completed',   'bg-outline',  s.completed,  'prog',    i); i += s.completed.length;
+      html += columnHtml('Verified',    'bg-[#16a34a]',s.verified,   'pass',    i);
+      html += '</div>';
       root.innerHTML = html;
+      // title bar counts (desktop)
+      var bt = document.getElementById('boardTitle'); if (bt) bt.textContent = DOC_TITLES[currentType] || currentType;
+      var ba = document.getElementById('boardActive'); if (ba) ba.textContent = (board.counts ? board.counts.total : 0) + ' Active';
     }
 
     function loadBoard(){
@@ -434,8 +451,14 @@
       Array.prototype.forEach.call(root.querySelectorAll('.js-selbox'), function(b){ b.remove(); });
       Array.prototype.forEach.call(root.querySelectorAll('.js-card'), function(c){ c.classList.remove('ring-2','ring-primary'); });
     }
-    document.getElementById('selectToggle').addEventListener('click', function(){
-      selectMode ? exitSelectMode() : enterSelectMode();
+    function toggleSelect(){ selectMode ? exitSelectMode() : enterSelectMode(); }
+    ['selectToggle','selectToggleM'].forEach(function(id){ var b = document.getElementById(id); if (b) b.addEventListener('click', toggleSelect); });
+    // Desktop "Urgent" Filter button mirrors the mobile filter pill.
+    var urgentBtn = document.getElementById('urgentToggle');
+    if (urgentBtn) urgentBtn.addEventListener('click', function(){
+      currentFilter = currentFilter === 'urgent' ? 'all' : 'urgent';
+      var lbl = document.getElementById('urgentLabel'); if (lbl) lbl.textContent = currentFilter === 'urgent' ? 'Urgent ✓' : 'Urgent';
+      paintFilters(); loadBoard();
     });
     document.getElementById('selectCancel').addEventListener('click', exitSelectMode);
     document.getElementById('selectAll').addEventListener('click', function(){
