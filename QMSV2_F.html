@@ -116,19 +116,45 @@
 
   <div class="flex-1 flex overflow-hidden">
 
-    <!-- Side nav (desktop) -->
-    <nav class="hidden md:flex flex-col h-full p-gutter gap-pipeline-gap w-60 bg-surface-container-lowest border-r border-outline-variant shrink-0 overflow-y-auto">
-      <div class="flex items-center gap-3 mb-4 px-2">
-        <div class="w-10 h-10 rounded-lg bg-primary text-on-primary grid place-items-center font-display font-extrabold text-[18px]">PM</div>
+    <!-- Side nav (desktop) — Stitch desktop sidebar (01b) -->
+    <nav class="hidden md:flex flex-col h-full w-64 bg-surface border-r border-outline-variant shrink-0 p-gutter pt-4">
+      <div class="flex items-center gap-3 px-4 mb-6">
+        <div class="w-10 h-10 rounded bg-primary-container text-on-primary grid place-items-center font-display font-extrabold text-[18px]">PM</div>
         <div>
-          <h2 class="font-headline text-[16px] font-extrabold text-primary leading-none">PM QMS v2</h2>
-          <p class="text-[12px] text-on-surface-variant">Quality Cockpit</p>
+          <h2 class="font-headline-md text-headline-md font-extrabold text-primary leading-none">PM QMS v2</h2>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Quality Cockpit</p>
         </div>
       </div>
-      <button id="sideNew" class="bg-primary text-on-primary w-full h-touch-target-min rounded-lg flex items-center justify-center gap-2 font-label-caps text-[14px] font-bold mb-2 hover:opacity-90 active:scale-[.98] transition">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">add</span> New Action
-      </button>
-      <div id="sideTabs" class="flex-1 flex flex-col gap-1"></div>
+      <!-- Search -->
+      <div class="relative px-2 mb-4">
+        <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+        <input id="boardSearch" type="text" placeholder="Find lot / GRN"
+          class="w-full h-11 pl-10 pr-4 bg-surface-container-low border border-outline-variant rounded focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all">
+      </div>
+      <!-- Doc-type nav -->
+      <div id="sideTabs" class="flex-1 overflow-y-auto flex flex-col gap-1 px-2"></div>
+      <!-- Footer: My Work/All + persona + New -->
+      <div class="mt-auto px-2 pt-4 border-t border-outline-variant flex flex-col gap-3">
+        <div class="flex bg-surface-container p-1 rounded">
+          <button id="myWorkBtn" class="flex-1 py-2 text-sm font-medium bg-surface shadow-sm rounded text-primary flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">person</span>My Work</button>
+          <button id="allBtn" class="flex-1 py-2 text-sm font-medium text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">groups</span>All</button>
+        </div>
+        <div class="w-full flex items-center justify-between p-2 rounded border border-outline-variant bg-surface">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary grid place-items-center shrink-0"><span class="material-symbols-outlined text-[18px]">person</span></div>
+            <div class="text-left flex flex-col min-w-0">
+              <span id="sideOpName" class="text-sm font-bold text-on-surface truncate">—</span>
+              <span id="sideOpRole" class="text-xs text-on-surface-variant truncate">—</span>
+            </div>
+          </div>
+          <button id="opSwitch" class="material-symbols-outlined text-on-surface-variant text-[20px]" title="Switch operator">unfold_more</button>
+        </div>
+        <button id="sideNew" class="w-full h-touch-target-min bg-primary text-on-primary rounded font-bold flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all shadow-sm">
+          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">add</span> New
+        </button>
+      </div>
     </nav>
 
     <!-- Main -->
@@ -223,7 +249,7 @@
 
     var roleStageMap = null, operators = [], currentOp = null;
     var currentRole = 'manager', currentType = 'GRN', currentFilter = 'all';
-    var actionRegistry = null, formData = null;
+    var actionRegistry = null, formData = null, lastBoard = null;
 
     var root = document.getElementById('qmsv2Root');
     var sel = document.getElementById('opSelect');
@@ -305,7 +331,12 @@
       '</button>';
     }
 
-    function applyFilter(cards){ return currentFilter === 'urgent' ? cards.filter(function(c){ return c.overdue; }) : cards; }
+    var searchTerm = '';
+    function applyFilter(cards){
+      var out = currentFilter === 'urgent' ? cards.filter(function(c){ return c.overdue; }) : cards;
+      if (searchTerm){ out = out.filter(function(c){ return ((c.docNo||'') + ' ' + (c.name||'')).toLowerCase().indexOf(searchTerm) !== -1; }); }
+      return out;
+    }
 
     // One kanban column: header (dot + title + count) + scrollable card area.
     function columnHtml(title, dotColor, cards, tone, startIdx){
@@ -352,7 +383,7 @@
       if (typeof exitSelectMode === 'function' && selectMode) exitSelectMode();
       root.innerHTML = '<div class="text-on-surface-variant text-[14px] text-center py-16">Loading board…</div>';
       google.script.run
-        .withSuccessHandler(function(board){ if (!board || !board.columns){ root.textContent='No board data.'; return; } renderBoard(board); })
+        .withSuccessHandler(function(board){ if (!board || !board.columns){ root.textContent='No board data.'; return; } lastBoard = board; renderBoard(board); })
         .withFailureHandler(function(err){ root.innerHTML = '<div class="text-error text-[13px] text-center py-12">Board load failed: ' + esc(err && err.message ? err.message : err) + '</div>'; })
         .getQmsv2Board(currentType, currentRole);
     }
@@ -489,9 +520,14 @@
       currentRole = (op && op.cockpitRole) || 'manager';
       currentType = primaryTabFor(currentRole);
       roleEl.textContent = currentRole;
+      // mirror into the sidebar persona card (Stitch desktop)
+      var sn = document.getElementById('sideOpName'); if (sn) sn.textContent = op ? op.name : '—';
+      var srl = document.getElementById('sideOpRole'); if (srl) srl.textContent = op ? ((op.role || currentRole) + '') : '—';
       try { if (op) localStorage.setItem(LS_KEY, op.name); } catch(e){}
       renderTabs(); loadBoard();
     }
+    // Sidebar "switch operator" focuses the (topbar) select dropdown.
+    (function(){ var sw = document.getElementById('opSwitch'); if (sw) sw.addEventListener('click', function(){ try { sel.focus(); sel.click(); } catch(e){} }); })();
     sel.addEventListener('change', function(){
       var op = operators.filter(function(o){ return o.name === sel.value; })[0];
       if (op) applyOperator(op);
@@ -522,6 +558,22 @@
       var b = e.target.closest('.filter-pill'); if (!b) return;
       currentFilter = b.getAttribute('data-filter'); paintFilters(); loadBoard();
     });
+    // Sidebar search — re-render the cached board (no re-fetch).
+    (function(){
+      var si = document.getElementById('boardSearch');
+      if (si) si.addEventListener('input', function(){ searchTerm = si.value.trim().toLowerCase(); if (lastBoard) renderBoard(lastBoard); });
+    })();
+    // My Work / All toggle (sidebar) — All clears the role-tab default emphasis.
+    (function(){
+      var mw = document.getElementById('myWorkBtn'), al = document.getElementById('allBtn');
+      function paintMW(active){
+        if (!mw || !al) return;
+        mw.className = 'flex-1 py-2 text-sm font-medium flex items-center justify-center gap-2 rounded ' + (active ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface');
+        al.className = 'flex-1 py-2 text-sm font-medium flex items-center justify-center gap-2 rounded ' + (!active ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface');
+      }
+      if (mw) mw.addEventListener('click', function(){ paintMW(true); currentType = primaryTabFor(currentRole); renderTabs(); loadBoard(); });
+      if (al) al.addEventListener('click', function(){ paintMW(false); });
+    })();
 
     // ============ action picker ============
     function openSheet(){ backdrop.classList.remove('hidden'); backdrop.classList.add('flex'); }
