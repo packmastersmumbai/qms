@@ -55,20 +55,37 @@
           "secondary-fixed-dim": "#aec6ff",
           "on-secondary-fixed": "#001a43",
           "on-secondary-fixed-variant": "#004397",
+          "tertiary-fixed": "#ffdbd1",
+          "tertiary-fixed-dim": "#ffb59f",
+          "on-tertiary-fixed": "#3b0a00",
+          "on-tertiary-fixed-variant": "#793019",
           "background": "#f9f9ff",
           "on-background": "#151c27",
           "surface-variant": "#dce2f3",
+          // status palette used by the generated screens (KPI strips, signal states)
+          "status-green": "#10b981",
+          "status-red": "#ef4444",
+          "status-amber": "#f59e0b",
+          "status-blue": "#3b82f6",
+          "status-gray": "#9ca3af",
           "pass": "#16a34a",
           "warn": "#d97706"
         },
         borderRadius: { "sm": "0.25rem", "DEFAULT": "0.5rem", "md": "0.75rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
         spacing: { "base": "8px", "touch-target-min": "48px", "gutter": "16px", "margin-mobile": "16px", "margin-desktop": "32px", "pipeline-gap": "4px" },
         fontFamily: {
+          // Every font-* class the markup uses must resolve, or it falls back to default.
           "display": ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+          "display-lg": ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+          "display-lg-mobile": ["Plus Jakarta Sans", "system-ui", "sans-serif"],
           "headline": ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+          "headline-md": ["Plus Jakarta Sans", "system-ui", "sans-serif"],
           "label-caps": ["Public Sans", "system-ui", "sans-serif"],
           "interactive": ["Public Sans", "system-ui", "sans-serif"],
+          "interactive-label": ["Public Sans", "system-ui", "sans-serif"],
           "body": ["Inter", "system-ui", "sans-serif"],
+          "body-lg": ["Inter", "system-ui", "sans-serif"],
+          "body-sm": ["Inter", "system-ui", "sans-serif"],
           "mono": ["JetBrains Mono", "monospace"]
         },
         fontSize: {
