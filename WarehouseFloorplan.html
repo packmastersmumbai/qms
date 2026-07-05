@@ -1,53 +1,58 @@
 <title>Warehouse Floorplan — Pack Masters QMS</title>
 <!--
-  WarehouseFloorplan.html — Phase-1 blueprint warehouse map (Step 2).
+  WarehouseFloorplan.html — real-layout blueprint warehouse map.
   CDN-FREE: GAS runs in a double-iframe (GitHub Pages -> script.googleusercontent.com) that blocks
   external <script src>/stylesheets/fonts. Everything here is inline SVG + CSS + vanilla JS.
 
   Backend is REUSED VERBATIM (no new stock/movement/scan backend). All calls are async via
   google.script.run.withSuccessHandler (GAS run returns no value). Verified contracts:
+    getMaterials()     -> [{code, desc, unit, category, ...}]  (name/uom/category source)
     getStockSummary()  -> [{materialCode, batchOrLotNo, locationId, balance}]  (balance>0 only)
-    getLocations()     -> [{id, floor, section, aisle, rack, shelf, bin, label, type,
-                            capacityQty, capacityUnit, active}]   (rack = Bay letter A-F)
+    getLocations()     -> [{id, floor, rack(=Bay A-F), type(=grade RM/PM/FG), label, ...}]
     getLowStockItems() -> [{code, desc, unit, onHand, reorderLevel, shortBy}]
-    whereIsLot(lot)    -> {found:true, locationId, ...} | {found:false, reason}   (Scan.js)
+    whereIsLot(lot)    -> {found:true, locationId, ...} | {found:false, reason}
     recordLocationTransfer({materialCode, batchOrLotNo, fromLocationId, toLocationId, qty,
                             reason, transferredBy}) -> {success, transferId} | {success:false, error}
 
-  Occupancy source = getStockSummary (flat, balance>0). Phase-1 rule: one pallet per slot, so a
-  slot with any positive balance for its locationId is "occupied" (fullness = occupied/148).
-  getStockView is NOT used for the map: it partitions rows into rm/fg/quar/wip/rework arrays with
-  differing field names — heavier and lossy for a flat id->contents map. getStockSummary is the
-  single source of truth for "what is stored where".
+  Occupancy source = getStockSummary (flat, balance>0). One pallet per slot: a slot with any
+  positive balance for its locationId is "occupied". Item NAME/UOM/category come from getMaterials
+  joined client-side by materialCode. Category drives the in-cell + PIP thumbnail icon.
+
+  LAYOUT: zones are placed by APPROXIMATE real building position (hand-traced from 04 floorplan.jpg),
+  not stacked. Each bay/zone is one entry in the ZONES table with an (x,y) origin, cols x rows grid,
+  and slot orientation. The id -> bay mapping is FIXED:
+    A=B001-B025 (RM, bulk),  B=B026-B029 (PM, side strip),  C=B030-B071 (PM, upper block),
+    D=B072-B113 (PM, lower block),  E=B114-B134 (FG, 3 cols),  F=B135-B148 (Buffer, 2 cols).
+  Renumbering never touches ids; ids are assigned by walking ZONES in declared order.
 -->
 <style>
-  /* ── Blueprint tokens (navy/cyan on paper, PM ISO print house-style — from mockup 16) ── */
+  /* ── Blueprint tokens (navy/cyan on paper, PM ISO print house-style) ── */
   :root{
     --paper:#eef2f4; --paper-2:#e3e9ec; --ink:#12303c; --ink-2:#3a5763;
     --line:#1a3a4a; --line-soft:#9db4bf; --cyan:#0e7c8b; --cyan-hi:#12a5b8;
     --grid:#c3d2d9; --amber:#b45309; --danger:#8f3a2f;
-    /* occupancy scale (sequential, works on paper + dark). Phase 1 = binary empty/full. */
-    --occ-0:#cfe0e4; --occ-full:#8f3a2f;
+    --occ-0:#cfe0e4; --occ-full:#8f3a2f; --fixed:#b7c6cd;
     --pip-bg:#f7fafb; --shadow:0 18px 40px -18px rgba(18,48,60,.55);
     --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --ui:-apple-system,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
     --disp:"Georgia","Times New Roman",serif;
   }
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
     --paper:#0d1b21; --paper-2:#102a33; --ink:#dbe9ee; --ink-2:#8bacb7;
     --line:#4aa3b5; --line-soft:#2b4a55; --cyan:#28c3d6; --cyan-hi:#5fe0ef;
     --grid:#173038; --pip-bg:#102a33; --shadow:0 18px 40px -18px rgba(0,0,0,.7);
-    --occ-0:#173a44; --occ-full:#c65441;
+    --occ-0:#173a44; --occ-full:#c65441; --fixed:#1c3a44;
   }}
   :root[data-theme="dark"]{
     --paper:#0d1b21; --paper-2:#102a33; --ink:#dbe9ee; --ink-2:#8bacb7;
     --line:#4aa3b5; --line-soft:#2b4a55; --cyan:#28c3d6; --cyan-hi:#5fe0ef;
     --grid:#173038; --pip-bg:#102a33; --shadow:0 18px 40px -18px rgba(0,0,0,.7);
-    --occ-0:#173a44; --occ-full:#c65441;
+    --occ-0:#173a44; --occ-full:#c65441; --fixed:#1c3a44;
   }
 
   *{box-sizing:border-box}
   body{margin:0;background:var(--paper);color:var(--ink);
-    font-family:var(--mono);-webkit-font-smoothing:antialiased;
+    font-family:var(--ui);-webkit-font-smoothing:antialiased;
     background-image:linear-gradient(var(--grid) 1px,transparent 1px),
       linear-gradient(90deg,var(--grid) 1px,transparent 1px);
     background-size:26px 26px;overflow:hidden;height:100vh}
@@ -56,15 +61,15 @@
   header{position:fixed;top:0;left:0;right:0;height:56px;display:flex;align-items:center;
     gap:12px;padding:0 16px;background:color-mix(in srgb,var(--paper) 82%,transparent);
     backdrop-filter:blur(8px);border-bottom:1.5px solid var(--line);z-index:20}
-  .brand{font-family:var(--disp);font-size:17px;letter-spacing:.5px;color:var(--line);font-weight:700}
-  .brand small{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--ink-2);
-    text-transform:uppercase;display:block;line-height:1;margin-top:2px}
+  .brand{font-family:var(--disp);font-size:17px;letter-spacing:.3px;color:var(--line);font-weight:700}
+  .brand small{font-family:var(--ui);font-size:10px;letter-spacing:1.5px;color:var(--ink-2);
+    text-transform:uppercase;display:block;line-height:1;margin-top:2px;font-weight:600}
   .search{margin-left:auto;display:flex;gap:0;align-items:stretch}
   .search input{font-family:var(--mono);font-size:12px;letter-spacing:.5px;padding:8px 11px;
     background:var(--paper);color:var(--ink);border:1.5px solid var(--line-soft);
     border-right:none;border-radius:2px 0 0 2px;width:190px;max-width:40vw}
   .search input::placeholder{color:var(--ink-2)}
-  .search button{font-family:var(--mono);font-size:12px;letter-spacing:1px;padding:8px 13px;
+  .search button{font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.5px;padding:8px 13px;
     background:var(--line);color:var(--paper);border:1.5px solid var(--line);
     border-radius:0 2px 2px 0;cursor:pointer}
 
@@ -76,7 +81,7 @@
   .kpi:last-child{border-right:none}
   .kpi .v{font-family:var(--disp);font-size:20px;font-weight:700;color:var(--line);line-height:1;
     font-variant-numeric:tabular-nums}
-  .kpi .k{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--ink-2);
+  .kpi .k{font-family:var(--ui);font-size:9px;font-weight:600;letter-spacing:1px;color:var(--ink-2);
     text-transform:uppercase;margin-top:3px}
   .kpi.alert .v{color:var(--amber)}
 
@@ -87,49 +92,68 @@
     transform-origin:center;will-change:transform}
   svg{display:block;overflow:visible}
 
-  .bayhead{font-family:var(--disp);fill:var(--line);font-weight:700;letter-spacing:.5px;font-size:15px}
-  .baymeta{font-family:var(--mono);fill:var(--ink-2);font-size:9px;letter-spacing:2px;text-transform:uppercase}
-  .bayframe{fill:none;stroke:var(--line-soft);stroke-width:1.5;stroke-dasharray:6 5}
+  /* zone titles use the UI font (legible, no serif cramp); ids/qty use mono */
+  .zonehead{font-family:var(--ui);fill:var(--line);font-weight:700;letter-spacing:.3px;font-size:13px}
+  .zonemeta{font-family:var(--ui);fill:var(--ink-2);font-size:8.5px;font-weight:600;
+    letter-spacing:1.5px;text-transform:uppercase}
+  .zoneframe{fill:none;stroke:var(--line-soft);stroke-width:1.5;stroke-dasharray:6 5}
+  .wall{fill:none;stroke:var(--line);stroke-width:2.5}
+
+  /* Fixed non-storage rooms (office, lab, lifts, stairs…) — muted, plain boxes */
+  .fixed rect{fill:var(--fixed);stroke:var(--line-soft);stroke-width:1.5;opacity:.55}
+  .fixed text{font-family:var(--ui);fill:var(--ink-2);font-size:10px;font-weight:600;
+    letter-spacing:.5px;text-anchor:middle;dominant-baseline:middle}
+  .fixed .sub{font-size:8px;letter-spacing:1px;text-transform:uppercase}
+
+  /* Production lines — labelled boxes with a machine glyph, not storage */
+  .line rect{fill:none;stroke:var(--cyan);stroke-width:2;stroke-dasharray:2 3}
+  .line text{font-family:var(--ui);fill:var(--cyan);font-size:11px;font-weight:700;
+    letter-spacing:1px;text-anchor:middle;dominant-baseline:middle}
+  .line .glyph{stroke:var(--cyan);stroke-width:1.5;fill:none}
 
   .slot{cursor:pointer}
-  .slot rect{fill:var(--occ-0);stroke:var(--line);stroke-width:1.5;
+  .slot rect.cell{fill:var(--occ-0);stroke:var(--line);stroke-width:1.5;
     transition:fill .25s,stroke-width .12s}
-  /* Grade-coloured fills (occupied cells). Empty stays neutral (--occ-0). */
-  .slot.occ.g-rm    rect{fill:#3b6ea5}   /* RM — blue  */
-  .slot.occ.g-pm    rect{fill:#c98a1b}   /* PM — amber */
-  .slot.occ.g-fg    rect{fill:#3f8f5b}   /* FG — green */
-  .slot.occ.g-other rect{fill:#7a8699}   /* other — slate */
-  /* qty badge: top-right of the cell */
-  .slot .qty{font-family:var(--mono);font-size:8.5px;font-weight:700;fill:#fff;
+  .slot.occ.g-rm    rect.cell{fill:#3b6ea5}   /* RM — blue  */
+  .slot.occ.g-pm    rect.cell{fill:#c98a1b}   /* PM — amber */
+  .slot.occ.g-fg    rect.cell{fill:#3f8f5b}   /* FG — green */
+  .slot.occ.g-other rect.cell{fill:#7a8699}   /* other — slate */
+  .slot .icon{pointer-events:none}
+  .slot.occ .icon{color:#fff}                 /* icon inherits currentColor */
+  .slot .qty{font-family:var(--mono);font-size:8px;font-weight:700;fill:#fff;
     text-anchor:end;dominant-baseline:hanging;paint-order:stroke;
     stroke:rgba(0,0,0,.35);stroke-width:2px;pointer-events:none}
-  .slot:hover rect{stroke-width:3}
-  .slot.sel rect{stroke:var(--cyan-hi);stroke-width:3.5;
+  .slot:hover rect.cell{stroke-width:3}
+  .slot.sel rect.cell{stroke:var(--cyan-hi);stroke-width:3.5;
     filter:drop-shadow(0 0 6px color-mix(in srgb,var(--cyan-hi) 65%,transparent))}
-  .slot.flash rect{animation:flash 1.1s ease-in-out 2}
+  .slot.flash rect.cell{animation:flash 1.1s ease-in-out 2}
   @keyframes flash{0%,100%{fill:var(--occ-0)}50%{fill:var(--cyan-hi)}}
-  .slot .code{font-family:var(--mono);font-size:9px;letter-spacing:.5px;fill:var(--ink-2);
-    text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+  .slot .code{font-family:var(--mono);font-size:8px;letter-spacing:0;fill:var(--ink-2);
+    text-anchor:middle;dominant-baseline:auto;pointer-events:none}
   .slot.occ .code{fill:#fff}
 
-  .legend{position:fixed;right:16px;top:120px;z-index:15;
-    background:color-mix(in srgb,var(--paper) 80%,transparent);backdrop-filter:blur(6px);
-    border:1.5px solid var(--line-soft);border-radius:3px;padding:9px 11px;
-    font-size:9px;letter-spacing:1px;color:var(--ink-2);text-transform:uppercase}
+  /* Legend anchored BOTTOM-RIGHT: clear of Bay E (Finished Goods, top-right) which it used to
+     overlap, AND clear of the FAB buttons (bottom-left). Horizontal wrap keeps it low-profile. */
+  .legend{position:fixed;right:16px;bottom:16px;z-index:15;
+    background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(6px);
+    border:1.5px solid var(--line-soft);border-radius:3px;padding:8px 11px;max-width:min(680px,calc(100vw - 220px));
+    font-family:var(--ui);font-size:9px;font-weight:600;letter-spacing:.5px;color:var(--ink-2);
+    text-transform:uppercase;display:flex;flex-wrap:wrap;gap:5px 14px;align-items:center;justify-content:flex-end}
   .legend .g{display:flex;align-items:center;gap:6px;margin-top:5px}
-  .legend i{width:13px;height:13px;border-radius:2px;border:1.5px solid var(--line)}
+  .legend i{width:13px;height:13px;border-radius:2px;border:1.5px solid var(--line);flex:none}
+  .legend .g svg{width:14px;height:14px;color:var(--ink-2);flex:none}
 
   /* ── FAB (scan / fit) ── */
   .fab{position:fixed;left:16px;bottom:16px;z-index:25;display:flex;gap:8px;flex-wrap:wrap}
-  .fab button{font-family:var(--mono);font-size:12px;letter-spacing:1px;padding:11px 15px;
+  .fab button{font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.5px;padding:11px 15px;
     border:1.5px solid var(--line);background:var(--line);color:var(--paper);border-radius:3px;
     cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:var(--shadow)}
   .fab button.ghost{background:transparent;color:var(--line)}
 
-  /* ── Toast (errors / lot-not-found / no-position) ── */
+  /* ── Toast ── */
   #toast{position:fixed;left:50%;top:120px;transform:translate(-50%,-16px);z-index:40;
-    background:var(--line);color:var(--paper);font-family:var(--mono);font-size:12px;
-    letter-spacing:.5px;padding:10px 16px;border-radius:3px;box-shadow:var(--shadow);
+    background:var(--line);color:var(--paper);font-family:var(--ui);font-size:12px;font-weight:600;
+    letter-spacing:.3px;padding:10px 16px;border-radius:3px;box-shadow:var(--shadow);
     opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:min(90vw,420px)}
   #toast.show{opacity:1;transform:translate(-50%,0)}
   #toast.err{background:var(--danger)}
@@ -137,15 +161,15 @@
   /* ── Loading / empty overlays ── */
   #load{position:fixed;inset:108px 0 0 0;z-index:18;display:flex;align-items:center;
     justify-content:center;flex-direction:column;gap:12px;color:var(--ink-2);
-    font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;
+    font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
     background:var(--paper)}
   #load .spin{width:34px;height:34px;border:3px solid var(--line-soft);border-top-color:var(--cyan);
     border-radius:50%;animation:spin .9s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   #load.hide{display:none}
 
-  /* ── PIP detail pane (tap a slot -> contents) ── */
-  #pip{position:fixed;right:16px;bottom:16px;width:320px;max-width:calc(100vw - 32px);
+  /* ── PIP detail pane ── */
+  #pip{position:fixed;right:16px;bottom:16px;width:340px;max-width:calc(100vw - 32px);
     background:var(--pip-bg);border:1.5px solid var(--line);border-radius:4px;
     box-shadow:var(--shadow);z-index:30;transform:translateY(140%);opacity:0;
     transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .2s}
@@ -153,24 +177,31 @@
   .pip-head{display:flex;align-items:flex-start;gap:8px;padding:13px 14px;
     border-bottom:1.5px solid var(--line-soft)}
   .pip-head .code{font-family:var(--disp);font-size:22px;color:var(--line);font-weight:700;line-height:1.1}
-  .pip-head .type{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--ink-2);
+  .pip-head .type{font-family:var(--ui);font-size:9px;font-weight:600;letter-spacing:1.5px;color:var(--ink-2);
     text-transform:uppercase;margin-top:3px}
   .pip-head .x{margin-left:auto;background:none;border:none;color:var(--ink-2);font-size:22px;
     cursor:pointer;line-height:1;padding:0 2px}
   .pip-body{padding:12px 14px;display:flex;flex-direction:column;gap:11px}
-  .pip-body .status{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;
-    display:inline-block;padding:3px 9px;border-radius:2px;align-self:flex-start}
+  .pip-body .status{font-family:var(--ui);font-size:10px;font-weight:600;letter-spacing:1.5px;
+    text-transform:uppercase;display:inline-block;padding:3px 9px;border-radius:2px;align-self:flex-start}
   .pip-body .status.empty{background:var(--paper-2);color:var(--ink-2);border:1px solid var(--line-soft)}
   .pip-body .status.occ{background:var(--danger);color:#fff}
-  .lots{font-size:12px;color:var(--ink-2);line-height:1.65}
-  .lots .lot{border-top:1px dashed var(--line-soft);padding-top:8px;margin-top:8px;
-    display:flex;justify-content:space-between;gap:8px}
+  .lots{font-family:var(--ui);font-size:12px;color:var(--ink-2);line-height:1.5}
+  .lots .lot{border-top:1px dashed var(--line-soft);padding:9px 0 0;margin-top:9px;
+    display:flex;align-items:flex-start;gap:10px}
   .lots .lot:first-child{border-top:none;padding-top:0;margin-top:0}
-  .lots .lot b{color:var(--ink);font-family:var(--mono);font-weight:600}
-  .lots .lot .q{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+  .lots .lot .thumb{flex:none;width:34px;height:34px;border-radius:3px;display:flex;
+    align-items:center;justify-content:center;background:var(--paper-2);color:var(--line);
+    border:1px solid var(--line-soft)}
+  .lots .lot .thumb svg{width:20px;height:20px}
+  .lots .lot .info{flex:1;min-width:0}
+  .lots .lot .name{color:var(--ink);font-weight:700;font-size:13px;line-height:1.25}
+  .lots .lot .meta{color:var(--ink-2);font-family:var(--mono);font-size:11px;margin-top:2px}
+  .lots .lot .q{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink);
+    font-weight:700;font-size:13px}
   .lots .empty-msg{color:var(--ink-2);font-style:italic}
-  .pip-body .move{font-family:var(--mono);font-size:12px;letter-spacing:.5px;padding:11px;
-    border-radius:3px;border:none;background:var(--cyan);color:#fff;font-weight:700;cursor:pointer}
+  .pip-body .move{font-family:var(--ui);font-size:12px;font-weight:700;letter-spacing:.3px;padding:11px;
+    border-radius:3px;border:none;background:var(--cyan);color:#fff;cursor:pointer}
 
   /* ── Move / tile-pick modal ── */
   #modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
@@ -181,31 +212,32 @@
   .sheet h3{font-family:var(--disp);font-size:17px;color:var(--line);margin:0;padding:15px 16px 11px;
     border-bottom:1.5px solid var(--line-soft)}
   .sheet .form{padding:14px 16px;display:flex;flex-direction:column;gap:11px}
-  .sheet label{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--ink-2);
+  .sheet label{font-family:var(--ui);font-size:10px;font-weight:600;letter-spacing:1px;color:var(--ink-2);
     text-transform:uppercase;display:block;margin-bottom:4px}
   .sheet input,.sheet select{font-family:var(--mono);font-size:13px;padding:9px 10px;width:100%;
     background:var(--paper);color:var(--ink);border:1.5px solid var(--line-soft);border-radius:2px}
-  .sheet .hint{font-size:11px;color:var(--ink-2);line-height:1.5}
+  .sheet .hint{font-family:var(--ui);font-size:11px;color:var(--ink-2);line-height:1.5}
   .sheet .actions{display:flex;gap:8px;padding:4px 16px 16px}
-  .sheet .actions button{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:1px;padding:11px;
-    border-radius:3px;cursor:pointer}
+  .sheet .actions button{flex:1;font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.5px;
+    padding:11px;border-radius:3px;cursor:pointer}
   .sheet .actions .go{border:none;background:var(--cyan);color:#fff;font-weight:700}
   .sheet .actions .cancel{border:1.5px solid var(--line-soft);background:transparent;color:var(--ink)}
   .sheet .actions button:disabled{opacity:.5;cursor:default}
 
-  /* ── Camera scan overlay (BarcodeDetector, feature-detected) ── */
+  /* ── Camera scan overlay ── */
   #scan{position:fixed;inset:0;z-index:55;display:none;align-items:center;justify-content:center;
     flex-direction:column;gap:16px;background:color-mix(in srgb,var(--line) 78%,transparent);
     color:var(--paper);font-family:var(--disp)}
   #scan.show{display:flex}
   #scan video{width:min(84vw,320px);height:min(84vw,320px);object-fit:cover;
     border:2px solid var(--cyan-hi);border-radius:8px;background:#000}
-  #scan .cancel{font-family:var(--mono);padding:9px 18px;border:1.5px solid var(--cyan-hi);
-    background:transparent;color:var(--paper);border-radius:3px;cursor:pointer;letter-spacing:1px}
+  #scan .cancel{font-family:var(--ui);font-weight:600;padding:9px 18px;border:1.5px solid var(--cyan-hi);
+    background:transparent;color:var(--paper);border-radius:3px;cursor:pointer;letter-spacing:.5px}
 
   @media (max-width:640px){
     #pip{left:16px;right:16px;width:auto}
     .kpi .v{font-size:17px}
+    .legend{display:none}
   }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   :focus-visible{outline:2px solid var(--cyan-hi);outline-offset:2px}
@@ -231,7 +263,7 @@
   <div class="g"><i style="background:#c98a1b"></i>PM · packaging</div>
   <div class="g"><i style="background:#3f8f5b"></i>FG · finished goods</div>
   <div class="g"><i style="background:var(--occ-0)"></i>Empty · available</div>
-  <div class="g" style="margin-top:8px;font-size:9px;color:var(--ink-2)">Number in cell = qty on pallet</div>
+  <div class="g" id="iconKey" style="margin-top:8px"></div>
 </div>
 
 <div id="stage"><div id="plan"><svg id="svg" aria-label="Warehouse floorplan"></svg></div></div>
@@ -284,30 +316,120 @@
 
 <script>
 /* ============================================================================
-   Warehouse floorplan viewer — Phase 1. Vanilla JS, no framework, GAS-safe.
+   Warehouse floorplan viewer — real-layout blueprint. Vanilla JS, GAS-safe.
    All server access via google.script.run (async, .withSuccessHandler only).
    ============================================================================ */
 
-/* ── Bay layout: single declarative table (the ONLY place counts live) ──
-   Bay = display/grouping attribute only (getLocations().rack). It is NEVER parsed from the id.
-   The id (B001..B148) is assigned by walking bays in this order; renumbering never touches ids. */
-var BAYS = [
-  { bay:'A', zone:'Bulk RM',        type:'RM', count:25 },
-  { bay:'B', zone:'Packaging strip', type:'PM', count:4  },
-  { bay:'C', zone:'Packaging upper', type:'PM', count:42 },
-  { bay:'D', zone:'Packaging lower', type:'PM', count:42 },
-  { bay:'E', zone:'Finished Goods',  type:'FG', count:21 },
-  { bay:'F', zone:'Buffer Pallets',  type:'FG', count:14 }
-];
-var TOTAL_SLOTS = 148;
 var SVG_NS = 'http://www.w3.org/2000/svg';
+
+/* ── Category → inline SVG icon (single-colour, currentColor, ~20px viewBox) ──
+   One function, one switch. Real product photos are unreachable inside GAS, so a
+   category glyph IS the per-material thumbnail. Returns raw <svg> markup (0 0 24 24).
+   Grouped by the categories that appear in MASTERS_Materials.category. */
+function categoryIcon(category){
+  var c = String(category || '').toUpperCase();
+  var open = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">';
+  var body;
+  if (/BULK|DRUM|LIQUID|SOLVENT|PRIMER|ADHESIVE|INK/.test(c)){
+    // drum: ellipse top + barrel body + a hoop
+    body = '<ellipse cx="12" cy="6" rx="6" ry="2.4"/><path d="M6 6v12c0 1.3 2.7 2.4 6 2.4s6-1.1 6-2.4V6"/><path d="M6 12c0 1.3 2.7 2.4 6 2.4s6-1.1 6-2.4"/>';
+  } else if (/LABEL|RIBBON|TAPE|FILM|ROLL|FOIL/.test(c)){
+    // roll / cylinder on its side
+    body = '<ellipse cx="6" cy="12" rx="2.2" ry="6"/><path d="M6 6h12M6 18h12"/><ellipse cx="18" cy="12" rx="2.2" ry="6"/>';
+  } else if (/CARTON|BOX|CASE|CORRUGAT/.test(c)){
+    // carton with flap seam
+    body = '<path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/>';
+  } else if (/\bCAN\b|CANS|TIN/.test(c)){
+    // can with rim
+    body = '<ellipse cx="12" cy="5" rx="5" ry="2"/><path d="M7 5v14c0 1.1 2.2 2 5 2s5-.9 5-2V5"/><path d="M7 8h10"/>';
+  } else if (/BOTTLE|JAR|VIAL/.test(c)){
+    // bottle: neck + shoulders + body
+    body = '<path d="M10 2h4v3l1.5 2.5A4 4 0 0 1 16 10v9a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-9a4 4 0 0 1 .5-2.5L10 5V2z"/>';
+  } else if (/PLUG|CAP|CLOSURE|SEAL|VALVE|SPOUT|NOZZLE|SMALL/.test(c)){
+    // small part: hex nut
+    body = '<path d="M8 4h8l4 8-4 8H8l-4-8 4-8z"/><circle cx="12" cy="12" r="3.2"/>';
+  } else if (/FG|FINISH|PALLET/.test(c)){
+    // stacked pallet
+    body = '<path d="M3 20h18M3 20v-2h18v2M5 18v-2h6v2M13 18v-2h6v2M7 16v-2h4v2M13 16v-2h4v2"/>';
+  } else {
+    // generic box (default / unknown category)
+    body = '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M4 9h16"/>';
+  }
+  return open + body + '</svg>';
+}
+
+/* Categories to advertise in the legend icon key (compact, representative). */
+var ICON_KEY = [
+  ['BULK','Bulk'], ['LABEL','Rolls'], ['CARTON','Cartons'],
+  ['CANS','Cans'], ['BOTTLE','Bottles'], ['CAP','Small parts'], ['FG','FG pallets']
+];
+function buildIconKey(){
+  var wrap = $('iconKey');
+  wrap.innerHTML = ICON_KEY.map(function(k){
+    return '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px;">' +
+      categoryIcon(k[0]) + k[1] + '</span>';
+  }).join('');
+  wrap.style.display = 'flex';
+  wrap.style.flexWrap = 'wrap';
+  wrap.style.gap = '4px 0';
+}
+
+/* ── ZONES: hand-traced real layout. Each storage zone declares its bay letter,
+   grade type, slot count, grid shape, an (x,y) origin in plan coordinates, and the
+   fill order ('row' = left-to-right then down, 'col' = top-to-bottom then right).
+   Ids are assigned by walking this list in order, so the A..F id mapping is fixed. */
+var CELL = 40, GAP = 6, STEP = CELL + GAP;   // slot pitch
+// Declared in ID order (A..F) so ids map A=B001-25, B=B026-29, C=B030-71,
+// D=B072-113, E=B114-134, F=B135-148 — the FIXED mapping. The x/y on each
+// entry places it at its REAL building position regardless of declaration order.
+var STORAGE_ZONES = [
+  // Bay A — BULK RM, upper-left of main hall (5 x 5)
+  { bay:'A', type:'RM', count:25, cols:5, rows:5,  order:'row', x:170, y:120,
+    title:'Bulk RM', sub:'Bay A · bulk raw material' },
+  // Bay B — PACKAGING side strip, outside the far-left wall (1 col x 4 rows, vertical)
+  { bay:'B', type:'PM', count:4,  cols:1, rows:4,  order:'col', x:40,  y:170,
+    title:'Packaging Material', sub:'Bay B · side strip' },
+  // Bay C — PACKAGING upper block, centre (14 x 3)
+  { bay:'C', type:'PM', count:42, cols:14, rows:3, order:'row', x:170, y:560,
+    title:'Packaging Material', sub:'Bay C · upper block' },
+  // Bay D — PACKAGING lower block, bottom (14 x 3)
+  { bay:'D', type:'PM', count:42, cols:14, rows:3, order:'row', x:170, y:760,
+    title:'Packaging Material', sub:'Bay D · lower block' },
+  // Bay E — FINISHED GOODS, upper-right, three tall columns (7 rows x 3 cols)
+  { bay:'E', type:'FG', count:21, cols:3, rows:7,  order:'col', x:1010, y:120,
+    title:'Finished Goods', sub:'Bay E · FG racks' },
+  // Bay F — BUFFER PALLETS, upper far-right, two tall columns (7 rows x 2 cols)
+  { bay:'F', type:'FG', count:14, cols:2, rows:7,  order:'col', x:1240, y:120,
+    title:'Buffer Pallets', sub:'Bay F · buffer' }
+];
+
+/* Fixed non-storage rooms/features — plain muted boxes, positioned by real layout. */
+var FIXED_ROOMS = [
+  { x:1240, y:60,  w:110, h:44, label:'Goods Lift', sub:'5 MT' },
+  { x:1490, y:120, w:120, h:120, label:'Office' },
+  { x:1490, y:300, w:120, h:40,  label:'Safety Shower' },
+  { x:1360, y:760, w:120, h:60,  label:'Lab / QA', sub:'Quality Assurance' },
+  { x:1490, y:760, w:110, h:44,  label:'Goods Lift', sub:'2 MT' },
+  { x:1490, y:830, w:110, h:44,  label:'Scrap Area' },
+  { x:40,   y:60,  w:70,  h:44,  label:'Stairs' },
+  { x:1540, y:60,  w:70,  h:44,  label:'Stairs' }
+];
+
+/* Production lines — labelled boxes with a simple machine glyph (not storage). */
+var PROD_LINES = [
+  { x:640, y:130, w:340, h:70, label:'LINE #1' },
+  { x:640, y:230, w:340, h:70, label:'LINE #2' },
+  { x:640, y:330, w:340, h:70, label:'LINE #3' }
+];
 
 /* State */
 var slotEls = {};      // id -> <g> element
-var slotMeta = {};     // id -> { bay, zone, type }
-var occByLoc = {};     // locationId -> [{material, lot, qty}]  (from getStockSummary, balance>0)
+var slotMeta = {};     // id -> { bay, type, title }
+var occByLoc = {};     // locationId -> [{material, lot, qty}]
+var matMap = {};       // materialCode -> { desc, unit, category }
 var lowStockCount = 0;
-var curSel = null;     // selected id
+var curSel = null;
 var reducedMotion = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
 function el(tag, attrs){
@@ -317,7 +439,7 @@ function el(tag, attrs){
 }
 function $(id){ return document.getElementById(id); }
 
-/* ── Toast helper (errors + empty-result messages) ── */
+/* ── Toast helper ── */
 var toastTimer = null;
 function toast(msg, isError){
   var t = $('toast');
@@ -327,57 +449,91 @@ function toast(msg, isError){
   toastTimer = setTimeout(function(){ t.className = ''; }, 3200);
 }
 
-/* ── Build the static SVG map: bay blocks + slot rects (auto-grid per bay) ── */
-var GEO = { cell:44, gap:9, cols:7, padX:26, bayGapY:58, headY:26 };
+/* ── Build the static SVG map from the real-layout tables ── */
+var PLAN_W = 1700, PLAN_H = 980;
 function buildMap(){
   var svg = $('svg');
   svg.innerHTML = '';
-  var seq = 0, y = 8, maxRight = 0;
+  svg.setAttribute('width', PLAN_W);
+  svg.setAttribute('height', PLAN_H);
+  svg.setAttribute('viewBox', '0 0 ' + PLAN_W + ' ' + PLAN_H);
 
-  BAYS.forEach(function(b){
-    var rows = Math.ceil(b.count / GEO.cols);
-    var blockH = rows * (GEO.cell + GEO.gap);
-    // bay header
-    var head = el('text', { class:'bayhead', x:GEO.padX, y:y + 14 });
-    head.textContent = 'Bay ' + b.bay + ' — ' + b.zone.toUpperCase();
-    svg.appendChild(head);
-    var meta = el('text', { class:'baymeta', x:GEO.padX, y:y + 28 });
-    meta.textContent = b.type + ' · ' + b.count + ' pallet slots';
-    svg.appendChild(meta);
+  drawBuildingWall(svg);
+  var seq = 0;
+  STORAGE_ZONES.forEach(function(z){ seq = drawStorageZone(svg, z, seq); });
+  FIXED_ROOMS.forEach(function(r){ drawFixedRoom(svg, r); });
+  PROD_LINES.forEach(function(l){ drawProdLine(svg, l); });
+}
 
-    var gridTop = y + GEO.headY + 8;
-    // slots
-    for (var i = 0; i < b.count; i++){
-      seq++;
-      var id = 'B' + ('000' + seq).slice(-3);
-      slotMeta[id] = { bay:b.bay, zone:b.zone, type:b.type };
-      var col = i % GEO.cols, row = (i / GEO.cols) | 0;
-      var sx = GEO.padX + col * (GEO.cell + GEO.gap);
-      var sy = gridTop + row * (GEO.cell + GEO.gap);
-      maxRight = Math.max(maxRight, sx + GEO.cell);
-      var g = el('g', { class:'slot', tabindex:'0', role:'button', 'data-id':id });
-      g.setAttribute('aria-label', id + ' ' + b.zone + ' empty');
-      g.appendChild(el('rect', { x:sx, y:sy, width:GEO.cell, height:GEO.cell, rx:3 }));
-      var tx = el('text', { class:'code', x:sx + GEO.cell/2, y:sy + GEO.cell/2 });
-      tx.textContent = id;
-      g.appendChild(tx);
-      bindSlot(g, id);
-      svg.appendChild(g);
-      slotEls[id] = g;
-    }
-    // dashed bay frame around this block
-    var frame = el('rect', { class:'bayframe', x:GEO.padX - 10, y:gridTop - 8,
-      width:(GEO.cols * (GEO.cell + GEO.gap)) + 4, height:blockH + 6, rx:5 });
-    svg.insertBefore(frame, svg.firstChild);
+// Outer wall of the main hall (Bay B strip sits outside it, on the left).
+function drawBuildingWall(svg){
+  svg.appendChild(el('rect', { class:'wall', x:150, y:40, width:1330, height:900, rx:6 }));
+}
 
-    y = gridTop + blockH + GEO.bayGapY;
-  });
+// One storage zone: title + meta + dashed frame + its grid of slots.
+function drawStorageZone(svg, z, seq){
+  svg.appendChild(zoneText(z.x, z.y - 26, 'zonehead', 'Bay ' + z.bay + ' — ' + z.title.toUpperCase()));
+  svg.appendChild(zoneText(z.x, z.y - 12, 'zonemeta', z.type + ' · ' + z.count + ' slots · ' + z.sub));
+  svg.insertBefore(el('rect', { class:'zoneframe', x:z.x - 8, y:z.y - 8,
+    width:z.cols * STEP + 4, height:z.rows * STEP + 4, rx:5 }), svg.firstChild);
 
-  var w = maxRight + GEO.padX;
-  svg.setAttribute('width', w);
-  svg.setAttribute('height', y);
-  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + y);
-  PLAN_W = w; PLAN_H = y;
+  for (var i = 0; i < z.count; i++){
+    seq++;
+    var id = 'B' + ('000' + seq).slice(-3);
+    slotMeta[id] = { bay:z.bay, type:z.type, title:z.title };
+    var col = z.order === 'col' ? (i / z.rows | 0) : (i % z.cols);
+    var row = z.order === 'col' ? (i % z.rows)     : (i / z.cols | 0);
+    var g = buildSlot(id, z, z.x + col * STEP, z.y + row * STEP);
+    svg.appendChild(g);
+    slotEls[id] = g;
+  }
+  return seq;
+}
+
+function zoneText(x, y, cls, txt){
+  var t = el('text', { class:cls, x:x, y:y });
+  t.textContent = txt;
+  return t;
+}
+
+// One slot <g>: cell rect + id label + placeholder for icon/qty (added on occupancy).
+function buildSlot(id, z, sx, sy){
+  var g = el('g', { class:'slot', tabindex:'0', role:'button', 'data-id':id });
+  g.setAttribute('aria-label', id + ' ' + z.title + ' empty');
+  g.appendChild(el('rect', { class:'cell', x:sx, y:sy, width:CELL, height:CELL, rx:3 }));
+  var tx = el('text', { class:'code', x:sx + CELL / 2, y:sy + CELL - 6 });
+  tx.textContent = id;
+  g.appendChild(tx);
+  bindSlot(g, id);
+  return g;
+}
+
+function drawFixedRoom(svg, r){
+  var g = el('g', { class:'fixed' });
+  g.appendChild(el('rect', { x:r.x, y:r.y, width:r.w, height:r.h, rx:3 }));
+  var t = el('text', { x:r.x + r.w / 2, y:r.y + (r.sub ? r.h / 2 - 6 : r.h / 2) });
+  t.textContent = r.label;
+  g.appendChild(t);
+  if (r.sub){
+    var s = el('text', { class:'sub', x:r.x + r.w / 2, y:r.y + r.h / 2 + 9 });
+    s.textContent = r.sub;
+    g.appendChild(s);
+  }
+  svg.appendChild(g);
+}
+
+function drawProdLine(svg, l){
+  var g = el('g', { class:'line' });
+  g.appendChild(el('rect', { x:l.x, y:l.y, width:l.w, height:l.h, rx:4 }));
+  // machine glyph: conveyor rollers under a hopper
+  var gy = l.y + l.h - 16;
+  g.appendChild(el('path', { class:'glyph',
+    d:'M' + (l.x + 20) + ' ' + gy + ' h60 M' + (l.x + 26) + ' ' + (gy - 12) +
+      ' h48 l-6 12 h-36 z' }));
+  var t = el('text', { x:l.x + l.w / 2, y:l.y + 22 });
+  t.textContent = l.label;
+  g.appendChild(t);
+  svg.appendChild(g);
 }
 
 function bindSlot(g, id){
@@ -387,14 +543,35 @@ function bindSlot(g, id){
   });
 }
 
-/* ── Data load: occupancy + KPI (all reused backend, async) ── */
+/* ── Data load: materials (for name/uom/icon) + occupancy + KPI, all async ── */
 function loadData(){
   if (typeof google === 'undefined' || !google.script || !google.script.run){
-    // Not inside GAS (e.g. a raw file preview) — render an empty map so layout is verifiable.
+    // Not inside GAS (raw file preview) — render an empty map so layout is verifiable.
     $('load').className = 'hide';
     renderOccupancy(); renderKpis();
     return;
   }
+  // Materials first so the name/UOM/icon join is ready before occupancy paints.
+  google.script.run
+    .withSuccessHandler(function(mats){ buildMatMap(mats); loadStock(); })
+    .withFailureHandler(function(){ buildMatMap([]); loadStock(); })  // map still works code-only
+    .getMaterials();
+}
+
+function buildMatMap(mats){
+  matMap = {};
+  (mats || []).forEach(function(m){
+    var code = String(m.code || '').trim();
+    if (!code) return;
+    matMap[code] = {
+      desc:     String(m.desc || '').trim(),
+      unit:     String(m.unit || '').trim(),
+      category: String(m.category || '').trim()
+    };
+  });
+}
+
+function loadStock(){
   google.script.run
     .withSuccessHandler(onSummary)
     .withFailureHandler(function(err){
@@ -408,8 +585,8 @@ function onSummary(summary){
   occByLoc = {};
   (summary || []).forEach(function(s){
     var loc = String(s.locationId || '').trim().toUpperCase();
-    if (!/^[ABC]\d{3}$/.test(loc)) return;          // map only shows physical pallet slots
-    if (!(Number(s.balance) > 0)) return;           // Phase 1: positive balance = occupied
+    if (!/^B\d{3}$/.test(loc)) return;              // physical pallet slots B001–B148 only
+    if (!(Number(s.balance) > 0)) return;           // positive balance = occupied
     (occByLoc[loc] = occByLoc[loc] || []).push({
       material: String(s.materialCode || ''),
       lot:      String(s.batchOrLotNo || ''),
@@ -419,15 +596,13 @@ function onSummary(summary){
   $('load').className = 'hide';
   renderOccupancy();
   renderKpis();
-  // Low-stock alerts are an independent read; failure here must not blank the map.
   google.script.run
     .withSuccessHandler(function(items){ lowStockCount = (items || []).length; renderKpis(); })
     .withFailureHandler(function(){ /* leave alerts as '—'; map already usable */ })
     .getLowStockItems();
 }
 
-// Grade → cell colour class. Grade is the slot's designated type (getLocations().type),
-// which is stable regardless of what's currently stored. Empty slots stay neutral grey.
+// Grade → cell colour class. Grade is the slot's designated type (stable).
 function gradeClass(type){
   var t = String(type || '').toUpperCase();
   if (t === 'RM') return 'g-rm';
@@ -435,62 +610,104 @@ function gradeClass(type){
   if (t === 'FG' || t === 'FG_HOLD') return 'g-fg';
   return 'g-other';
 }
+
+// Category for a slot's icon = the first stored lot's material category (else grade).
+function slotCategory(id){
+  var lots = occByLoc[id];
+  if (lots && lots.length){
+    var m = matMap[lots[0].material];
+    if (m && m.category) return m.category;
+  }
+  return slotMeta[id] ? slotMeta[id].type : '';
+}
+
 function renderOccupancy(){
-  Object.keys(slotEls).forEach(function(id){
-    var g = slotEls[id], lots = occByLoc[id], occ = !!lots;
-    var m = slotMeta[id];
-    g.classList.toggle('occ', occ);
-    // grade colour only shows on occupied cells; empty = neutral (answers "where's room").
-    g.classList.remove('g-rm','g-pm','g-fg','g-other');
-    if (occ) g.classList.add(gradeClass(m.type));
-    // qty badge: sum of balances in this slot (Phase-1 = 1 pallet, but a slot may hold >1 lot).
-    var badge = g.querySelector('.qty');
-    if (occ){
-      var total = lots.reduce(function(s,l){ return s + (Number(l.qty) || 0); }, 0);
-      if (!badge){
-        var r = g.querySelector('rect');
-        var bx = Number(r.getAttribute('x')) + Number(r.getAttribute('width')) - 3;
-        var by = Number(r.getAttribute('y')) + 3;
-        badge = el('text', { class:'qty', x:bx, y:by });
-        g.appendChild(badge);
-      }
-      badge.textContent = fmtNum(total);
-      badge.style.display = '';
-    } else if (badge){
-      badge.style.display = 'none';
-    }
-    g.setAttribute('aria-label', id + ' ' + m.zone + ' ' +
-      (occ ? ('occupied — ' + m.type + ', ' + lots.reduce(function(s,l){return s+(Number(l.qty)||0);},0) + ' units') : 'empty'));
-  });
+  Object.keys(slotEls).forEach(function(id){ paintSlot(id); });
+}
+
+// Paint one slot: grade fill class, category icon (top-left), qty badge (top-right).
+function paintSlot(id){
+  var g = slotEls[id], lots = occByLoc[id], occ = !!lots, m = slotMeta[id];
+  g.classList.toggle('occ', occ);
+  g.classList.remove('g-rm','g-pm','g-fg','g-other');
+  if (occ) g.classList.add(gradeClass(m.type));
+
+  setSlotIcon(g, occ ? slotCategory(id) : null);
+  setSlotQty(g, occ ? lots.reduce(function(s,l){ return s + (Number(l.qty) || 0); }, 0) : null);
+
+  g.setAttribute('aria-label', id + ' ' + m.title + ' ' + (occ
+    ? ('occupied — ' + m.type + ', ' +
+       lots.reduce(function(s,l){ return s + (Number(l.qty) || 0); }, 0) + ' units')
+    : 'empty'));
+}
+
+// Inject the category icon as a nested <svg> at the cell's top-left corner.
+function setSlotIcon(g, category){
+  var holder = g.querySelector('.icon');
+  if (category == null){ if (holder) holder.remove(); return; }
+  var r = g.querySelector('rect.cell');
+  var ix = Number(r.getAttribute('x')) + 3, iy = Number(r.getAttribute('y')) + 3;
+  if (!holder){
+    holder = el('g', { class:'icon' });
+    g.insertBefore(holder, g.querySelector('.code'));
+  }
+  holder.setAttribute('transform', 'translate(' + ix + ',' + iy + ') scale(0.66)');
+  holder.innerHTML = categoryIcon(category);
+}
+
+function setSlotQty(g, total){
+  var badge = g.querySelector('.qty');
+  if (total == null){ if (badge) badge.style.display = 'none'; return; }
+  if (!badge){
+    var r = g.querySelector('rect.cell');
+    var bx = Number(r.getAttribute('x')) + Number(r.getAttribute('width')) - 3;
+    var by = Number(r.getAttribute('y')) + 3;
+    badge = el('text', { class:'qty', x:bx, y:by });
+    g.appendChild(badge);
+  }
+  badge.textContent = fmtNum(total);
+  badge.style.display = '';
 }
 
 function renderKpis(){
   var occupied = Object.keys(occByLoc).filter(function(id){ return slotEls[id]; }).length;
-  $('kOcc').textContent = occupied + ' / ' + TOTAL_SLOTS;
-  $('kFull').textContent = Math.round(occupied / TOTAL_SLOTS * 100) + '%';
+  $('kOcc').textContent = occupied + ' / ' + 148;
+  $('kFull').textContent = Math.round(occupied / 148 * 100) + '%';
   $('kLow').textContent = lowStockCount === 0 && $('kLow').textContent === '—' ? '—' : lowStockCount;
 }
 
-/* ── Tap a slot -> PIP contents ── */
+/* ── Tap a slot -> PIP contents (icon + name + qty + UOM per lot) ── */
 function selectSlot(id){
   if (curSel && slotEls[curSel]) slotEls[curSel].classList.remove('sel');
   curSel = id;
   slotEls[id].classList.add('sel');
   var m = slotMeta[id], lots = occByLoc[id] || [];
   $('pCode').textContent = id;
-  $('pType').textContent = m.type + ' · Bay ' + m.bay + ' · ' + m.zone;
+  $('pType').textContent = m.type + ' · Bay ' + m.bay + ' · ' + m.title;
   var st = $('pStatus');
   st.className = 'status ' + (lots.length ? 'occ' : 'empty');
   st.textContent = lots.length ? 'Occupied' : 'Empty';
-  $('pLots').innerHTML = lots.length
-    ? lots.map(function(l){
-        return '<div class="lot"><b>' + esc(l.material) + '</b>'
-          + '<span class="q">' + esc(l.lot) + ' · ' + fmtNum(l.qty) + '</span></div>';
-      }).join('')
+  $('pLots').innerHTML = lots.length ? lots.map(lotRow).join('')
     : '<div class="empty-msg">No stock here — slot available for putaway.</div>';
   $('pMove').textContent = lots.length ? '＋ Move stock out / in' : '＋ Move stock here';
   $('pip').classList.add('show');
 }
+
+// One lot row: category thumbnail + material name + lot no + qty · UOM.
+function lotRow(l){
+  var m = matMap[l.material] || {};
+  var name = m.desc || l.material;                       // fall back to code if no master
+  var uom  = m.unit ? ' ' + esc(m.unit) : '';
+  return '<div class="lot">' +
+    '<span class="thumb">' + categoryIcon(m.category) + '</span>' +
+    '<span class="info">' +
+      '<span class="name">' + esc(name) + '</span>' +
+      '<span class="meta">' + esc(l.material) + ' · lot ' + esc(l.lot) + '</span>' +
+    '</span>' +
+    '<span class="q">' + fmtNum(l.qty) + uom + '</span>' +
+  '</div>';
+}
+
 function closePip(){
   $('pip').classList.remove('show');
   if (curSel && slotEls[curSel]) slotEls[curSel].classList.remove('sel');
@@ -527,8 +744,7 @@ function flyTo(id){
   selectSlot(id);
   var g = slotEls[id];
   if (!reducedMotion){ g.classList.add('flash'); setTimeout(function(){ g.classList.remove('flash'); }, 2300); }
-  // Centre the slot in the stage by adjusting pan.
-  var r = g.querySelector('rect');
+  var r = g.querySelector('rect.cell');
   var cx = Number(r.getAttribute('x')) + Number(r.getAttribute('width')) / 2;
   var cy = Number(r.getAttribute('y')) + Number(r.getAttribute('height')) / 2;
   tx = (PLAN_W / 2 - cx) * sc;
@@ -538,7 +754,7 @@ function flyTo(id){
 
 /* ── Pan / zoom via CSS transform on #plan (GPU-accelerated, no library) ── */
 var plan = $('plan'), stage = $('stage');
-var tx = 0, ty = 0, sc = 1, px, py, drag = false, PLAN_W = 1000, PLAN_H = 700;
+var tx = 0, ty = 0, sc = 1, px, py, drag = false;
 function apply(){ plan.style.transform =
   'translate(-50%,-50%) translate(' + tx + 'px,' + ty + 'px) scale(' + sc + ')'; }
 function fit(){
@@ -556,11 +772,7 @@ stage.addEventListener('wheel', function(e){
   e.preventDefault(); sc = Math.max(.4, Math.min(3, sc * (e.deltaY < 0 ? 1.12 : .9))); apply();
 }, { passive:false });
 
-/* ── Move / tile-pick flow -> recordLocationTransfer (NEVER recordScan) ──
-   Two cases:
-   - Selected slot is EMPTY  -> putaway target. Pick a source lot (from occupied slots), move IN.
-   - Selected slot is OCCUPIED -> pick one of its lots, move it OUT to a chosen free slot.
-   Both record a LOCATION_TRANSFER with from/to; the ledger is the source of truth. */
+/* ── Move / tile-pick flow -> recordLocationTransfer (NEVER recordScan) ── */
 function openMove(){
   if (!curSel){ toast('Select a slot first.'); return; }
   var target = curSel, lots = occByLoc[target] || [];
@@ -568,16 +780,14 @@ function openMove(){
   sel.innerHTML = '';
 
   if (lots.length){
-    // Move OUT of an occupied slot: source = this slot's lots, destination = a free slot.
     var dest = firstFreeSlot();
     if (!dest){ toast('No available position', true); return; }
     hint.textContent = 'Move a lot from ' + target + ' to the next free slot ' + dest + '.';
     lots.forEach(function(l){
       addOpt(sel, JSON.stringify({ material:l.material, lot:l.lot, from:target, to:dest, max:l.qty }),
-        l.material + ' · ' + l.lot + ' (' + fmtNum(l.qty) + ')');
+        moveLabel(l.material, l.lot, l.qty));
     });
   } else {
-    // Putaway INTO this empty slot: source = every occupied lot elsewhere.
     var sources = [];
     Object.keys(occByLoc).forEach(function(loc){
       if (!slotEls[loc]) return;
@@ -587,12 +797,20 @@ function openMove(){
     hint.textContent = 'Put stock into empty slot ' + target + '. Pick the source lot to relocate.';
     sources.forEach(function(s){
       addOpt(sel, JSON.stringify({ material:s.material, lot:s.lot, from:s.from, to:target, max:s.qty }),
-        s.material + ' · ' + s.lot + ' @ ' + s.from + ' (' + fmtNum(s.qty) + ')');
+        moveLabel(s.material, s.lot, s.qty) + ' @ ' + s.from);
     });
   }
   syncQtyMax();
   $('mQty').value = '';
   $('modal').classList.add('show');
+}
+
+// Option label uses the material NAME (from getMaterials) when available, not just code.
+function moveLabel(code, lot, qty){
+  var m = matMap[code] || {};
+  var name = m.desc || code;
+  var uom = m.unit ? ' ' + m.unit : '';
+  return name + ' · ' + lot + ' (' + fmtNum(qty) + uom + ')';
 }
 function addOpt(sel, val, txt){ var o = document.createElement('option'); o.value = val; o.textContent = txt; sel.appendChild(o); }
 function syncQtyMax(){
@@ -640,7 +858,6 @@ function confirmMove(){
 var scanStream = null, scanRAF = null;
 function startScan(){
   if (!('BarcodeDetector' in window)){
-    // No native scanner (Firefox / Safari / iOS): tile-pick is the fallback — just tell the user.
     toast('Scanner unavailable — tap a slot on the map instead.');
     return;
   }
@@ -670,7 +887,7 @@ function stopScan(){
 }
 function onScan(raw){
   stopScan();
-  if (/^[ABC]\d{3}$/.test(raw) && slotEls[raw]){ flyTo(raw); openMove(); }
+  if (/^B\d{3}$/.test(raw) && slotEls[raw]){ flyTo(raw); openMove(); }
   else toast('Unrecognised QR: ' + raw, true);
 }
 
@@ -686,6 +903,7 @@ $('mCancel').addEventListener('click', function(){ $('modal').classList.remove('
 $('mGo').addEventListener('click', confirmMove);
 window.addEventListener('resize', fit);
 
+buildIconKey();
 buildMap();
 fit();
 loadData();
