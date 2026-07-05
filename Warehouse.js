@@ -856,7 +856,10 @@ function suggestSlot(materialCode, qty, deps) {
     });
 
     // --- rank candidate slots ---
-    var homeType = String(material.type || material.defaultType || '').toUpperCase();
+    // Grade drives which bay a material belongs in. Materials carry `category`, not a grade —
+    // map category → grade (RM/PM/FG) so slots can be segregated. Fall back to any explicit
+    // type field if present. Empty grade = un-graded → no segregation (old any-slot behaviour).
+    var homeType = String(material.type || material.defaultType || categoryToGrade_(material.category) || '').toUpperCase();
     var ranked = _rankSlots_(getLocs(), occupantByLoc, code, homeType);
     if (!ranked.length) return { success: false, error: 'No available position' };
 
@@ -875,6 +878,18 @@ function suggestSlot(materialCode, qty, deps) {
     Logger.log('suggestSlot failed: ' + e.message);
     return { success: false, error: e.message };
   }
+}
+
+// Map a material's category to its storage grade (RM/PM/FG) — the grade a slot's `type` must
+// match for putaway. Single source of truth for category→grade routing (mirrors the bay map:
+// RM→Bay A, PM→Bays C/D, FG→Bay E). Unknown categories return '' (no segregation).
+function categoryToGrade_(category) {
+  var c = String(category || '').toUpperCase().trim();
+  if (c === 'BULK') return 'RM';
+  if (c === 'FG')   return 'FG';
+  if (c === 'LABEL' || c === 'CARTONS' || c === 'CARTON' || c === 'CANS' ||
+      c === 'BOTTLES' || c === 'RIBBON' || c === 'TAPE' || c === 'PLUG' || c === 'CAP') return 'PM';
+  return '';
 }
 
 // Find a material record by code across getMaterials()' several possible key names.
@@ -903,7 +918,12 @@ function _rankSlots_(locations, occupantByLoc, code, homeType) {
 
     var consolidating = occupant === code;
     var sameType = homeType && String(loc.type || '').toUpperCase() === homeType;
-    // Lower rank sorts first: consolidating (0) < same-type empty (1) < any empty (2).
+    // GRADE SEGREGATION: when the material's grade (homeType) is known, an EMPTY slot of a
+    // different grade is INELIGIBLE — PM stock must not land in an RM/FG bay, etc. Consolidating
+    // into a slot already holding this exact material is always allowed (same goods).
+    if (!consolidating && homeType && !sameType) return;
+    // Lower rank sorts first: consolidating (0) < same-grade empty (1). Cross-grade empties are
+    // filtered above when homeType is set; rank-2 remains only for un-graded materials (old behaviour).
     var rank = consolidating ? 0 : (sameType ? 1 : 2);
     candidates.push({ id: id, consolidating: consolidating, rank: rank });
   });
