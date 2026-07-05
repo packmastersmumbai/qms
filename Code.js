@@ -324,7 +324,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v75_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v76_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;
@@ -345,6 +345,22 @@ function getFormHtml(type) {
 
 function getScriptUrl() {
   return ScriptApp.getService().getUrl();
+}
+
+// Purge the server-side rendered-HTML cache so a fresh deploy is served immediately
+// (getFormHtml caches each form for 6h in CacheService, which survives deploys). Call after
+// a layout change. Clears both the current and prior version keys for every known form.
+function clearFormHtmlCache() {
+  var forms = ['GRN','IQC','OQC','IPQC','Dashboard','ImportCSV','Records','Gatepass','Masters',
+    'ControlPlan','CustomerReturn','Production','Dispatch','PO','KPI','Warehouse','WarehouseFloorplan',
+    'NCR','Settings','MastersCrud','Trace','Landing','Recorder','Rework','Scan','QMSV2'];
+  var cache = CacheService.getScriptCache();
+  var keys = [];
+  ['v75','v76'].forEach(function(v){
+    forms.forEach(function(f){ keys.push('pmqms_formhtml_' + v + '_' + f); });
+  });
+  cache.removeAll(keys);
+  return { cleared: keys.length };
 }
 
 function getLandingHtml() {
