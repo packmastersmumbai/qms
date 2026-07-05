@@ -780,25 +780,44 @@
     }
 
     // Fetch + render the stage-appropriate action buttons inside an open detail.
+    // openDetail re-renders the sheet up to 3× (shell → loading → trace), each building a
+    // fresh empty #nextActions. Next-actions depend only on meta (type/stage/status), never
+    // the trace — so fetch ONCE per open record and repaint synchronously from cache on the
+    // later passes. Previously each pass fired its own getNextActions RPC; the overlapping
+    // async responses repainted out of order → the hide/reappear flicker + duplicate loads.
+    var _nextActions = { key: null, acts: null };   // cache for the currently-open record
+    function _paintNextActions(host, acts, preset){
+      if (!acts || !acts.length){ host.innerHTML = ''; return; }
+      var btns = acts.map(function(a){
+        var crit = a.critical;
+        var cls = crit ? 'border-error/40 text-error bg-error-container/40'
+                       : a.id==='sample' ? 'border-secondary/40 text-secondary bg-secondary-container/10'
+                       : 'border-outline-variant text-primary bg-surface';
+        return '<button class="js-next h-touch-target-min px-4 rounded border ' + cls + ' font-interactive-label text-interactive-label font-bold flex items-center gap-2 active:scale-95 transition" data-act="' + a.id + '">' +
+          '<span class="material-symbols-outlined text-[20px]">' + (crit?'delete':'arrow_forward') + '</span>' + esc(a.label) + '</button>';
+      }).join('');
+      host.innerHTML = '<div class="mt-5"><div class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">Next actions</div>' +
+        '<div class="flex flex-wrap gap-2">' + btns + '</div></div>';
+      Array.prototype.forEach.call(host.querySelectorAll('.js-next'), function(b){
+        b.addEventListener('click', function(){ startRecordAction(b.getAttribute('data-act'), preset); });
+      });
+    }
     function renderNextActions(meta, preset){
       var host = document.getElementById('nextActions'); if (!host) return;
+      var key = String(meta.doc || '') + '|' + meta.stage + '|' + meta.status;
+      // Repaint pass: same record, actions already fetched → paint from cache, no RPC, no flicker.
+      if (_nextActions.key === key && _nextActions.acts){ _paintNextActions(host, _nextActions.acts, preset); return; }
+      // First open of this record: fetch once, cache, then paint.
+      _nextActions = { key: key, acts: null };
       google.script.run.withSuccessHandler(function(acts){
-        if (!acts || !acts.length){ host.innerHTML = ''; return; }
-        var btns = acts.map(function(a){
-          var crit = a.critical;
-          var cls = crit ? 'border-error/40 text-error bg-error-container/40'
-                         : a.id==='sample' ? 'border-secondary/40 text-secondary bg-secondary-container/10'
-                         : 'border-outline-variant text-primary bg-surface';
-          return '<button class="js-next h-touch-target-min px-4 rounded border ' + cls + ' font-interactive-label text-interactive-label font-bold flex items-center gap-2 active:scale-95 transition" data-act="' + a.id + '">' +
-            '<span class="material-symbols-outlined text-[20px]">' + (crit?'delete':'arrow_forward') + '</span>' + esc(a.label) + '</button>';
-        }).join('');
-        host.innerHTML = '<div class="mt-5"><div class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">Next actions</div>' +
-          '<div class="flex flex-wrap gap-2">' + btns + '</div></div>';
-        Array.prototype.forEach.call(host.querySelectorAll('.js-next'), function(b){
-          b.addEventListener('click', function(){ startRecordAction(b.getAttribute('data-act'), preset); });
-        });
-      }).withFailureHandler(function(){ host.innerHTML=''; })
-        .getNextActions(meta.type || currentType, meta.stage, meta.status);
+        if (_nextActions.key !== key) return;         // record changed while in flight → drop stale response
+        _nextActions.acts = acts || [];
+        var h = document.getElementById('nextActions'); if (!h) return;   // re-grab: sheet may have re-rendered
+        _paintNextActions(h, _nextActions.acts, preset);
+      }).withFailureHandler(function(){
+        if (_nextActions.key === key) _nextActions.acts = [];
+        var h = document.getElementById('nextActions'); if (h) h.innerHTML = '';
+      }).getNextActions(meta.type || currentType, meta.stage, meta.status);
     }
 
     // Dispatch a next-action from an open record: route by kind, carry prefill.

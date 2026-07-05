@@ -93,11 +93,15 @@ function statusToStage(type, status) {
  *   inProgress — open / mid-flow
  *   done       — terminal accept/release/dispatch
  */
+// Four-column model: pending | rejected | hold | completed.
+// (Grounded against live data: REJECTED and HOLD are real values; IN_PROGRESS
+// folds into pending as still-active work.)
 function statusToColumn_(type, status) {
   var s = String(status || '').toUpperCase();
-  if (/ACCEPT|PASS|RELEASE|DISPATCHED|CLOSED|COMPLETE|DONE/.test(s)) return 'done';
-  if (/PENDING|OPEN|AVAILABLE|ISSUED|BOOKED/.test(s))               return 'pending';
-  return 'inProgress';
+  if (/REJECT/.test(s))                                                         return 'rejected';
+  if (/HOLD/.test(s))                                                           return 'hold';
+  if (/ACCEPT|PASS|RELEASE|DISPATCHED|CLOSED|COMPLETE|DONE|PRODUCED/.test(s))   return 'completed';
+  return 'pending';
 }
 
 // Age in whole days from a record's display date string.
@@ -131,7 +135,7 @@ function getQmsv2Board(type, role) {
   var records = getRecordsList(type) || [];
   var threshold = QMSV2_OVERDUE_DAYS[type] || 3;
 
-  var columns = { pending: [], inProgress: [], done: [] };
+  var columns = { pending: [], rejected: [], hold: [], completed: [] };
 
   records.forEach(function(r) {
     var ageDays = recordAgeDays_(r.date);
@@ -141,9 +145,10 @@ function getQmsv2Board(type, role) {
       name:    r.name,
       status:  r.status,
       date:    r.date,
+      qty:     r.qty || '',
       stage:   statusToStage(type, r.status),
       ageDays: ageDays,
-      overdue: col !== 'done' && ageDays > threshold
+      overdue: col === 'pending' && ageDays > threshold
     };
     columns[col].push(card);
   });
@@ -154,10 +159,11 @@ function getQmsv2Board(type, role) {
     stages:  QMSV2_STAGES,
     columns: columns,
     counts: {
-      pending:    columns.pending.length,
-      inProgress: columns.inProgress.length,
-      done:       columns.done.length,
-      total:      records.length
+      pending:   columns.pending.length,
+      rejected:  columns.rejected.length,
+      hold:      columns.hold.length,
+      completed: columns.completed.length,
+      total:     records.length
     }
   };
 }
@@ -183,7 +189,8 @@ var QMSV2_ACTIONS = [
   { id:'production',  label:'Production Job',  group:'Make',    kind:'launch', form:'Production' },
   { id:'issue',       label:'Issue RM',        group:'Make',    kind:'inline', serverFn:'runAction',
     fields:[{ name:'material', type:'material' }, { name:'lot', type:'text' },
-            { name:'fromLoc', type:'location' }, { name:'qty', type:'number' }] },
+            { name:'fromLoc', type:'location' }, { name:'prodOrder', type:'text' },
+            { name:'qty', type:'number' }] },
   { id:'rework',      label:'Rework Complete', group:'Make',    kind:'launch', form:'Rework' },
   // Ship
   { id:'dispatch',    label:'Dispatch',        group:'Ship',    kind:'launch', form:'Dispatch' },
@@ -197,9 +204,11 @@ var QMSV2_ACTIONS = [
   // Resolve
   { id:'ncr',         label:'Raise NCR',       group:'Resolve', kind:'launch', form:'NCR' },
   { id:'custreturn',  label:'Customer Return', group:'Resolve', kind:'launch', form:'CustomerReturn' },
-  { id:'scrap',       label:'Scrap',           group:'Resolve', kind:'inline', serverFn:'runAction',
+  { id:'scrap',       label:'Scrap',           group:'Resolve', kind:'inline', serverFn:'runAction', critical:true,
+    warning:'Scrapping permanently removes stock. This cannot be undone.',
     fields:[{ name:'material', type:'material' }, { name:'lot', type:'text' },
-            { name:'fromLoc', type:'location' }, { name:'qty', type:'number' }] }
+            { name:'fromLoc', type:'location' }, { name:'qty', type:'number' },
+            { name:'reason', type:'select', options:['Defect','Expired','Damaged','Contaminated','Other'] }] }
 ];
 
 // Group display order for the picker.
@@ -207,6 +216,88 @@ var QMSV2_ACTION_GROUPS = ['Receive', 'Inspect', 'Make', 'Ship', 'Move', 'Resolv
 
 function getQmsv2Actions() {
   return { groups: QMSV2_ACTION_GROUPS, actions: QMSV2_ACTIONS };
+}
+
+// Next-action suggestions when a record is opened, keyed by its pipeline stage
+// (QMSV2_STAGES index from statusToStage). These are the actions a user most
+// likely takes to advance the record. Action ids must exist in QMSV2_ACTIONS.
+// 0:GRN 1:IQC 2:PUTAWAY 3:ISSUE 4:OQC 5:DISPATCH
+var QMSV2_NEXT_BY_STAGE = {
+  0: ['iqc'],                 // received → inspect
+  1: ['putaway', 'ncr'],      // IQC done → store, or raise NCR
+  2: ['issue', 'move'],       // in store → issue to production / relocate
+  3: ['ipqc', 'sample'],      // on line → in-process QC / pull sample
+  4: ['dispatch'],            // OQC released → dispatch
+  5: ['custreturn']           // dispatched → (handle a return)
+};
+// Always available regardless of stage.
+var QMSV2_ALWAYS_ACTIONS = ['move', 'scrap', 'ncr'];
+
+/**
+ * getNextActions(type, stage, status) → ordered, de-duped list of action objects
+ * (from QMSV2_ACTIONS) suggested for a record at the given pipeline stage.
+ * Returns [{id,label,group,kind,...}] so the client can render + dispatch them
+ * through the existing picker machinery. `type`/`status` reserved for future
+ * per-type refinement; stage is the primary driver today.
+ */
+function getNextActions(type, stage, status) {
+  var byId = {};
+  QMSV2_ACTIONS.forEach(function(a){ byId[a.id] = a; });
+  // A completed/terminal record has no "advance" action left — showing the full stage set
+  // (and the always-on move/scrap) on a done record is misleading. Offer only 'ncr' so a
+  // problem can still be raised against it. statusToColumn_ is the single completion oracle.
+  var ids;
+  if (statusToColumn_(type, status) === 'completed') {
+    ids = ['ncr'];
+  } else {
+    ids = (QMSV2_NEXT_BY_STAGE[Number(stage)] || []).concat(QMSV2_ALWAYS_ACTIONS);
+  }
+  var seen = {}, out = [];
+  ids.forEach(function(id){
+    if (seen[id] || !byId[id]) return;
+    seen[id] = true;
+    out.push(byId[id]);
+  });
+  return out;
+}
+
+// Lean trace for the cockpit detail view. traceBatch() is heavy (scans ~26 sheets) and its
+// FULL payload fails to deliver over the page's google.script.run in the GAS double-iframe
+// (large object → silent drop). This wrapper runs the (cached) traceBatch server-side, then
+// returns a SMALL, capped projection with only the fields renderDetail consumes — so it
+// transmits reliably and fast. Cap lanes to keep the payload tiny.
+function getQmsv2TraceLite(docNo, cap) {
+  cap = cap || 5;
+  function take(arr, mapFn) {
+    return (arr || []).slice(0, cap).map(mapFn);
+  }
+  try {
+    var t = traceBatch(docNo) || {};
+    if (t.success === false) return { success: false, message: t.message || 'Trace unavailable.' };
+    var up = (t.upstream && t.upstream.components) || [];
+    var ipqc = (t.thisBatch && t.thisBatch.ipqc) || [];
+    var dn = t.downstream || {};
+    var iss = t.issues || {};
+    var a = t.anchor || {};
+    return {
+      success: true,
+      anchor: { materialCode: a.materialCode || '', batchOrLot: a.batchOrLot || '' },
+      upstream:   { components: take(up, function(c){ return { compCode:c.compCode||'', compDesc:c.compDesc||'', totalIssued:c.totalIssued, unit:c.unit||'', type:c.type||'' }; }) },
+      thisBatch:  { ipqc: take(ipqc, function(r){ return { docNo:r.docNo||'', inspector:r.inspector||'', rounds:r.rounds, status:r.status||'' }; }) },
+      downstream: {
+        oqc:      take(dn.oqc,      function(r){ return { docNo:r.docNo||'', customer:r.customer||'', status:r.status||'' }; }),
+        dispatch: take(dn.dispatch, function(r){ return { docNo:r.docNo||'', customer:r.customer||'', status:r.status||'' }; }),
+        fgJobs:   take(dn.fgJobs,   function(r){ return { jobId:r.jobId||'', fgCode:r.fgCode||'', fgDesc:r.fgDesc||'', status:r.status||'' }; })
+      },
+      issues: {
+        ncr:            take(iss.ncr,            function(r){ return { docNo:r.docNo||'', source:r.source||'', status:r.status||'' }; }),
+        customerReturn: take(iss.customerReturn, function(r){ return { docNo:r.docNo||'', customer:r.customer||'', status:r.status||'' }; })
+      },
+      caps: { applied: cap }
+    };
+  } catch (e) {
+    return { success: false, message: String(e && e.message || e).slice(0, 120) };
+  }
 }
 
 // Form-source data for inline action dropdowns (lazy — client requests when an
@@ -261,6 +352,11 @@ function getOnHand(materialCode, lot, locationId) {
  */
 function runAction(actionId, payload) {
   payload = payload || {};
+  // Guard: all stock-moving actions require a positive quantity. recordScrap/recordSample
+  // do not check this themselves, so enforce it here before any write.
+  if (['move','issue','sample','scrap'].indexOf(actionId) !== -1) {
+    if (!(Number(payload.qty) > 0)) return { success: false, error: 'Quantity must be greater than 0.' };
+  }
   if (actionId === 'move') {
     return recordLocationTransfer({
       materialCode:   payload.material,
@@ -272,5 +368,46 @@ function runAction(actionId, payload) {
       transferredBy:  payload.by || ''
     });
   }
-  return { success: false, error: 'Action "' + actionId + '" is not enabled in P1.' };
+  if (actionId === 'issue') {
+    // Gated RM issuance (IQC=ACCEPTED + non-quarantine location). Writes PROD_ISSUE_LOG + STOCK_LEDGER OUT.
+    return issueRMForProduction({
+      materialCode:      payload.material,
+      batchOrLotNo:      payload.lot || '',
+      locationId:        payload.fromLoc,
+      qtyToIssue:        payload.qty,
+      productionOrderNo: payload.prodOrder || '',
+      issuedBy:          payload.by || ''
+    });
+  }
+  if (actionId === 'sample') {
+    // Pull inspection sample → SAMPLE_LOG + STOCK_LEDGER OUT to SAMPLE-CABINET.
+    return recordSample({
+      refDocType:     'QMSv2',
+      refDocNo:       '',
+      materialCode:   payload.material,
+      batchOrLotNo:   payload.lot || '',
+      qtySample:      payload.qty,
+      unit:           '',
+      samplePurpose:  'QMSv2 Pull Sample',
+      takenBy:        payload.by || '',
+      locationStored: 'SAMPLE-CABINET',
+      locationId:     payload.fromLoc || ''
+    });
+  }
+  if (actionId === 'scrap') {
+    // Destructive — writes SCRAP_LOG + STOCK_LEDGER OUT to SCRAP-AREA.
+    return recordScrap({
+      refDocType:       'QMSv2',
+      refDocNo:         '',
+      materialCode:     payload.material,
+      batchOrLotNo:     payload.lot || '',
+      qtyScrap:         payload.qty,
+      unit:             '',
+      scrapReason:      payload.reason || 'Unspecified',
+      scrapDestination: 'SCRAP-AREA',
+      recordedBy:       payload.by || '',
+      locationId:       payload.fromLoc || ''
+    });
+  }
+  return { success: false, error: 'Action "' + actionId + '" is not enabled.' };
 }
