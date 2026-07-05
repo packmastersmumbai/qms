@@ -1430,3 +1430,43 @@ Score Definitions
 - [ ] Runnable GAS checks (`_testLocationSeed`, `_testSaveMaterialWidth`, `_testSuggestSlot`) written and passing; map verified in-iframe (light+dark) via `playwright-cli`
 - [ ] No new stock/movement/scan backend introduced in Phase 1
 - [ ] Documentation updated
+
+## Implementation Status (2026-07-05)
+
+All 6 steps implemented, convergence-reviewed (verdict: **SHIP**, no CRITICAL/HIGH),
+committed as `e6d3210`, pushed to remote branch `feat/warehouse-floorplan`.
+**Not deployed** — live GAS URL still serves the prior version (two agents ran
+`clasp push`, which uploads to the script editor but does NOT bump the live deploy).
+
+### Verified by sandbox execution (against committed source — NOT the GAS runtime)
+- ✅ **Location seed (Step 1)** — ran `buildLocationSlotSeed_` + zone concat: 156 total
+  rows, 148 `B001`–`B148` matching `^B\d{3}$`, bay counts A25/B4/C42/D42/E21/F14, every
+  slot typed (A→RM, B/C/D→PM, E/F→FG), all 8 legacy zones present, 12-col shape,
+  idempotent re-run adds 0. Equivalent to `_testLocationSeed` → PASS.
+- ✅ **Fit engine + suggestSlot (Step 6)** — dense 27kg box → WEIGHT-bound @37;
+  bulky light can → VOLUME-bound; declared TI×HI pack → @perPallet; `suggestSlot`
+  prefers the consolidating (same-material) slot; full warehouse → "No available
+  position". Equivalent to `_testSuggestSlot` → PASS.
+  - Note: the plan's example "27kg → weight-bound" only holds for a *dense* box; a
+    large-footprint 27kg box (e.g. 400×400×350) is legitimately VOLUME-bound. The
+    `min(volume,weight)` math is correct; the basis flips with box size as intended.
+
+### NOT yet verified (require GAS runtime / browser / physical floor — cannot run from CLI)
+- ⬜ `_testSaveMaterialWidth`, `_testMaterialGeometry` — need the live Sheet; run in GAS editor.
+- ⬜ `saveMaster` 12-col round-trip against real `MASTERS_Materials`.
+- ⬜ **WarehouseFloorplan.html UI** — never rendered in a browser: heatmap, tap-to-inspect,
+  lot search, tile-pick move (`recordLocationTransfer`), BarcodeDetector scan all unproven.
+- ⬜ End-to-end: receive → `suggestSlot` → map shows slot occupied.
+- ⬜ Bay C/D pallet counts (=42 each) physically verified on the floor.
+
+### To finish (owner: user)
+1. Run the 4 `_test*()` asserts in the Apps Script editor → confirm green (no risk; sandbox sheets).
+2. Run the seed so `LOCATIONS` gains the 148 B### rows; eyeball 156 rows + 8 zones intact.
+3. `clasp deploy` → open the Warehouse Floorplan tile → verify map renders + heatmap + tile-pick.
+4. Physically confirm bay C/D = 42 before trusting fullness numbers.
+
+### Open confirmations flagged during build
+- Geometry columns are **G→L** (not F→L) — col F is the pre-existing `reorderLevel`.
+  No `baseUnit` column; the existing `unit` (col C) carries it.
+- Bay is a **display-only** value in the Rack column; all slot IDs are `B###`
+  (a bay-C slot is e.g. `B030`), never bay-prefixed.
