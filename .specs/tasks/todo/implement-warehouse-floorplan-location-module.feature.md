@@ -1451,19 +1451,26 @@ committed as `e6d3210`, pushed to remote branch `feat/warehouse-floorplan`.
     large-footprint 27kg box (e.g. 400×400×350) is legitimately VOLUME-bound. The
     `min(volume,weight)` math is correct; the basis flips with box size as intended.
 
-### NOT yet verified (require GAS runtime / browser / physical floor — cannot run from CLI)
-- ⬜ `_testSaveMaterialWidth`, `_testMaterialGeometry` — need the live Sheet; run in GAS editor.
-- ⬜ `saveMaster` 12-col round-trip against real `MASTERS_Materials`.
-- ⬜ **WarehouseFloorplan.html UI** — never rendered in a browser: heatmap, tap-to-inspect,
-  lot search, tile-pick move (`recordLocationTransfer`), BarcodeDetector scan all unproven.
+### Verified on the LIVE GAS runtime (via `clasp run` — clasp now permanently configured)
+- ✅ **All 4 asserts pass on Google's runtime** (not just sandbox):
+  `_testLocationSeed` {pass:true}; `_testSaveMaterialWidth` 12/12;
+  `_testMaterialGeometry` 10/10; `_testSuggestSlot` 12/12.
+- ✅ **LOCATIONS seeded on the real sheet** — `verifyAndRepairSheets_core()` appended
+  148 B### slots; re-run reports "all 148 present" + appended 0 (idempotent, RISK-2
+  proven on live data); 8 legacy zones + 2 chokepoints intact.
+  - Gotcha found & worked around: `verifyAndRepairSheets()` calls `SpreadsheetApp.getUi()`
+    which THROWS headless — must call `verifyAndRepairSheets_core()` via clasp run instead.
+
+### NOT yet verified (require a browser / physical floor)
+- ⬜ **WarehouseFloorplan.html UI** — never rendered: heatmap, tap-to-inspect, lot search,
+  tile-pick move (`recordLocationTransfer`), BarcodeDetector scan. Needs `clasp deploy` + open.
 - ⬜ End-to-end: receive → `suggestSlot` → map shows slot occupied.
 - ⬜ Bay C/D pallet counts (=42 each) physically verified on the floor.
 
 ### To finish (owner: user)
-1. Run the 4 `_test*()` asserts in the Apps Script editor → confirm green (no risk; sandbox sheets).
-2. Run the seed so `LOCATIONS` gains the 148 B### rows; eyeball 156 rows + 8 zones intact.
-3. `clasp deploy` → open the Warehouse Floorplan tile → verify map renders + heatmap + tile-pick.
-4. Physically confirm bay C/D = 42 before trusting fullness numbers.
+1. `clasp deploy` → open the Warehouse Floorplan tile → verify map renders + heatmap + tile-pick.
+   (Deliberately NOT auto-deployed — deploy bumps the live production URL users hit.)
+2. Physically confirm bay C/D = 42 before trusting fullness numbers.
 
 ### Open confirmations flagged during build
 - Geometry columns are **G→L** (not F→L) — col F is the pre-existing `reorderLevel`.
