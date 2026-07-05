@@ -273,6 +273,76 @@ function getFIFOLots(materialCode) {
   return summary;
 }
 
+// ── Putaway Queue ─────────────────────────────────────────────
+// Worklist of accepted stock still sitting in a buffer/zone that has NOT yet been
+// moved into a physical pallet slot. Powers PutawayQueue_F.html. Reuses getStockSummary()
+// (balance>0 rollup) + getMaterials() for name/UOM/category — no new ledger reads.
+//
+// A row is putaway-PENDING when: balance > 0 AND its location is NOT a pallet slot
+// (does not match /^B\d{3}$/) AND is NOT a stay-put location. Stay-put = anything whose
+// id contains QUARANTINE / HOLD / SCRAP / SAMPLE / REWORK (case-insensitive) — that stock
+// is deliberately parked and must not be slotted. Everything else (buffer, RM-STORE-*,
+// FG-STORE, un-slotted GRN zones …) is pending.
+//
+// Returns [{materialCode, desc, unit, category, batchOrLotNo, fromLocationId, qty}],
+// sorted by fromLocationId then materialCode.
+function getPutawayQueue() {
+  try {
+    var STAY_PUT = ['QUARANTINE', 'HOLD', 'SCRAP', 'SAMPLE', 'REWORK'];
+
+    var matMap = {}; // code → { desc, unit, category }
+    var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+    mats.forEach(function(m) {
+      var code = String(m.code || m.itemCode || '').trim();
+      if (code) matMap[code] = {
+        desc:     String(m.desc || m.name || m.itemDescription || code),
+        unit:     String(m.unit || ''),
+        category: String(m.category || '')
+      };
+    });
+
+    var pending = getStockSummary().filter(function(s) {
+      if (!(Number(s.balance) > 0)) return false;
+      return isPutawayPending_(s.locationId, STAY_PUT);
+    });
+
+    var rows = pending.map(function(s) {
+      var m = matMap[s.materialCode] || {};
+      return {
+        materialCode:   s.materialCode,
+        desc:           m.desc || s.materialCode,
+        unit:           m.unit || '',
+        category:       m.category || '',
+        batchOrLotNo:   s.batchOrLotNo,
+        fromLocationId: s.locationId,
+        qty:            Number(s.balance) || 0
+      };
+    });
+
+    rows.sort(function(a, b) {
+      if (a.fromLocationId !== b.fromLocationId) return a.fromLocationId < b.fromLocationId ? -1 : 1;
+      return a.materialCode < b.materialCode ? -1 : (a.materialCode > b.materialCode ? 1 : 0);
+    });
+    return rows;
+  } catch(e) {
+    Logger.log('getPutawayQueue failed: ' + e.message);
+    return [];
+  }
+}
+
+// Mechanism (pure): is `locationId` a putaway-pending location? A pallet slot (^B\d{3}$)
+// is already slotted → not pending. A stay-put location (id contains any stayPut token)
+// is deliberately parked → not pending. Everything else is pending.
+function isPutawayPending_(locationId, stayPut) {
+  var id = String(locationId || '').trim().toUpperCase();
+  if (!id) return false;
+  if (/^B\d{3}$/.test(id)) return false;                       // already in a pallet slot
+  for (var i = 0; i < stayPut.length; i++) {
+    if (id.indexOf(stayPut[i]) !== -1) return false;           // parked (quarantine/hold/…)
+  }
+  return true;
+}
+
 // ---------- LOCATIONS access ----------
 
 function getLocations(typeFilter) {

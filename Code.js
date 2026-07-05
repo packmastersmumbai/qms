@@ -277,6 +277,7 @@ function doGet(e) {
     customerreturn: { file: 'CustomerReturn_F', title: 'Customer Return' },
     warehouse:      { file: 'Warehouse_F',      title: 'Warehouse' },
     warehousefloorplan: { file: 'WarehouseFloorplan', title: 'Warehouse Floorplan' },
+    putawayqueue:   { file: 'PutawayQueue',     title: 'Putaway Queue' },
     settings:       { file: 'Settings_F',       title: 'Settings' },
     masterscrud:    { file: 'MastersCrud_F',    title: 'Masters CRUD' },
     scan:           { file: 'Scan_F',           title: 'Scan' },
@@ -329,7 +330,7 @@ function getFormHtml(type) {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;
   } catch (e) {}
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', WarehouseFloorplan:'WarehouseFloorplan', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing', Recorder:'Recorder_F', Rework:'Rework_F', Scan:'Scan_F', QMSV2:'QMSV2_F' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', WarehouseFloorplan:'WarehouseFloorplan', PutawayQueue:'PutawayQueue', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing', Recorder:'Recorder_F', Rework:'Rework_F', Scan:'Scan_F', QMSV2:'QMSV2_F' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();

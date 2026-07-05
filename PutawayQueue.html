@@ -1,0 +1,392 @@
+<title>Putaway Queue — Pack Masters QMS</title>
+<!--
+  PutawayQueue_F.html — worklist of accepted stock sitting in buffer/zones that has
+  NOT yet been moved into a physical pallet slot.
+
+  CDN-FREE: GAS runs in a double-iframe (GitHub Pages -> script.googleusercontent.com)
+  that blocks external <script src>/stylesheets/fonts. Everything here is inline SVG +
+  CSS + vanilla JS. All server access via google.script.run (async, returns no value —
+  always .withSuccessHandler + .withFailureHandler).
+
+  Backend REUSED VERBATIM (no new putaway backend):
+    getPutawayQueue() -> [{materialCode, desc, unit, category, batchOrLotNo, fromLocationId, qty}]
+    suggestSlot(code, qty) -> { success, plan:[{slotId,qty,consolidating}], shortfallQty, ... }
+                            | { success:false, error }  (geometry unknown / no position)
+    runPutawayPlan({materialCode, batchOrLotNo, fromLocationId, transferredBy,
+                    plan:[{slotId,qty}]}) -> { success, movedQty, results:[{slotId,qty,ok,error}] }
+
+  The suggested plan per card is EDITABLE: the worker can override each allocation line's
+  slot id before pressing Move (same as the IQC putaway sheet). Move sends the shown plan.
+-->
+<style>
+  /* ── QMSV2 cockpit tokens (navy-on-white light theme, from Theme.html) — copied
+        verbatim from WarehouseFloorplan.html so the two screens re-skin identically. ── */
+  :root{
+    --pm-primary:#0D1B6E; --pm-on-primary:#FFFFFF; --pm-primary-soft:#EEF1FA; --pm-primary-hover:#1A2D9E;
+    --pm-ink:#0F172A; --pm-body:#374151; --pm-muted:#6B7280; --pm-faint:#94A3B8;
+    --pm-canvas:#F5F7FA; --pm-canvas-soft:#FAFBFC; --pm-surface:#FFFFFF;
+    --pm-hairline:#E5E7EB; --pm-hairline-strong:#CBD5E1;
+    --pm-pass:#16A34A; --pm-fail:#DC2626; --pm-hold:#D97706; --pm-prog:#2563EB;
+    --pm-r-sm:6px; --pm-r-md:8px; --pm-r-lg:10px;
+    --pm-shadow-1:0 1px 4px rgba(13,27,110,0.08),0 2px 8px rgba(13,27,110,0.06);
+    --mono:'JetBrains Mono',ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --ui:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --disp:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --pm-canvas:#0B1220; --pm-canvas-soft:#111A2E; --pm-surface:#151F35;
+    --pm-ink:#E6EAF5; --pm-body:#C2CBE0; --pm-muted:#8B96B4; --pm-faint:#5A6788;
+    --pm-hairline:#22304F; --pm-hairline-strong:#33456B;
+    --pm-primary:#5B70E6; --pm-primary-soft:#1B2547; --pm-primary-hover:#7488F0;
+    --pm-shadow-1:0 2px 10px rgba(0,0,0,.5);
+  }}
+  :root[data-theme="dark"]{
+    --pm-canvas:#0B1220; --pm-canvas-soft:#111A2E; --pm-surface:#151F35;
+    --pm-ink:#E6EAF5; --pm-body:#C2CBE0; --pm-muted:#8B96B4; --pm-faint:#5A6788;
+    --pm-hairline:#22304F; --pm-hairline-strong:#33456B;
+    --pm-primary:#5B70E6; --pm-primary-soft:#1B2547; --pm-primary-hover:#7488F0;
+    --pm-shadow-1:0 2px 10px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pm-canvas);color:var(--pm-ink);
+    font-family:var(--ui);-webkit-font-smoothing:antialiased;min-height:100vh}
+
+  /* ── Header ── */
+  header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
+    height:56px;padding:0 16px;background:var(--pm-surface);
+    border-bottom:1px solid var(--pm-hairline);box-shadow:var(--pm-shadow-1)}
+  .brand{font-family:var(--disp);font-size:17px;letter-spacing:.2px;color:var(--pm-primary);font-weight:700}
+  .brand small{font-family:var(--ui);font-size:10px;letter-spacing:1.5px;color:var(--pm-muted);
+    text-transform:uppercase;display:block;line-height:1;margin-top:2px;font-weight:600}
+  .count{margin-left:auto;font-family:var(--disp);font-size:13px;font-weight:700;color:var(--pm-on-primary);
+    background:var(--pm-primary);border-radius:999px;padding:5px 13px;font-variant-numeric:tabular-nums}
+  .count.zero{background:var(--pm-pass)}
+
+  /* ── Card list ── */
+  #list{max-width:760px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--pm-surface);border:1px solid var(--pm-hairline);border-radius:var(--pm-r-lg);
+    box-shadow:var(--pm-shadow-1);padding:14px 15px;transition:opacity .3s}
+  .card.done{opacity:.4;pointer-events:none}
+  .c-top{display:flex;align-items:flex-start;gap:11px}
+  .thumb{flex:none;width:40px;height:40px;border-radius:var(--pm-r-md);display:flex;
+    align-items:center;justify-content:center;background:var(--pm-primary-soft);color:var(--pm-primary);
+    border:1px solid var(--pm-hairline)}
+  .thumb svg{width:23px;height:23px}
+  .c-info{flex:1;min-width:0}
+  .c-name{font-family:var(--disp);font-size:15px;font-weight:700;color:var(--pm-ink);line-height:1.2}
+  .c-meta{font-family:var(--mono);font-size:11.5px;color:var(--pm-muted);margin-top:3px;line-height:1.5}
+  .c-qty{flex:none;text-align:right;font-variant-numeric:tabular-nums}
+  .c-qty .q{font-family:var(--disp);font-size:19px;font-weight:700;color:var(--pm-primary);line-height:1}
+  .c-qty .u{font-family:var(--ui);font-size:10px;font-weight:600;letter-spacing:1px;color:var(--pm-muted);
+    text-transform:uppercase;margin-top:2px}
+
+  /* suggestion / allocation block */
+  .sugg{margin-top:12px;padding-top:11px;border-top:1px solid var(--pm-hairline)}
+  .sugg .lbl{font-family:var(--ui);font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--pm-muted);
+    text-transform:uppercase;margin-bottom:7px}
+  .sugg .thinking{font-family:var(--ui);font-size:12px;color:var(--pm-muted);display:flex;align-items:center;gap:8px}
+  .mini-spin{width:14px;height:14px;border:2px solid var(--pm-hairline);border-top-color:var(--pm-primary);
+    border-radius:50%;animation:spin .8s linear infinite;flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .alloc{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .alloc .arrow{font-family:var(--mono);color:var(--pm-faint);font-size:13px;flex:none}
+  .alloc input.slot{font-family:var(--mono);font-size:13px;font-weight:700;padding:7px 9px;width:88px;flex:none;
+    background:var(--pm-surface);color:var(--pm-ink);border:1px solid var(--pm-hairline-strong);
+    border-radius:var(--pm-r-sm);text-transform:uppercase}
+  .alloc .qbadge{font-family:var(--mono);font-size:12px;color:var(--pm-body);font-variant-numeric:tabular-nums}
+  .alloc .cons{font-family:var(--ui);font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--pm-pass);
+    text-transform:uppercase;background:color-mix(in srgb,var(--pm-pass) 12%,transparent);
+    padding:2px 6px;border-radius:var(--pm-r-sm)}
+  .alloc .st{font-family:var(--ui);font-size:11px;font-weight:700;flex:none}
+  .alloc .st.ok{color:var(--pm-pass)} .alloc .st.bad{color:var(--pm-fail)}
+  .warn{font-family:var(--ui);font-size:12px;font-weight:600;color:var(--pm-hold);
+    background:color-mix(in srgb,var(--pm-hold) 10%,transparent);border:1px solid color-mix(in srgb,var(--pm-hold) 30%,transparent);
+    border-radius:var(--pm-r-sm);padding:7px 10px;margin-bottom:8px}
+  .nosugg{font-family:var(--ui);font-size:12px;color:var(--pm-muted);margin-bottom:8px}
+
+  .c-actions{display:flex;align-items:center;gap:10px;margin-top:4px}
+  .by{flex:1;font-family:var(--mono);font-size:12px;padding:8px 10px;
+    background:var(--pm-surface);color:var(--pm-ink);border:1px solid var(--pm-hairline);border-radius:var(--pm-r-md)}
+  button.move{font-family:var(--ui);font-size:13px;font-weight:700;letter-spacing:.3px;padding:9px 18px;flex:none;
+    border:none;background:var(--pm-primary);color:var(--pm-on-primary);border-radius:var(--pm-r-md);cursor:pointer}
+  button.move:hover{background:var(--pm-primary-hover)}
+  button.move:disabled{opacity:.5;cursor:default}
+
+  /* ── Loading / empty ── */
+  #load{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;
+    padding:72px 16px;color:var(--pm-muted);font-family:var(--ui);font-size:12px;font-weight:600;
+    letter-spacing:1.5px;text-transform:uppercase}
+  #load .spin{width:34px;height:34px;border:3px solid var(--pm-hairline);border-top-color:var(--pm-primary);
+    border-radius:50%;animation:spin .9s linear infinite}
+  #load.hide{display:none}
+  #empty{display:none;flex-direction:column;align-items:center;gap:14px;padding:80px 16px;text-align:center}
+  #empty.show{display:flex}
+  #empty .chk{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--pm-pass) 14%,transparent);
+    display:flex;align-items:center;justify-content:center;color:var(--pm-pass)}
+  #empty .chk svg{width:34px;height:34px}
+  #empty h2{font-family:var(--disp);font-size:18px;color:var(--pm-ink);margin:0;font-weight:700}
+  #empty p{font-family:var(--ui);font-size:13px;color:var(--pm-muted);margin:0;max-width:340px}
+
+  /* ── Toast ── */
+  #toast{position:fixed;left:50%;top:80px;transform:translate(-50%,-16px);z-index:40;
+    background:var(--pm-primary);color:var(--pm-on-primary);font-family:var(--ui);font-size:12px;font-weight:600;
+    letter-spacing:.3px;padding:10px 16px;border-radius:var(--pm-r-md);box-shadow:var(--pm-shadow-1);
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:min(90vw,420px);text-align:center}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  #toast.err{background:var(--pm-fail)}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  :focus-visible{outline:2px solid var(--pm-primary);outline-offset:2px}
+</style>
+
+<header>
+  <div class="brand">Pack Masters — Putaway Queue<small>Accepted stock awaiting a pallet slot</small></div>
+  <span class="count" id="count">…</span>
+</header>
+
+<div id="load"><div class="spin" role="status" aria-label="Loading"></div>Loading putaway queue…</div>
+
+<div id="empty">
+  <div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+    stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+  <h2>Nothing pending</h2>
+  <p>All accepted stock is slotted — nothing sitting in buffer or zones waiting to be put away.</p>
+</div>
+
+<div id="list"></div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============================================================================
+   Putaway Queue — vanilla JS, GAS-safe. All server access via google.script.run
+   (async, .withSuccessHandler + .withFailureHandler only; run returns no value).
+   ============================================================================ */
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+function fmtNum(n){ return (Number(n) || 0).toLocaleString(); }
+
+var pendingCount = 0;
+
+/* ── Toast ── */
+var toastTimer = null;
+function toast(msg, isError){
+  var t = $('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' err' : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.className = ''; }, 3400);
+}
+
+/* ── Category → icon (single-colour, currentColor, 0 0 24 24). Copied from the
+   floorplan so the two screens draw identical per-category thumbnails. ── */
+function categoryIcon(category){
+  var c = String(category || '').toUpperCase(), parts;
+  if (/BULK|DRUM|LIQUID|SOLVENT|PRIMER|ADHESIVE|INK/.test(c))
+    parts = '<ellipse cx="12" cy="6" rx="6" ry="2.4"/><path d="M6 6v12c0 1.3 2.7 2.4 6 2.4s6-1.1 6-2.4V6"/><path d="M6 12c0 1.3 2.7 2.4 6 2.4s6-1.1 6-2.4"/>';
+  else if (/LABEL|RIBBON|TAPE|FILM|ROLL|FOIL/.test(c))
+    parts = '<ellipse cx="6" cy="12" rx="2.2" ry="6"/><path d="M6 6h12M6 18h12"/><ellipse cx="18" cy="12" rx="2.2" ry="6"/>';
+  else if (/CARTON|BOX|CASE|CORRUGAT/.test(c))
+    parts = '<path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/>';
+  else if (/\bCAN\b|CANS|TIN/.test(c))
+    parts = '<ellipse cx="12" cy="5" rx="5" ry="2"/><path d="M7 5v14c0 1.1 2.2 2 5 2s5-.9 5-2V5"/><path d="M7 8h10"/>';
+  else if (/BOTTLE|JAR|VIAL/.test(c))
+    parts = '<path d="M10 2h4v3l1.5 2.5A4 4 0 0 1 16 10v9a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-9a4 4 0 0 1 .5-2.5L10 5V2z"/>';
+  else if (/PLUG|CAP|CLOSURE|SEAL|VALVE|SPOUT|NOZZLE|SMALL/.test(c))
+    parts = '<path d="M8 4h8l4 8-4 8H8l-4-8 4-8z"/><circle cx="12" cy="12" r="3.2"/>';
+  else if (/FG|FINISH|PALLET/.test(c))
+    parts = '<path d="M3 20h18M3 20v-2h18v2M5 18v-2h6v2M13 18v-2h6v2M7 16v-2h4v2M13 16v-2h4v2"/>';
+  else
+    parts = '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M4 9h16"/>';
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+    'stroke-linecap="round" stroke-linejoin="round">' + parts + '</svg>';
+}
+
+/* ── Load the queue ── */
+function loadQueue(){
+  if (typeof google === 'undefined' || !google.script || !google.script.run){
+    // Raw file preview (not inside GAS) — show empty state so layout is verifiable.
+    $('load').className = 'hide'; render([]);
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(function(rows){ $('load').className = 'hide'; render(rows || []); })
+    .withFailureHandler(function(err){
+      $('load').className = 'hide';
+      toast('Could not load queue: ' + (err && err.message ? err.message : err), true);
+      render([]);
+    })
+    .getPutawayQueue();
+}
+
+function render(rows){
+  pendingCount = rows.length;
+  updateCount();
+  var list = $('list');
+  if (!rows.length){ $('empty').className = 'show'; return; }
+  $('empty').className = '';
+  list.innerHTML = '';
+  rows.forEach(function(r, i){ list.appendChild(buildCard(r, i)); });
+}
+
+function updateCount(){
+  var c = $('count');
+  c.textContent = pendingCount === 0 ? '0 pending' : '(' + pendingCount + ' pending)';
+  c.classList.toggle('zero', pendingCount === 0);
+}
+
+/* One card per pending lot. suggestSlot() is called per-card (async) to fill the
+   suggestion block once the shell is on screen. */
+function buildCard(r, idx){
+  var card = document.createElement('div');
+  card.className = 'card';
+  card.id = 'card-' + idx;
+
+  card.innerHTML =
+    '<div class="c-top">' +
+      '<span class="thumb">' + categoryIcon(r.category) + '</span>' +
+      '<span class="c-info">' +
+        '<span class="c-name">' + esc(r.desc || r.materialCode) + '</span>' +
+        '<span class="c-meta">' + esc(r.materialCode) + ' · lot ' + esc(r.batchOrLotNo) +
+          ' · at ' + esc(r.fromLocationId) + '</span>' +
+      '</span>' +
+      '<span class="c-qty"><span class="q">' + fmtNum(r.qty) + '</span>' +
+        '<span class="u">' + esc(r.unit || 'units') + '</span></span>' +
+    '</div>' +
+    '<div class="sugg" id="sugg-' + idx + '">' +
+      '<div class="lbl">Suggested slot</div>' +
+      '<div class="thinking"><span class="mini-spin"></span>Finding best slot…</div>' +
+    '</div>' +
+    '<div class="c-actions">' +
+      '<input class="by" id="by-' + idx + '" type="text" placeholder="Moved by (operator name)">' +
+      '<button class="move" id="mv-' + idx + '" disabled>Move</button>' +
+    '</div>';
+
+  // Stash the lot on the card so Move can build the payload from the (editable) plan.
+  card._lot = r;
+
+  if (typeof google !== 'undefined' && google.script && google.script.run){
+    google.script.run
+      .withSuccessHandler(function(res){ fillSuggestion(idx, r, res); })
+      .withFailureHandler(function(){ fillSuggestion(idx, r, { success:false, error:'lookup failed' }); })
+      .suggestSlot(r.materialCode, r.qty);
+  } else {
+    fillSuggestion(idx, r, { success:false, error:'preview' });
+  }
+
+  // Card isn't in the document yet (render() appends it after buildCard returns), so query
+  // within the detached node — $('mv-'+idx) would hit document and return null → crash.
+  card.querySelector('#mv-' + idx).addEventListener('click', function(){ doMove(idx); });
+  return card;
+}
+
+/* Paint the suggestion block. Success → one editable slot line per allocation
+   (multi-pallet shows all lines); shortfall → amber warning. Failure → manual entry. */
+function fillSuggestion(idx, r, res){
+  var host = $('sugg-' + idx);
+  var mv = $('mv-' + idx);
+  if (!host) return;
+
+  if (!res || res.success === false){
+    // Geometry unknown / no free slot → let the worker type a slot id manually.
+    host.innerHTML =
+      '<div class="lbl">Suggested slot</div>' +
+      '<div class="nosugg">No suggestion — enter a slot id manually.</div>' +
+      '<div class="alloc">' +
+        '<span class="arrow">→</span>' +
+        '<input class="slot" data-qty="' + r.qty + '" placeholder="e.g. B030">' +
+        '<span class="qbadge">' + fmtNum(r.qty) + ' ' + esc(r.unit || '') + '</span>' +
+      '</div>';
+    mv.disabled = false;
+    return;
+  }
+
+  var plan = (res.plan || []).filter(function(a){ return a && a.slotId && Number(a.qty) > 0; });
+  var head = plan.length > 1
+    ? '<div class="lbl">Needs ' + plan.length + ' pallets</div>'
+    : '<div class="lbl">Suggested slot</div>';
+  var lines = plan.map(function(a){
+    return '<div class="alloc">' +
+      '<span class="arrow">→</span>' +
+      '<input class="slot" data-qty="' + a.qty + '" value="' + esc(a.slotId) + '">' +
+      '<span class="qbadge">(' + fmtNum(a.qty) + ')</span>' +
+      (a.consolidating ? '<span class="cons">consolidate</span>' : '') +
+    '</div>';
+  }).join('');
+
+  var short = Number(res.shortfallQty) > 0
+    ? '<div class="warn">⚠ ' + fmtNum(res.shortfallQty) + ' ' + esc(r.unit || 'units') +
+      ' have no slot — bays full. That remainder stays at ' + esc(r.fromLocationId) + '.</div>'
+    : '';
+
+  host.innerHTML = head + short + lines;
+  mv.disabled = plan.length === 0;
+  if (plan.length === 0){
+    host.innerHTML += '<div class="nosugg">No available position.</div>';
+  }
+}
+
+/* Read the (possibly edited) plan off the card's slot inputs and run it. */
+function doMove(idx){
+  var card = $('card-' + idx);
+  var r = card && card._lot;
+  if (!r) return;
+
+  var inputs = card.querySelectorAll('.alloc input.slot');
+  var plan = [];
+  for (var i = 0; i < inputs.length; i++){
+    var slotId = String(inputs[i].value || '').trim().toUpperCase();
+    var qty = Number(inputs[i].getAttribute('data-qty')) || 0;
+    if (!slotId){ toast('Enter a slot id for every line.', true); return; }
+    if (!(qty > 0)) continue;
+    plan.push({ slotId: slotId, qty: qty });
+  }
+  if (!plan.length){ toast('Nothing to move.', true); return; }
+
+  var mv = $('mv-' + idx);
+  mv.disabled = true; mv.textContent = 'Moving…';
+
+  google.script.run
+    .withSuccessHandler(function(res){ onMoveResult(idx, r, res); })
+    .withFailureHandler(function(err){
+      mv.disabled = false; mv.textContent = 'Move';
+      toast('Move failed: ' + (err && err.message ? err.message : err), true);
+    })
+    .runPutawayPlan({
+      materialCode:   r.materialCode,
+      batchOrLotNo:   r.batchOrLotNo,
+      fromLocationId: r.fromLocationId,
+      transferredBy:  ($('by-' + idx).value.trim() || 'putaway-queue'),
+      plan:           plan
+    });
+}
+
+function onMoveResult(idx, r, res){
+  var mv = $('mv-' + idx);
+  if (res && res.success){
+    toast('Moved ' + fmtNum(res.movedQty || r.qty) + ' ' + r.materialCode);
+    markDone(idx);
+    return;
+  }
+  // Partial failure — surface which slot(s) failed and allow retry.
+  mv.disabled = false; mv.textContent = 'Retry';
+  var failed = ((res && res.results) || []).filter(function(x){ return !x.ok; });
+  var msg = failed.length
+    ? 'Failed: ' + failed.map(function(x){ return x.slotId + ' (' + x.error + ')'; }).join(', ')
+    : ((res && res.error) || 'Move failed');
+  toast(msg, true);
+}
+
+function markDone(idx){
+  var card = $('card-' + idx);
+  if (card) card.classList.add('done');
+  pendingCount = Math.max(0, pendingCount - 1);
+  updateCount();
+  if (pendingCount === 0) $('empty').className = 'show';
+}
+
+loadQueue();
+</script>
