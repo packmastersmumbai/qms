@@ -155,6 +155,13 @@
     filter:drop-shadow(0 0 5px color-mix(in srgb,var(--pm-primary) 55%,transparent))}
   .slot.flash rect.cell{animation:flash 1.1s ease-in-out 2}
   @keyframes flash{0%,100%{fill:var(--pm-canvas-soft)}50%{fill:var(--pm-primary-soft)}}
+  /* Category filter: non-matching slots fade back so the chosen category pops. */
+  .slot.dim{opacity:.16;transition:opacity .2s}
+  .slot.dim rect.cell{stroke-width:1}
+  /* Active legend chip (a category filter is on) */
+  .iconkey .chip{cursor:pointer;padding:2px 5px;border-radius:var(--pm-r-sm);transition:background .15s}
+  .iconkey .chip:hover{background:var(--pm-primary-soft)}
+  .iconkey .chip.on{background:var(--pm-primary);color:var(--pm-on-primary)}
   /* id demoted to small top-left corner tag (icon is the main cell visual now) */
   .slot .code{font-family:var(--mono);font-size:7px;letter-spacing:0;fill:var(--pm-faint);
     text-anchor:start;dominant-baseline:hanging;pointer-events:none}
@@ -439,15 +446,54 @@ var ICON_KEY = [
   ['BULK','Bulk'], ['LABEL','Rolls'], ['CARTON','Cartons'],
   ['CANS','Cans'], ['BOTTLE','Bottles'], ['CAP','Small parts'], ['FG','FG pallets']
 ];
+var activeCatFilter = null;   // category key currently filtering the map, or null = show all
 function buildIconKey(){
   var wrap = $('iconKey');
+  wrap.className = 'iconkey';
   wrap.innerHTML = ICON_KEY.map(function(k){
-    return '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px;">' +
+    return '<span class="chip" data-cat="' + k[0] + '" role="button" tabindex="0" ' +
+      'style="display:inline-flex;align-items:center;gap:3px;margin-right:6px;">' +
       categoryIcon(k[0]) + k[1] + '</span>';
   }).join('');
   wrap.style.display = 'flex';
   wrap.style.flexWrap = 'wrap';
   wrap.style.gap = '4px 0';
+  Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function(chip){
+    var cat = chip.getAttribute('data-cat');
+    chip.addEventListener('click', function(){ toggleCatFilter(cat); });
+    chip.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleCatFilter(cat); }
+    });
+  });
+}
+
+// Category groups map several raw MASTERS_Materials.category values to one legend chip
+// (e.g. LABEL/RIBBON/TAPE all sit under the "Rolls" chip). Keep in sync with categoryIconParts.
+var CAT_GROUP = {
+  BULK:['BULK'], LABEL:['LABEL','RIBBON','TAPE','FILM'], CARTON:['CARTON','CARTONS','BOX'],
+  CANS:['CANS','CAN','TIN'], BOTTLE:['BOTTLES','BOTTLE'], CAP:['CAP','PLUG','SEAL'], FG:['FG']
+};
+function catMatches(slotCat, chipKey){
+  var group = CAT_GROUP[chipKey] || [chipKey];
+  var sc = String(slotCat || '').toUpperCase();
+  return group.some(function(g){ return sc === g; });
+}
+function toggleCatFilter(cat){
+  activeCatFilter = (activeCatFilter === cat) ? null : cat;
+  var wrap = $('iconKey');
+  Array.prototype.forEach.call(wrap.querySelectorAll('.chip'), function(chip){
+    chip.classList.toggle('on', chip.getAttribute('data-cat') === activeCatFilter);
+  });
+  applyCategoryFilter();
+}
+// Dim every slot that isn't the active category (empties dim too). No filter → clear all dims.
+function applyCategoryFilter(){
+  Object.keys(slotEls).forEach(function(id){
+    var g = slotEls[id];
+    if (!activeCatFilter){ g.classList.remove('dim'); return; }
+    var match = !!occByLoc[id] && catMatches(slotCategory(id), activeCatFilter);
+    g.classList.toggle('dim', !match);
+  });
 }
 
 /* ── ZONES: hand-traced real layout. Each storage zone declares its bay letter,
@@ -700,6 +746,7 @@ function slotCategory(id){
 
 function renderOccupancy(){
   Object.keys(slotEls).forEach(function(id){ paintSlot(id); });
+  applyCategoryFilter();   // keep an active category filter applied across data reloads
 }
 
 // Paint one slot: grade fill class, category icon (top-left), qty badge (top-right).
