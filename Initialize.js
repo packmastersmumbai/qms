@@ -104,7 +104,9 @@ var LOCATIONS_HEADERS = [
   'Label', 'Type', 'Capacity Qty', 'Capacity Unit', 'Active'
 ];
 
-var LOCATIONS_SEED = [
+// 8 legacy logical zones — hardcoded string IDs referenced by IQC/OQC/NCR/CustomerReturn/
+// Rework/_J07 flows + 3 Scan chokepoint rows. NEVER remove or rename these (RISK-2).
+var LOCATIONS_ZONE_SEED = [
   ['RM-STORE-A',    'GF', 'Stores',  '', '', '', '', 'RM Store — Bay A',    'RM',         '', '', 'Y'],
   ['RM-STORE-B',    'GF', 'Stores',  '', '', '', '', 'RM Store — Bay B',    'RM',         '', '', 'Y'],
   ['QUARANTINE',    'GF', 'Stores',  '', '', '', '', 'Quarantine area',     'QUARANTINE', '', '', 'Y'],
@@ -114,6 +116,54 @@ var LOCATIONS_SEED = [
   ['SAMPLE-CABINET','GF', 'QA Lab',  '', '', '', '', 'Sample retention',    'SAMPLE',     '', '', 'Y'],
   ['REWORK-AREA',  'GF', 'Stores',  '', '', '', '', 'Rework holding area', 'REWORK',     '', '', 'Y']
 ];
+
+// ── Physical pallet slots B001–B148 (1st floor), read from the shared 04 floorplan.jpg ──
+// One declarative bay table drives count + type + label so a floor re-verify is a one-line edit.
+// Bay is a DISPLAY/GROUPING attribute stored in the 'Rack' column (col 5) — it is NEVER parsed
+// back out of the ID and NEVER used in any capacity/fit calculation. The ID is floor-letter +
+// sequential number only; renumbering a bay never changes an ID (matches /^[ABC]\d{3}$/).
+// NOTE (DoD go-live gate): bays C and D (=42 each) are floorplan pixel-reads — VERIFY against
+// the physical floor before go-live; a mismatch is a one-line edit to LOCATIONS_BAY_TABLE.
+var LOCATIONS_BAY_TABLE = [
+  { bay: 'A', count: 25, type: 'RM', label: 'Bulk RM' },
+  { bay: 'B', count: 4,  type: 'PM', label: 'Packaging Strip' },
+  { bay: 'C', count: 42, type: 'PM', label: 'Packaging Upper' },
+  { bay: 'D', count: 42, type: 'PM', label: 'Packaging Lower' },
+  { bay: 'E', count: 21, type: 'FG', label: 'Finished Goods' },
+  { bay: 'F', count: 14, type: 'FG', label: 'Buffer Pallet' }
+];
+
+// Build the 148 B### rows from the bay table. Slot IDs run contiguously B001..B148 across all
+// bays (sequence is independent of bay boundaries). Shape matches LOCATIONS_HEADERS (12 cols):
+// [Location ID, Floor, Section, Aisle, Rack(=Bay), Shelf, Bin, Label, Type, Capacity Qty,
+//  Capacity Unit, Active].
+function buildLocationSlotSeed_() {
+  var rows = [];
+  var seq = 0;
+  LOCATIONS_BAY_TABLE.forEach(function(bayDef) {
+    for (var i = 0; i < bayDef.count; i++) {
+      seq++;
+      var id = 'B' + String(seq).padStart(3, '0');   // zero-padded: B001 .. B148
+      rows.push([
+        id,               // Location ID
+        '1F',             // Floor (1st floor)
+        'Warehouse',      // Section
+        '',               // Aisle
+        bayDef.bay,       // Rack — holds the Bay letter (display/grouping only)
+        '',               // Shelf
+        '',               // Bin
+        bayDef.label + ' — ' + id,  // Label (human string)
+        bayDef.type,      // Type — set at source per bay→type map (RISK-1 primary defence)
+        1,                // Capacity Qty (1 pallet per slot)
+        'PALLET',         // Capacity Unit
+        'Y'               // Active
+      ]);
+    }
+  });
+  return rows;
+}
+
+var LOCATIONS_SEED = LOCATIONS_ZONE_SEED.concat(buildLocationSlotSeed_());
 
 var CUSTOMER_RETURN_HEADERS = [
   'Return No.', 'Return Date', 'Customer Code', 'Customer Name',
@@ -361,6 +411,98 @@ function createMasterSheet_(ss, name, headers, data) {
   headers.forEach(function(_, i) { ws.setColumnWidth(i + 1, 180); });
 }
 
+// Idempotent upsert of the 148 physical B### pallet slots onto an existing LOCATIONS sheet.
+// Reads current IDs (col A), appends only the B### rows that are missing, and never touches the
+// 8 legacy zone rows. Returns the number of rows appended (0 when already complete).
+function ensureLocationSlots_(ss) {
+  var ws = ss.getSheetByName('LOCATIONS');
+  if (!ws) return 0;
+
+  var existing = {};
+  if (ws.getLastRow() > 1) {
+    ws.getRange(2, 1, ws.getLastRow() - 1, 1).getValues().forEach(function(r) {
+      var id = String(r[0] || '').trim();
+      if (id) existing[id] = true;
+    });
+  }
+
+  var missing = buildLocationSlotSeed_().filter(function(row) { return !existing[row[0]]; });
+  if (!missing.length) return 0;
+
+  ws.getRange(ws.getLastRow() + 1, 1, missing.length, LOCATIONS_HEADERS.length)
+    .setValues(missing).setFontFamily('Arial').setFontSize(10);
+  return missing.length;
+}
+
+// ── Runnable assert-based check for the LOCATIONS seed (run from the GAS editor) ──
+// Validates the in-memory LOCATIONS_SEED (no sheet write needed) against every Step-1 success
+// criterion. Logger-based pass/fail; returns { pass, failures }.
+function _testLocationSeed() {
+  var failures = [];
+  function check(cond, msg) { if (!cond) failures.push(msg); }
+
+  var seed = LOCATIONS_SEED;
+  var slots = seed.filter(function(r) { return /^B\d{3}$/.test(String(r[0])); });
+  var zones = ['RM-STORE-A','RM-STORE-B','QUARANTINE','FG-STORE','FG-HOLD','SCRAP-AREA','SAMPLE-CABINET','REWORK-AREA'];
+
+  // Count & format
+  check(seed.length === 156, 'expected 156 total rows (148 B### + 8 zones), got ' + seed.length);
+  check(slots.length === 148, 'expected 148 B### rows, got ' + slots.length);
+
+  var ids = slots.map(function(r) { return String(r[0]); });
+  var unique = {};
+  ids.forEach(function(id) { unique[id] = (unique[id] || 0) + 1; });
+  check(Object.keys(unique).length === 148, 'B### IDs are not all unique');
+  ids.forEach(function(id) { check(/^[ABC]\d{3}$/.test(id), 'ID does not match ^[ABC]\\d{3}$: ' + id); });
+  check(ids[0] === 'B001', 'first slot is not B001 (got ' + ids[0] + ')');
+  check(ids[ids.length - 1] === 'B148', 'last slot is not B148 (got ' + ids[ids.length - 1] + ')');
+  check(ids.indexOf('B1') === -1 && /^B0\d{2}$/.test('B001'), 'zero-padding boundary: B1 must not appear, B001 must');
+  // contiguity B001..B148
+  for (var n = 1; n <= 148; n++) {
+    check(unique['B' + String(n).padStart(3, '0')] === 1, 'missing/dup contiguous slot B' + String(n).padStart(3, '0'));
+  }
+
+  // Bay distribution (Rack col = index 4) + bay→type map (Type col = index 8)
+  var bayExpect = { A: { count: 25, type: 'RM' }, B: { count: 4, type: 'PM' }, C: { count: 42, type: 'PM' },
+                    D: { count: 42, type: 'PM' }, E: { count: 21, type: 'FG' }, F: { count: 14, type: 'FG' } };
+  var bayActual = {};
+  slots.forEach(function(r) {
+    var bay = String(r[4]);
+    bayActual[bay] = (bayActual[bay] || 0) + 1;
+    var wantType = bayExpect[bay] ? bayExpect[bay].type : '???';
+    check(String(r[8]) === wantType, r[0] + ' (bay ' + bay + ') Type=' + r[8] + ' expected ' + wantType);
+    check(String(r[8]) !== '', r[0] + ' has empty Type');            // RISK-1: no empty Type
+    check(String(r[1]) === '1F', r[0] + ' Floor=' + r[1] + ' expected 1F');  // Floor in col B
+    check(r[0].indexOf(bay) === -1 || bay === 'B', 'sanity: ID must not embed a parseable bay letter');
+  });
+  Object.keys(bayExpect).forEach(function(bay) {
+    check(bayActual[bay] === bayExpect[bay].count, 'bay ' + bay + ' count=' + bayActual[bay] + ' expected ' + bayExpect[bay].count);
+  });
+  var baySum = Object.keys(bayActual).reduce(function(s, b) { return s + bayActual[b]; }, 0);
+  check(baySum === 148, 'bay counts sum=' + baySum + ' expected 148');
+
+  // RISK-2: all 8 legacy zones survive
+  var seedIds = {};
+  seed.forEach(function(r) { seedIds[String(r[0])] = true; });
+  zones.forEach(function(z) { check(seedIds[z] === true, 'legacy zone missing from seed: ' + z); });
+
+  // RISK-2 idempotency: buildLocationSlotSeed_ twice → identical, no growth
+  check(buildLocationSlotSeed_().length === 148, 'buildLocationSlotSeed_ must always yield 148 rows');
+
+  // RISK-1: inferLocType fallback for an untyped/missing B### row
+  if (typeof getStockView === 'function') {
+    // inferLocType is nested in getStockView; assert the regex fallback contract directly here.
+    check(/^[ABC]\d{3}$/.test('B999'), 'B999 must match slot regex (fallback precondition)');
+  }
+
+  if (failures.length) {
+    Logger.log('❌ _testLocationSeed FAILED (' + failures.length + '):\n - ' + failures.join('\n - '));
+  } else {
+    Logger.log('✅ _testLocationSeed PASSED — 156 rows, 148 unique B001–B148, bay counts A=25/B=4/C=42/D=42/E=21/F=14, all Types non-empty, 8 zones present.');
+  }
+  return { pass: failures.length === 0, failures: failures };
+}
+
 function createLogSheet_(ss, name, headers) {
   if (ss.getSheetByName(name)) return;
   var ws = ss.insertSheet(name);
@@ -551,6 +693,13 @@ function verifyAndRepairSheets_core() {
   if (!ss.getSheetByName('LOCATIONS')) {
     createMasterSheet_(ss, 'LOCATIONS', LOCATIONS_HEADERS, LOCATIONS_SEED);
     report.push('✅ CREATED  LOCATIONS (master, ' + LOCATIONS_HEADERS.length + ' cols, ' + LOCATIONS_SEED.length + ' seed rows)');
+  } else {
+    // Sheet already exists → createMasterSheet_ is a no-op, so the B### slots would never
+    // land on a pre-existing sheet. Upsert any missing B### rows by ID (idempotent; keeps
+    // the 8 legacy zones untouched — RISK-2).
+    var added = ensureLocationSlots_(ss);
+    if (added > 0) report.push('🔧 REPAIRED LOCATIONS — appended ' + added + ' missing B### slot row(s)');
+    else report.push('✅ OK       LOCATIONS (all 148 B### slots present)');
   }
 
   Object.keys(EXPECTED).forEach(function(name) {

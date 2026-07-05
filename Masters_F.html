@@ -538,7 +538,16 @@
       { key: 'unit',            label: 'Unit',             required: true,  type: 'text', widthHalf: true },
       { key: 'desc',            label: 'Description',      required: true,  type: 'text' },
       { key: 'category',        label: 'Category',         required: true,  type: 'text', widthHalf: true },
-      { key: 'defaultLocation', label: 'Default Location', required: false, type: 'text', widthHalf: true }
+      { key: 'defaultLocation', label: 'Default Location', required: false, type: 'text', widthHalf: true },
+      // Storage geometry (cols G→L) — all optional; blank allowed (loose
+      // categories, not every material has geometry). eachVolume = L×W×H is
+      // computed at fit time, never stored. fitClass is a display hint only.
+      { key: 'eachL',      label: 'Each L (mm)',      required: false, type: 'number', widthHalf: true },
+      { key: 'eachW',      label: 'Each W (mm)',      required: false, type: 'number', widthHalf: true },
+      { key: 'eachH',      label: 'Each H (mm)',      required: false, type: 'number', widthHalf: true },
+      { key: 'eachWeight', label: 'Each Weight (kg)', required: false, type: 'number', widthHalf: true },
+      { key: 'perPallet',  label: 'Per Pallet (TI×HI)', required: false, type: 'number', widthHalf: true },
+      { key: 'fitClass',   label: 'Fit Class',        required: false, type: 'select', options: ['', 'WEIGHT', 'VOLUME'], widthHalf: true }
     ],
     customer: [
       { key: 'code',     label: 'Code',     required: true,  type: 'text', widthHalf: true },

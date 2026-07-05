@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cockpit — Pack Masters QMS</title>
+  <title>QMS v2 — Pack Masters QMS</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=Public+Sans:wght@500;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
@@ -114,13 +114,20 @@
 
   <!-- Top bar -->
   <header class="bg-primary text-on-primary flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-touch-target-min sticky top-0 z-50 shrink-0">
-    <button id="homeBtn" class="flex items-center gap-2 font-headline text-[18px] font-bold active:scale-95 transition-transform" title="Back to Home">
-      <span class="material-symbols-outlined">arrow_back</span>
-      <span class="hidden sm:inline">PM QMS</span>
-      <span class="text-on-primary/60 text-[12px] font-body font-medium hidden md:inline">v2 · Cockpit</span>
-    </button>
+    <div class="flex items-center gap-1">
+      <button id="homeBtn" class="flex items-center gap-2 font-headline text-[18px] font-bold active:scale-95 transition-transform" title="All modules">
+        <span class="material-symbols-outlined hidden md:inline">arrow_back</span>
+        <span class="hidden sm:inline">PM QMS</span>
+        <span class="text-on-primary/60 text-[12px] font-body font-medium hidden md:inline">v2</span>
+      </button>
+    </div>
+    <div class="relative hidden md:block flex-1 max-w-md mx-4">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-primary/60 text-[20px]">search</span>
+      <input id="boardSearch" type="text" placeholder="Find lot / GRN / record"
+        class="w-full h-9 pl-10 pr-4 bg-primary-container/60 text-on-primary placeholder:text-on-primary/50 border border-white/20 rounded-full focus:ring-2 focus:ring-white/40 focus:bg-primary-container text-sm transition-all">
+    </div>
     <div class="flex items-center gap-2">
-      <span id="whoRole" class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-primary/60"></span>
+      <span id="whoRole" class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-primary/60 hidden lg:inline"></span>
       <div class="flex items-center bg-primary-container rounded-full pl-3 pr-1 py-1 gap-1 border border-white/20">
         <span class="material-symbols-outlined text-[18px] text-on-primary/70">person</span>
         <select id="opSelect" aria-label="Select operator"
@@ -131,64 +138,66 @@
     </div>
   </header>
 
+  <!-- Tools icon bar — all 13 modules as icons (replaces the sidebar Tools list) -->
+  <nav id="toolsBar" class="bg-surface border-b border-outline-variant w-full px-2 md:px-margin-desktop z-40 shrink-0">
+    <div id="toolsBarInner" class="flex items-center gap-1 overflow-x-auto hide-scrollbar py-1.5"></div>
+  </nav>
+
+  <!-- Mobile nav drawer — full parity with old Landing menu -->
+  <div id="navMenuBackdrop" class="hidden fixed inset-0 z-[80] bg-on-background/40 md:hidden">
+    <div id="navMenuPanel" class="absolute left-0 top-0 bottom-0 w-[80%] max-w-[320px] bg-surface flex flex-col shadow-xl">
+      <div class="bg-primary text-on-primary px-4 h-touch-target-min flex items-center justify-between shrink-0">
+        <span class="font-headline-md text-headline-md font-bold">PM QMS v2</span>
+        <button id="navMenuClose" class="material-symbols-outlined w-10 h-10 flex items-center justify-center">close</button>
+      </div>
+      <div id="navMenu" class="flex-1 overflow-y-auto p-2 flex flex-col gap-0.5"></div>
+    </div>
+  </div>
+
+  <!-- Full-page overlay view (KPI dashboard / action forms) — Stitch full-page layouts -->
+  <div id="fullView" class="hidden fixed inset-0 z-[70] bg-background flex flex-col">
+    <header id="fullTop" class="bg-primary text-on-primary flex items-center gap-3 w-full px-margin-mobile md:px-margin-desktop h-touch-target-min sticky top-0 z-10 shrink-0">
+      <button id="fullBack" class="material-symbols-outlined active:scale-95 transition-transform" title="Back">arrow_back</button>
+      <h1 id="fullTitle" class="font-headline-md text-headline-md font-bold flex-1 truncate">Title</h1>
+      <div id="fullTopRight" class="flex items-center gap-2"></div>
+    </header>
+    <div id="fullBody" class="flex-1 overflow-y-auto"></div>
+  </div>
+
   <div class="flex-1 flex overflow-hidden">
 
-    <!-- Side nav (desktop) — Stitch desktop sidebar (01b) -->
-    <nav class="hidden md:flex flex-col h-full w-64 bg-surface border-r border-outline-variant shrink-0 p-gutter pt-4">
-      <div class="flex items-center gap-3 px-4 mb-6">
-        <div class="w-10 h-10 rounded bg-primary-container text-on-primary grid place-items-center font-display font-extrabold text-[18px]">PM</div>
-        <div>
-          <h2 class="font-headline-md text-headline-md font-extrabold text-primary leading-none">PM QMS v2</h2>
-          <p class="font-body-sm text-body-sm text-on-surface-variant">Quality Cockpit</p>
-        </div>
-      </div>
-      <!-- Search -->
-      <div class="relative px-2 mb-4">
-        <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
-        <input id="boardSearch" type="text" placeholder="Find lot / GRN"
-          class="w-full h-11 pl-10 pr-4 bg-surface-container-low border border-outline-variant rounded focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all">
-      </div>
-      <!-- Doc-type nav -->
-      <div id="sideTabs" class="flex-1 overflow-y-auto flex flex-col gap-1 px-2"></div>
-      <!-- Footer: My Work/All + persona + New -->
-      <div class="mt-auto px-2 pt-4 border-t border-outline-variant flex flex-col gap-3">
-        <div class="flex bg-surface-container p-1 rounded">
-          <button id="myWorkBtn" class="flex-1 py-2 text-sm font-medium bg-surface shadow-sm rounded text-primary flex items-center justify-center gap-2">
-            <span class="material-symbols-outlined text-[18px]">person</span>My Work</button>
-          <button id="allBtn" class="flex-1 py-2 text-sm font-medium text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-2">
-            <span class="material-symbols-outlined text-[18px]">groups</span>All</button>
-        </div>
-        <div class="w-full flex items-center justify-between p-2 rounded border border-outline-variant bg-surface">
-          <div class="flex items-center gap-2 overflow-hidden">
-            <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary grid place-items-center shrink-0"><span class="material-symbols-outlined text-[18px]">person</span></div>
-            <div class="text-left flex flex-col min-w-0">
-              <span id="sideOpName" class="text-sm font-bold text-on-surface truncate">—</span>
-              <span id="sideOpRole" class="text-xs text-on-surface-variant truncate">—</span>
-            </div>
-          </div>
-          <button id="opSwitch" class="material-symbols-outlined text-on-surface-variant text-[20px]" title="Switch operator">unfold_more</button>
-        </div>
-        <button id="sideNew" class="w-full h-touch-target-min bg-primary text-on-primary rounded font-bold flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all shadow-sm">
-          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">add</span> New
-        </button>
-      </div>
-    </nav>
-
-    <!-- Main -->
+    <!-- Main (sidebar removed; search→topbar, type-chips→below) -->
     <main class="flex-1 flex flex-col h-full overflow-hidden bg-background">
 
-      <!-- Desktop title bar (Stitch): doc name + Active chip + Filter/Export -->
-      <header class="hidden md:flex justify-between items-center px-margin-desktop py-4 bg-surface border-b border-outline-variant shrink-0">
+      <!-- Desktop title bar: title + actions (line 1), type chips (line 2) -->
+      <header class="hidden md:flex flex-col gap-3 px-margin-desktop py-3 bg-surface border-b border-outline-variant shrink-0">
+       <div class="flex justify-between items-center">
         <h2 class="font-display-lg text-display-lg text-on-surface flex items-center gap-3">
           <span id="boardTitle">Board</span>
           <span id="boardActive" class="bg-surface-container-high text-on-surface-variant text-sm px-2 py-1 rounded font-medium">0 Active</span>
         </h2>
         <div class="flex gap-2">
+          <div id="rangeSwitch" class="inline-flex bg-surface-container-high rounded-lg p-1 border border-outline-variant/50 gap-0.5">
+            <button data-range="day"   class="range-btn h-9 px-3 rounded-md text-[13px] font-medium transition" title="Last 24h">Day</button>
+            <button data-range="week"  class="range-btn h-9 px-3 rounded-md text-[13px] font-medium transition" title="Last 7 days">Week</button>
+            <button data-range="month" class="range-btn h-9 px-3 rounded-md text-[13px] font-medium transition" title="Last 30 days">Month</button>
+            <button data-range="all"   class="range-btn h-9 px-3 rounded-md text-[13px] font-medium transition" title="All time">All</button>
+          </div>
+          <div id="viewSwitch" class="inline-flex bg-surface-container-high rounded-lg p-1 border border-outline-variant/50 gap-0.5">
+            <button data-view="kanban"   class="view-btn h-9 px-3 rounded-md text-[13px] font-medium flex items-center gap-1.5 transition" title="Kanban"><span class="material-symbols-outlined text-[18px]">view_kanban</span><span class="hidden lg:inline">Kanban</span></button>
+            <button data-view="list"     class="view-btn h-9 px-3 rounded-md text-[13px] font-medium flex items-center gap-1.5 transition" title="List"><span class="material-symbols-outlined text-[18px]">view_list</span><span class="hidden lg:inline">List</span></button>
+            <button data-view="timeline" class="view-btn h-9 px-3 rounded-md text-[13px] font-medium flex items-center gap-1.5 transition" title="Timeline"><span class="material-symbols-outlined text-[18px]">timeline</span><span class="hidden lg:inline">Timeline</span></button>
+          </div>
           <button id="selectToggle" class="h-touch-target-min px-4 border border-outline-variant bg-surface text-primary rounded font-medium flex items-center gap-2 hover:bg-surface-container-low transition-colors">
             <span class="material-symbols-outlined">checklist</span> Select</button>
           <button id="urgentToggle" class="h-touch-target-min px-4 border border-outline-variant bg-surface text-primary rounded font-medium flex items-center gap-2 hover:bg-surface-container-low transition-colors">
             <span class="material-symbols-outlined">filter_list</span> <span id="urgentLabel">Urgent</span></button>
+          <button id="newBtn" class="h-touch-target-min px-4 bg-primary text-on-primary rounded font-bold flex items-center gap-2 hover:bg-opacity-90 transition-all shadow-sm">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">add</span> New</button>
         </div>
+       </div>
+       <!-- Record-type chips (All default) — replaces the sidebar doc-type list -->
+       <div id="typeChips" class="flex items-center gap-1.5 overflow-x-auto hide-scrollbar"></div>
       </header>
 
       <!-- Mobile doc-type tabs + filter pills -->
@@ -198,11 +207,24 @@
             <button data-filter="all" class="filter-pill px-4 py-1.5 rounded-full text-[14px] font-medium transition">All</button>
             <button data-filter="urgent" class="filter-pill px-4 py-1.5 rounded-full text-[14px] font-medium transition">Urgent</button>
           </div>
-          <button id="selectToggleM" class="flex items-center gap-1.5 px-3 h-9 rounded-full border border-outline-variant text-[13px] font-semibold text-on-surface-variant hover:bg-surface-variant transition">
-            <span class="material-symbols-outlined text-[18px]">checklist</span><span class="hidden sm:inline">Select</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <div id="viewSwitchM" class="inline-flex bg-surface-container-high rounded-full p-1 border border-outline-variant/50 gap-0.5">
+              <button data-view="kanban"   class="view-btn w-9 h-8 rounded-full grid place-items-center transition" title="Kanban"><span class="material-symbols-outlined text-[18px]">view_kanban</span></button>
+              <button data-view="list"     class="view-btn w-9 h-8 rounded-full grid place-items-center transition" title="List"><span class="material-symbols-outlined text-[18px]">view_list</span></button>
+              <button data-view="timeline" class="view-btn w-9 h-8 rounded-full grid place-items-center transition" title="Timeline"><span class="material-symbols-outlined text-[18px]">timeline</span></button>
+            </div>
+            <button id="selectToggleM" class="flex items-center gap-1.5 px-3 h-9 rounded-full border border-outline-variant text-[13px] font-semibold text-on-surface-variant hover:bg-surface-variant transition">
+              <span class="material-symbols-outlined text-[18px]">checklist</span><span class="hidden sm:inline">Select</span>
+            </button>
+          </div>
         </div>
         <div id="tabRow" class="px-margin-mobile flex overflow-x-auto hide-scrollbar border-t border-outline-variant/30"></div>
+        <div id="rangeSwitchM" class="px-margin-mobile py-2 flex gap-1.5 border-t border-outline-variant/30">
+          <button data-range="day"   class="range-btn flex-1 h-8 rounded-full text-[12px] font-medium transition">Day</button>
+          <button data-range="week"  class="range-btn flex-1 h-8 rounded-full text-[12px] font-medium transition">Week</button>
+          <button data-range="month" class="range-btn flex-1 h-8 rounded-full text-[12px] font-medium transition">Month</button>
+          <button data-range="all"   class="range-btn flex-1 h-8 rounded-full text-[12px] font-medium transition">All</button>
+        </div>
       </div>
 
       <!-- Kanban board area (horizontal columns) -->
@@ -217,8 +239,8 @@
     <button id="bnHome" class="flex flex-col items-center justify-center text-on-surface-variant min-w-[56px] gap-0.5">
       <span class="material-symbols-outlined">home</span><span class="text-[10px] font-label-caps">Home</span>
     </button>
-    <button id="bnRecords" class="flex flex-col items-center justify-center text-on-surface-variant min-w-[56px] gap-0.5">
-      <span class="material-symbols-outlined">history</span><span class="text-[10px] font-label-caps">Records</span>
+    <button id="bnWarehouse" class="flex flex-col items-center justify-center text-on-surface-variant min-w-[56px] gap-0.5">
+      <span class="material-symbols-outlined">warehouse</span><span class="text-[10px] font-label-caps">Warehouse</span>
     </button>
     <div class="w-14"></div>
     <button id="bnTrace" class="flex flex-col items-center justify-center text-on-surface-variant min-w-[56px] gap-0.5">
@@ -257,22 +279,26 @@
 
   <script>
     // ============ data + state ============
+    // GAS web-app exec URL (for opening a record's standalone DocView in a new tab via ?doc=).
+    var SCRIPT_URL = '<?= scriptUrl ?>';
     var LS_KEY = 'pmQmsOperator';
     var DOC_TYPES = ['GRN','IQC','IPQC','OQC','Dispatch','Production','NCR'];
     var TAB_ICONS = { GRN:'inventory_2', IQC:'biotech', IPQC:'precision_manufacturing', OQC:'verified', Dispatch:'local_shipping', Production:'factory', NCR:'report_problem' };
     var STAGE_LABELS = ['GRN','IQC','PUTAWAY','ISSUE','OQC','DISP'];
     var STAGE_SHORT  = ['GRN','IQC','PUT','ISS','OQC','DISP'];
-    var DOC_TITLES = { GRN:'Goods Receipt Notes (GRN)', IQC:'Incoming QC (IQC)', IPQC:'In-Process QC (IPQC)', OQC:'Outgoing QC (OQC)', Dispatch:'Dispatch', Production:'Production Jobs', NCR:'Non-Conformance (NCR)' };
+    var DOC_TITLES = { ALL:'All Records', GRN:'Goods Receipt Notes (GRN)', IQC:'Incoming QC (IQC)', IPQC:'In-Process QC (IPQC)', OQC:'Outgoing QC (OQC)', Dispatch:'Dispatch', Production:'Production Jobs', NCR:'Non-Conformance (NCR)' };
+    var TYPE_BADGE = { GRN:'bg-blue-500/15 text-blue-600', IQC:'bg-purple-500/15 text-purple-600', IPQC:'bg-amber-500/15 text-amber-600', OQC:'bg-green-600/15 text-green-700', Dispatch:'bg-cyan-500/15 text-cyan-600', Production:'bg-orange-500/15 text-orange-600', NCR:'bg-red-500/15 text-red-600' };
 
     var roleStageMap = null, operators = [], currentOp = null;
-    var currentRole = 'manager', currentType = 'GRN', currentFilter = 'all';
+    var currentRole = 'manager', currentType = 'ALL', currentFilter = 'all';
+    var currentView = 'kanban';   // 'kanban' | 'list' | 'timeline'
     var actionRegistry = null, formData = null, lastBoard = null;
 
     var root = document.getElementById('qmsv2Root');
     var sel = document.getElementById('opSelect');
     var roleEl = document.getElementById('whoRole');
     var tabRow = document.getElementById('tabRow');
-    var sideTabs = document.getElementById('sideTabs');
+    var sideTabs = document.getElementById('typeChips');   // desktop type-chip row (sidebar removed)
     var backdrop = document.getElementById('sheetBackdrop');
     var sheet = document.getElementById('sheet');
 
@@ -281,31 +307,44 @@
 
     // ============ navigation (full-page swap; navigateTo not in form scope) ============
     function launchForm(formName){
+      // Mark that the launched legacy form should return to the cockpit (not Landing)
+      // when the user goes "home"/back. Theme.html reads this flag. Home/Records/Trace/KPI
+      // chrome buttons intentionally leave the cockpit, so they clear it first.
+      try {
+        if (['Landing','Records','Trace','KPI'].indexOf(formName) !== -1) window.localStorage.removeItem('qmsReturnTo');
+        else window.localStorage.setItem('qmsReturnTo', 'QMSV2');
+      } catch (e) {}
       google.script.run
         .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
         .withFailureHandler(function(){ alert('Could not open ' + formName); })
         .getFormHtml(formName);
     }
 
-    // ============ tabs ============
+    // ============ type chips (All + each record type) ============
+    var CHIP_TYPES = ['ALL'].concat(DOC_TYPES);
+    // Per-type icon accent color (inactive chips) — mirrors old Landing's colored module cards.
+    var TYPE_ICON_COLOR = { GRN:'text-blue-600', IQC:'text-purple-600', IPQC:'text-amber-600', OQC:'text-green-700', Dispatch:'text-cyan-600', Production:'text-orange-600', NCR:'text-red-600', ALL:'text-primary' };
     function tabBtn(t, mobile){
       var active = t === currentType;
+      var label = t === 'ALL' ? 'All' : t;
+      var icon = t === 'ALL' ? 'apps' : (TAB_ICONS[t] || 'tab');
+      var iconCls = active ? '' : (' ' + (TYPE_ICON_COLOR[t] || 'text-on-surface-variant'));
       var b = document.createElement('button');
       if (mobile){
-        b.className = 'min-w-fit px-4 h-touch-target-min flex items-center gap-1.5 text-[14px] font-medium whitespace-nowrap border-b-2 ' +
-          (active ? 'text-primary border-primary font-semibold' : 'text-on-surface-variant border-transparent');
+        b.className = 'min-w-fit px-3.5 h-9 rounded-full flex items-center gap-1.5 text-[13px] font-medium whitespace-nowrap transition ' +
+          (active ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container-high text-on-surface-variant');
       } else {
-        b.className = 'flex items-center gap-3 px-3 h-11 rounded-lg transition ' +
-          (active ? 'bg-secondary-container/15 text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-low');
+        b.className = 'shrink-0 flex items-center gap-1.5 px-3 h-8 rounded-full border transition ' +
+          (active ? 'bg-primary text-on-primary border-primary shadow-sm font-semibold' : 'bg-surface text-on-surface-variant border-outline-variant hover:bg-surface-container-low');
       }
-      b.innerHTML = '<span class="material-symbols-outlined text-[20px]">' + (TAB_ICONS[t]||'tab') + '</span>' +
-        '<span class="font-label-caps text-[14px]">' + t + '</span>';
+      b.innerHTML = '<span class="material-symbols-outlined text-[18px]' + iconCls + '">' + icon + '</span>' +
+        '<span class="font-label-caps text-[13px]">' + label + '</span>';
       b.addEventListener('click', function(){ currentType = t; renderTabs(); loadBoard(); });
       return b;
     }
     function renderTabs(){
       tabRow.innerHTML = ''; sideTabs.innerHTML = '';
-      DOC_TYPES.forEach(function(t){ tabRow.appendChild(tabBtn(t, true)); sideTabs.appendChild(tabBtn(t, false)); });
+      CHIP_TYPES.forEach(function(t){ tabRow.appendChild(tabBtn(t, true)); sideTabs.appendChild(tabBtn(t, false)); });
     }
 
     // ============ mini segmented pipeline bar — Stitch desktop card (01b) ============
@@ -317,40 +356,66 @@
         segs += '<div class="' + (done||on ? 'bg-primary-container' : 'bg-outline') + ' w-1/6' + (i < n-1 ? ' border-r border-surface' : '') + '"></div>';
         labels += '<span class="' + (on ? 'font-bold text-primary' : '') + '">' + STAGE_SHORT[i] + '</span>';
       }
-      return '<div class="w-full flex h-1.5 rounded-full overflow-hidden bg-surface-container-high mb-3 mt-3">' + segs + '</div>' +
-        '<div class="flex justify-between text-[10px] text-on-surface-variant font-medium uppercase tracking-wide">' + labels + '</div>';
+      return '<div class="w-full flex h-1.5 rounded-full overflow-hidden bg-surface-container-high mb-1.5 mt-2">' + segs + '</div>' +
+        '<div class="flex justify-between text-[9px] text-on-surface-variant font-medium uppercase tracking-wide">' + labels + '</div>';
     }
 
     // tone -> status accent strip color (Stitch desktop)
     function stripColor(tone, overdue){
+      if (tone === 'reject') return 'bg-error';
       if (overdue) return 'bg-error';
       if (tone === 'pass') return 'bg-[#16a34a]';
+      if (tone === 'hold') return 'bg-tertiary';
       if (tone === 'prog') return 'bg-secondary';
       return 'bg-tertiary-fixed-dim';
     }
-    // Stitch desktop card: docNo top-left, OVERDUE/age top-right, name, supplier, mini pipeline.
+    // Compact card: docNo + OVERDUE/age on row 1, name on row 2, mini pipeline (which already
+    // shows the current stage) — no separate status text line (it duplicated the pipeline).
+    function typeBadge(t){
+      if (!t) return '';
+      return '<span class="font-label-caps text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ' + (TYPE_BADGE[t]||'bg-surface-container-high text-on-surface-variant') + '">' + esc(t) + '</span>';
+    }
+    // Per-type Material icon (colored) — shown beside the doc number on cards/list rows.
+    function typeIcon(t){
+      if (!t) return '';
+      var icon = TAB_ICONS[t] || 'description';
+      var color = (typeof TYPE_ICON_COLOR !== 'undefined' && TYPE_ICON_COLOR[t]) || 'text-on-surface-variant';
+      return '<span class="material-symbols-outlined text-[16px] shrink-0 ' + color + '" title="' + esc(t) + '">' + icon + '</span>';
+    }
     function cardHtml(card, tone, idx){
-      var age = card.ageDays != null ? (card.ageDays + 'd ago') : '';
+      var age = card.ageDays != null ? (card.ageDays + 'd') : '';
       var topRight = card.overdue
-        ? '<span class="text-xs font-bold text-error bg-error-container px-1.5 py-0.5 rounded">OVERDUE</span>'
-        : (age ? '<span class="text-xs text-on-surface-variant">' + age + '</span>' : '');
-      return '<button type="button" class="js-card card-in text-left w-full bg-surface border border-outline-variant rounded shadow-sm hover:shadow-md transition-shadow relative overflow-hidden cursor-pointer p-4" ' +
-        'data-doc="' + esc(card.docNo) + '" data-stage="' + (card.stage||0) + '" data-status="' + esc(card.status) + '" data-name="' + esc(card.name||'') + '" ' +
+        ? '<span class="text-[10px] font-bold text-error bg-error-container px-1.5 py-0.5 rounded shrink-0">OVERDUE</span>'
+        : (age ? '<span class="text-[11px] text-on-surface-variant shrink-0">' + age + '</span>' : '');
+      // meta line: qty · date · status (TYPE now shown as the icon beside docNo, not a badge)
+      var meta = [];
+      if (card.qty)  meta.push('<span class="font-medium text-on-surface">' + esc(card.qty) + '</span>');
+      if (card.date) meta.push(esc(card.date));
+      if (card.status) meta.push('<span class="truncate">' + esc(card.status) + '</span>');
+      var metaLine = '<div class="flex items-center gap-1.5 text-[11px] text-on-surface-variant mt-1 truncate">' +
+        '<span class="truncate">' + meta.join(' · ') + '</span></div>';
+      return '<button type="button" class="js-card card-in text-left w-full bg-surface border border-outline-variant rounded shadow-sm hover:shadow-md transition-shadow relative overflow-hidden cursor-pointer pl-3 pr-2.5 py-2" ' +
+        'data-doc="' + esc(card.docNo) + '" data-type="' + esc(card.type||'') + '" data-stage="' + (card.stage||0) + '" data-status="' + esc(card.status) + '" data-name="' + esc(card.name||'') + '" ' +
         'style="animation-delay:' + (idx*30) + 'ms">' +
         '<div class="absolute left-0 top-0 bottom-0 w-1 ' + stripColor(tone, card.overdue) + '"></div>' +
-        '<div class="flex justify-between items-start mb-2 pl-1">' +
-          '<span class="font-label-caps text-label-caps text-primary tracking-wider">' + esc(card.docNo) + '</span>' +
+        '<div class="flex justify-between items-center gap-2">' +
+          '<span class="flex items-center gap-1 min-w-0">' + typeIcon(card.type) +
+            '<span class="font-label-caps text-[11px] text-primary tracking-wider truncate">' + esc(card.docNo) + '</span></span>' +
           topRight +
         '</div>' +
-        '<h4 class="font-interactive-label text-interactive-label text-on-surface mb-1 pl-1 truncate">' + esc(card.name || '—') + '</h4>' +
-        '<p class="font-body-sm text-body-sm text-on-surface-variant mb-1 pl-1">' + esc(card.status) + '</p>' +
-        pipelineHtml(card.stage || 0) +
+        '<h4 class="font-interactive-label text-[13px] text-on-surface truncate mt-0.5">' + esc(card.name || '—') + '</h4>' +
+        metaLine +
       '</button>';
     }
 
     var searchTerm = '';
+    // Rolling-window time filter (by record age in days). 'all' = no limit.
+    var currentRange = 'all';
+    var RANGE_MAX = { day: 1, week: 7, month: 30, all: Infinity };
     function applyFilter(cards){
       var out = currentFilter === 'urgent' ? cards.filter(function(c){ return c.overdue; }) : cards;
+      var max = RANGE_MAX[currentRange];
+      if (max !== Infinity) out = out.filter(function(c){ return (c.ageDays != null ? c.ageDays : 0) <= max; });
       if (searchTerm){ out = out.filter(function(c){ return ((c.docNo||'') + ' ' + (c.name||'')).toLowerCase().indexOf(searchTerm) !== -1; }); }
       return out;
     }
@@ -361,48 +426,251 @@
         ? cards.map(function(c, i){ return cardHtml(c, tone, startIdx + i); }).join('')
         : '<div class="flex flex-col items-center justify-center text-center text-on-surface-variant/60 py-12 gap-2">' +
           '<span class="material-symbols-outlined text-3xl">inbox</span><span class="text-sm">Nothing here</span></div>';
-      return '<div class="w-80 md:w-auto flex flex-col h-full bg-surface-container-lowest border border-outline-variant rounded-lg shrink-0">' +
+      return '<div class="w-80 md:w-auto flex flex-col h-full min-h-0 bg-surface-container-lowest border border-outline-variant rounded-lg shrink-0">' +
         '<div class="p-3 border-b border-outline-variant flex justify-between items-center bg-surface-bright rounded-t-lg">' +
           '<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">' +
             '<div class="w-3 h-3 rounded-full ' + dotColor + '"></div>' + title + '</h3>' +
           '<span class="text-on-surface-variant font-medium bg-surface-container px-2 py-0.5 rounded text-sm">' + cards.length + '</span>' +
         '</div>' +
-        '<div class="flex-1 overflow-y-auto p-2 space-y-3">' + inner + '</div></div>';
+        '<div class="flex-1 overflow-y-auto p-2 space-y-2">' + inner + '</div></div>';
     }
 
-    // Split server's {pending,inProgress,done} into Stitch's 4 columns.
-    // Completed = done but not terminal-released; Verified = released/dispatched/verified.
+    // Use the server's REAL buckets {pending,rejected,hold,completed} as-is — no synthetic
+    // Completed/Verified split (that regex left a permanently-empty 4th column for
+    // every type without a release step). The done column is titled "Verified" only
+    // for types that genuinely end in a release/dispatch decision; "Done" otherwise.
+    // Four-column status model: Pending · Rejected · Hold · Completed.
     function splitColumns(board){
-      var c = board.columns;
-      var pending = applyFilter(c.pending);
-      var inProg = applyFilter(c.inProgress);
-      var doneAll = applyFilter(c.done);
-      var verified = doneAll.filter(function(x){ return /RELEAS|DISPATCH|VERIFI/i.test(x.status||''); });
-      var completed = doneAll.filter(function(x){ return !/RELEAS|DISPATCH|VERIFI/i.test(x.status||''); });
-      return { pending: pending, inProgress: inProg, completed: completed, verified: verified };
+      var c = board.columns || {};
+      return {
+        pending:   applyFilter(c.pending   || []),
+        rejected:  applyFilter(c.rejected  || []),
+        hold:      applyFilter(c.hold      || []),
+        completed: applyFilter(c.completed || [])
+      };
+    }
+
+    function renderKanban(board){
+      var s = splitColumns(board);
+      var i = 0, html = '<div class="flex gap-gutter h-full min-h-0 min-w-max md:min-w-0 md:grid md:grid-cols-4">';
+      html += columnHtml('Pending',   'bg-outline',     s.pending,   'pending', i); i += s.pending.length;
+      html += columnHtml('Rejected',  'bg-error',       s.rejected,  'reject',  i); i += s.rejected.length;
+      html += columnHtml('Hold',      'bg-tertiary',    s.hold,      'hold',    i); i += s.hold.length;
+      html += columnHtml('Completed', 'bg-[#16a34a]',   s.completed, 'pass',    i);
+      html += '</div>';
+      return html;
+    }
+
+    // Flat stream of every card (used by list + timeline). Default newest-first by age.
+    function listRows(board){
+      var s = splitColumns(board);
+      return s.pending.concat(s.rejected, s.hold, s.completed)
+        .sort(function(a,b){ return (a.ageDays||0) - (b.ageDays||0); });
+    }
+    // List sort state — resets to Date-desc on each board reload (see renderBoard).
+    var listSort = { key: 'date', dir: -1 };   // dir: 1 asc, -1 desc
+    function parseListDate(s){
+      // getRecordsList emits "DD-Mmm-YYYY"; Date() parses it. Fall back to 0.
+      var t = new Date(String(s||'')).getTime();
+      return isNaN(t) ? 0 : t;
+    }
+    function sortedListRows(board){
+      var rows = listRows(board).slice();
+      var k = listSort.key, dir = listSort.dir;
+      rows.sort(function(a,b){
+        var av, bv;
+        if (k === 'date'){ av = parseListDate(a.date); bv = parseListDate(b.date); }
+        else if (k === 'age'){ av = a.ageDays||0; bv = b.ageDays||0; }
+        else if (k === 'qty'){ av = parseFloat(a.qty)||0; bv = parseFloat(b.qty)||0; }
+        else { av = String(a[k]||'').toLowerCase(); bv = String(b[k]||'').toLowerCase(); }
+        return av < bv ? -1*dir : av > bv ? 1*dir : 0;
+      });
+      return rows;
+    }
+    // Map a card's status to a tone (pending | reject | hold | pass).
+    function toneFor(card){
+      var s = String(card.status||'').toUpperCase();
+      if (/REJECT/.test(s)) return 'reject';
+      if (/HOLD/.test(s)) return 'hold';
+      if (/ACCEPT|PASS|RELEAS|DISPATCH|CLOSED|COMPLETE|DONE|PRODUCED|VERIFI/.test(s)) return 'pass';
+      return 'pending';
+    }
+    // List view — a real data table (TYPE · DOC NO · NAME · QTY · DATE · STATUS · AGE).
+    // Rows carry .js-card data-* so the existing click handler opens detail unchanged.
+    function statusChip(card){
+      var t = toneFor(card);
+      var cls = t === 'pass' ? 'bg-green-600/15 text-green-700'
+        : t === 'reject' ? 'bg-error-container text-error'
+        : t === 'hold' ? 'bg-tertiary/20 text-tertiary'
+        : card.overdue ? 'bg-error-container text-error'
+        : 'bg-secondary-container/30 text-secondary';
+      return '<span class="font-label-caps text-[10px] font-bold uppercase px-2 py-0.5 rounded ' + cls + '">' + esc(card.status||'—') + '</span>';
+    }
+    var LIST_COLS = [
+      { key:'type',   label:'Type' },
+      { key:'docNo',  label:'Doc No' },
+      { key:'name',   label:'Name' },
+      { key:'qty',    label:'Qty' },
+      { key:'date',   label:'Date' },
+      { key:'status', label:'Status' },
+      { key:'age',    label:'Age', right:true }
+    ];
+    function listHeaderCell(col){
+      var active = listSort.key === col.key;
+      var arrow = active ? (listSort.dir === 1 ? ' ↑' : ' ↓') : '';
+      return '<th class="js-list-sort px-3 py-2 cursor-pointer select-none hover:text-on-surface ' + (col.right?'text-right':'') + (active?' text-primary':'') + '" data-key="' + col.key + '">' + esc(col.label) + arrow + '</th>';
+    }
+    function renderList(board){
+      var rows = sortedListRows(board);
+      if (!rows.length) return emptyState();
+      var head = '<thead class="sticky top-0 bg-surface-container z-10"><tr class="text-left font-label-caps text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">' +
+        LIST_COLS.map(listHeaderCell).join('') + '</tr></thead>';
+      var body = rows.map(function(c){
+        var ageCell = c.overdue ? '<span class="text-error font-bold">' + (c.ageDays||0) + 'd</span>' : ((c.ageDays!=null?c.ageDays+'d':'—'));
+        return '<tr class="js-card border-t border-outline-variant hover:bg-surface-container-low cursor-pointer transition-colors" ' +
+          'data-doc="' + esc(c.docNo) + '" data-type="' + esc(c.type||'') + '" data-stage="' + (c.stage||0) + '" data-status="' + esc(c.status) + '" data-name="' + esc(c.name||'') + '">' +
+          '<td class="px-3 py-2">' + (c.type?('<span class="flex items-center gap-1">' + typeIcon(c.type) + '<span class="text-[11px] text-on-surface-variant">' + esc(c.type) + '</span></span>'):'') + '</td>' +
+          '<td class="px-3 py-2 font-mono text-[12px] text-primary whitespace-nowrap">' + esc(c.docNo) + '</td>' +
+          '<td class="px-3 py-2 text-on-surface max-w-[260px] truncate">' + esc(c.name||'—') + '</td>' +
+          '<td class="px-3 py-2 whitespace-nowrap">' + esc(c.qty||'—') + '</td>' +
+          '<td class="px-3 py-2 whitespace-nowrap text-on-surface-variant">' + esc(c.date||'—') + '</td>' +
+          '<td class="px-3 py-2">' + statusChip(c) + '</td>' +
+          '<td class="px-3 py-2 text-right whitespace-nowrap">' + ageCell + '</td></tr>';
+      }).join('');
+      return '<div class="overflow-x-auto"><table class="w-full text-[13px] border-collapse">' + head + '<tbody>' + body + '</tbody></table></div>';
+    }
+
+    // Timeline view — rows = record TYPES, columns = DATES (newest first).
+    // Each cell lists every record of that type on that date as a "docNo · status"
+    // chip. Click → openable types open in a new window (?doc=), others open the
+    // in-app detail sheet. Horizontally scrollable; type column is sticky.
+    function ymd(dateStr){ return String(dateStr||''); }
+    function toneChipCls(t){
+      return t==='pass' ? 'bg-green-600/15 text-green-700'
+        : t==='reject' ? 'bg-error-container text-error'
+        : t==='hold' ? 'bg-tertiary/20 text-tertiary'
+        : 'bg-secondary-container/25 text-secondary';
+    }
+    function tlChip(c){
+      var openable = laneDocOpenable(c.docNo);
+      var cls = toneChipCls(toneFor(c));
+      return '<button class="js-tl-chip block w-full text-left rounded px-1.5 py-1 mb-1 ' + cls + ' hover:brightness-95 active:scale-[0.99] transition" ' +
+        'data-open="' + (openable?'1':'0') + '" data-doc="' + esc(c.docNo) + '" data-type="' + esc(c.type||'') + '" data-stage="' + (c.stage||0) + '" data-status="' + esc(c.status) + '" data-name="' + esc(c.name||'') + '">' +
+        '<div class="flex items-center gap-1 font-mono text-[11px] font-semibold leading-tight truncate">' + esc(c.docNo) +
+          (openable ? '<span class="material-symbols-outlined text-[13px] shrink-0">open_in_new</span>' : '') + '</div>' +
+        '<div class="font-label-caps text-[9px] font-bold uppercase truncate">' + esc(c.status||'') + '</div>' +
+      '</button>';
+    }
+    function renderTimeline(board){
+      var rows = listRows(board);
+      if (!rows.length) return emptyState();
+      // distinct dates → columns (newest first)
+      var dateSet = {}, dates = [];
+      rows.forEach(function(c){ var d = ymd(c.date); if (d && !dateSet[d]){ dateSet[d]=1; dates.push(d); } });
+      dates.sort(function(a,b){ return new Date(b) - new Date(a); });
+      // group by type → date → [records]
+      var byType = {};
+      rows.forEach(function(c){
+        var ty = c.type || '—', d = ymd(c.date) || '—';
+        (byType[ty] = byType[ty] || {});
+        (byType[ty][d] = byType[ty][d] || []).push(c);
+      });
+      // type rows in canonical DOC_TYPES order, only those present
+      var typeRows = DOC_TYPES.filter(function(t){ return byType[t]; });
+      Object.keys(byType).forEach(function(t){ if (typeRows.indexOf(t) === -1) typeRows.push(t); });
+
+      var colW = 150;
+      var headCells = dates.map(function(d){ return '<th class="px-2 py-2 text-center font-label-caps text-[10px] font-bold uppercase text-on-surface-variant whitespace-nowrap border-l border-outline-variant/40" style="min-width:' + colW + 'px">' + esc(d) + '</th>'; }).join('');
+      var head = '<thead class="sticky top-0 bg-surface-container z-20"><tr>' +
+        '<th class="px-3 py-2 text-left font-label-caps text-[10px] font-bold uppercase text-on-surface-variant sticky left-0 bg-surface-container z-30" style="min-width:140px">Type</th>' +
+        headCells + '</tr></thead>';
+      var body = typeRows.map(function(ty){
+        var cells = dates.map(function(d){
+          var recs = (byType[ty] && byType[ty][d]) || [];
+          var inner = recs.length ? recs.map(tlChip).join('') : '';
+          return '<td class="border-l border-t border-outline-variant/40 px-1.5 py-1.5 align-top" style="min-width:' + colW + 'px">' + inner + '</td>';
+        }).join('');
+        return '<tr><td class="px-3 py-2 sticky left-0 bg-surface z-10 align-top border-t border-outline-variant" style="min-width:140px">' +
+          '<div class="flex items-center gap-1.5">' + typeBadge(ty) +
+            '<span class="text-[11px] text-on-surface-variant">' + recs_count(byType[ty]) + '</span></div></td>' + cells + '</tr>';
+      }).join('');
+      return '<div class="overflow-auto h-full"><table class="text-[13px] border-collapse">' + head + '<tbody>' + body + '</tbody></table></div>';
+    }
+    function recs_count(dateMap){
+      var n = 0; if (dateMap) Object.keys(dateMap).forEach(function(d){ n += dateMap[d].length; }); return n;
+    }
+    function emptyState(){
+      return '<div class="flex flex-col items-center justify-center text-center text-on-surface-variant/60 py-20 gap-2">' +
+        '<span class="material-symbols-outlined text-4xl">inbox</span><span class="text-sm">Nothing here</span></div>';
+    }
+    // Open a record's standalone DocView in a NEW window (?doc=). Returns false if blocked.
+    function openDocNewWindow(docNo){
+      var url = SCRIPT_URL + (SCRIPT_URL.indexOf('?')===-1?'?':'&') + 'doc=' + encodeURIComponent(docNo);
+      var w = null;
+      try { w = window.open(url, '_blank', 'noopener'); } catch(e){}
+      if (!w) { try { w = window.top.open(url, '_blank', 'noopener'); } catch(e){} }
+      if (!w) alert('Pop-up blocked. Allow pop-ups for this site to open ' + docNo + ' in a new tab.');
+      return !!w;
     }
 
     function renderBoard(board){
-      var s = splitColumns(board);
-      var i = 0, html = '<div class="flex gap-gutter h-full min-w-max md:min-w-0 md:grid md:grid-cols-4">';
-      html += columnHtml('Pending',     'bg-outline',  s.pending,    'pending', i); i += s.pending.length;
-      html += columnHtml('In Progress', 'bg-secondary',s.inProgress, 'prog',    i); i += s.inProgress.length;
-      html += columnHtml('Completed',   'bg-outline',  s.completed,  'prog',    i); i += s.completed.length;
-      html += columnHtml('Verified',    'bg-[#16a34a]',s.verified,   'pass',    i);
-      html += '</div>';
-      root.innerHTML = html;
+      var scrollCls = currentView === 'kanban'
+        ? 'flex-1 overflow-x-auto overflow-y-hidden'
+        : 'flex-1 overflow-y-auto overflow-x-hidden';
+      root.className = scrollCls + ' p-gutter md:p-margin-desktop pb-28 md:pb-8';
+      root.innerHTML = currentView === 'list' ? renderList(board)
+        : currentView === 'timeline' ? renderTimeline(board)
+        : renderKanban(board);
+      paintViewSwitch();
       // title bar counts (desktop)
       var bt = document.getElementById('boardTitle'); if (bt) bt.textContent = DOC_TITLES[currentType] || currentType;
       var ba = document.getElementById('boardActive'); if (ba) ba.textContent = (board.counts ? board.counts.total : 0) + ' Active';
     }
 
+    // Tag every card in a board with its record type (for badge + detail open).
+    function tagBoard(board, type){
+      ['pending','rejected','hold','completed'].forEach(function(col){
+        (board.columns[col]||[]).forEach(function(c){ c.type = type; });
+      });
+      return board;
+    }
+    // Merge several single-type boards into one combined board (for the "All" chip).
+    function mergeBoards(boards){
+      var cols = ['pending','rejected','hold','completed'];
+      var out = { type:'ALL', columns:{ pending:[], rejected:[], hold:[], completed:[] }, counts:{ total:0 } };
+      boards.forEach(function(b){
+        if (!b || !b.columns) return;
+        cols.forEach(function(k){ out.columns[k] = out.columns[k].concat(b.columns[k]||[]); });
+      });
+      out.counts.total = cols.reduce(function(n,k){ return n + out.columns[k].length; }, 0);
+      return out;
+    }
+
     function loadBoard(){
       if (typeof exitSelectMode === 'function' && selectMode) exitSelectMode();
+      listSort = { key:'date', dir:-1 };   // reset list sort to Date newest-first on every reload
       root.innerHTML = '<div class="text-on-surface-variant text-[14px] text-center py-16">Loading board…</div>';
+      if (currentType === 'ALL'){ loadAllBoards(); return; }
       google.script.run
-        .withSuccessHandler(function(board){ if (!board || !board.columns){ root.textContent='No board data.'; return; } lastBoard = board; renderBoard(board); })
+        .withSuccessHandler(function(board){ if (!board || !board.columns){ root.textContent='No board data.'; return; } lastBoard = tagBoard(board, currentType); renderBoard(lastBoard); })
         .withFailureHandler(function(err){ root.innerHTML = '<div class="text-error text-[13px] text-center py-12">Board load failed: ' + esc(err && err.message ? err.message : err) + '</div>'; })
         .getQmsv2Board(currentType, currentRole);
+    }
+
+    // "All" — fetch each type sequentially (google.script.run serializes anyway) and merge.
+    function loadAllBoards(){
+      var token = (loadAllBoards._t = (loadAllBoards._t||0) + 1);
+      var pending = DOC_TYPES.slice(), collected = [];
+      root.innerHTML = '<div class="text-on-surface-variant text-[14px] text-center py-16">Loading all records…</div>';
+      (function next(){
+        if (token !== loadAllBoards._t) return;            // a newer load superseded this one
+        if (!pending.length){ lastBoard = mergeBoards(collected); renderBoard(lastBoard); return; }
+        var t = pending.shift();
+        google.script.run
+          .withSuccessHandler(function(b){ if (b && b.columns) collected.push(tagBoard(b, t)); next(); })
+          .withFailureHandler(function(){ next(); })       // skip a failed type, keep going
+          .getQmsv2Board(t, currentRole);
+      })();
     }
 
     // ============ pipeline detail (card tap) ============
@@ -413,13 +681,33 @@
         '<div class="flex flex-col gap-1.5">' + rows.map(render).join('') + '</div></div>';
     }
     function laneRow(docNo, sub, badge){
-      return '<div class="flex items-center justify-between gap-2 px-3 py-2 bg-surface-container-low rounded-lg">' +
-        '<div class="min-w-0"><div class="font-mono text-[12px] text-on-surface">' + esc(docNo) + '</div>' +
+      // A row is openable ONLY if its docNo is a type DocView can render — GRN/IQC/OQC/PO
+      // (DOC_FIELD_MAPS). IPQC/Dispatch/NCR/Production/FG-jobs/materials have no DocView and
+      // throw "Unknown document type", so those render as plain (non-link) rows.
+      var openable = laneDocOpenable(docNo);
+      var tag = openable ? 'button' : 'div';
+      var cls = openable
+        ? 'js-lane-open w-full text-left flex items-center justify-between gap-2 px-2.5 py-1.5 bg-surface-container-low rounded hover:bg-surface-container active:scale-[0.99] transition cursor-pointer'
+        : 'flex items-center justify-between gap-2 px-2.5 py-1.5 bg-surface-container-low rounded';
+      return '<' + tag + (openable ? ' data-doc="' + esc(docNo) + '"' : '') + ' class="' + cls + '">' +
+        '<div class="min-w-0"><div class="font-mono text-[12px] text-on-surface truncate">' + esc(docNo) + '</div>' +
         (sub ? '<div class="text-[11px] text-on-surface-variant truncate">' + esc(sub) + '</div>' : '') + '</div>' +
-        (badge ? '<span class="font-label-caps text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-secondary-container/15 text-secondary shrink-0">' + esc(badge) + '</span>' : '') +
-        '</div>';
+        '<div class="flex items-center gap-1.5 shrink-0">' +
+        (badge ? '<span class="font-label-caps text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-secondary-container/15 text-secondary">' + esc(badge) + '</span>' : '') +
+        (openable ? '<span class="material-symbols-outlined text-[16px] text-secondary">open_in_new</span>' : '') +
+        '</div></' + tag + '>';
     }
-    function renderDetail(meta, trace){
+    // DocView prefixes with a DOC_FIELD_MAPS entry (server). PO routes to Records. Others
+    // (PROD/IPQC/SCR/SMP/FGL/materials) have no document view → render as plain rows.
+    var DOCVIEW_OPENABLE = { GRN:1, IQC:1, OQC:1, GP:1, NCR:1, RTN:1, PO:1 };
+    function laneDocOpenable(docNo){
+      var d = String(docNo||'').trim();
+      var parts = d.split('/');
+      if (parts.length < 2) return false;                 // bare material/component/lot code
+      var type = parts[parts.length - 2].toUpperCase();   // PM/<TYPE>/nnn
+      return !!DOCVIEW_OPENABLE[type];
+    }
+    function renderDetail(meta, trace, pending){
       var t = trace || {};
       var up = (t.upstream && t.upstream.components) || [];
       var ipqc = (t.thisBatch && t.thisBatch.ipqc) || [];
@@ -430,10 +718,17 @@
         '<div class="font-mono text-[15px] font-semibold text-on-surface mt-1">' + esc(meta.doc) + '</div></div>' +
         '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>' +
         '<p class="text-[13px] text-on-surface-variant mb-3">' + esc(meta.name || '—') + '</p>' +
-        '<div class="bg-surface-container-low rounded-lg p-3">' + pipelineHtml(meta.stage) + '</div>';
+        '<div class="bg-surface-container-low rounded-lg p-3">' + pipelineHtml(meta.stage) + '</div>' +
+        '<div id="nextActions"></div>';
 
-      if (!trace || trace.success === false){
-        html += '<div class="text-[12px] text-on-surface-variant mt-4">Trace unavailable.</div>';
+      if (pending){
+        // Initial shell pass — openDetail auto-loads the trace immediately after, so show the
+        // loading state (not a button). Cached traces resolve in ~2s; cold first-trace briefly.
+        html += '<div class="flex items-center gap-2 text-[12px] text-on-surface-variant mt-4"><span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>Loading trace…</div>';
+      } else if (trace && trace.__loading){
+        html += '<div class="flex items-center gap-2 text-[12px] text-on-surface-variant mt-4"><span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>Loading trace…</div>';
+      } else if (!trace || trace.success === false){
+        html += '<div class="text-[12px] text-on-surface-variant mt-4">' + esc((trace && trace.message) || 'Trace unavailable.') + ' <button id="loadTrace" class="text-secondary underline ml-1">Retry</button></div>';
       } else {
         // Field names verified against Trace.js _computeTrace_ shapes.
         html += traceLane('Upstream components', up, function(c){
@@ -450,17 +745,99 @@
       }
       sheet.innerHTML = html;
       document.getElementById('sheetClose').addEventListener('click', closeSheet);
+
+      // Lazy-trace button (shown on the pending pass and on failure/retry).
+      var lt = document.getElementById('loadTrace');
+      if (lt) lt.addEventListener('click', function(){ loadTrace(meta); });
+
+      // Drill into a linked record from any trace lane row (Both: detail rows are openable).
+      Array.prototype.forEach.call(sheet.querySelectorAll('.js-lane-open'), function(el){
+        el.addEventListener('click', function(){
+          var d = el.getAttribute('data-doc'); if (!d) return;
+          // Open the record's standalone view in a NEW tab (DocView via ?doc=). Never reload the
+          // trace in-place. window.open from the GAS inner frame can be blocked, so fall back to
+          // window.top and finally to a synthetic <a target=_blank> click.
+          var url = SCRIPT_URL + (SCRIPT_URL.indexOf('?')===-1?'?':'&') + 'doc=' + encodeURIComponent(d);
+          var w = null;
+          try { w = window.open(url, '_blank', 'noopener'); } catch(e){}
+          if (!w) { try { w = window.top.open(url, '_blank', 'noopener'); } catch(e){} }
+          // Do NOT fall back to in-frame navigation (that "reloads" the cockpit). If the popup
+          // was blocked, tell the user instead of replacing the cockpit.
+          if (!w) alert('Pop-up blocked. Allow pop-ups for this site to open ' + d + ' in a new tab.');
+        });
+      });
+
+      // Next actions — stage-aware (needs only meta.stage/status, not the trace), so render
+      // them on EVERY pass. Previously skipped on the initial pass to avoid competing with the
+      // trace RPC; trace is now lazy (no auto-fetch on open), so there's nothing to compete
+      // with — rendering immediately removes the hide/reappear flicker. The trace anchor only
+      // enriches the prefill, so use it when present (post-trace pass) and fall back otherwise.
+      var anchor = (trace && trace.anchor) || {};
+      var preset = {};
+      if (anchor.materialCode) preset.material = String(anchor.materialCode);
+      if (anchor.batchOrLot)   preset.lot = String(anchor.batchOrLot);
+      renderNextActions(meta, preset);
     }
+
+    // Fetch + render the stage-appropriate action buttons inside an open detail.
+    function renderNextActions(meta, preset){
+      var host = document.getElementById('nextActions'); if (!host) return;
+      google.script.run.withSuccessHandler(function(acts){
+        if (!acts || !acts.length){ host.innerHTML = ''; return; }
+        var btns = acts.map(function(a){
+          var crit = a.critical;
+          var cls = crit ? 'border-error/40 text-error bg-error-container/40'
+                         : a.id==='sample' ? 'border-secondary/40 text-secondary bg-secondary-container/10'
+                         : 'border-outline-variant text-primary bg-surface';
+          return '<button class="js-next h-touch-target-min px-4 rounded border ' + cls + ' font-interactive-label text-interactive-label font-bold flex items-center gap-2 active:scale-95 transition" data-act="' + a.id + '">' +
+            '<span class="material-symbols-outlined text-[20px]">' + (crit?'delete':'arrow_forward') + '</span>' + esc(a.label) + '</button>';
+        }).join('');
+        host.innerHTML = '<div class="mt-5"><div class="font-label-caps text-[11px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">Next actions</div>' +
+          '<div class="flex flex-wrap gap-2">' + btns + '</div></div>';
+        Array.prototype.forEach.call(host.querySelectorAll('.js-next'), function(b){
+          b.addEventListener('click', function(){ startRecordAction(b.getAttribute('data-act'), preset); });
+        });
+      }).withFailureHandler(function(){ host.innerHTML=''; })
+        .getNextActions(meta.type || currentType, meta.stage, meta.status);
+    }
+
+    // Dispatch a next-action from an open record: route by kind, carry prefill.
+    function startRecordAction(actionId, preset){
+      var a = actionById(actionId); if (!a) return;
+      closeSheet();
+      if (a.kind==='launch'){ launchForm(a.form); return; }
+      if (a.kind==='checklist'){ openPutaway(); return; }
+      openInlineForm(a, preset);
+    }
+
     function openDetail(meta){
-      sheet.innerHTML = '<div class="flex justify-between items-center mb-3"><h2 class="font-headline text-[18px] font-bold">' + esc(meta.doc) + '</h2>' +
-        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>' +
-        '<div class="text-on-surface-variant text-[13px] py-6 text-center">Loading trace…</div>';
+      // Render the actionable shell instantly from card meta (header, pipeline, Next actions —
+      // none need the trace), THEN auto-load the full trace. Trace is now server-cached 6h
+      // (fingerprint-invalidated), so a re-opened record returns in ~2s; the first-ever trace
+      // for a doc shows "Loading trace…" briefly. The fetch is deferred off the click event
+      // stack (setTimeout 0) — the documented fix for the GAS RPC stall when a google.script.run
+      // is issued from inside the click handler's call stack.
       openSheet();
-      var x = document.getElementById('sheetClose'); if (x) x.addEventListener('click', closeSheet);
+      renderDetail(meta, null, true);            // instant shell (with "Loading trace…" affordance)
+      setTimeout(function(){ loadTrace(meta); }, 0);
+    }
+    // On-demand trace fetch. CRITICAL: issue google.script.run OFF the click event stack —
+    // a direct probe fired at the same instant returns in ~2.8s, but the identical call built
+    // inside the button's handler stack stalls ~15s. setTimeout(…,0) detaches it to a clean
+    // task where the callback dispatches promptly.
+    function loadTrace(meta){
+      renderDetail(meta, { __loading: true });
+      var settled = false;
+      // First trace for a doc is slow (_computeTrace_ scans ~26 sheets, ~20-30s) but the result
+      // is server-cached, so re-opening the same record is instant. Allow 45s for the cold call.
+      var watchdog = setTimeout(function(){
+        if (settled) return; settled = true;
+        renderDetail(meta, { success:false, message:'Trace timed out.' });
+      }, 45000);
       google.script.run
-        .withSuccessHandler(function(trace){ renderDetail(meta, trace); })
-        .withFailureHandler(function(){ renderDetail(meta, null); })
-        .traceBatch(meta.doc);
+        .withSuccessHandler(function(trace){ if (settled) return; settled = true; clearTimeout(watchdog); renderDetail(meta, trace); })
+        .withFailureHandler(function(){ if (settled) return; settled = true; clearTimeout(watchdog); renderDetail(meta, { success:false, message:'Trace unavailable.' }); })
+        .getQmsv2TraceLite(meta.doc, 5);   // lean, capped projection — transmits reliably (full traceBatch payload drops)
     }
     // ============ multi-select (Stitch Batch Mode; SHELL — batch write is P2) ============
     var selectMode = false;
@@ -487,7 +864,7 @@
       Array.prototype.forEach.call(root.querySelectorAll('.js-card'), function(c){
         if (c.querySelector('.js-selbox')) return;
         var box = document.createElement('span');
-        box.className = 'js-selbox material-symbols-outlined text-outline-variant absolute top-3 right-3';
+        box.className = 'js-selbox material-symbols-outlined text-outline-variant absolute top-2 right-2 bg-surface rounded';
         box.textContent = 'check_box_outline_blank';
         c.appendChild(box);
       });
@@ -520,6 +897,24 @@
     document.getElementById('selectMore').addEventListener('click', function(){ alert('More batch options land in P2.'); });
 
     root.addEventListener('click', function(e){
+      // List column sort: toggle dir if same key, else sort that key (date/age desc-first).
+      var th = e.target.closest('.js-list-sort');
+      if (th){
+        var k = th.getAttribute('data-key');
+        if (listSort.key === k) listSort.dir *= -1;
+        else { listSort.key = k; listSort.dir = (k === 'date' || k === 'age') ? -1 : 1; }
+        if (lastBoard) renderBoard(lastBoard);
+        return;
+      }
+      // Timeline cell chip: openable types → new window; others → in-app detail sheet.
+      var chip = e.target.closest('.js-tl-chip');
+      if (chip){
+        if (chip.getAttribute('data-open') === '1'){ openDocNewWindow(chip.getAttribute('data-doc')); return; }
+        openDetail({ doc: chip.getAttribute('data-doc'), stage: Number(chip.getAttribute('data-stage')) || 0,
+          status: chip.getAttribute('data-status'), name: chip.getAttribute('data-name'),
+          type: chip.getAttribute('data-type') || currentType });
+        return;
+      }
       var c = e.target.closest('.js-card'); if (!c) return;
       if (selectMode){
         var doc = c.getAttribute('data-doc');
@@ -528,14 +923,15 @@
         return;
       }
       openDetail({ doc: c.getAttribute('data-doc'), stage: Number(c.getAttribute('data-stage')) || 0,
-        status: c.getAttribute('data-status'), name: c.getAttribute('data-name') });
+        status: c.getAttribute('data-status'), name: c.getAttribute('data-name'),
+        type: c.getAttribute('data-type') || currentType });
     });
 
     // ============ identity ============
     function applyOperator(op){
       currentOp = op;
       currentRole = (op && op.cockpitRole) || 'manager';
-      currentType = primaryTabFor(currentRole);
+      currentType = 'ALL';   // default to the All chip (was role's primary tab)
       roleEl.textContent = currentRole;
       // mirror into the sidebar persona card (Stitch desktop)
       var sn = document.getElementById('sideOpName'); if (sn) sn.textContent = op ? op.name : '—';
@@ -562,6 +958,45 @@
         .withFailureHandler(function(err){ root.innerHTML = '<div class="text-error text-center py-12">Operator load failed: ' + esc(err && err.message) + '</div>'; })
         .getQmsv2Operators();
     }
+
+    // ============ view switch (Kanban / List / Timeline) ============
+    function paintViewSwitch(){
+      Array.prototype.forEach.call(document.querySelectorAll('.view-btn'), function(b){
+        var on = b.getAttribute('data-view') === currentView;
+        var base = b.className.replace(/\s*(bg-surface shadow-sm text-primary|text-on-surface-variant hover:text-on-surface)\s*/g, ' ').trim();
+        b.className = base + (on ? ' bg-surface shadow-sm text-primary' : ' text-on-surface-variant hover:text-on-surface');
+      });
+    }
+    (function(){
+      ['viewSwitch','viewSwitchM'].forEach(function(id){
+        var el = document.getElementById(id); if (!el) return;
+        el.addEventListener('click', function(e){
+          var b = e.target.closest('.view-btn'); if (!b) return;
+          currentView = b.getAttribute('data-view');
+          if (lastBoard) renderBoard(lastBoard); else paintViewSwitch();
+        });
+      });
+    })();
+
+    // ============ time range switch (Day / Week / Month / All) ============
+    function paintRangeSwitch(){
+      Array.prototype.forEach.call(document.querySelectorAll('.range-btn'), function(b){
+        var on = b.getAttribute('data-range') === currentRange;
+        var base = b.className.replace(/\s*(bg-surface shadow-sm text-primary|bg-primary text-on-primary shadow-sm|text-on-surface-variant hover:text-on-surface)\s*/g, ' ').trim();
+        b.className = base + (on ? ' bg-primary text-on-primary shadow-sm' : ' text-on-surface-variant hover:text-on-surface');
+      });
+    }
+    (function(){
+      ['rangeSwitch','rangeSwitchM'].forEach(function(id){
+        var el = document.getElementById(id); if (!el) return;
+        el.addEventListener('click', function(e){
+          var b = e.target.closest('.range-btn'); if (!b) return;
+          currentRange = b.getAttribute('data-range');
+          paintRangeSwitch();
+          if (lastBoard) renderBoard(lastBoard);
+        });
+      });
+    })();
 
     // ============ filter pills ============
     function paintFilters(){
@@ -667,51 +1102,80 @@
     // Inline form — field styling verbatim from Stitch 03-action-form-move.
     function renderInlineForm(action){
       // label nicer than the raw field name
-      var LABELS = { material:'Material', lot:'Lot / Batch', fromLoc:'From Location', toLoc:'To Location', qty:'Quantity' };
+      var LABELS = { material:'Material', lot:'Lot / Batch', fromLoc:'From Location', toLoc:'To Location', prodOrder:'Production Order', qty:'Quantity', reason:'Reason' };
       var SEL = 'w-full h-[48px] px-4 rounded border border-outline bg-surface-container-low text-on-surface font-body-lg focus:outline-none focus:border-2 focus:border-primary';
-      var html = '<div class="flex justify-between items-center mb-5"><h2 class="font-headline-md text-headline-md font-bold text-primary">' + esc(action.label) + '</h2>' +
-        '<button id="sheetClose" class="material-symbols-outlined text-on-surface-variant">close</button></div>' +
-        '<div class="flex flex-col gap-6">';
+      // Full-page centered card (Stitch action-form layout). Title lives in the overlay top bar.
+      var html = '';
+      // Critical action — destructive warning banner (Stitch Scrap mockup).
+      if (action.critical && action.warning){
+        html += '<div class="flex items-start gap-2 mb-3 p-2.5 rounded border border-error/30 bg-error-container text-on-error-container">' +
+          '<span class="material-symbols-outlined text-error text-[20px]">warning</span>' +
+          '<span class="font-body-sm text-body-sm">' + esc(action.warning) + '</span></div>';
+      }
+      html += '<div class="flex flex-col gap-3.5">';
 
       (action.fields || []).forEach(function(f){
         var lbl = LABELS[f.name] || f.name;
         if (f.type === 'number'){
-          // Big centered quantity input (Stitch hero field).
-          html += '<div class="flex flex-col gap-3 mt-1"><label class="font-interactive-label text-interactive-label text-on-surface text-center">' + esc(lbl) + '</label>' +
-            '<div class="relative w-full max-w-[220px] mx-auto">' +
+          // Compact quantity field: 48px input with unit-style label (not a tall hero block).
+          html += '<div class="flex flex-col gap-1"><label class="font-label-caps text-label-caps uppercase text-on-surface-variant">' + esc(lbl) + '</label>' +
             '<input type="number" inputmode="decimal" min="0" step="any" data-field="' + f.name + '" id="f_' + f.name + '" value="" placeholder="0" ' +
-            'class="w-full h-[64px] rounded border-2 border-primary bg-surface-container-lowest text-on-surface font-display-lg-mobile text-display-lg-mobile text-center focus:outline-none shadow-inner" style="appearance:textfield;"></div></div>';
+            'class="w-full h-[48px] px-4 rounded border-2 border-primary bg-surface-container-lowest text-on-surface font-headline-md text-[22px] focus:outline-none" style="appearance:textfield;"></div>';
           return;
         }
-        html += '<div class="flex flex-col gap-2"><label class="font-interactive-label text-interactive-label text-on-surface">' + esc(lbl) + '</label>';
+        html += '<div class="flex flex-col gap-1"><label class="font-label-caps text-label-caps uppercase text-on-surface-variant">' + esc(lbl) + '</label>';
         if (f.type === 'material'){
-          html += '<div class="relative"><select data-field="' + f.name + '" id="f_' + f.name + '" class="' + SEL + ' appearance-none pr-10"><option value="">Select material…</option>' +
+          var matIcon = action.id === 'sample' ? 'science' : 'inventory_2';
+          html += '<div class="relative"><span class="material-symbols-outlined absolute left-3 top-3 text-outline pointer-events-none text-[20px]">' + matIcon + '</span>' +
+            '<select data-field="' + f.name + '" id="f_' + f.name + '" class="' + SEL + ' appearance-none pl-11 pr-10"><option value="">Select material…</option>' +
             ((formData&&formData.materials)||[]).map(function(m){ return '<option value="' + esc(m.code) + '">' + esc(m.code) + '</option>'; }).join('') +
+            '</select><span class="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none">arrow_drop_down</span></div>';
+        } else if (f.type === 'select'){
+          html += '<div class="relative"><select data-field="' + f.name + '" id="f_' + f.name + '" class="' + SEL + ' appearance-none pr-10"><option value="">Select…</option>' +
+            (f.options||[]).map(function(o){ return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') +
             '</select><span class="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none">arrow_drop_down</span></div>';
         } else if (f.type === 'location'){
           var emphasised = f.name === 'toLoc';
           var selCls = emphasised ? SEL.replace('border border-outline', 'border-2 border-primary').replace('bg-surface-container-low', 'bg-surface-container-lowest') : SEL;
-          var qrCls = emphasised ? 'bg-primary-container text-on-primary-container shadow-md' : 'bg-surface-container-high border border-outline-variant text-primary';
-          html += '<div class="flex gap-3"><div class="relative flex-1"><select data-field="' + f.name + '" id="f_' + f.name + '" class="' + selCls + ' appearance-none pr-10"><option value="">Select location…</option>' +
+          html += '<div class="relative"><select data-field="' + f.name + '" id="f_' + f.name + '" class="' + selCls + ' appearance-none pr-10"><option value="">Select location…</option>' +
             ((formData&&formData.locations)||[]).map(function(l){ return '<option value="' + esc(l.id) + '">' + esc(l.label) + '</option>'; }).join('') +
-            '</select><span class="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none">arrow_drop_down</span></div>' +
-            '<button type="button" aria-label="Scan ' + esc(lbl) + '" class="h-[48px] w-[48px] flex-shrink-0 rounded flex items-center justify-center active:scale-95 transition ' + qrCls + '" onclick="alert(\'QR scan is coming in P2.\')">' +
-            '<span class="material-symbols-outlined">qr_code_scanner</span></button></div>';
+            '</select><span class="material-symbols-outlined absolute right-3 top-3 text-outline pointer-events-none">arrow_drop_down</span></div>';
         } else {
           html += '<input type="text" data-field="' + f.name + '" id="f_' + f.name + '" class="' + SEL + '">';
         }
         html += '</div>';
       });
 
+      // Per-action submit styling: critical=red, sample=electric-blue (secondary), else navy.
+      var btnCls = action.critical ? 'bg-error text-on-error'
+                 : (action.id === 'sample' ? 'bg-secondary-container text-on-secondary-container' : 'bg-primary text-on-primary');
+      var btnLabel = action.id === 'scrap' ? 'Scrap Material'
+                   : action.id === 'sample' ? 'Pull Sample'
+                   : action.id === 'issue' ? 'Issue Material' : 'Confirm';
       html += '</div><div id="onhand" class="text-body-sm font-body-sm text-on-surface-variant mt-4 text-center"></div>' +
-        '<div class="flex gap-3 mt-6">' +
+        '<div class="flex gap-3 mt-5">' +
         '<button id="cancelAct" class="flex-1 h-[48px] rounded border border-outline-variant text-on-surface-variant font-interactive-label text-interactive-label font-bold">Cancel</button>' +
-        '<button id="submitAct" data-id="' + action.id + '" class="flex-1 h-[48px] rounded bg-primary text-on-primary font-interactive-label text-interactive-label font-bold active:scale-95 transition">Confirm</button>' +
+        '<button id="submitAct" data-id="' + action.id + '" class="flex-1 h-[48px] rounded ' + btnCls + ' font-interactive-label text-interactive-label font-bold active:scale-95 transition">' + esc(btnLabel) + '</button>' +
         '</div>';
-      sheet.innerHTML = html;
-      document.getElementById('sheetClose').addEventListener('click', closeSheet);
-      document.getElementById('cancelAct').addEventListener('click', closeSheet);
+      // Centered card on the full-page surface; red top strip for critical actions.
+      fullBody.innerHTML =
+        '<div class="max-w-[560px] mx-auto p-gutter md:py-5">' +
+          '<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 md:p-5 overflow-hidden"' +
+            (action.critical ? ' style="border-top:4px solid #ba1a1a;"' : '') + '>' + html + '</div></div>';
+      document.getElementById('cancelAct').addEventListener('click', closeFull);
+      // Prefill from record context (set by openInlineForm(action, preset)). Applies to
+      // material/lot/fromLoc/qty when the field exists; selects must already hold the value
+      // as an option (material/location dropdowns are populated above before this runs).
+      if (pendingPreset){
+        Object.keys(pendingPreset).forEach(function(k){
+          var el = document.getElementById('f_' + k); if (!el) return;
+          el.value = pendingPreset[k];
+          // if a select didn't have the option, leave blank rather than force-add
+          if (el.tagName === 'SELECT' && el.value !== String(pendingPreset[k])) el.value = '';
+        });
+      }
       wireInlineSubmit(action);
+      if (pendingPreset){ pendingPreset = null; }
     }
 
     function wireInlineSubmit(action){
@@ -730,6 +1194,7 @@
       if (lotEl) lotEl.addEventListener('change', refreshOnHand);
 
       var btn = document.getElementById('submitAct');
+      var origLabel = btn.textContent;
       btn.addEventListener('click', function(){
         var payload = { by: currentOp ? currentOp.name : '' }, ok = true;
         (action.fields||[]).forEach(function(f){ var el = document.getElementById('f_'+f.name); var v = el?el.value:''; payload[f.name]=v; if (f.type!=='text' && !v) ok=false; });
@@ -738,17 +1203,23 @@
         btn.disabled = true; btn.textContent = 'Working…';
         google.script.run
           .withSuccessHandler(function(res){
-            btn.disabled=false; btn.textContent='Confirm';
-            if (res && res.success){ closeSheet(); formData=null; loadBoard(); alert(action.label + ' done' + (res.transferId?' · '+res.transferId:'')); }
+            btn.disabled=false; btn.textContent=origLabel;
+            if (res && res.success){ closeFull(); formData=null; loadBoard(); alert(action.label + ' done' + (res.transferId?' · '+res.transferId : res.scrapId?' · '+res.scrapId : res.sampleId?' · '+res.sampleId : res.issueId?' · '+res.issueId : '')); }
             else { alert('Failed: ' + ((res&&res.error)||'unknown error')); }
           })
-          .withFailureHandler(function(err){ btn.disabled=false; btn.textContent='Confirm'; alert('Error: ' + (err&&err.message?err.message:err)); })
+          .withFailureHandler(function(err){ btn.disabled=false; btn.textContent=origLabel; alert('Error: ' + (err&&err.message?err.message:err)); })
           .runAction(action.id, payload);
       });
     }
 
-    function openInlineForm(action){
-      sheet.innerHTML = '<h2 class="font-headline text-[18px] font-bold">Loading…</h2>'; openSheet();
+    var pendingPreset = null;   // field-value map applied by renderInlineForm (record prefill)
+    function openInlineForm(action, preset){
+      pendingPreset = preset || null;
+      // Action picker is in the sheet modal; close it, open the full-page form surface.
+      closeSheet();
+      openFull(action.label, '');
+      document.getElementById('fullTitle').className = 'font-headline-md text-headline-md font-bold flex-1 truncate' + (action.critical ? ' text-on-primary' : '');
+      fullBody.innerHTML = '<div class="text-on-surface-variant text-[13px] py-16 text-center">Loading…</div>';
       if (formData){ renderInlineForm(action); return; }
       google.script.run
         .withSuccessHandler(function(fd){ formData = fd || {}; renderInlineForm(action); })
@@ -774,7 +1245,7 @@
             '<span class="font-mono text-xs mr-1 font-medium">→ ' + esc(it.from || 'RACK') + '</span>' +
             '<span class="material-symbols-outlined text-[14px]">check</span></div>' +
           '<button class="js-pa-scan h-9 px-3 border-2 border-primary-container text-primary-container rounded flex items-center font-interactive-label text-sm active:bg-surface-container transition-colors" data-i="' + i + '">' +
-            '<span class="material-symbols-outlined text-[18px] mr-1.5">qr_code_scanner</span>Scan rack</button>' +
+            '<span class="material-symbols-outlined text-[18px] mr-1.5">check_circle</span>Place</button>' +
         '</div>';
       }
       var rowsHtml = items.map(row).join('');
@@ -826,9 +1297,173 @@
         repaint();
       }
       Array.prototype.forEach.call(sheet.querySelectorAll('.js-pa-check'), function(el){ el.addEventListener('click', function(){ toggle(el.getAttribute('data-i')); }); });
-      Array.prototype.forEach.call(sheet.querySelectorAll('.js-pa-scan'), function(el){ el.addEventListener('click', function(){ alert('QR rack scan is coming in P2.'); }); });
+      Array.prototype.forEach.call(sheet.querySelectorAll('.js-pa-scan'), function(el){ el.addEventListener('click', function(){ toggle(el.getAttribute('data-i')); }); });
       var same = document.getElementById('paSameRack'); if (same) same.addEventListener('click', function(){ alert('Same-rack assignment is coming in P2.'); });
     }
+    // ============ Full-page overlay view (Stitch full-page layouts) ============
+    var fullView = document.getElementById('fullView');
+    var fullBody = document.getElementById('fullBody');
+    var fullTitle = document.getElementById('fullTitle');
+    var fullTopRight = document.getElementById('fullTopRight');
+    function openFull(title, rightHtml){
+      fullTitle.textContent = title;
+      fullTopRight.innerHTML = rightHtml || '';
+      fullView.classList.remove('hidden');
+    }
+    function closeFull(){ fullView.classList.add('hidden'); fullBody.innerHTML=''; fullTopRight.innerHTML=''; }
+    document.getElementById('fullBack').addEventListener('click', closeFull);
+
+    // ============ KPI Dashboard (Stitch 12-kpi-dashboard; wired to getQmsKpis) ============
+    // Health: emerald on-target / red breached / amber warn / gray no-data — derived from value vs target.
+    function kpiHealth(k){
+      if (k.status === 'error' || k.value == null || k.value === '') return 'gray';
+      var t = k.target;
+      if (t == null || isNaN(Number(t))) return 'blue';        // no numeric target → informational
+      var v = Number(k.value); t = Number(t);
+      // For "lower is better" KPIs, target is a ceiling; others a floor. Heuristic by unit/key.
+      var lowerBetter = /TAT|MTTR|REJECT|RETURN|AGED|DWELL|COST|CR_RATE|OTD|OPEN_NCR|ON_HOLD|WIP_AGEING|HOLD/i.test(k.key) || /d$|lots|u$/.test(k.unit||'');
+      var ok = lowerBetter ? (v <= t) : (v >= t);
+      var near = lowerBetter ? (v <= t*1.1) : (v >= t*0.9);
+      return ok ? 'green' : (near ? 'amber' : 'red');
+    }
+    function kpiStrip(h){ return ({green:'#16a34a',amber:'#d97706',red:'#ba1a1a',blue:'#0070f3',gray:'#9ca3af'})[h]; }
+    function kpiFmt(k){
+      if (k.value == null || k.value === '') return '—';
+      if (k.format === 'pct') return k.value + '%';
+      if (k.format === 'text') return esc(String(k.value));
+      return esc(String(k.value)) + (k.unit && k.unit.length<=3 ? esc(k.unit) : '');
+    }
+    // Sparkline SVG path from a numeric series (nulls skipped). Returns '' if <2 points.
+    function kpiSparkPath(series){
+      var pts = (series||[]).map(function(v,i){ return { i:i, v:(v==null||isNaN(v))?null:Number(v) }; }).filter(function(p){ return p.v!=null; });
+      if (pts.length < 2) return '';
+      var n = (series||[]).length - 1 || 1;
+      var vals = pts.map(function(p){ return p.v; });
+      var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), span = (mx-mn)||1;
+      return pts.map(function(p, idx){
+        var x = (p.i / n) * 100;
+        var y = 18 - ((p.v - mn) / span) * 16; // 2..18 viewbox band
+        return (idx?'L':'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+      }).join(' ');
+    }
+    // Delta from the last two valid sparkline points (Stitch shows ▲/▼ + value).
+    function kpiDelta(k){
+      var s = (k.sparkline||[]).filter(function(v){ return v!=null && !isNaN(v); });
+      if (s.length < 2) return null;
+      var d = Math.round((s[s.length-1] - s[s.length-2]) * 10) / 10;
+      if (!d) return null;
+      return { up: d > 0, val: Math.abs(d) };
+    }
+    // Full-page KPI card (Stitch 12-kpi-dashboard).
+    function kpiCard(k){
+      var h = kpiHealth(k), strip = kpiStrip(h);
+      var dlt = kpiDelta(k);
+      var dColor = dlt ? (dlt.up ? '#16a34a' : '#ba1a1a') : '';
+      var deltaHtml = dlt ? '<div class="flex items-center font-bold text-sm" style="color:' + dColor + '">' +
+          '<span class="material-symbols-outlined text-[16px]">' + (dlt.up?'arrow_drop_up':'arrow_drop_down') + '</span><span>' + dlt.val + '</span></div>' : '';
+      var path = kpiSparkPath(k.sparkline);
+      var spark = path ? '<div class="mt-4 h-8 w-full opacity-70"><svg class="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none" fill="none" stroke="' + strip + '" stroke-width="2"><path d="' + path + '"/></svg></div>'
+                       : '<div class="mt-4 h-8 w-full"></div>';
+      return '<button class="col-span-12 sm:col-span-6 lg:col-span-3 text-left bg-surface-container-lowest border border-outline-variant rounded-lg relative overflow-hidden flex flex-col p-4 pt-5 hover:-translate-y-1 hover:shadow-lg transition" ' +
+          'style="border-top:4px solid ' + strip + ';">' +
+        '<span class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 truncate">' + esc(k.label) + '</span>' +
+        '<div class="flex items-baseline justify-between gap-2">' +
+          '<span class="font-headline-md text-[32px] leading-none text-primary truncate">' + kpiFmt(k) + '</span>' + deltaHtml +
+        '</div>' +
+        (k.message ? '<div class="font-body-sm text-[11px] text-error mt-1 truncate">' + esc(k.message) + '</div>'
+                   : '<div class="font-body-sm text-[11px] text-on-surface-variant mt-1">' + (k.target!=null && k.target!=='' ? 'Target ' + esc(String(k.target)) + esc(k.unit||'') : '&nbsp;') + '</div>') +
+        spark +
+      '</button>';
+    }
+    // KPI period filter. Engine presets (KpiConfig.js): TODAY, LAST_7, THIS_MONTH, THIS_FY.
+    var KPI_PERIODS = [
+      { preset:'TODAY',      label:'Day' },
+      { preset:'LAST_7',     label:'Week' },
+      { preset:'THIS_MONTH', label:'Month' },
+      { preset:'THIS_FY',    label:'FY' }
+    ];
+    var kpiPeriod = 'THIS_MONTH';
+    var KPI_CATEGORIES = ['Quality','Throughput','Issues','Stock'];
+    var KPI_CAT_META = {
+      Quality:    { icon:'verified',          label:'Quality' },
+      Throughput: { icon:'speed',             label:'Throughput & Flow' },
+      Issues:     { icon:'report_problem',    label:'Issues & NCR' },
+      Stock:      { icon:'inventory',         label:'Stock & Supply' }
+    };
+    // getQmsKpis expects Title-case persona ('Manager'/'Operator'); cockpit role is lowercase.
+    function kpiPersona(){ return currentRole === 'operator' ? 'Operator' : 'Manager'; }
+
+    // Compact (drill) KPI card.
+    function kpiCardCompact(k){
+      var h = kpiHealth(k), strip = kpiStrip(h);
+      return '<button class="text-left bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex flex-col gap-1 hover:shadow-md transition" style="border-left:4px solid ' + strip + ';">' +
+        '<span class="font-label-caps text-[10px] text-on-surface-variant uppercase truncate">' + esc(k.label) + '</span>' +
+        '<span class="font-headline-md text-[22px] leading-none text-primary truncate">' + kpiFmt(k) + '</span>' +
+        (k.message ? '<span class="text-[10px] text-on-surface-variant truncate">' + esc(k.message) + '</span>'
+                   : (k.target!=null && k.target!=='' ? '<span class="text-[10px] text-on-surface-variant">Target ' + esc(String(k.target)) + esc(k.unit||'') + '</span>' : '')) +
+      '</button>';
+    }
+    function renderKpiDashboard(kpis){
+      kpis = kpis || [];
+      if (!kpis.length){ fullBody.innerHTML = '<div class="font-body-sm text-on-surface-variant text-center py-16">No KPIs available for this role.</div>'; return; }
+      // Hero strip: emphasised tier across all categories.
+      var heroes = kpis.filter(function(k){ return k.tier === 'hero'; });
+      var heroHtml = heroes.length
+        ? '<div class="grid grid-cols-12 gap-4 mb-6">' + heroes.map(kpiCard).join('') + '</div>' : '';
+      // Per-category sections (drill cards).
+      var sections = '';
+      KPI_CATEGORIES.forEach(function(cat){
+        var items = kpis.filter(function(k){ return k.category === cat && k.tier !== 'hero'; });
+        if (!items.length) return;
+        var meta = KPI_CAT_META[cat] || { icon:'category', label:cat };
+        sections += '<div class="mb-6">' +
+          '<div class="flex items-center gap-2 mb-3">' +
+            '<span class="material-symbols-outlined text-[20px] text-primary">' + meta.icon + '</span>' +
+            '<h3 class="font-headline-md text-headline-md text-on-surface">' + esc(meta.label) + '</h3>' +
+            '<span class="text-[11px] text-on-surface-variant">' + items.length + '</span></div>' +
+          '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">' + items.map(kpiCardCompact).join('') + '</div></div>';
+      });
+      // Trend panel: First-Pass Yield 7-day sparkline.
+      var fpy = kpis.filter(function(k){ return k.key==='FPY'; })[0];
+      var trendPath = fpy ? kpiSparkPath(fpy.sparkline) : '';
+      var trend = '<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-5">' +
+          '<div class="font-headline-md text-headline-md text-primary mb-1">First-Pass Yield Trend</div>' +
+          '<div class="font-body-sm text-body-sm text-on-surface-variant mb-4">Last 7 days</div>' +
+          (trendPath ? '<div class="h-40 w-full"><svg class="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none" fill="none" stroke="' + kpiStrip(kpiHealth(fpy||{})) + '" stroke-width="1.5"><path d="' + trendPath + '"/></svg></div>'
+                     : '<div class="h-40 w-full grid place-items-center text-on-surface-variant font-body-sm">No trend data for this period.</div>') +
+        '</div>';
+      fullBody.innerHTML = '<div class="p-gutter md:p-margin-desktop">' +
+        (heroes.length ? '<div class="flex items-center gap-2 mb-3"><span class="material-symbols-outlined text-[20px] text-primary">star</span><h3 class="font-headline-md text-headline-md text-on-surface">Key Metrics</h3></div>' : '') +
+        heroHtml + sections + trend + '</div>';
+    }
+    function kpiPeriodBar(){
+      return '<div id="kpiPeriodBar" class="flex items-center gap-1 bg-on-primary/10 rounded-full p-1">' +
+        KPI_PERIODS.map(function(p){
+          var on = p.preset === kpiPeriod;
+          return '<button data-preset="' + p.preset + '" class="kpi-period-btn h-8 px-3 rounded-full text-[12px] font-medium transition ' +
+            (on ? 'bg-on-primary text-primary shadow-sm' : 'text-on-primary/80') + '">' + p.label + '</button>';
+        }).join('') + '</div>';
+    }
+    function loadKpis(){
+      fullBody.innerHTML = '<div class="text-on-surface-variant text-[13px] py-16 text-center">Loading KPIs…</div>';
+      google.script.run
+        .withSuccessHandler(function(kpis){ renderKpiDashboard(kpis || []); })
+        .withFailureHandler(function(err){ fullBody.innerHTML = '<div class="text-error text-[13px] py-16 text-center">KPIs unavailable: ' + esc(err&&err.message?err.message:err) + '</div>'; })
+        .getQmsKpis(kpiPersona(), { preset: kpiPeriod });
+    }
+    function onKpiPeriodClick(e){
+      var b = e.target.closest('.kpi-period-btn'); if (!b) return;
+      kpiPeriod = b.getAttribute('data-preset');
+      fullTopRight.innerHTML = kpiPeriodBar();
+      var nb = document.getElementById('kpiPeriodBar'); if (nb) nb.addEventListener('click', onKpiPeriodClick);
+      loadKpis();
+    }
+    function openKpiDashboard(){
+      openFull('Quality KPIs', kpiPeriodBar());
+      var bar = document.getElementById('kpiPeriodBar'); if (bar) bar.addEventListener('click', onKpiPeriodClick);
+      loadKpis();
+    }
+
     function openPutaway(){
       sheet.innerHTML = '<div class="text-on-surface-variant text-[13px] py-6 text-center">Loading putaway queue…</div>'; openSheet();
       google.script.run
@@ -846,23 +1481,79 @@
 
     function openPicker(){ renderPicker(); openSheet(); }
     document.getElementById('fab').addEventListener('click', openPicker);
-    document.getElementById('sideNew').addEventListener('click', openPicker);
+    ['sideNew','newBtn'].forEach(function(id){ var b = document.getElementById(id); if (b) b.addEventListener('click', openPicker); });
     backdrop.addEventListener('click', function(e){ if (e.target===backdrop) closeSheet(); });
     sheet.addEventListener('click', function(e){
       var grp = e.target.closest('.js-group'); if (grp){ renderGroupActions(grp.getAttribute('data-group')); return; }
       var t = e.target.closest('.tile'); if (t) handlePick(t.getAttribute('data-id'));
     });
 
-    // ============ nav buttons ============
+    // ============ nav buttons + module nav (full parity with old Landing menu) ============
+    // type:'form' → launchForm(target) (returns to cockpit); 'kpi' → in-cockpit KPI view;
+    // 'home' → old Landing; 'switch' → operator switcher.
+    var NAV_ITEMS = [
+      { icon:'space_dashboard', label:'KPIs',            kind:'kpi' },
+      { icon:'account_tree',    label:'Trace',           kind:'form', target:'Trace' },
+      { icon:'warehouse',       label:'Warehouse',       kind:'form', target:'Warehouse' },
+      { icon:'map',             label:'Warehouse Floorplan', kind:'form', target:'WarehouseFloorplan' },
+      { icon:'category',        label:'Masters',         kind:'form', target:'Masters' },
+      { icon:'fact_check',      label:'Control Plan',    kind:'form', target:'ControlPlan' },
+      { icon:'receipt_long',    label:'Purchase Orders', kind:'form', target:'PO' },
+      { icon:'assignment_return', label:'Customer Returns', kind:'form', target:'CustomerReturn' },
+      { icon:'upload_file',     label:'Import CSV',      kind:'form', target:'ImportCSV' },
+      { icon:'settings',        label:'Settings',        kind:'form', target:'Settings' },
+      { icon:'switch_account',  label:'Switch role',     kind:'switch' },
+      { icon:'home',            label:'Classic Home',    kind:'home' }
+    ];
+    function navGo(item){
+      closeNavMenu();
+      if (item.kind==='kpi'){ openKpiDashboard(); return; }
+      if (item.kind==='home'){ launchForm('Landing'); return; }
+      if (item.kind==='switch'){ var sw=document.getElementById('opSwitch'); if (sw) sw.click(); return; }
+      launchForm(item.target);
+    }
+    // Row form (mobile drawer) — icon + label.
+    function navRowHtml(item){
+      return '<button class="js-nav w-full flex items-center gap-3 px-3 h-12 rounded text-on-surface hover:bg-surface-container-low active:scale-[0.99] transition text-left" data-nav="' + esc(item.label) + '">' +
+        '<span class="material-symbols-outlined text-[20px] text-on-surface-variant">' + item.icon + '</span>' +
+        '<span class="font-interactive-label text-interactive-label">' + esc(item.label) + '</span></button>';
+    }
+    // Icon form (top tools bar) — compact icon tile + tiny label, horizontal scroll.
+    function navIconHtml(item){
+      return '<button class="js-nav shrink-0 flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 px-2 rounded hover:bg-surface-container-low active:scale-95 transition" data-nav="' + esc(item.label) + '" title="' + esc(item.label) + '">' +
+        '<span class="material-symbols-outlined text-[20px] text-primary">' + item.icon + '</span>' +
+        '<span class="font-label-caps text-[10px] uppercase tracking-wide text-on-surface-variant whitespace-nowrap">' + esc(item.label) + '</span></button>';
+    }
+    function bindNav(host, mode){
+      if (!host) return;
+      host.innerHTML = NAV_ITEMS.map(function(it){ return mode==='icon' ? navIconHtml(it) : navRowHtml(it); }).join('');
+      Array.prototype.forEach.call(host.querySelectorAll('.js-nav'), function(b){
+        b.addEventListener('click', function(){
+          var it = NAV_ITEMS.filter(function(x){ return x.label===b.getAttribute('data-nav'); })[0];
+          if (it) navGo(it);
+        });
+      });
+    }
+    function renderNav(){ bindNav(document.getElementById('toolsBarInner'), 'icon'); bindNav(document.getElementById('navMenu'), 'row'); }
+    renderNav();
+
+    // Mobile nav drawer open/close
+    var navBd = document.getElementById('navMenuBackdrop');
+    function openNavMenu(){ if (navBd) navBd.classList.remove('hidden'); }
+    function closeNavMenu(){ if (navBd) navBd.classList.add('hidden'); }
+    var nmb = document.getElementById('navMenuBtn'); if (nmb) nmb.addEventListener('click', openNavMenu);
+    var nmc = document.getElementById('navMenuClose'); if (nmc) nmc.addEventListener('click', closeNavMenu);
+    if (navBd) navBd.addEventListener('click', function(e){ if (e.target===navBd) closeNavMenu(); });
+
     document.getElementById('homeBtn').addEventListener('click', function(){ launchForm('Landing'); });
     document.getElementById('bnHome').addEventListener('click', function(){ launchForm('Landing'); });
-    document.getElementById('bnRecords').addEventListener('click', function(){ launchForm('Records'); });
+    document.getElementById('bnWarehouse').addEventListener('click', function(){ launchForm('Warehouse'); });
     document.getElementById('bnTrace').addEventListener('click', function(){ launchForm('Trace'); });
-    document.getElementById('bnKpi').addEventListener('click', function(){ launchForm('KPI'); });
+    document.getElementById('bnKpi').addEventListener('click', openKpiDashboard);
 
     // ============ init ============
     (function init(){
-      paintFilters();
+      paintFilters(); paintViewSwitch(); paintRangeSwitch();
       google.script.run.withSuccessHandler(function(reg){ actionRegistry = reg; }).getQmsv2Actions();
       google.script.run
         .withSuccessHandler(function(map){ roleStageMap = map || {}; loadOperators(); })

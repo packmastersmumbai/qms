@@ -1,0 +1,652 @@
+<title>Warehouse Floorplan — Pack Masters QMS</title>
+<!--
+  WarehouseFloorplan.html — Phase-1 blueprint warehouse map (Step 2).
+  CDN-FREE: GAS runs in a double-iframe (GitHub Pages -> script.googleusercontent.com) that blocks
+  external <script src>/stylesheets/fonts. Everything here is inline SVG + CSS + vanilla JS.
+
+  Backend is REUSED VERBATIM (no new stock/movement/scan backend). All calls are async via
+  google.script.run.withSuccessHandler (GAS run returns no value). Verified contracts:
+    getStockSummary()  -> [{materialCode, batchOrLotNo, locationId, balance}]  (balance>0 only)
+    getLocations()     -> [{id, floor, section, aisle, rack, shelf, bin, label, type,
+                            capacityQty, capacityUnit, active}]   (rack = Bay letter A-F)
+    getLowStockItems() -> [{code, desc, unit, onHand, reorderLevel, shortBy}]
+    whereIsLot(lot)    -> {found:true, locationId, ...} | {found:false, reason}   (Scan.js)
+    recordLocationTransfer({materialCode, batchOrLotNo, fromLocationId, toLocationId, qty,
+                            reason, transferredBy}) -> {success, transferId} | {success:false, error}
+
+  Occupancy source = getStockSummary (flat, balance>0). Phase-1 rule: one pallet per slot, so a
+  slot with any positive balance for its locationId is "occupied" (fullness = occupied/148).
+  getStockView is NOT used for the map: it partitions rows into rm/fg/quar/wip/rework arrays with
+  differing field names — heavier and lossy for a flat id->contents map. getStockSummary is the
+  single source of truth for "what is stored where".
+-->
+<style>
+  /* ── Blueprint tokens (navy/cyan on paper, PM ISO print house-style — from mockup 16) ── */
+  :root{
+    --paper:#eef2f4; --paper-2:#e3e9ec; --ink:#12303c; --ink-2:#3a5763;
+    --line:#1a3a4a; --line-soft:#9db4bf; --cyan:#0e7c8b; --cyan-hi:#12a5b8;
+    --grid:#c3d2d9; --amber:#b45309; --danger:#8f3a2f;
+    /* occupancy scale (sequential, works on paper + dark). Phase 1 = binary empty/full. */
+    --occ-0:#cfe0e4; --occ-full:#8f3a2f;
+    --pip-bg:#f7fafb; --shadow:0 18px 40px -18px rgba(18,48,60,.55);
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --disp:"Georgia","Times New Roman",serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --paper:#0d1b21; --paper-2:#102a33; --ink:#dbe9ee; --ink-2:#8bacb7;
+    --line:#4aa3b5; --line-soft:#2b4a55; --cyan:#28c3d6; --cyan-hi:#5fe0ef;
+    --grid:#173038; --pip-bg:#102a33; --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+    --occ-0:#173a44; --occ-full:#c65441;
+  }}
+  :root[data-theme="dark"]{
+    --paper:#0d1b21; --paper-2:#102a33; --ink:#dbe9ee; --ink-2:#8bacb7;
+    --line:#4aa3b5; --line-soft:#2b4a55; --cyan:#28c3d6; --cyan-hi:#5fe0ef;
+    --grid:#173038; --pip-bg:#102a33; --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+    --occ-0:#173a44; --occ-full:#c65441;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--mono);-webkit-font-smoothing:antialiased;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:26px 26px;overflow:hidden;height:100vh}
+
+  /* ── Header + KPI strip ── */
+  header{position:fixed;top:0;left:0;right:0;height:56px;display:flex;align-items:center;
+    gap:12px;padding:0 16px;background:color-mix(in srgb,var(--paper) 82%,transparent);
+    backdrop-filter:blur(8px);border-bottom:1.5px solid var(--line);z-index:20}
+  .brand{font-family:var(--disp);font-size:17px;letter-spacing:.5px;color:var(--line);font-weight:700}
+  .brand small{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--ink-2);
+    text-transform:uppercase;display:block;line-height:1;margin-top:2px}
+  .search{margin-left:auto;display:flex;gap:0;align-items:stretch}
+  .search input{font-family:var(--mono);font-size:12px;letter-spacing:.5px;padding:8px 11px;
+    background:var(--paper);color:var(--ink);border:1.5px solid var(--line-soft);
+    border-right:none;border-radius:2px 0 0 2px;width:190px;max-width:40vw}
+  .search input::placeholder{color:var(--ink-2)}
+  .search button{font-family:var(--mono);font-size:12px;letter-spacing:1px;padding:8px 13px;
+    background:var(--line);color:var(--paper);border:1.5px solid var(--line);
+    border-radius:0 2px 2px 0;cursor:pointer}
+
+  .kpis{position:fixed;top:56px;left:0;right:0;height:52px;z-index:19;display:flex;gap:0;
+    align-items:stretch;border-bottom:1.5px solid var(--line);
+    background:color-mix(in srgb,var(--paper) 90%,transparent);backdrop-filter:blur(6px)}
+  .kpi{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 16px;
+    border-right:1px dashed var(--line-soft)}
+  .kpi:last-child{border-right:none}
+  .kpi .v{font-family:var(--disp);font-size:20px;font-weight:700;color:var(--line);line-height:1;
+    font-variant-numeric:tabular-nums}
+  .kpi .k{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--ink-2);
+    text-transform:uppercase;margin-top:3px}
+  .kpi.alert .v{color:var(--amber)}
+
+  /* ── Plan stage ── */
+  #stage{position:absolute;inset:108px 0 0 0;touch-action:none;cursor:grab;overflow:hidden}
+  #stage:active{cursor:grabbing}
+  #plan{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    transform-origin:center;will-change:transform}
+  svg{display:block;overflow:visible}
+
+  .bayhead{font-family:var(--disp);fill:var(--line);font-weight:700;letter-spacing:.5px;font-size:15px}
+  .baymeta{font-family:var(--mono);fill:var(--ink-2);font-size:9px;letter-spacing:2px;text-transform:uppercase}
+  .bayframe{fill:none;stroke:var(--line-soft);stroke-width:1.5;stroke-dasharray:6 5}
+
+  .slot{cursor:pointer}
+  .slot rect{fill:var(--occ-0);stroke:var(--line);stroke-width:1.5;
+    transition:fill .25s,stroke-width .12s}
+  .slot.occ rect{fill:var(--occ-full)}
+  .slot:hover rect{stroke-width:3}
+  .slot.sel rect{stroke:var(--cyan-hi);stroke-width:3.5;
+    filter:drop-shadow(0 0 6px color-mix(in srgb,var(--cyan-hi) 65%,transparent))}
+  .slot.flash rect{animation:flash 1.1s ease-in-out 2}
+  @keyframes flash{0%,100%{fill:var(--occ-0)}50%{fill:var(--cyan-hi)}}
+  .slot .code{font-family:var(--mono);font-size:9px;letter-spacing:.5px;fill:var(--ink-2);
+    text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+  .slot.occ .code{fill:#fff}
+
+  .legend{position:fixed;right:16px;top:120px;z-index:15;
+    background:color-mix(in srgb,var(--paper) 80%,transparent);backdrop-filter:blur(6px);
+    border:1.5px solid var(--line-soft);border-radius:3px;padding:9px 11px;
+    font-size:9px;letter-spacing:1px;color:var(--ink-2);text-transform:uppercase}
+  .legend .g{display:flex;align-items:center;gap:6px;margin-top:5px}
+  .legend i{width:13px;height:13px;border-radius:2px;border:1.5px solid var(--line)}
+
+  /* ── FAB (scan / fit) ── */
+  .fab{position:fixed;left:16px;bottom:16px;z-index:25;display:flex;gap:8px;flex-wrap:wrap}
+  .fab button{font-family:var(--mono);font-size:12px;letter-spacing:1px;padding:11px 15px;
+    border:1.5px solid var(--line);background:var(--line);color:var(--paper);border-radius:3px;
+    cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:var(--shadow)}
+  .fab button.ghost{background:transparent;color:var(--line)}
+
+  /* ── Toast (errors / lot-not-found / no-position) ── */
+  #toast{position:fixed;left:50%;top:120px;transform:translate(-50%,-16px);z-index:40;
+    background:var(--line);color:var(--paper);font-family:var(--mono);font-size:12px;
+    letter-spacing:.5px;padding:10px 16px;border-radius:3px;box-shadow:var(--shadow);
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:min(90vw,420px)}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  #toast.err{background:var(--danger)}
+
+  /* ── Loading / empty overlays ── */
+  #load{position:fixed;inset:108px 0 0 0;z-index:18;display:flex;align-items:center;
+    justify-content:center;flex-direction:column;gap:12px;color:var(--ink-2);
+    font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;
+    background:var(--paper)}
+  #load .spin{width:34px;height:34px;border:3px solid var(--line-soft);border-top-color:var(--cyan);
+    border-radius:50%;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #load.hide{display:none}
+
+  /* ── PIP detail pane (tap a slot -> contents) ── */
+  #pip{position:fixed;right:16px;bottom:16px;width:320px;max-width:calc(100vw - 32px);
+    background:var(--pip-bg);border:1.5px solid var(--line);border-radius:4px;
+    box-shadow:var(--shadow);z-index:30;transform:translateY(140%);opacity:0;
+    transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .2s}
+  #pip.show{transform:translateY(0);opacity:1}
+  .pip-head{display:flex;align-items:flex-start;gap:8px;padding:13px 14px;
+    border-bottom:1.5px solid var(--line-soft)}
+  .pip-head .code{font-family:var(--disp);font-size:22px;color:var(--line);font-weight:700;line-height:1.1}
+  .pip-head .type{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--ink-2);
+    text-transform:uppercase;margin-top:3px}
+  .pip-head .x{margin-left:auto;background:none;border:none;color:var(--ink-2);font-size:22px;
+    cursor:pointer;line-height:1;padding:0 2px}
+  .pip-body{padding:12px 14px;display:flex;flex-direction:column;gap:11px}
+  .pip-body .status{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;
+    display:inline-block;padding:3px 9px;border-radius:2px;align-self:flex-start}
+  .pip-body .status.empty{background:var(--paper-2);color:var(--ink-2);border:1px solid var(--line-soft)}
+  .pip-body .status.occ{background:var(--danger);color:#fff}
+  .lots{font-size:12px;color:var(--ink-2);line-height:1.65}
+  .lots .lot{border-top:1px dashed var(--line-soft);padding-top:8px;margin-top:8px;
+    display:flex;justify-content:space-between;gap:8px}
+  .lots .lot:first-child{border-top:none;padding-top:0;margin-top:0}
+  .lots .lot b{color:var(--ink);font-family:var(--mono);font-weight:600}
+  .lots .lot .q{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+  .lots .empty-msg{color:var(--ink-2);font-style:italic}
+  .pip-body .move{font-family:var(--mono);font-size:12px;letter-spacing:.5px;padding:11px;
+    border-radius:3px;border:none;background:var(--cyan);color:#fff;font-weight:700;cursor:pointer}
+
+  /* ── Move / tile-pick modal ── */
+  #modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+    background:color-mix(in srgb,var(--line) 55%,transparent);padding:16px}
+  #modal.show{display:flex}
+  .sheet{background:var(--pip-bg);border:1.5px solid var(--line);border-radius:5px;
+    width:360px;max-width:100%;max-height:88vh;overflow:auto;box-shadow:var(--shadow)}
+  .sheet h3{font-family:var(--disp);font-size:17px;color:var(--line);margin:0;padding:15px 16px 11px;
+    border-bottom:1.5px solid var(--line-soft)}
+  .sheet .form{padding:14px 16px;display:flex;flex-direction:column;gap:11px}
+  .sheet label{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--ink-2);
+    text-transform:uppercase;display:block;margin-bottom:4px}
+  .sheet input,.sheet select{font-family:var(--mono);font-size:13px;padding:9px 10px;width:100%;
+    background:var(--paper);color:var(--ink);border:1.5px solid var(--line-soft);border-radius:2px}
+  .sheet .hint{font-size:11px;color:var(--ink-2);line-height:1.5}
+  .sheet .actions{display:flex;gap:8px;padding:4px 16px 16px}
+  .sheet .actions button{flex:1;font-family:var(--mono);font-size:12px;letter-spacing:1px;padding:11px;
+    border-radius:3px;cursor:pointer}
+  .sheet .actions .go{border:none;background:var(--cyan);color:#fff;font-weight:700}
+  .sheet .actions .cancel{border:1.5px solid var(--line-soft);background:transparent;color:var(--ink)}
+  .sheet .actions button:disabled{opacity:.5;cursor:default}
+
+  /* ── Camera scan overlay (BarcodeDetector, feature-detected) ── */
+  #scan{position:fixed;inset:0;z-index:55;display:none;align-items:center;justify-content:center;
+    flex-direction:column;gap:16px;background:color-mix(in srgb,var(--line) 78%,transparent);
+    color:var(--paper);font-family:var(--disp)}
+  #scan.show{display:flex}
+  #scan video{width:min(84vw,320px);height:min(84vw,320px);object-fit:cover;
+    border:2px solid var(--cyan-hi);border-radius:8px;background:#000}
+  #scan .cancel{font-family:var(--mono);padding:9px 18px;border:1.5px solid var(--cyan-hi);
+    background:transparent;color:var(--paper);border-radius:3px;cursor:pointer;letter-spacing:1px}
+
+  @media (max-width:640px){
+    #pip{left:16px;right:16px;width:auto}
+    .kpi .v{font-size:17px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  :focus-visible{outline:2px solid var(--cyan-hi);outline-offset:2px}
+</style>
+
+<header>
+  <div class="brand">Pack Masters — Warehouse<small>Floorplan · 1st Floor · B001–B148</small></div>
+  <form class="search" onsubmit="return false" role="search">
+    <input id="lotInput" type="search" placeholder="Search lot / batch…" aria-label="Search lot" autocomplete="off">
+    <button id="lotBtn" type="submit">Find</button>
+  </form>
+</header>
+
+<div class="kpis" aria-live="polite">
+  <div class="kpi"><div class="v" id="kFull">—</div><div class="k">Warehouse full</div></div>
+  <div class="kpi"><div class="v" id="kOcc">—</div><div class="k">Slots occupied</div></div>
+  <div class="kpi"><div class="v" id="kTotal">148</div><div class="k">Total slots</div></div>
+  <div class="kpi alert"><div class="v" id="kLow">—</div><div class="k">Low-stock alerts</div></div>
+</div>
+
+<div class="legend">Occupancy
+  <div class="g"><i style="background:var(--occ-0)"></i>Empty</div>
+  <div class="g"><i style="background:var(--occ-full)"></i>Occupied</div>
+</div>
+
+<div id="stage"><div id="plan"><svg id="svg" aria-label="Warehouse floorplan"></svg></div></div>
+
+<div id="load"><div class="spin" role="status" aria-label="Loading"></div>Loading warehouse…</div>
+
+<div class="fab">
+  <button id="scanBtn">▣ Scan slot QR</button>
+  <button class="ghost" id="fitBtn">⟳ Fit</button>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- PIP: slot contents -->
+<aside id="pip" aria-live="polite">
+  <div class="pip-head">
+    <div><div class="code" id="pCode">—</div><div class="type" id="pType">—</div></div>
+    <button class="x" onclick="closePip()" aria-label="Close">×</button>
+  </div>
+  <div class="pip-body">
+    <span class="status empty" id="pStatus">Empty</span>
+    <div class="lots" id="pLots"></div>
+    <button class="move" id="pMove">＋ Move stock here</button>
+  </div>
+</aside>
+
+<!-- Move / tile-pick modal -->
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="sheet">
+    <h3 id="mTitle">Move stock</h3>
+    <div class="form">
+      <div class="hint" id="mHint"></div>
+      <div><label for="mLot">Material · lot at source</label><select id="mLot"></select></div>
+      <div><label for="mQty">Quantity to move</label><input id="mQty" type="number" min="1" step="any" inputmode="decimal"></div>
+      <div><label for="mBy">Moved by</label><input id="mBy" type="text" placeholder="operator name"></div>
+    </div>
+    <div class="actions">
+      <button class="cancel" id="mCancel">Cancel</button>
+      <button class="go" id="mGo">Confirm move</button>
+    </div>
+  </div>
+</div>
+
+<!-- Camera scan overlay -->
+<div id="scan">
+  <video id="scanVid" playsinline muted></video>
+  <div style="font-size:14px;letter-spacing:1px">Point at a slot QR…</div>
+  <button class="cancel" id="scanCancel">Cancel</button>
+</div>
+
+<script>
+/* ============================================================================
+   Warehouse floorplan viewer — Phase 1. Vanilla JS, no framework, GAS-safe.
+   All server access via google.script.run (async, .withSuccessHandler only).
+   ============================================================================ */
+
+/* ── Bay layout: single declarative table (the ONLY place counts live) ──
+   Bay = display/grouping attribute only (getLocations().rack). It is NEVER parsed from the id.
+   The id (B001..B148) is assigned by walking bays in this order; renumbering never touches ids. */
+var BAYS = [
+  { bay:'A', zone:'Bulk RM',        type:'RM', count:25 },
+  { bay:'B', zone:'Packaging strip', type:'PM', count:4  },
+  { bay:'C', zone:'Packaging upper', type:'PM', count:42 },
+  { bay:'D', zone:'Packaging lower', type:'PM', count:42 },
+  { bay:'E', zone:'Finished Goods',  type:'FG', count:21 },
+  { bay:'F', zone:'Buffer Pallets',  type:'FG', count:14 }
+];
+var TOTAL_SLOTS = 148;
+var SVG_NS = 'http://www.w3.org/2000/svg';
+
+/* State */
+var slotEls = {};      // id -> <g> element
+var slotMeta = {};     // id -> { bay, zone, type }
+var occByLoc = {};     // locationId -> [{material, lot, qty}]  (from getStockSummary, balance>0)
+var lowStockCount = 0;
+var curSel = null;     // selected id
+var reducedMotion = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+function el(tag, attrs){
+  var e = document.createElementNS(SVG_NS, tag);
+  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+function $(id){ return document.getElementById(id); }
+
+/* ── Toast helper (errors + empty-result messages) ── */
+var toastTimer = null;
+function toast(msg, isError){
+  var t = $('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' err' : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.className = ''; }, 3200);
+}
+
+/* ── Build the static SVG map: bay blocks + slot rects (auto-grid per bay) ── */
+var GEO = { cell:44, gap:9, cols:7, padX:26, bayGapY:58, headY:26 };
+function buildMap(){
+  var svg = $('svg');
+  svg.innerHTML = '';
+  var seq = 0, y = 8, maxRight = 0;
+
+  BAYS.forEach(function(b){
+    var rows = Math.ceil(b.count / GEO.cols);
+    var blockH = rows * (GEO.cell + GEO.gap);
+    // bay header
+    var head = el('text', { class:'bayhead', x:GEO.padX, y:y + 14 });
+    head.textContent = 'Bay ' + b.bay + ' — ' + b.zone.toUpperCase();
+    svg.appendChild(head);
+    var meta = el('text', { class:'baymeta', x:GEO.padX, y:y + 28 });
+    meta.textContent = b.type + ' · ' + b.count + ' pallet slots';
+    svg.appendChild(meta);
+
+    var gridTop = y + GEO.headY + 8;
+    // slots
+    for (var i = 0; i < b.count; i++){
+      seq++;
+      var id = 'B' + ('000' + seq).slice(-3);
+      slotMeta[id] = { bay:b.bay, zone:b.zone, type:b.type };
+      var col = i % GEO.cols, row = (i / GEO.cols) | 0;
+      var sx = GEO.padX + col * (GEO.cell + GEO.gap);
+      var sy = gridTop + row * (GEO.cell + GEO.gap);
+      maxRight = Math.max(maxRight, sx + GEO.cell);
+      var g = el('g', { class:'slot', tabindex:'0', role:'button', 'data-id':id });
+      g.setAttribute('aria-label', id + ' ' + b.zone + ' empty');
+      g.appendChild(el('rect', { x:sx, y:sy, width:GEO.cell, height:GEO.cell, rx:3 }));
+      var tx = el('text', { class:'code', x:sx + GEO.cell/2, y:sy + GEO.cell/2 });
+      tx.textContent = id;
+      g.appendChild(tx);
+      bindSlot(g, id);
+      svg.appendChild(g);
+      slotEls[id] = g;
+    }
+    // dashed bay frame around this block
+    var frame = el('rect', { class:'bayframe', x:GEO.padX - 10, y:gridTop - 8,
+      width:(GEO.cols * (GEO.cell + GEO.gap)) + 4, height:blockH + 6, rx:5 });
+    svg.insertBefore(frame, svg.firstChild);
+
+    y = gridTop + blockH + GEO.bayGapY;
+  });
+
+  var w = maxRight + GEO.padX;
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', y);
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + y);
+  PLAN_W = w; PLAN_H = y;
+}
+
+function bindSlot(g, id){
+  g.addEventListener('click', function(){ selectSlot(id); });
+  g.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectSlot(id); }
+  });
+}
+
+/* ── Data load: occupancy + KPI (all reused backend, async) ── */
+function loadData(){
+  if (typeof google === 'undefined' || !google.script || !google.script.run){
+    // Not inside GAS (e.g. a raw file preview) — render an empty map so layout is verifiable.
+    $('load').className = 'hide';
+    renderOccupancy(); renderKpis();
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(onSummary)
+    .withFailureHandler(function(err){
+      $('load').className = 'hide';
+      toast('Could not load stock: ' + (err && err.message ? err.message : err), true);
+    })
+    .getStockSummary();
+}
+
+function onSummary(summary){
+  occByLoc = {};
+  (summary || []).forEach(function(s){
+    var loc = String(s.locationId || '').trim().toUpperCase();
+    if (!/^[ABC]\d{3}$/.test(loc)) return;          // map only shows physical pallet slots
+    if (!(Number(s.balance) > 0)) return;           // Phase 1: positive balance = occupied
+    (occByLoc[loc] = occByLoc[loc] || []).push({
+      material: String(s.materialCode || ''),
+      lot:      String(s.batchOrLotNo || ''),
+      qty:      Number(s.balance) || 0
+    });
+  });
+  $('load').className = 'hide';
+  renderOccupancy();
+  renderKpis();
+  // Low-stock alerts are an independent read; failure here must not blank the map.
+  google.script.run
+    .withSuccessHandler(function(items){ lowStockCount = (items || []).length; renderKpis(); })
+    .withFailureHandler(function(){ /* leave alerts as '—'; map already usable */ })
+    .getLowStockItems();
+}
+
+function renderOccupancy(){
+  Object.keys(slotEls).forEach(function(id){
+    var g = slotEls[id], occ = !!occByLoc[id];
+    g.classList.toggle('occ', occ);
+    var m = slotMeta[id];
+    g.setAttribute('aria-label', id + ' ' + m.zone + ' ' + (occ ? 'occupied' : 'empty'));
+  });
+}
+
+function renderKpis(){
+  var occupied = Object.keys(occByLoc).filter(function(id){ return slotEls[id]; }).length;
+  $('kOcc').textContent = occupied + ' / ' + TOTAL_SLOTS;
+  $('kFull').textContent = Math.round(occupied / TOTAL_SLOTS * 100) + '%';
+  $('kLow').textContent = lowStockCount === 0 && $('kLow').textContent === '—' ? '—' : lowStockCount;
+}
+
+/* ── Tap a slot -> PIP contents ── */
+function selectSlot(id){
+  if (curSel && slotEls[curSel]) slotEls[curSel].classList.remove('sel');
+  curSel = id;
+  slotEls[id].classList.add('sel');
+  var m = slotMeta[id], lots = occByLoc[id] || [];
+  $('pCode').textContent = id;
+  $('pType').textContent = m.type + ' · Bay ' + m.bay + ' · ' + m.zone;
+  var st = $('pStatus');
+  st.className = 'status ' + (lots.length ? 'occ' : 'empty');
+  st.textContent = lots.length ? 'Occupied' : 'Empty';
+  $('pLots').innerHTML = lots.length
+    ? lots.map(function(l){
+        return '<div class="lot"><b>' + esc(l.material) + '</b>'
+          + '<span class="q">' + esc(l.lot) + ' · ' + fmtNum(l.qty) + '</span></div>';
+      }).join('')
+    : '<div class="empty-msg">No stock here — slot available for putaway.</div>';
+  $('pMove').textContent = lots.length ? '＋ Move stock out / in' : '＋ Move stock here';
+  $('pip').classList.add('show');
+}
+function closePip(){
+  $('pip').classList.remove('show');
+  if (curSel && slotEls[curSel]) slotEls[curSel].classList.remove('sel');
+  curSel = null;
+}
+window.closePip = closePip;
+
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+function fmtNum(n){ return (Number(n) || 0).toLocaleString(); }
+
+/* ── Lot search -> whereIsLot -> highlight / "Lot not found" ── */
+function searchLot(){
+  var lot = $('lotInput').value.trim();
+  if (!lot) return;
+  if (typeof google === 'undefined' || !google.script){ toast('Search needs the live app.', true); return; }
+  $('lotBtn').disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res){
+      $('lotBtn').disabled = false;
+      if (!res || !res.found){ toast('Lot not found' + (res && res.reason ? ' — ' + res.reason : ''), true); return; }
+      var loc = String(res.locationId || '').trim().toUpperCase();
+      if (slotEls[loc]){ flyTo(loc); toast('Lot ' + lot + ' → ' + loc); }
+      else toast('Lot ' + lot + ' is at ' + (res.locationId || '?') + ' (' + (res.implied || 'off-map') + ')');
+    })
+    .withFailureHandler(function(err){
+      $('lotBtn').disabled = false;
+      toast('Search failed: ' + (err && err.message ? err.message : err), true);
+    })
+    .whereIsLot(lot);
+}
+
+function flyTo(id){
+  selectSlot(id);
+  var g = slotEls[id];
+  if (!reducedMotion){ g.classList.add('flash'); setTimeout(function(){ g.classList.remove('flash'); }, 2300); }
+  // Centre the slot in the stage by adjusting pan.
+  var r = g.querySelector('rect');
+  var cx = Number(r.getAttribute('x')) + Number(r.getAttribute('width')) / 2;
+  var cy = Number(r.getAttribute('y')) + Number(r.getAttribute('height')) / 2;
+  tx = (PLAN_W / 2 - cx) * sc;
+  ty = (PLAN_H / 2 - cy) * sc;
+  apply();
+}
+
+/* ── Pan / zoom via CSS transform on #plan (GPU-accelerated, no library) ── */
+var plan = $('plan'), stage = $('stage');
+var tx = 0, ty = 0, sc = 1, px, py, drag = false, PLAN_W = 1000, PLAN_H = 700;
+function apply(){ plan.style.transform =
+  'translate(-50%,-50%) translate(' + tx + 'px,' + ty + 'px) scale(' + sc + ')'; }
+function fit(){
+  tx = 0; ty = 0;
+  sc = Math.min(stage.clientWidth / (PLAN_W + 40), stage.clientHeight / (PLAN_H + 40), 1.4);
+  if (!isFinite(sc) || sc <= 0) sc = 1;
+  apply();
+}
+stage.addEventListener('pointerdown', function(e){
+  drag = true; px = e.clientX - tx; py = e.clientY - ty; stage.setPointerCapture(e.pointerId); });
+stage.addEventListener('pointermove', function(e){
+  if (!drag) return; tx = e.clientX - px; ty = e.clientY - py; apply(); });
+stage.addEventListener('pointerup', function(){ drag = false; });
+stage.addEventListener('wheel', function(e){
+  e.preventDefault(); sc = Math.max(.4, Math.min(3, sc * (e.deltaY < 0 ? 1.12 : .9))); apply();
+}, { passive:false });
+
+/* ── Move / tile-pick flow -> recordLocationTransfer (NEVER recordScan) ──
+   Two cases:
+   - Selected slot is EMPTY  -> putaway target. Pick a source lot (from occupied slots), move IN.
+   - Selected slot is OCCUPIED -> pick one of its lots, move it OUT to a chosen free slot.
+   Both record a LOCATION_TRANSFER with from/to; the ledger is the source of truth. */
+function openMove(){
+  if (!curSel){ toast('Select a slot first.'); return; }
+  var target = curSel, lots = occByLoc[target] || [];
+  var sel = $('mLot'), hint = $('mHint');
+  sel.innerHTML = '';
+
+  if (lots.length){
+    // Move OUT of an occupied slot: source = this slot's lots, destination = a free slot.
+    var dest = firstFreeSlot();
+    if (!dest){ toast('No available position', true); return; }
+    hint.textContent = 'Move a lot from ' + target + ' to the next free slot ' + dest + '.';
+    lots.forEach(function(l){
+      addOpt(sel, JSON.stringify({ material:l.material, lot:l.lot, from:target, to:dest, max:l.qty }),
+        l.material + ' · ' + l.lot + ' (' + fmtNum(l.qty) + ')');
+    });
+  } else {
+    // Putaway INTO this empty slot: source = every occupied lot elsewhere.
+    var sources = [];
+    Object.keys(occByLoc).forEach(function(loc){
+      if (!slotEls[loc]) return;
+      occByLoc[loc].forEach(function(l){ sources.push({ material:l.material, lot:l.lot, from:loc, qty:l.qty }); });
+    });
+    if (!sources.length){ toast('No stock anywhere to move here yet.'); return; }
+    hint.textContent = 'Put stock into empty slot ' + target + '. Pick the source lot to relocate.';
+    sources.forEach(function(s){
+      addOpt(sel, JSON.stringify({ material:s.material, lot:s.lot, from:s.from, to:target, max:s.qty }),
+        s.material + ' · ' + s.lot + ' @ ' + s.from + ' (' + fmtNum(s.qty) + ')');
+    });
+  }
+  syncQtyMax();
+  $('mQty').value = '';
+  $('modal').classList.add('show');
+}
+function addOpt(sel, val, txt){ var o = document.createElement('option'); o.value = val; o.textContent = txt; sel.appendChild(o); }
+function syncQtyMax(){
+  var v = $('mLot').value; if (!v) return;
+  var d = JSON.parse(v);
+  $('mQty').max = d.max; $('mQty').placeholder = 'max ' + fmtNum(d.max);
+}
+function firstFreeSlot(){
+  var ids = Object.keys(slotEls);
+  for (var i = 0; i < ids.length; i++){ if (!occByLoc[ids[i]]) return ids[i]; }
+  return null;
+}
+function confirmMove(){
+  var v = $('mLot').value; if (!v){ toast('Nothing to move.'); return; }
+  var d = JSON.parse(v);
+  var qty = Number($('mQty').value);
+  if (!(qty > 0)){ toast('Enter a quantity.', true); return; }
+  if (qty > d.max){ toast('Only ' + fmtNum(d.max) + ' available at ' + d.from + '.', true); return; }
+  $('mGo').disabled = true;
+  google.script.run
+    .withSuccessHandler(function(res){
+      $('mGo').disabled = false;
+      if (!res || !res.success){ toast('Move failed: ' + ((res && res.error) || 'unknown'), true); return; }
+      $('modal').classList.remove('show');
+      toast('Moved ' + fmtNum(qty) + ' ' + d.material + ' → ' + d.to + ' (' + res.transferId + ')');
+      loadData();          // re-read ledger so the map stays in sync
+      closePip();
+    })
+    .withFailureHandler(function(err){
+      $('mGo').disabled = false;
+      toast('Move failed: ' + (err && err.message ? err.message : err), true);
+    })
+    .recordLocationTransfer({
+      materialCode:  d.material,
+      batchOrLotNo:  d.lot,
+      fromLocationId: d.from,
+      toLocationId:   d.to,
+      qty:            qty,
+      reason:        'Floorplan tile-pick move',
+      transferredBy:  $('mBy').value.trim() || 'floorplan'
+    });
+}
+
+/* ── Native QR scan: feature-detect BarcodeDetector, else fall back to tile-pick ── */
+var scanStream = null, scanRAF = null;
+function startScan(){
+  if (!('BarcodeDetector' in window)){
+    // No native scanner (Firefox / Safari / iOS): tile-pick is the fallback — just tell the user.
+    toast('Scanner unavailable — tap a slot on the map instead.');
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('Camera unavailable — tap a slot instead.'); return;
+  }
+  var det = new window.BarcodeDetector({ formats:['qr_code'] });
+  navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } })
+    .then(function(stream){
+      scanStream = stream;
+      var v = $('scanVid'); v.srcObject = stream; v.play();
+      $('scan').classList.add('show');
+      var tick = function(){
+        det.detect(v).then(function(codes){
+          if (codes && codes.length){ onScan(String(codes[0].rawValue || '').trim().toUpperCase()); return; }
+          scanRAF = requestAnimationFrame(tick);
+        }).catch(function(){ scanRAF = requestAnimationFrame(tick); });
+      };
+      scanRAF = requestAnimationFrame(tick);
+    })
+    .catch(function(){ toast('Camera blocked — tap a slot instead.', true); });
+}
+function stopScan(){
+  if (scanRAF) cancelAnimationFrame(scanRAF);
+  if (scanStream){ scanStream.getTracks().forEach(function(t){ t.stop(); }); scanStream = null; }
+  $('scan').classList.remove('show');
+}
+function onScan(raw){
+  stopScan();
+  if (/^[ABC]\d{3}$/.test(raw) && slotEls[raw]){ flyTo(raw); openMove(); }
+  else toast('Unrecognised QR: ' + raw, true);
+}
+
+/* ── Wiring ── */
+$('lotBtn').addEventListener('click', searchLot);
+$('lotInput').addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); searchLot(); } });
+$('fitBtn').addEventListener('click', fit);
+$('scanBtn').addEventListener('click', startScan);
+$('scanCancel').addEventListener('click', stopScan);
+$('pMove').addEventListener('click', openMove);
+$('mLot').addEventListener('change', syncQtyMax);
+$('mCancel').addEventListener('click', function(){ $('modal').classList.remove('show'); });
+$('mGo').addEventListener('click', confirmMove);
+window.addEventListener('resize', fit);
+
+buildMap();
+fit();
+loadData();
+</script>

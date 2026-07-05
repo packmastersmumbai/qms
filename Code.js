@@ -55,50 +55,40 @@ function onOpen() {
   ensureConfigKeys_();
   // Ensure MASTERS_Materials has the Default Location column (idempotent)
   try { ensureMaterialsLocationColumn_(); } catch(e) {}
-  SpreadsheetApp.getUi()
-    .createMenu('QMS System')
-    .addItem('⚙️  Setup / Initialize Project', 'initializeProject')
-    .addItem('🩺  Verify & Repair Sheets', 'verifyAndRepairSheets')
-    .addItem('🔧  Force Release Stuck Lock','forceReleaseStuckLock')
-    .addItem('🔬  Inspect Sheet Data',     'inspectSheetData')
-    .addItem('🔨  Force-Fix Sheet Headers','forceFixSheetHeaders')
-    .addItem('🔢  Verify Doc Counters',    'verifyDocCounters')
-    .addItem('🌱  Verify Masters Seed',    'verifyMastersSeed')
-    .addItem('🧪  Smoke Test Batch Flow',  'smokeTestBatchFlow')
-    .addItem('🧫  Run Integration Smoke',  'runIntegrationSmoke')
-    .addItem('🩻  Diagnose Production Pipeline','runProductionDiagnostics')
-    .addItem('🛰️  Trace Lots for One Material','traceFormPathForMaterial')
-    .addItem('🩺  Diagnose Dispatch Pipeline','runDispatchDiagnostics')
-    .addItem('🛰️  Trace FG Lots for Customer+Product','traceFGDispatchForCustomerProduct')
-    .addItem('♻️  Backfill FG Dispatch Lots','backfillFGDispatchLotsFromOQCUI')
-    .addItem('📋  New Purchase Order', 'openPOPForm')
-    .addItem('📊  Run POP Diagnostics', 'runPOPDiag')
-    .addItem('🛰️  Trace PO by docNo', 'tracePOByDocNoUI')
-    .addItem('♻️  Reconcile PO Receipts (Self-Heal)', 'reconcilePOReceipts')
-    .addItem('🚚  New Dispatch (FIFO)','openDispatchForm')
-    .addItem('🔍  Diagnose Production Lots','diagnoseProductionLotsUI')
-    .addItem('♻️  Backfill Stock Ledger from GRN','backfillStockLedgerFromGRNUI')
-    .addItem('📍  Backfill GRN Locations (from Master)','backfillGRNLocationsUI')
-    .addItem('🧨  Raise Test NCR',         'testRaiseNCR')
-    .addItem('🔎  Diagnose OQC→Gatepass',  'diagnoseOQCDropdown')
-    .addSeparator()
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('QMS System')
+    // ── Daily operations ──────────────────────────────────────
     .addItem('📥  New GRN', 'openGRNForm')
     .addItem('🔍  New IQC', 'openIQCForm')
     .addItem('🏭  New IPQC Check', 'openIPQCForm')
     .addItem('📤  New OQC', 'openOQCForm')
     .addItem('📋  NCR Triage',   'openNCRForm')
     .addItem('📦  Customer Returns', 'openCustomerReturnForm')
+    .addItem('📋  New Purchase Order', 'openPOPForm')
+    .addItem('🚚  New Dispatch (FIFO)','openDispatchForm')
     .addSeparator()
+    // ── Views & reports ───────────────────────────────────────
     .addItem('📊  Open Dashboard', 'openDashboard')
     .addItem('📋  Records', 'openRecords')
     .addItem('📊  Open KPI Dashboard', 'openKPIDashboard')
-    .addItem('📊  Run KPI Diagnostics', 'runKPIDiag')
-    .addItem('♻️  Flush KPI Cache', 'kpiCacheFlush')
     .addItem('📲  Send WhatsApp (selected row)', 'sendWhatsAppSelected')
-    .addSeparator()
     .addItem('📂  Import Past Data (CSV)', 'openImportCSV')
     .addSeparator()
-    .addItem('🔬  Seed Default Quality Parameters', 'seedDefaultParameters')
+    // ── Admin / maintenance (was inline; test & pure-diag items removed) ──
+    .addSubMenu(ui.createMenu('⚙️  Admin / Maintenance')
+      .addItem('⚙️  Setup / Initialize Project', 'initializeProject')
+      .addItem('🌱  Verify Masters Seed',    'verifyMastersSeed')
+      .addItem('🔬  Seed Default Quality Parameters', 'seedDefaultParameters')
+      .addItem('🩺  Verify & Repair Sheets', 'verifyAndRepairSheets')
+      .addItem('🔨  Force-Fix Sheet Headers','forceFixSheetHeaders')
+      .addItem('🔢  Verify Doc Counters',    'verifyDocCounters')
+      .addItem('🔧  Force Release Stuck Lock','forceReleaseStuckLock')
+      .addItem('♻️  Flush KPI Cache', 'kpiCacheFlush')
+      .addSeparator()
+      .addItem('♻️  Backfill FG Dispatch Lots','backfillFGDispatchLotsFromOQCUI')
+      .addItem('♻️  Backfill Stock Ledger from GRN','backfillStockLedgerFromGRNUI')
+      .addItem('📍  Backfill GRN Locations (from Master)','backfillGRNLocationsUI')
+      .addItem('♻️  Reconcile PO Receipts (Self-Heal)', 'reconcilePOReceipts'))
     .addToUi();
 }
 
@@ -244,6 +234,22 @@ function doGet(e) {
     catch (er) { out = 'ERROR: ' + er.message + '\n' + (er.stack||''); }
     return ContentService.createTextOutput(String(out)).setMimeType(ContentService.MimeType.TEXT);
   }
+  // Test-record cleanup via web app (deploy-token path; avoids clasp run).
+  //   ?diag=testscan                    → dry run, lists what would be deleted
+  //   ?diag=testdelete&confirm=YES      → LIVE delete of matched rows + orphan sheets
+  if (diag === 'testscan' || diag === 'testdelete') {
+    var to;
+    try {
+      if (typeof deleteTestRecords !== 'function') {
+        to = 'deleteTestRecords missing (is _TestRecordScan.js pushed?)';
+      } else {
+        var doDelete = (diag === 'testdelete') &&
+                       (e.parameter.confirm === 'YES');
+        to = deleteTestRecords(doDelete);
+      }
+    } catch (er2) { to = 'ERROR: ' + er2.message + '\n' + (er2.stack||''); }
+    return ContentService.createTextOutput(String(to)).setMimeType(ContentService.MimeType.TEXT);
+  }
 
   // QR code deep-link: ?doc=PM/IQC/2026-189 → route to DocView
   var docParam = e && e.parameter && e.parameter.doc ? String(e.parameter.doc).trim() : '';
@@ -270,11 +276,14 @@ function doGet(e) {
     ncr:            { file: 'NCR_F',            title: 'NCR' },
     customerreturn: { file: 'CustomerReturn_F', title: 'Customer Return' },
     warehouse:      { file: 'Warehouse_F',      title: 'Warehouse' },
+    warehousefloorplan: { file: 'WarehouseFloorplan', title: 'Warehouse Floorplan' },
     settings:       { file: 'Settings_F',       title: 'Settings' },
     masterscrud:    { file: 'MastersCrud_F',    title: 'Masters CRUD' },
     scan:           { file: 'Scan_F',           title: 'Scan' },
     recorder:       { file: 'Recorder_F',       title: 'Record Defect Video' },
-    rework:         { file: 'Rework_F',         title: 'Rework' }
+    rework:         { file: 'Rework_F',         title: 'Rework' },
+    landing:        { file: 'Landing',          title: 'Pack Masters QMS' },
+    cockpit:        { file: 'QMSV2_F',          title: 'QMS v2 — Pack Masters QMS' }
   };
   if (pageMap[page]) {
     // Guard admin pages — same owner check used by _mastersRequireOwner_()
@@ -290,9 +299,10 @@ function doGet(e) {
     pgTpl.scriptUrl = ScriptApp.getService().getUrl();
     template = pgTpl.evaluate().setTitle(pageMap[page].title + ' — Pack Masters QMS');
   } else {
-    var landingTpl = HtmlService.createTemplateFromFile('Landing');
-    landingTpl.scriptUrl = ScriptApp.getService().getUrl();
-    template = landingTpl.evaluate().setTitle('Pack Masters QMS');
+    // Default homepage = QMS v2 Cockpit (Stitch design). Old Landing still reachable at ?page=landing.
+    var cockpitTpl = HtmlService.createTemplateFromFile('QMSV2_F');
+    cockpitTpl.scriptUrl = ScriptApp.getService().getUrl();
+    template = cockpitTpl.evaluate().setTitle('Pack Masters QMS');
   }
   return template.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -314,12 +324,12 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v30_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v75_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;
   } catch (e) {}
-  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing', Recorder:'Recorder_F', Rework:'Rework_F', Scan:'Scan_F', QMSV2:'QMSV2_F' };
+  var pageMap = { GRN:'GRN_F', IQC:'IQC_F', OQC:'OQC_F', IPQC:'IPQC_F', Dashboard:'Dashboard_F', ImportCSV:'ImportCSV_F', Records:'Records_F', Gatepass:'Gatepass_F', Masters:'Masters_F', ControlPlan:'ControlPlan_F', CustomerReturn:'CustomerReturn_F', Production:'Production_F', Dispatch:'Dispatch_F', PO:'POP_F', KPI:'KPI_F', Warehouse:'Warehouse_F', WarehouseFloorplan:'WarehouseFloorplan', NCR:'NCR_F', Settings:'Settings_F', MastersCrud:'MastersCrud_F', Trace:'Trace_F', Landing:'Landing', Recorder:'Recorder_F', Rework:'Rework_F', Scan:'Scan_F', QMSV2:'QMSV2_F' };
   var page = pageMap[type] || 'Landing';
   var tpl = HtmlService.createTemplateFromFile(page);
   tpl.scriptUrl = ScriptApp.getService().getUrl();
@@ -393,7 +403,17 @@ function sendWhatsAppSelected() {
 //   Dispatch     = DISPATCH_LOG rows not delivered (status anything except DELIVERED)
 //   NCR          = NCR_LOG rows with status OPEN / IN_PROGRESS (not CLOSED)
 //   CustomerReturn = CR_LOG rows with status OPEN / IN_PROGRESS (not CLOSED)
+// Cached wrapper — the raw compute reads ~10 full sheets (~10-18s), which dominated
+// landing cold/warm load. Cache it (fingerprint-invalidated) so repeat boots are instant.
 function computePendingCounts_(ss) {
+  var cached = _pmCacheGet_('pmqms_pending_v1');
+  if (cached) return cached;
+  var fresh = _computePendingCountsRaw_(ss);
+  _pmCachePut_('pmqms_pending_v1', fresh);
+  return fresh;
+}
+
+function _computePendingCountsRaw_(ss) {
   var c = { PO:0, GRN:0, IQC:0, IPQC:0, Production:0, OQC:0, Gatepass:0, Dispatch:0, NCR:0, CustomerReturn:0 };
   // Side-channel: breakdown per module — { GRN: {PENDING:5, HOLD:3}, ... }
   var brk = {};
@@ -435,7 +455,10 @@ function computePendingCounts_(ss) {
   // GRN: rows where IQC Status is still PENDING (header = "IQC Status")
   try {
     c.GRN = countWhere('GRN', 'GRN_LOG', 'IQC Status', function(s){
-      return s === '' || s === 'PENDING' || s === 'PENDING_INSPECTION' || s === 'AWAITING_IQC';
+      // HOLD/ON_HOLD are unresolved (held at incoming) → still pending. (Was excluded,
+      // so HOLD GRNs vanished from the landing tile.)
+      return s === '' || s === 'PENDING' || s === 'PENDING_INSPECTION' || s === 'AWAITING_IQC' ||
+             s === 'HOLD' || s === 'ON_HOLD' || s === 'IQC PENDING';
     });
   } catch(e) { Logger.log('GRN count: ' + e); }
 
@@ -567,7 +590,10 @@ function diag_sheetHeaders() {
 // ─── Shared cache helpers ──────────────────────────────────────────
 // CacheService is per-script, 6 hours max. We use 60s TTL for hot reads;
 // writes call invalidatePmCache_() to clear stale entries.
-var PMQMS_CACHE_TTL_S_ = 60;
+// 6h (CacheService max). Safe because _pmCacheGet_ invalidates on sheet-fingerprint
+// change (Drive last-modified) — so edits are reflected immediately, but unchanged
+// sheets serve cached results instead of re-scanning ~10 sheets every page load.
+var PMQMS_CACHE_TTL_S_ = 21600;
 
 // Auto-invalidating cache: stores cache entries with a sheet-mtime fingerprint.
 // On read, compares current sheet mtime to cached fingerprint; cache miss if sheet has been edited.

@@ -337,6 +337,11 @@ function getStockView() {
       if (id === 'HOLD' || id.startsWith('FG-HOLD') || id.startsWith('FG_HOLD')) return 'FG_HOLD';
       if (id.startsWith('FG')) return 'FG';
       if (id.startsWith('RM')) return 'RM';
+      // Physical pallet slots use a floor-letter + number ID (^[ABC]\d{3}$). Their Type is set
+      // on the LOCATIONS row (primary path), so this only runs for an untyped/missing row — a
+      // fallback so heatmap colouring never resolves to '' (RISK-1). Bay is NOT parsed from the
+      // ID; without the row the true type is unknown, so return a neutral non-empty 'SLOT'.
+      if (/^[ABC]\d{3}$/.test(id)) return 'SLOT';
       return '';
     }
 
@@ -743,4 +748,241 @@ function issueRMForProduction(data) {
     Logger.log(e);
     return { success: false, error: e.message };
   }
+}
+
+// ============================================================
+// Phase 2 — Optimal-slot suggestion (min(volume, weight) fit engine)
+// ------------------------------------------------------------
+// Standard pallet envelope for a single B### slot. Phase-1 slots are modelled
+// as one ISO-6780 pallet position each. These are the ONLY assumptions used when
+// a material has no explicit perPallet (TI×HI) count, so they are named constants
+// (not magic numbers) and documented for future floor re-verification.
+//   PALLET_SLOT_VOLUME_MM3 : usable stack envelope = 1200 × 1000 × 1500 mm
+//     (ISO pallet footprint 1200×1000 mm, safe stack height 1500 mm) = 1.8e9 mm³.
+//   PALLET_SLOT_MAX_WEIGHT_KG : conservative dynamic pallet load = 1000 kg.
+// eachL/eachW/eachH from MASTERS_Materials are in mm, eachWeight in kg — so the
+// volume divide stays in mm³ and needs no unit conversion.
+var PALLET_SLOT_VOLUME_MM3    = 1200 * 1000 * 1500; // 1.8e9 mm³ usable per slot
+var PALLET_SLOT_MAX_WEIGHT_KG = 1000;               // kg dynamic load per slot
+
+// Mechanism (pure): how many eaches of `material` fit on ONE pallet slot, plus the
+// binding constraint. Returns { ok, unitsPerPallet, bound, reason }.
+//  - Prefer the explicit TI×HI count (material.perPallet) when present — it is the
+//    real-world stacking pattern and beats a geometric estimate.
+//  - Otherwise fall back to min(volume-bound, weight-bound) over the pallet envelope.
+//  - Missing/zero geometry → graceful { ok:false } (never divide-by-zero, never throw).
+function computePalletFit_(material) {
+  var m = material || {};
+  var perPallet = Number(m.perPallet) || 0;
+  if (perPallet > 0) {
+    // TI×HI is the authoritative pack; treat its declared fitClass as the basis hint.
+    var declared = String(m.fitClass || '').toUpperCase();
+    var bound = (declared === 'WEIGHT' || declared === 'VOLUME') ? declared : 'PALLET_PATTERN';
+    return { ok: true, unitsPerPallet: perPallet, bound: bound, reason: 'TI×HI pack' };
+  }
+
+  var L = Number(m.eachL) || 0, W = Number(m.eachW) || 0, H = Number(m.eachH) || 0;
+  var wt = Number(m.eachWeight) || 0;
+  var eachVolume = L * W * H; // computed, never stored
+  if (eachVolume <= 0 || wt <= 0) {
+    return { ok: false, unitsPerPallet: 0, bound: '', reason: 'geometry unknown, cannot suggest' };
+  }
+
+  var byVolume = Math.floor(PALLET_SLOT_VOLUME_MM3 / eachVolume);   // light/bulky → volume-bound
+  var byWeight = Math.floor(PALLET_SLOT_MAX_WEIGHT_KG / wt);        // heavy/dense → weight-bound
+  var capacity = Math.min(byVolume, byWeight);
+  if (capacity <= 0) {
+    return { ok: false, unitsPerPallet: 0, bound: '', reason: 'a single each exceeds one pallet slot' };
+  }
+  var bound = (byWeight <= byVolume) ? 'WEIGHT' : 'VOLUME';
+  return { ok: true, unitsPerPallet: capacity, bound: bound, reason: 'min(volume,weight)' };
+}
+
+// Suggest the best pallet slot(s) for putting away `qty` eaches of `materialCode`.
+// Minimum-tap putaway: prefer consolidating onto a slot already holding the SAME
+// material, else the best empty slot (same bay/type as the material's home first).
+//
+// Returns:
+//   { success:true, slotId, palletsNeeded, unitsPerPallet, bound, consolidating, ranked:[...] }
+//   { success:false, error }  — geometry unknown, or "No available position".
+//
+// `deps` is an optional injection point for testing (in-memory fixtures) so the
+// engine can be exercised without live sheet data. Production passes nothing and
+// the live reads are used. google.script.run calls this as suggestSlot(code, qty).
+function suggestSlot(materialCode, qty, deps) {
+  try {
+    var code = String(materialCode || '').trim();
+    var wantQty = Number(qty) || 0;
+    if (!code) return { success: false, error: 'materialCode required.' };
+    if (wantQty <= 0) return { success: false, error: 'qty must be > 0.' };
+
+    var d = deps || {};
+    var getMats = d.getMaterials || (typeof getMaterials === 'function' ? getMaterials : function(){ return []; });
+    var getLocs = d.getLocations || getLocations;
+    var getSummary = d.getStockSummary || getStockSummary;
+
+    // --- material + fit basis ---
+    var material = _findMaterial_(getMats(), code);
+    if (!material) return { success: false, error: 'Material ' + code + ' not found.' };
+    var fit = computePalletFit_(material);
+    if (!fit.ok) return { success: false, error: fit.reason };
+
+    var palletsNeeded = Math.ceil(wantQty / fit.unitsPerPallet);
+
+    // --- occupancy per slot (from the live ledger rollup) ---
+    var occupantByLoc = {}; // slotId → materialCode currently stored (first positive-balance lot)
+    getSummary().forEach(function(s) {
+      if ((Number(s.balance) || 0) <= 0) return;
+      var loc = String(s.locationId || '').trim();
+      if (!/^[ABC]\d{3}$/.test(loc)) return;      // only physical pallet slots
+      if (!occupantByLoc[loc]) occupantByLoc[loc] = String(s.materialCode || '').trim();
+    });
+
+    // --- rank candidate slots ---
+    var homeType = String(material.type || material.defaultType || '').toUpperCase();
+    var ranked = _rankSlots_(getLocs(), occupantByLoc, code, homeType);
+    if (!ranked.length) return { success: false, error: 'No available position' };
+
+    var best = ranked[0];
+    return {
+      success: true,
+      slotId: best.id,
+      palletsNeeded: palletsNeeded,
+      unitsPerPallet: fit.unitsPerPallet,
+      bound: fit.bound,                 // 'WEIGHT' | 'VOLUME' | 'PALLET_PATTERN'
+      consolidating: best.consolidating,
+      basis: fit.reason,
+      ranked: ranked.map(function(r){ return { slotId: r.id, consolidating: r.consolidating }; })
+    };
+  } catch(e) {
+    Logger.log('suggestSlot failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+// Find a material record by code across getMaterials()' several possible key names.
+function _findMaterial_(materials, code) {
+  var c = String(code).trim();
+  for (var i = 0; i < materials.length; i++) {
+    var m = materials[i];
+    if (String(m.code || m.itemCode || '').trim() === c) return m;
+  }
+  return null;
+}
+
+// Mechanism (pure): rank pallet slots for putaway. A slot already holding the SAME
+// material (consolidation) always outranks an empty slot; among empties, one whose
+// type matches the material's home type outranks an off-type empty. Slots holding a
+// DIFFERENT material are rejected (Phase-1 = one material per pallet slot).
+function _rankSlots_(locations, occupantByLoc, code, homeType) {
+  var candidates = [];
+  locations.forEach(function(loc) {
+    var id = String(loc.id || '').trim();
+    if (!/^[ABC]\d{3}$/.test(id)) return;            // physical slots only, zones excluded
+    if (String(loc.active) === 'N') return;
+
+    var occupant = occupantByLoc[id] || '';
+    if (occupant && occupant !== code) return;       // occupied by a different material → skip
+
+    var consolidating = occupant === code;
+    var sameType = homeType && String(loc.type || '').toUpperCase() === homeType;
+    // Lower rank sorts first: consolidating (0) < same-type empty (1) < any empty (2).
+    var rank = consolidating ? 0 : (sameType ? 1 : 2);
+    candidates.push({ id: id, consolidating: consolidating, rank: rank });
+  });
+
+  candidates.sort(function(a, b) {
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); // stable, lexical by ID within a tier
+  });
+  return candidates;
+}
+
+// ------------------------------------------------------------
+// Runnable GAS-editor assert for Step-6 suggestSlot + fit engine.
+// Uses in-memory fixtures via the `deps` injection point — never reads live sheets.
+// Proves the two checks the task requires:
+//  1. suggestSlot prefers a consolidating slot (same material) over an emptier
+//     separate one;
+//  2. a heavy 27 kg pack resolves WEIGHT-bound while light empty cans resolve
+//     VOLUME-bound (min(volume,weight) picks the right constraint).
+// Logger-based pass/fail, also returned.
+// ------------------------------------------------------------
+function _testSuggestSlot() {
+  var results = [];
+  function assert(cond, msg) {
+    results.push({ pass: !!cond, msg: msg });
+    Logger.log((cond ? 'PASS ' : 'FAIL ') + msg);
+  }
+
+  // --- fixtures: two PM materials, six pallet slots in bay B/C (type PM) ---
+  var materials = [
+    // Heavy 27 kg FG box, no TI×HI declared → must fall to weight-bound.
+    { code: 'FG-BOX', desc: 'Heavy box', type: 'PM',
+      eachL: 400, eachW: 300, eachH: 300, eachWeight: 27, perPallet: '', fitClass: '' },
+    // Light empty can, no TI×HI declared → must fall to volume-bound.
+    { code: 'PM-CAN', desc: 'Empty can', type: 'PM',
+      eachL: 100, eachW: 100, eachH: 200, eachWeight: 0.05, perPallet: '', fitClass: '' }
+  ];
+  var locations = [
+    { id: 'B001', type: 'PM', active: 'Y' }, { id: 'B002', type: 'PM', active: 'Y' },
+    { id: 'B003', type: 'PM', active: 'Y' }, { id: 'C001', type: 'PM', active: 'Y' },
+    { id: 'C002', type: 'PM', active: 'Y' }, { id: 'C003', type: 'PM', active: 'Y' }
+  ];
+  // B002 already holds FG-BOX (a partially-used consolidation target). B001 is empty.
+  var summary = [
+    { materialCode: 'FG-BOX', batchOrLotNo: 'L1', locationId: 'B002', balance: 5 }
+  ];
+  var deps = {
+    getMaterials:   function(){ return materials; },
+    getLocations:   function(){ return locations; },
+    getStockSummary:function(){ return summary; }
+  };
+
+  // --- Check 1: consolidation beats an emptier separate slot ---
+  var r1 = suggestSlot('FG-BOX', 10, deps);
+  assert(r1.success, 'suggestSlot(FG-BOX) succeeds');
+  assert(r1.slotId === 'B002', 'prefers consolidating slot B002 over empty B001 (got ' + r1.slotId + ')');
+  assert(r1.consolidating === true, 'best slot flagged consolidating');
+
+  // --- Check 2a: heavy 27 kg pack resolves WEIGHT-bound ---
+  assert(r1.bound === 'WEIGHT', 'heavy 27kg pack is WEIGHT-bound (got ' + r1.bound + ')');
+  // 1000 kg / 27 kg ≈ 37 units per pallet; volume would allow far more.
+  assert(r1.unitsPerPallet === Math.floor(1000 / 27),
+    'weight ceiling = floor(1000/27) = ' + Math.floor(1000 / 27) + ' (got ' + r1.unitsPerPallet + ')');
+  assert(r1.palletsNeeded === Math.ceil(10 / Math.floor(1000 / 27)),
+    'palletsNeeded = ceil(qty / unitsPerPallet)');
+
+  // --- Check 2b: light empty can resolves VOLUME-bound ---
+  var r2 = suggestSlot('PM-CAN', 100, deps);
+  assert(r2.success, 'suggestSlot(PM-CAN) succeeds');
+  assert(r2.bound === 'VOLUME', 'light can is VOLUME-bound (got ' + r2.bound + ')');
+  // No PM-CAN in stock → no consolidation; best is the first empty PM slot B001.
+  assert(r2.consolidating === false, 'no same-material slot → not consolidating');
+  assert(r2.slotId === 'B001', 'empties ranked lexically → B001 first (got ' + r2.slotId + ')');
+
+  // --- Check 3: missing geometry is graceful, not a crash ---
+  var deps2 = {
+    getMaterials:   function(){ return [{ code: 'NOGEO', type: 'PM' }]; },
+    getLocations:   function(){ return locations; },
+    getStockSummary:function(){ return []; }
+  };
+  var r3 = suggestSlot('NOGEO', 5, deps2);
+  assert(r3.success === false && /geometry unknown/.test(r3.error),
+    'missing geometry → graceful "geometry unknown" (got ' + JSON.stringify(r3) + ')');
+
+  // --- Check 4: full warehouse → "No available position" ---
+  var deps3 = {
+    getMaterials:   function(){ return materials; },
+    getLocations:   function(){ return [{ id: 'B001', type: 'PM', active: 'Y' }]; },
+    getStockSummary:function(){ return [{ materialCode: 'OTHER', batchOrLotNo: 'X', locationId: 'B001', balance: 3 }]; }
+  };
+  var r4 = suggestSlot('FG-BOX', 5, deps3);
+  assert(r4.success === false && r4.error === 'No available position',
+    'no free slot → "No available position" (got ' + JSON.stringify(r4) + ')');
+
+  var failed = results.filter(function(r){ return !r.pass; });
+  var summaryMsg = '_testSuggestSlot: ' + (results.length - failed.length) + '/' + results.length + ' asserts passed';
+  Logger.log(summaryMsg);
+  return { ok: failed.length === 0, summary: summaryMsg, results: results };
 }
