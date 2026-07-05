@@ -630,6 +630,32 @@ function runPutaway(payload) {
   });
 }
 
+// Multi-pallet putaway: transfer one source lot into SEVERAL slots per the allocation plan
+// (from suggestSlot().plan). Each entry is {slotId, qty}. Runs them in order; reports per-slot
+// result so a partial failure (e.g. one slot filled between suggest and confirm) is visible
+// rather than silently dropping stock.
+function runPutawayPlan(payload) {
+  var p = payload || {};
+  var plan = (p.plan || []).filter(function(a){ return a && a.slotId && Number(a.qty) > 0; });
+  if (!plan.length) return { success: false, error: 'Empty putaway plan.' };
+  var moved = 0, results = [], anyFail = false;
+  plan.forEach(function(a) {
+    var res = recordLocationTransfer({
+      materialCode:   p.materialCode,
+      batchOrLotNo:   p.batchOrLotNo,
+      fromLocationId: p.fromLocationId,
+      toLocationId:   a.slotId,
+      qty:            Number(a.qty),
+      reason:         'PUTAWAY',
+      transferredBy:  p.transferredBy
+    });
+    var ok = res && res.success !== false;
+    if (ok) moved += Number(a.qty); else anyFail = true;
+    results.push({ slotId: a.slotId, qty: Number(a.qty), ok: ok, error: ok ? '' : (res && res.error) || 'failed' });
+  });
+  return { success: !anyFail, movedQty: moved, slots: plan.length, results: results };
+}
+
 function recordScrap(data) {
   // data: { refDocType, refDocNo, materialCode, batchOrLotNo, qtyScrap, unit, scrapReason, scrapDestination, recordedBy, locationId }
   try {
@@ -864,10 +890,27 @@ function suggestSlot(materialCode, qty, deps) {
     if (!ranked.length) return { success: false, error: 'No available position' };
 
     var best = ranked[0];
+
+    // --- multi-pallet allocation: split wantQty across palletsNeeded slots ---
+    // Walk `ranked` (consolidating slot first, then grade-matched empties) filling one pallet's
+    // worth per slot until the qty is placed. Fewer eligible slots than needed → allocate what
+    // fits and flag the shortfall so the caller can warn (stock stays in source for the remainder).
+    var perPallet = fit.unitsPerPallet;
+    var remaining = wantQty, plan = [];
+    for (var i = 0; i < ranked.length && remaining > 0; i++) {
+      var take = Math.min(perPallet, remaining);
+      plan.push({ slotId: ranked[i].id, qty: take, consolidating: ranked[i].consolidating });
+      remaining -= take;
+    }
+    var shortfallQty = remaining > 0 ? remaining : 0;   // qty that had no slot (bays full)
+
     return {
       success: true,
-      slotId: best.id,
+      slotId: best.id,                  // first slot (back-compat: single-slot callers)
+      plan: plan,                       // [{slotId, qty, consolidating}] — spans palletsNeeded slots
       palletsNeeded: palletsNeeded,
+      slotsAllocated: plan.length,
+      shortfallQty: shortfallQty,       // > 0 → not enough slots; remainder stays in source
       unitsPerPallet: fit.unitsPerPallet,
       bound: fit.bound,                 // 'WEIGHT' | 'VOLUME' | 'PALLET_PATTERN'
       consolidating: best.consolidating,

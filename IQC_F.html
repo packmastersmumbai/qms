@@ -1440,14 +1440,16 @@ function openPutawaySheet(items) {
     card.id = 'putawayCard' + i;
     card.className = 'rounded-[10px] border border-slate-200 p-3';
     var label = (item.materialDesc || item.materialCode) + ' · ' + item.batchOrLotNo + ' (' + item.qty + ')';
+    // Slot rows are injected into #putawaySlots<i> once suggestSlot returns the plan.
+    // A single manual-entry row is rendered as fallback until the suggestion arrives.
     card.innerHTML =
       '<div class="text-[13px] font-semibold text-slate-800 mb-1">' + label + '</div>' +
       '<div class="text-[12px] text-slate-500 mb-2" id="putawaySug' + i + '">Finding a slot…</div>' +
-      '<div class="flex gap-2 items-center">' +
-        '<input id="putawaySlot' + i + '" type="text" placeholder="Slot e.g. B012" ' +
-          'class="flex-1 h-[38px] px-2 rounded-[8px] border border-slate-300 text-[13px] uppercase" />' +
-        '<button id="putawayBtn' + i + '" class="h-[38px] px-4 bg-primary text-white rounded-[8px] font-semibold text-[13px] active:scale-95">Move</button>' +
-      '</div>';
+      '<div id="putawaySlots' + i + '" class="flex flex-col gap-2 mb-2">' +
+        renderSlotRow(i, 0, '', null) +
+      '</div>' +
+      '<div class="text-[12px] text-amber-600 mb-2 hidden" id="putawayWarn' + i + '"></div>' +
+      '<button id="putawayBtn' + i + '" class="h-[38px] px-4 bg-primary text-white rounded-[8px] font-semibold text-[13px] active:scale-95 w-full">Move</button>';
     list.appendChild(card);
     document.getElementById('putawayBtn' + i).onclick = function(){ confirmPutaway(item, i); };
     fetchSlotSuggestion(item, i);
@@ -1455,19 +1457,28 @@ function openPutawaySheet(items) {
   document.getElementById('putawaySheet').style.display = 'block';
 }
 
+/**
+ * One editable slot-allocation row. `qty` null → manual fallback (no qty shown).
+ * Mechanism only: returns markup, performs no side effects.
+ */
+function renderSlotRow(i, line, slotId, qty) {
+  var qtyBadge = (qty == null) ? '' :
+    '<span class="text-[12px] text-slate-500 whitespace-nowrap" id="putawayQty' + i + '_' + line + '">' + qty + ' units</span>';
+  return '' +
+    '<div class="flex gap-2 items-center" data-line="' + line + '">' +
+      '<input id="putawaySlot' + i + '_' + line + '" type="text" value="' + slotId + '" placeholder="Slot e.g. B012" ' +
+        'class="flex-1 h-[38px] px-2 rounded-[8px] border border-slate-300 text-[13px] uppercase" />' +
+      qtyBadge +
+    '</div>';
+}
+
+/**
+ * Fetches the multi-slot allocation plan for an item and renders one editable
+ * row per plan entry. Shortfall (bays full) is surfaced as an honest warning.
+ */
 function fetchSlotSuggestion(item, i) {
   google.script.run
-    .withSuccessHandler(function(res){
-      var el = document.getElementById('putawaySug' + i);
-      var slotEl = document.getElementById('putawaySlot' + i);
-      if (!el) return;
-      if (res && res.success) {
-        el.textContent = 'Suggested slot: ' + res.slotId;
-        if (slotEl && !slotEl.value) slotEl.value = res.slotId;
-      } else {
-        el.textContent = 'No suggestion (enter slot manually)';
-      }
-    })
+    .withSuccessHandler(function(res){ renderPlan(item, i, res); })
     .withFailureHandler(function(){
       var el = document.getElementById('putawaySug' + i);
       if (el) el.textContent = 'No suggestion (enter slot manually)';
@@ -1475,36 +1486,99 @@ function fetchSlotSuggestion(item, i) {
     .suggestSlot(item.materialCode, item.qty);
 }
 
+/** Renders the plan into the card. Pure DOM update driven by the server response. */
+function renderPlan(item, i, res) {
+  var sug = document.getElementById('putawaySug' + i);
+  var slotsEl = document.getElementById('putawaySlots' + i);
+  var warnEl = document.getElementById('putawayWarn' + i);
+  if (!sug || !slotsEl) return;
+
+  var plan = (res && res.success && res.plan && res.plan.length) ? res.plan : null;
+  if (!plan) {
+    // Geometry unknown → keep graceful manual-entry fallback (single blank row already present).
+    sug.textContent = 'No suggestion (enter slot manually)';
+    return;
+  }
+
+  if (plan.length === 1) {
+    sug.textContent = 'Suggested slot: ' + plan[0].slotId + ' (' + plan[0].qty + ' units)';
+  } else {
+    var parts = plan.map(function(p){ return p.slotId + ' (' + p.qty + ')'; });
+    sug.textContent = 'Needs ' + plan.length + ' pallets → ' + parts.join(', ');
+  }
+
+  slotsEl.innerHTML = plan.map(function(p, line){
+    return renderSlotRow(i, line, p.slotId, p.qty);
+  }).join('');
+  item._planLines = plan.length;
+
+  var shortfall = res.shortfallQty || 0;
+  if (shortfall > 0 && warnEl) {
+    warnEl.textContent = '⚠ ' + shortfall + ' units have no available slot — will stay in ' +
+      (item.fromLocationId || 'source location');
+    warnEl.classList.remove('hidden');
+  }
+}
+
+/**
+ * Reads the (possibly edited) slot rows into a plan and moves each allocation
+ * via runPutawayPlan (single code path for one- and multi-pallet items).
+ */
 function confirmPutaway(item, i) {
-  var slotEl = document.getElementById('putawaySlot' + i);
-  var slot = (slotEl.value || '').trim().toUpperCase();
-  if (!slot) { showToast('Enter a slot id first', 'warning'); return; }
+  var lines = item._planLines || 1;
+  var plan = [];
+  for (var line = 0; line < lines; line++) {
+    var slotEl = document.getElementById('putawaySlot' + i + '_' + line);
+    var qtyEl = document.getElementById('putawayQty' + i + '_' + line);
+    var slot = ((slotEl && slotEl.value) || '').trim().toUpperCase();
+    if (!slot) { showToast('Enter a slot id for every line first', 'warning'); return; }
+    var qty = qtyEl ? parseInt((qtyEl.textContent || '').replace(/\D/g, ''), 10) : item.qty;
+    plan.push({ slotId: slot, qty: qty || item.qty });
+  }
+
   var btn = document.getElementById('putawayBtn' + i);
   btn.disabled = true; btn.textContent = '…';
   google.script.run
-    .withSuccessHandler(function(res){
-      if (res && res.success) {
-        showToast('Moved to ' + slot, 'success');
-        var card = document.getElementById('putawayCard' + i);
-        if (card) card.style.opacity = '0.45';
-        btn.textContent = 'Done';
-      } else {
-        showToast((res && res.error) || 'Move failed', 'error');
-        btn.disabled = false; btn.textContent = 'Move';
-      }
-    })
+    .withSuccessHandler(function(res){ handlePutawayResult(res, i, btn); })
     .withFailureHandler(function(e){
       showToast((e && e.message) || 'Move failed', 'error');
       btn.disabled = false; btn.textContent = 'Move';
     })
-    .runPutaway({
+    .runPutawayPlan({
       materialCode:   item.materialCode,
       batchOrLotNo:   item.batchOrLotNo,
-      qty:            item.qty,
       fromLocationId: item.fromLocationId,
-      toLocationId:   slot,
-      transferredBy:  (window.QMS ? window.QMS.getOperatorName() : '')
+      transferredBy:  (window.QMS ? window.QMS.getOperatorName() : ''),
+      plan:           plan
     });
+}
+
+/** Reports move outcome: full success dims the card; partial failure names bad slots. */
+function handlePutawayResult(res, i, btn) {
+  if (!res || !res.success) {
+    showToast((res && res.error) || 'Move failed', 'error');
+    btn.disabled = false; btn.textContent = 'Move';
+    return;
+  }
+
+  var failed = (res.results || []).filter(function(r){ return !r.ok; });
+  if (failed.length) {
+    var names = failed.map(function(r){ return r.slotId + (r.error ? ' (' + r.error + ')' : ''); });
+    showToast('Failed: ' + names.join(', '), 'error');
+    btn.disabled = false; btn.textContent = 'Retry';
+    return;
+  }
+
+  // runPutawayPlan returns { slots:<count>, results:[{slotId,qty,ok}] } — slots is a NUMBER,
+  // slot ids live in results. Use results for the single-slot name.
+  var okResults = (res.results || []).filter(function(r){ return r.ok; });
+  var slotCount = res.slots || okResults.length || 1;
+  showToast(slotCount > 1
+    ? ('Moved to ' + slotCount + ' slots')
+    : ('Moved to ' + (okResults[0] ? okResults[0].slotId : 'slot')), 'success');
+  var card = document.getElementById('putawayCard' + i);
+  if (card) card.style.opacity = '0.45';
+  btn.textContent = 'Done';
 }
 
 function showToast(msg, type) {
