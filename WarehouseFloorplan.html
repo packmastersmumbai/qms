@@ -94,7 +94,15 @@
   .slot{cursor:pointer}
   .slot rect{fill:var(--occ-0);stroke:var(--line);stroke-width:1.5;
     transition:fill .25s,stroke-width .12s}
-  .slot.occ rect{fill:var(--occ-full)}
+  /* Grade-coloured fills (occupied cells). Empty stays neutral (--occ-0). */
+  .slot.occ.g-rm    rect{fill:#3b6ea5}   /* RM — blue  */
+  .slot.occ.g-pm    rect{fill:#c98a1b}   /* PM — amber */
+  .slot.occ.g-fg    rect{fill:#3f8f5b}   /* FG — green */
+  .slot.occ.g-other rect{fill:#7a8699}   /* other — slate */
+  /* qty badge: top-right of the cell */
+  .slot .qty{font-family:var(--mono);font-size:8.5px;font-weight:700;fill:#fff;
+    text-anchor:end;dominant-baseline:hanging;paint-order:stroke;
+    stroke:rgba(0,0,0,.35);stroke-width:2px;pointer-events:none}
   .slot:hover rect{stroke-width:3}
   .slot.sel rect{stroke:var(--cyan-hi);stroke-width:3.5;
     filter:drop-shadow(0 0 6px color-mix(in srgb,var(--cyan-hi) 65%,transparent))}
@@ -218,9 +226,12 @@
   <div class="kpi alert"><div class="v" id="kLow">—</div><div class="k">Low-stock alerts</div></div>
 </div>
 
-<div class="legend">Occupancy
-  <div class="g"><i style="background:var(--occ-0)"></i>Empty</div>
-  <div class="g"><i style="background:var(--occ-full)"></i>Occupied</div>
+<div class="legend">Grade &amp; stock
+  <div class="g"><i style="background:#3b6ea5"></i>RM · raw material</div>
+  <div class="g"><i style="background:#c98a1b"></i>PM · packaging</div>
+  <div class="g"><i style="background:#3f8f5b"></i>FG · finished goods</div>
+  <div class="g"><i style="background:var(--occ-0)"></i>Empty · available</div>
+  <div class="g" style="margin-top:8px;font-size:9px;color:var(--ink-2)">Number in cell = qty on pallet</div>
 </div>
 
 <div id="stage"><div id="plan"><svg id="svg" aria-label="Warehouse floorplan"></svg></div></div>
@@ -415,12 +426,41 @@ function onSummary(summary){
     .getLowStockItems();
 }
 
+// Grade → cell colour class. Grade is the slot's designated type (getLocations().type),
+// which is stable regardless of what's currently stored. Empty slots stay neutral grey.
+function gradeClass(type){
+  var t = String(type || '').toUpperCase();
+  if (t === 'RM') return 'g-rm';
+  if (t === 'PM') return 'g-pm';
+  if (t === 'FG' || t === 'FG_HOLD') return 'g-fg';
+  return 'g-other';
+}
 function renderOccupancy(){
   Object.keys(slotEls).forEach(function(id){
-    var g = slotEls[id], occ = !!occByLoc[id];
-    g.classList.toggle('occ', occ);
+    var g = slotEls[id], lots = occByLoc[id], occ = !!lots;
     var m = slotMeta[id];
-    g.setAttribute('aria-label', id + ' ' + m.zone + ' ' + (occ ? 'occupied' : 'empty'));
+    g.classList.toggle('occ', occ);
+    // grade colour only shows on occupied cells; empty = neutral (answers "where's room").
+    g.classList.remove('g-rm','g-pm','g-fg','g-other');
+    if (occ) g.classList.add(gradeClass(m.type));
+    // qty badge: sum of balances in this slot (Phase-1 = 1 pallet, but a slot may hold >1 lot).
+    var badge = g.querySelector('.qty');
+    if (occ){
+      var total = lots.reduce(function(s,l){ return s + (Number(l.qty) || 0); }, 0);
+      if (!badge){
+        var r = g.querySelector('rect');
+        var bx = Number(r.getAttribute('x')) + Number(r.getAttribute('width')) - 3;
+        var by = Number(r.getAttribute('y')) + 3;
+        badge = el('text', { class:'qty', x:bx, y:by });
+        g.appendChild(badge);
+      }
+      badge.textContent = fmtNum(total);
+      badge.style.display = '';
+    } else if (badge){
+      badge.style.display = 'none';
+    }
+    g.setAttribute('aria-label', id + ' ' + m.zone + ' ' +
+      (occ ? ('occupied — ' + m.type + ', ' + lots.reduce(function(s,l){return s+(Number(l.qty)||0);},0) + ' units') : 'empty'));
   });
 }
 
