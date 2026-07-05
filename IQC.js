@@ -72,6 +72,7 @@ function saveIQC(data) {
 
     var docNos = [];
     var ledgerWarning = '';
+    var putaway = [];   // accepted items eligible for optional client-confirmed slot putaway
 
     // Capture the first data row we will write BEFORE the append loop.
     // This prevents the back-stamp (NCR ref in col 24) from landing on the
@@ -167,6 +168,19 @@ function saveIQC(data) {
             writeStockLedger_('IQC_ACCEPT', matCode, item.batchNo, grnLoc,
               0, 0, 'IQC', docNo, data.inspector || '',
               'IQC accept (' + accQty + ') — stock available for issuance');
+
+            // Offer optional putaway (worker confirms slot client-side).
+            // Only accepted portions with a real qty and a known source zone qualify.
+            if ((disp === 'ACCEPTED' || disp === 'ACCEPTED WITH DEVIATION') && accQty > 0) {
+              putaway.push({
+                materialCode:  matCode,
+                batchOrLotNo:  item.batchNo,
+                qty:           accQty,
+                fromLocationId: grnLoc,
+                docNo:         docNo,
+                materialDesc:  item.materialDesc || ''
+              });
+            }
           }
 
           // Rejected portion → QUARANTINE
@@ -346,12 +360,65 @@ function saveIQC(data) {
       }
     }
 
-    return { success: true, docNos: docNos, ncrNo: ncrNo, ncrError: ncrError, warnings: warnings };
+    // Announce to Telegram + push next-action task to DWM. Best-effort.
+    try {
+      if (typeof qmsAnnounce_ === 'function' && docNos.length) {
+        var rec = getIQCRowForWA(firstAppendRow);
+        if (rec) { rec.ncrRef = ncrNo || rec.ncrRef; qmsAnnounce_(rec); }
+      }
+    } catch (annErr) { Logger.log('IQC announce skipped: ' + annErr.message); }
+
+    return { success: true, docNos: docNos, ncrNo: ncrNo, ncrError: ncrError, warnings: warnings, putaway: putaway };
 
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };
   }
+}
+
+// Pure mechanism mirroring saveIQC's putaway-collection rule, so it can be
+// asserted without touching any sheet. Only ACCEPTED / ACCEPTED WITH DEVIATION
+// items with acceptedQty > 0 become putaway entries.
+function buildPutawayList_(items, grnLocByBatch) {
+  var out = [];
+  (items || []).forEach(function(item) {
+    var disp   = item.disposition || '';
+    var accQty = Number(item.acceptedQty) || 0;
+    if ((disp !== 'ACCEPTED' && disp !== 'ACCEPTED WITH DEVIATION') || accQty <= 0) return;
+    out.push({
+      materialCode:   item.materialCode || '',
+      batchOrLotNo:   item.batchNo,
+      qty:            accQty,
+      fromLocationId: (grnLocByBatch || {})[item.batchNo] || '',
+      docNo:          item.docNo || '',
+      materialDesc:   item.materialDesc || ''
+    });
+  });
+  return out;
+}
+
+// Runnable in the Apps Script editor. Sandbox/in-memory — no sheet writes.
+function _testPutawayPayload() {
+  var items = [
+    { materialCode:'RM-1', batchNo:'B1', disposition:'ACCEPTED',                acceptedQty:100, materialDesc:'Resin' },
+    { materialCode:'RM-2', batchNo:'B2', disposition:'ACCEPTED WITH DEVIATION', acceptedQty:50 },
+    { materialCode:'RM-3', batchNo:'B3', disposition:'REJECTED',                acceptedQty:0  },
+    { materialCode:'RM-4', batchNo:'B4', disposition:'ACCEPTED',                acceptedQty:0  },  // zero qty → excluded
+    { materialCode:'RM-5', batchNo:'B5', disposition:'HOLD',                    acceptedQty:20 }   // hold → excluded
+  ];
+  var grnLoc = { B1:'ZONE-A', B2:'ZONE-B' };
+  var res = buildPutawayList_(items, grnLoc);
+
+  function assert(cond, msg) { if (!cond) throw new Error('FAIL: ' + msg); }
+  assert(res.length === 2, 'expected 2 putaway entries, got ' + res.length);
+  assert(res[0].materialCode === 'RM-1' && res[0].qty === 100 && res[0].fromLocationId === 'ZONE-A' &&
+         res[0].batchOrLotNo === 'B1' && res[0].materialDesc === 'Resin', 'entry 0 fields wrong');
+  assert(res[1].materialCode === 'RM-2' && res[1].qty === 50 && res[1].fromLocationId === 'ZONE-B' &&
+         res[1].materialDesc === '', 'entry 1 fields wrong');
+  assert(res.every(function(e){ return e.qty > 0; }), 'zero-qty leaked in');
+
+  Logger.log('_testPutawayPayload PASSED (2 entries, correct shape)');
+  return true;
 }
 
 function saveIQCVideo_(base64, mime, ext, docNo, grnNo, materialDesc, disposition) {
@@ -480,8 +547,7 @@ function getIQCPrintData(docNo) {
 }
 
 function generateIQCQR_(docNo) {
-  var GAS_URL = ScriptApp.getService().getUrl();
-  var target  = GAS_URL + '?doc=' + encodeURIComponent(docNo);
+  var target  = getPublicUrl_() + '?doc=' + encodeURIComponent(docNo);
   var apiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&format=png&data=' + encodeURIComponent(target);
   var resp    = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
   if (resp.getResponseCode() !== 200) throw new Error('QR API returned ' + resp.getResponseCode());
@@ -536,7 +602,8 @@ function getIQCRowForWA(row) {
     batch:      r[5],
     inspector:  r[6],
     disposition:r[22],
-    ncrRef:     r[23]
+    ncrRef:     r[23],
+    pdfUrl:     r[39] || ''
   };
 }
 

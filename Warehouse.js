@@ -613,6 +613,23 @@ function recordLocationTransfer(data) {
   }
 }
 
+// Thin public entrypoint for the IQC auto-putaway flow. Adapts the client's
+// payload to recordLocationTransfer and stamps the reason 'PUTAWAY' so the
+// ledger shows why accepted stock left its GRN zone.
+// payload: { materialCode, batchOrLotNo, qty, fromLocationId, toLocationId, transferredBy }
+function runPutaway(payload) {
+  var p = payload || {};
+  return recordLocationTransfer({
+    materialCode:   p.materialCode,
+    batchOrLotNo:   p.batchOrLotNo,
+    fromLocationId: p.fromLocationId,
+    toLocationId:   p.toLocationId,
+    qty:            p.qty,
+    reason:         'PUTAWAY',
+    transferredBy:  p.transferredBy
+  });
+}
+
 function recordScrap(data) {
   // data: { refDocType, refDocNo, materialCode, batchOrLotNo, qtyScrap, unit, scrapReason, scrapDestination, recordedBy, locationId }
   try {

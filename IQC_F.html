@@ -9,6 +9,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
     body { min-height: max(884px,100dvh); font-family:'Inter',sans-serif; background:#f8fafc; }
+    /* Compact responsive layout (bundle lacks md: grid utils, so plain CSS).
+       Inspection form becomes a 2-col grid >=768px; wide groups span both. */
+    #iqcForm { max-width: 28rem; }
+    @media (min-width: 768px) {
+      #iqcForm { max-width: 64rem; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+      #iqcForm > * { margin-top: 0 !important; }
+      #iqcForm > .span-2 { grid-column: 1 / -1; }
+    }
     h1,h2,h3,.font-headline { font-family:'Plus Jakarta Sans',sans-serif; }
     input,select,textarea { font-size:16px !important; }
     button { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
@@ -58,7 +66,7 @@
   <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
 <?!= include('HtmlCache') ?>
 </head>
-<body class="bg-surface text-text-value antialiased min-h-screen pb-[88px] pm-narrow">
+<body class="bg-surface text-text-value antialiased min-h-screen pb-[88px]">
 
 <!-- ══ TOP APP BAR ══ -->
 <header class="fixed top-0 w-full bg-primary shadow-md z-50">
@@ -77,7 +85,7 @@
 
 <!-- ══════════════════════ SCREEN 1: INSPECTION ══════════════════════ -->
 <div id="screen1">
-<main class="pt-[96px] px-4 space-y-3 max-w-md mx-auto">
+<main class="pt-[96px] px-4 space-y-3 max-w-md mx-auto w-full">
 
   <!-- GRN Selector Card -->
   <section id="manualSection" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
@@ -262,16 +270,16 @@
   <span class="w-10"></span>
 </header>
 
-<main class="pt-[72px] px-4 space-y-3 max-w-md mx-auto pb-[100px]">
+<main id="iqcForm" class="pt-[72px] px-4 space-y-3 mx-auto pb-[100px] w-full">
 
   <!-- Batch info -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
+  <section class="span-2 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
     <div id="sumBatchName" class="text-[15px] font-semibold text-primary font-headline"></div>
     <div id="sumBatchMeta" class="text-[13px] text-text-helper mt-1"></div>
   </section>
 
   <!-- Items inspected -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
+  <section class="span-2 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
     <div class="bg-primary px-4 py-2">
       <h2 class="font-headline text-[14px] font-semibold text-white tracking-wide uppercase">Items Inspected</h2>
     </div>
@@ -427,6 +435,25 @@
 </footer>
 
 </div><!-- /screen2 -->
+
+<!-- Optional putaway sheet: routes accepted stock from its GRN zone into a pallet slot -->
+<div id="putawaySheet" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(15,23,42,0.45);">
+  <div style="position:absolute; left:0; right:0; bottom:0; max-height:85vh; overflow-y:auto;
+              background:#fff; border-radius:16px 16px 0 0; padding:18px 16px 24px;">
+    <div class="flex items-center justify-between mb-2">
+      <div class="text-[15px] font-bold text-slate-800">Put accepted stock away</div>
+      <button onclick="closePutawaySheet()" class="text-slate-400 active:scale-90">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="text-[12px] text-slate-500 mb-3">Optional — skip to leave stock in its GRN zone.</div>
+    <div id="putawayList" class="flex flex-col gap-3"></div>
+    <button onclick="closePutawaySheet()"
+      class="w-full h-[44px] mt-4 bg-slate-100 text-slate-700 rounded-[10px] font-semibold text-[14px] active:scale-[0.98]">
+      Done
+    </button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1213,6 +1240,9 @@ function doSaveIQC() {
           var msgs = (res.warnings && res.warnings.length) ? res.warnings : [res.ncrError];
           setTimeout(function(){ showToast('⚠ ' + msgs.join(' | '), 'warning'); }, 600);
         }
+        if (res.putaway && res.putaway.length) {
+          openPutawaySheet(res.putaway);
+        }
       } else {
         var errMsg = (res && res.error) || 'Unknown error';
         showToast('Save failed: ' + errMsg, 'error');
@@ -1395,6 +1425,86 @@ function goHome() {
     .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
     .withFailureHandler(function(){})
     .getFormHtml('Landing');
+}
+
+/* ── Optional putaway: accepted stock → pallet slot ── */
+function closePutawaySheet() {
+  document.getElementById('putawaySheet').style.display = 'none';
+}
+
+function openPutawaySheet(items) {
+  var list = document.getElementById('putawayList');
+  list.innerHTML = '';
+  items.forEach(function(item, i) {
+    var card = document.createElement('div');
+    card.id = 'putawayCard' + i;
+    card.className = 'rounded-[10px] border border-slate-200 p-3';
+    var label = (item.materialDesc || item.materialCode) + ' · ' + item.batchOrLotNo + ' (' + item.qty + ')';
+    card.innerHTML =
+      '<div class="text-[13px] font-semibold text-slate-800 mb-1">' + label + '</div>' +
+      '<div class="text-[12px] text-slate-500 mb-2" id="putawaySug' + i + '">Finding a slot…</div>' +
+      '<div class="flex gap-2 items-center">' +
+        '<input id="putawaySlot' + i + '" type="text" placeholder="Slot e.g. B012" ' +
+          'class="flex-1 h-[38px] px-2 rounded-[8px] border border-slate-300 text-[13px] uppercase" />' +
+        '<button id="putawayBtn' + i + '" class="h-[38px] px-4 bg-primary text-white rounded-[8px] font-semibold text-[13px] active:scale-95">Move</button>' +
+      '</div>';
+    list.appendChild(card);
+    document.getElementById('putawayBtn' + i).onclick = function(){ confirmPutaway(item, i); };
+    fetchSlotSuggestion(item, i);
+  });
+  document.getElementById('putawaySheet').style.display = 'block';
+}
+
+function fetchSlotSuggestion(item, i) {
+  google.script.run
+    .withSuccessHandler(function(res){
+      var el = document.getElementById('putawaySug' + i);
+      var slotEl = document.getElementById('putawaySlot' + i);
+      if (!el) return;
+      if (res && res.success) {
+        el.textContent = 'Suggested slot: ' + res.slotId;
+        if (slotEl && !slotEl.value) slotEl.value = res.slotId;
+      } else {
+        el.textContent = 'No suggestion (enter slot manually)';
+      }
+    })
+    .withFailureHandler(function(){
+      var el = document.getElementById('putawaySug' + i);
+      if (el) el.textContent = 'No suggestion (enter slot manually)';
+    })
+    .suggestSlot(item.materialCode, item.qty);
+}
+
+function confirmPutaway(item, i) {
+  var slotEl = document.getElementById('putawaySlot' + i);
+  var slot = (slotEl.value || '').trim().toUpperCase();
+  if (!slot) { showToast('Enter a slot id first', 'warning'); return; }
+  var btn = document.getElementById('putawayBtn' + i);
+  btn.disabled = true; btn.textContent = '…';
+  google.script.run
+    .withSuccessHandler(function(res){
+      if (res && res.success) {
+        showToast('Moved to ' + slot, 'success');
+        var card = document.getElementById('putawayCard' + i);
+        if (card) card.style.opacity = '0.45';
+        btn.textContent = 'Done';
+      } else {
+        showToast((res && res.error) || 'Move failed', 'error');
+        btn.disabled = false; btn.textContent = 'Move';
+      }
+    })
+    .withFailureHandler(function(e){
+      showToast((e && e.message) || 'Move failed', 'error');
+      btn.disabled = false; btn.textContent = 'Move';
+    })
+    .runPutaway({
+      materialCode:   item.materialCode,
+      batchOrLotNo:   item.batchOrLotNo,
+      qty:            item.qty,
+      fromLocationId: item.fromLocationId,
+      toLocationId:   slot,
+      transferredBy:  (window.QMS ? window.QMS.getOperatorName() : '')
+    });
 }
 
 function showToast(msg, type) {
