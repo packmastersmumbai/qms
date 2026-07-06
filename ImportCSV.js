@@ -23,6 +23,12 @@ function importPastData(csvContent, docType) {
           importIQCRow_(ss, cols, i);
         } else if (docType === 'OQC') {
           importOQCRow_(ss, cols, i);
+        } else if (docType === 'SUPPLIER') {
+          importSupplierRow_(cols, i);
+        } else if (docType === 'CUSTOMER') {
+          importCustomerRow_(cols, i);
+        } else if (docType === 'MATERIAL') {
+          importMaterialRow_(cols, i);
         }
         imported++;
       } catch(e) {
@@ -107,6 +113,66 @@ function importOQCRow_(ss, cols, rowNum) {
     cols[7] || '', // Remarks
     new Date()
   ]);
+}
+
+// ── Master imports (upsert by code — re-import updates, never duplicates) ──────
+// Shared upsert: find a row by its code column; overwrite if found, else append.
+function _upsertMasterByCode_(ss, sheetName, codeCol, row) {
+  var ws = ss.getSheetByName(sheetName);
+  if (!ws) throw new Error(sheetName + ' not found');
+  var code = String(row[codeCol] || '').trim();
+  if (!code) throw new Error('code (col ' + (codeCol + 1) + ') is required');
+  var last = ws.getLastRow();
+  if (last >= 2) {
+    var codes = ws.getRange(2, codeCol + 1, last - 1, 1).getValues();
+    for (var i = 0; i < codes.length; i++) {
+      if (String(codes[i][0] || '').trim() === code) {
+        ws.getRange(i + 2, 1, 1, row.length).setValues([row]);   // update in place
+        return;
+      }
+    }
+  }
+  ws.appendRow(row);                                              // new → append
+}
+
+// MASTERS_Suppliers cols: Code, Name, Contact, Phone, Email, Material Supplied, City, Approved, State Code
+function importSupplierRow_(cols, rowNum) {
+  _upsertMasterByCode_(getSpreadsheet(), 'MASTERS_Suppliers', 0, [
+    cols[0] || ('SUP-' + rowNum), cols[1] || '', cols[2] || '', cols[3] || '',
+    cols[4] || '', cols[5] || '', cols[6] || '', (cols[7] || 'Y'), cols[8] || ''
+  ]);
+}
+
+// MASTERS_Customers cols: Code, Name, Contact, Phone, Email, Products Supplied, City
+function importCustomerRow_(cols, rowNum) {
+  _upsertMasterByCode_(getSpreadsheet(), 'MASTERS_Customers', 0, [
+    cols[0] || ('CUST-' + rowNum), cols[1] || '', cols[2] || '', cols[3] || '',
+    cols[4] || '', cols[5] || '', cols[6] || ''
+  ]);
+}
+
+// MASTERS_Materials cols: Code, Desc, Unit, Category, DefaultLocation, ReorderLevel (F),
+// geometry G→L left blank on import (set later via the material form). Upsert preserves
+// any existing geometry by only writing A–F when the row already carries more columns.
+function importMaterialRow_(cols, rowNum) {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('MASTERS_Materials');
+  if (!ws) throw new Error('MASTERS_Materials not found');
+  var code = String(cols[0] || '').trim();
+  if (!code) throw new Error('material code (col 1) is required');
+  var af = [cols[0], cols[1] || '', cols[2] || '', cols[3] || '', cols[4] || '',
+            (cols[5] !== undefined && cols[5] !== '' ? cols[5] : '')];  // A–F
+  var last = ws.getLastRow();
+  if (last >= 2) {
+    var codes = ws.getRange(2, 1, last - 1, 1).getValues();
+    for (var i = 0; i < codes.length; i++) {
+      if (String(codes[i][0] || '').trim() === code) {
+        ws.getRange(i + 2, 1, 1, af.length).setValues([af]);   // update A–F, keep G→L geometry
+        return;
+      }
+    }
+  }
+  ws.appendRow(af.concat(['','','','','','']));                 // new → 12-col row, geometry blank
 }
 
 function parseCSVLine_(line) {

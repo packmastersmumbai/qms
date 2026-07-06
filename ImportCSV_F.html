@@ -13,9 +13,16 @@
     <div class="field">
       <label>Document Type</label>
       <select id="docType">
-        <option value="GRN">GRN — Goods Receipt Note</option>
-        <option value="IQC">IQC — Incoming Quality Check</option>
-        <option value="OQC">OQC — Outgoing Quality Check</option>
+        <optgroup label="Transactions">
+          <option value="GRN">GRN — Goods Receipt Note</option>
+          <option value="IQC">IQC — Incoming Quality Check</option>
+          <option value="OQC">OQC — Outgoing Quality Check</option>
+        </optgroup>
+        <optgroup label="Masters (upsert by code)">
+          <option value="SUPPLIER">Supplier Master</option>
+          <option value="CUSTOMER">Customer Master</option>
+          <option value="MATERIAL">Material Master</option>
+        </optgroup>
       </select>
     </div>
     <div class="field">
@@ -25,7 +32,11 @@
     <div style="background:#FEF3C7;border-radius:6px;padding:8px 10px;font-size:11px;color:#92400E;margin-bottom:10px;">
       <strong>GRN columns:</strong> Date, GRN No., Supplier, Material, Batch, Qty Ordered, Qty Received, COA, Remarks, IQC Status<br>
       <strong>IQC columns:</strong> Date, IQC No., GRN No., Supplier, Material, Batch, Inspector, Disposition, Remarks<br>
-      <strong>OQC columns:</strong> Date, OQC No., Customer, Material, Batch/PO, Inspector, Decision, Remarks
+      <strong>OQC columns:</strong> Date, OQC No., Customer, Material, Batch/PO, Inspector, Decision, Remarks<br>
+      <strong>Supplier columns:</strong> Code, Name, Contact Person, Phone/WhatsApp, Email, Material Supplied, City, Approved (Y/N), State Code<br>
+      <strong>Customer columns:</strong> Code, Name, Contact Person, Phone/WhatsApp, Email, Products Supplied, City<br>
+      <strong>Material columns:</strong> Code, Description, Unit, Category, Default Location, Reorder Level<br>
+      <em>Masters upsert by Code — re-importing an existing code updates it (no duplicates); material geometry is preserved.</em>
     </div>
     <button class="btn-submit" onclick="doImport()">Import Data</button>
     <div id="result" style="margin-top:10px;font-size:12px;"></div>
