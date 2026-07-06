@@ -9,6 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
     body { min-height: max(884px, 100dvh); }
+    /* Compact responsive form layout (bundle lacks md: grid utils, so use plain CSS).
+       Single column on mobile; 2-column grid >=768px with wide sections spanning both. */
+    #formWrap { max-width: 512px; }
+    @media (min-width: 768px) {
+      #formWrap { max-width: 64rem; display: grid; grid-template-columns: 1fr 1fr; align-content: start; }
+      #formWrap > .span-2 { grid-column: 1 / -1; }
+    }
     input, select, textarea { font-size: 16px !important; }
     button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     button:active { transform: scale(0.97); transition: transform 0.08s ease; }
@@ -63,7 +70,14 @@
     #po-multi-table td { padding: 4px 6px; }
     .po-multi-qty, .po-multi-batch { padding: 3px 5px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px; }
     .po-multi-qty { width: 70px; text-align: right; }
-    .po-multi-batch { width: 95px; }
+    .po-multi-batch { width: 85px; }
+    /* Per-row disposition toggle (Accept / Hold / Reject) */
+    .row-disp { display: inline-flex; border: 1px solid #d1d5db; border-radius: 5px; overflow: hidden; }
+    .row-disp .rd { width: 26px; height: 26px; font-size: 11px; font-weight: 700; border: none; background: #fff; color: #64748b; cursor: pointer; border-right: 1px solid #e5e7eb; }
+    .row-disp .rd:last-child { border-right: none; }
+    .row-disp .rd-a.on { background: #16A34A; color: #fff; }
+    .row-disp .rd-h.on { background: #D97706; color: #fff; }
+    .row-disp .rd-r.on { background: #DC2626; color: #fff; }
 
     /* Confirm screen */
     #confirmScreen { display: none; opacity: 0; transition: opacity 0.3s ease; text-align: center; padding: 40px 20px 120px; }
@@ -74,12 +88,13 @@
     .confirm-badge.REJECT { background: #FEE2E2; color: #B91C1C; }
     .confirm-badge.HOLD   { background: #FEF3C7; color: #B45309; }
     .confirm-badge.AWD    { background: #FFEDD5; color: #C2410C; }
+    .confirm-badge.PENDING{ background: #E0F2FE; color: #0369A1; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
   <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
 <?!= include('HtmlCache') ?>
 </head>
-<body class="bg-surface font-body text-[#0f172a] antialiased flex flex-col min-h-screen pm-narrow">
+<body class="bg-surface font-body text-[#0f172a] antialiased flex flex-col min-h-screen">
 
 <!-- ── Top App Bar ── -->
 <header class="fixed top-0 left-0 w-full z-50 h-[56px] bg-primary flex items-center justify-between px-4 shadow-md">
@@ -91,7 +106,9 @@
 </header>
 
 <!-- ── Main ── -->
-<main id="formWrap" class="flex-1 mt-[56px] pb-[88px] p-4 flex flex-col gap-4 max-w-lg mx-auto w-full">
+<!-- Compact responsive layout: single column on mobile, 2-column grid on desktop.
+     Wide sections (Material Items, Additional Items) span both columns via md:col-span-2. -->
+<main id="formWrap" class="flex-1 mt-[56px] pb-[88px] p-4 grid grid-cols-1 gap-4 mx-auto w-full max-w-3xl content-start">
 
   <!-- Section 1: Header / Supplier -->
   <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
@@ -130,10 +147,10 @@
   </section>
 
   <!-- Material Items heading -->
-  <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase mt-1">Material Items</h2>
+  <h2 class="span-2 font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase mt-1">Material Items</h2>
 
-  <!-- Section 1b: Material card -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4 relative">
+  <!-- Section 1b: Material card (wide — holds the PO multi-line table) -->
+  <section class="span-2 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4 relative">
     <!-- Item -->
     <div id="f-item" class="flex flex-col gap-[6px] mt-1">
       <label class="font-label text-[14px] font-medium text-[#374151]" for="item">Material Code <span class="text-status-danger">*</span></label>
@@ -156,12 +173,12 @@
             <th style="text-align:right;width:60px">Ordered</th>
             <th style="text-align:right;width:60px;color:#b45309">Pending</th>
             <th style="text-align:right;width:80px">Receive</th>
-            <th style="width:100px">Batch</th>
+            <th style="width:90px">Batch</th>
           </tr>
         </thead>
         <tbody id="po-multi-body"></tbody>
       </table>
-      <div style="font-size:10px;color:#92400E;margin-top:6px">All receipts share supplier, disposition, vehicle no, and date. Leave Receive blank to skip a line.</div>
+      <div style="font-size:10px;color:#92400E;margin-top:6px">Enter received qty per line (numeric). Leave Receive blank to skip a line. All lines land pending IQC.</div>
     </div>
 
     <!-- Batch + Expiry: single column per DESIGN.md -->
@@ -212,18 +229,11 @@
         <div class="field-error-msg" id="err-qtyReceived">Must be &gt; 0</div>
       </div>
 
-      <div class="flex flex-col gap-[6px]">
-        <label class="font-label text-[14px] font-medium text-[#374151]">Qty Accepted</label>
-        <input id="qtyAccepted" type="number" min="0" step="1" placeholder="0"
-          class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
-        <span class="text-[11px] text-[#64748b]">Reduce if partial reject</span>
-      </div>
-
     </div>
   </section>
 
   <!-- Section 3b: Additional Items (manual mode only) -->
-  <section id="extra-items-section" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+  <section id="extra-items-section" class="span-2 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
     <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase" style="margin:0;">Additional Items</h2>
     <button type="button" id="btnAddItem" onclick="addExtraItem()"
       style="font-size:14px;font-weight:700;color:#fff;background:#0B2A4A;padding:12px;border:none;border-radius:8px;cursor:pointer;width:100%;">
@@ -232,18 +242,6 @@
     <div id="extra-items-list" class="flex flex-col gap-3"></div>
     <div id="extra-items-empty" class="text-[11px] text-[#64748b]">Same supplier, invoice, disposition. Different material/batch.</div>
 
-  </section>
-
-  <!-- Section 4: Disposition -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
-    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Disposition <span class="text-status-danger">*</span></h2>
-    <div class="grid grid-cols-2 gap-3">
-      <button type="button" class="disp-btn" id="d-ACCEPT" data-disp="ACCEPT">ACCEPT</button>
-      <button type="button" class="disp-btn" id="d-REJECT" data-disp="REJECT">REJECT</button>
-      <button type="button" class="disp-btn" id="d-HOLD"   data-disp="HOLD">HOLD</button>
-      <button type="button" class="disp-btn" id="d-AWD"    data-disp="AWD">AWD</button>
-    </div>
-    <div class="field-error-msg" id="err-disp" style="display:none">Please select a disposition</div>
   </section>
 
   <!-- Section 5: Images -->
@@ -319,11 +317,11 @@
   <div id="confItemsTable" style="display:none;max-width:520px;margin:0 auto 16px;text-align:left;font-size:11px;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;"></div>
   <div id="confBadge" class="confirm-badge mb-8"></div>
   <button id="btnIqc"
-    class="w-full max-w-sm mx-auto block h-[52px] bg-amber-400 text-[#1e3a5f] rounded-[10px] font-headline text-[15px] font-bold mb-3 transition-colors hover:bg-amber-300">
+    class="w-full max-w-md mx-auto block h-[52px] bg-status-open text-white rounded-[10px] font-headline text-[15px] font-bold mb-3 transition-colors">
     PROCEED TO IQC &#8594;
   </button>
   <button id="btnHome"
-    class="w-full max-w-sm mx-auto block h-[52px] bg-primary text-white rounded-[10px] font-headline text-[15px] font-bold transition-colors hover:bg-primary/90">
+    class="w-full max-w-md mx-auto block h-[52px] bg-primary text-white rounded-[10px] font-headline text-[15px] font-bold transition-colors hover:bg-primary/90">
     BACK TO HOME
   </button>
 </div>
@@ -346,7 +344,10 @@ var LOCATIONS        = [];
 
 var _inspectorNames  = [];
 var formSaved    = false;
-var disposition  = '';
+// Disposition is no longer chosen at receipt — GRN only records what arrived.
+// All received stock lands PENDING IQC; IQC owns accept/reject. Kept as a constant
+// so downstream save/status logic (which reads `disposition`) resolves to PENDING.
+var disposition  = 'PENDING';
 var supplierObj  = {};
 var itemObj      = {};
 var savedGrn     = {};
@@ -399,7 +400,6 @@ function refreshSaveBtn() {
                  parseFloat(document.getElementById('qtyReceived').value) > 0;
   var extraValid = hasValidExtraItem();
   var ok = document.getElementById('supplier').value &&
-           disposition &&
            (topValid || extraValid);
   document.getElementById('btnSubmit').disabled = !ok;
 }
@@ -416,19 +416,9 @@ function hasValidExtraItem() {
   return false;
 }
 
-// ── Disposition ────────────────────────────────────────────────────
-var DISP_CLASS = { ACCEPT: 'sel-acc', REJECT: 'sel-rej', HOLD: 'sel-hld', AWD: 'sel-awd' };
-
-function selectDisp(val) {
-  disposition = val;
-  ['ACCEPT','REJECT','HOLD','AWD'].forEach(function(d) {
-    var btn = document.getElementById('d-' + d);
-    if (!btn) return;
-    btn.className = 'disp-btn' + (d === val ? ' ' + DISP_CLASS[d] : '');
-  });
-  document.getElementById('err-disp').style.display = 'none';
-  refreshSaveBtn();
-}
+// Disposition removed from GRN — no-op stubs kept so any lingering caller is harmless.
+function selectDisp() {}
+function syncRowDispFromGlobal() {}
 
 // ── Material list helpers ──────────────────────────────────────────
 function buildItemSelect(mats) {
@@ -499,21 +489,10 @@ function onItemChange() {
 }
 
 // ── Qty inputs ─────────────────────────────────────────────────────
+// GRN records received qty only; accepted qty is an IQC concept now.
 function onQtyReceivedInput() {
-  var r = parseFloat(document.getElementById('qtyReceived').value) || 0;
-  if (!qtyManuallyEdited) {
-    document.getElementById('qtyAccepted').value = r > 0 ? r : '';
-  }
   setFieldErr('f-qtyReceived', 'err-qtyReceived', false);
   refreshSaveBtn();
-}
-
-function onQtyAcceptedInput() {
-  qtyManuallyEdited = true;
-  var r = parseFloat(document.getElementById('qtyReceived').value) || 0;
-  var a = parseFloat(document.getElementById('qtyAccepted').value) || 0;
-  if (a < 0) document.getElementById('qtyAccepted').value = 0;
-  if (a > r)  document.getElementById('qtyAccepted').value = r;
 }
 
 // ── Validate ───────────────────────────────────────────────────────
@@ -529,7 +508,6 @@ function validate() {
       setFieldErr('f-qtyReceived', 'err-qtyReceived', true); ok = false;
     }
   }
-  if (!disposition) { document.getElementById('err-disp').style.display = 'block'; ok = false; }
   return ok;
 }
 
@@ -616,11 +594,12 @@ function renderPOMultiTable(lines) {
       '<td>' + mat + '</td>' +
       '<td style="text-align:right">' + l.qtyOrdered + '</td>' +
       '<td style="text-align:right;color:#b45309;font-weight:600">' + l.qtyPending + '</td>' +
-      '<td><input type="number" class="po-multi-qty" min="0" step="any" placeholder="0" oninput="refreshSaveBtn()"></td>' +
+      '<td><input type="number" inputmode="numeric" class="po-multi-qty" min="0" step="any" placeholder="0" oninput="refreshSaveBtn()"></td>' +
       '<td><input type="text" class="po-multi-batch" placeholder="batch"></td>' +
       '</tr>';
   }).join('');
 }
+function setRowDisp() {}  // no-op: per-row disposition removed
 
 function setMultiMode(on) {
   document.getElementById('po-multi-section').style.display = on ? 'block' : 'none';
@@ -847,9 +826,9 @@ function _doSaveProceed() {
   btn.innerHTML = '<span class="spinner"></span>Saving&hellip;';
 
   var qtyR = parseFloat(document.getElementById('qtyReceived').value) || 0;
-  var qtyA = parseFloat(document.getElementById('qtyAccepted').value);
-  if (isNaN(qtyA) || qtyA > qtyR) qtyA = qtyR;
-  if (qtyA < 0) qtyA = 0;
+  // No accepted-qty at receipt — everything received is pending IQC. Carry qtyReceived
+  // through so the ledger row has a quantity; IQC sets the accepted amount later.
+  var qtyA = qtyR;
 
   var data = {
     date:        new Date().toISOString().split('T')[0],
@@ -881,10 +860,8 @@ function _doSaveProceed() {
         var batch   = (tr.querySelector('.po-multi-batch').value || '').trim();
         var matInfo = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCode; })[0] || {};
         var matMaster = (ALL_MATS || []).filter(function(m){ return m.code === matCode; })[0] || {};
-        // For REJECT/HOLD dispositions, accepted qty must be zero. Setting it
-        // equal to received qty (the old behavior) would write incorrect ledger
-        // entries that release stock into RM that hasn't passed IQC.
-        var lineAccepted = (disposition === 'ACCEPT') ? q : 0;
+        // Received-only: every line lands PENDING IQC. Accepted qty stays 0 until IQC
+        // inspects; no slot assigned (stock waits in the buffer).
         arr.push({
           materialCode: matCode,
           materialDesc: matInfo.materialDesc || matMaster.desc || '',
@@ -894,9 +871,9 @@ function _doSaveProceed() {
           batchNo:      batch || ('PO-' + (_activePO.poNo || '').split('/').pop() + '-L' + lineNo),
           expiryDate:   (document.getElementById('expiryDate') && document.getElementById('expiryDate').value) || '',
           vehicleNo:    '',
-          qtyAccepted:  lineAccepted,
-          disposition:  disposition,
-          locationId:   (disposition === 'ACCEPT' && matMaster.defaultLocation) ? matMaster.defaultLocation : '',
+          qtyAccepted:  0,
+          disposition:  'PENDING',
+          locationId:   '',
           poLineNo:     lineNo
         });
       });
@@ -1130,15 +1107,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('supplier').addEventListener('change', onSupplierChange);
   document.getElementById('item').addEventListener('change', onItemChange);
   document.getElementById('qtyReceived').addEventListener('input', function() { onQtyReceivedInput(); checkOverReceiptWarning(); });
-  document.getElementById('qtyAccepted').addEventListener('input', onQtyAcceptedInput);
   document.getElementById('batchNo').addEventListener('input', refreshSaveBtn);
   document.getElementById('btnSubmit').addEventListener('click', doSave);
   document.getElementById('btnIqc').addEventListener('click', goToIqc);
   document.getElementById('btnHome').addEventListener('click', function() { navigate('Landing'); });
-
-  document.querySelectorAll('.disp-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() { selectDisp(btn.getAttribute('data-disp')); });
-  });
 
   document.querySelectorAll('.img-file-input').forEach(function(input) {
     input.addEventListener('change', function() { onImageFilesChosen_(input); });

@@ -11,7 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
     body { background: var(--bg); font-family: 'Inter', sans-serif; }
-    .dsp-wrap { max-width: 430px; margin: 0 auto; padding-bottom: 100px; }
+    .dsp-wrap { max-width: 640px; margin: 0 auto; padding-bottom: 100px; }
+    @media (min-width: 768px) { .dsp-wrap { max-width: 760px; } }
 
     .dsp-header {
       background: var(--navy); color: var(--white);
@@ -161,7 +162,7 @@
     .dsp-toast.error { background: #b32a2a; }
   </style>
 </head>
-<body class="pm-narrow">
+<body>
   <div class="dsp-wrap">
     <div class="pm-header">
       <button class="back-btn" id="backBtn" aria-label="Back" onclick="goHome()">
@@ -253,7 +254,7 @@
   </div>
 
   <!-- Sticky footer CTA (fix #17) -->
-  <div id="dispStickyFooter" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:1px solid #e2e8f0;box-shadow:0 -4px 12px rgba(0,0,0,0.05);padding:12px 16px;z-index:50;">
+  <div id="dispStickyFooter" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;background:#fff;border-top:1px solid #e2e8f0;box-shadow:0 -4px 12px rgba(0,0,0,0.05);padding:12px 16px;z-index:50;">
     <button class="dsp-button" id="btnConfirm" onclick="onConfirm()" disabled
       style="background:#1e3a5f;color:#fff;height:56px;border-radius:10px;font-size:15px;margin-top:0;">
       Save Dispatch + Gatepass

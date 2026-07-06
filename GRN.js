@@ -98,6 +98,13 @@ function saveGRN(data) {
       var itemLocation = item.locationId
         || matLocByCode[item.materialCode]
         || fallbackLocation;
+      // GRN records receipt only — no disposition at the door. Everything received is
+      // PENDING until IQC inspects and decides. (A HOLD/REJECT from a stale cached client
+      // is still honoured defensively, but the current form never sends one.)
+      var disp = String(item.disposition || data.disposition || '').toUpperCase();
+      var iqcStatus = /HOLD/.test(disp) ? 'HOLD'
+                    : /REJECT/.test(disp) ? 'REJECTED'
+                    : 'PENDING';
       ws.appendRow([
         docNo,
         date,
@@ -114,7 +121,7 @@ function saveGRN(data) {
         data.coaReceived   || 'N/A',
         item.expiryDate    ? new Date(item.expiryDate) : '',
         data.remarks       || '',
-        'PENDING',
+        iqcStatus,
         user,
         now,
         data.storageZone   || '',
@@ -206,6 +213,14 @@ function saveGRN(data) {
       Logger.log('GRN QR/PDF generation failed: ' + qrErr.message);
     }
 
+    // Announce to Telegram + push next-action task to DWM. Best-effort.
+    try {
+      if (typeof qmsAnnounce_ === 'function') {
+        var rec = getGRNRowForWA(startRow);
+        if (rec) qmsAnnounce_(rec);
+      }
+    } catch (annErr) { Logger.log('GRN announce skipped: ' + annErr.message); }
+
     return { success: true, docNo: docNo, warnings: warnings };
   } catch(e) {
     Logger.log(e);
@@ -253,8 +268,7 @@ function uploadGRNImages(images) {
 
 // ── QR & PDF ──────────────────────────────────────────────────────────────────
 function generateGRNQR_(docNo) {
-  var GAS_URL = ScriptApp.getService().getUrl();
-  var target  = GAS_URL + '?doc=' + encodeURIComponent(docNo);
+  var target  = getPublicUrl_() + '?doc=' + encodeURIComponent(docNo);
   var apiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&format=png&data=' + encodeURIComponent(target);
   var resp    = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
   if (resp.getResponseCode() !== 200) throw new Error('QR API returned ' + resp.getResponseCode());
@@ -379,6 +393,7 @@ function getGRNRowForWA(row) {
     qtyOrdered: r[9],
     qtyReceived:r[10],
     status:     r[15] || 'PENDING',
-    inspector:  r[16]
+    inspector:  r[16],
+    pdfUrl:     r[24] || ''
   };
 }

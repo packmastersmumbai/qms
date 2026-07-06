@@ -85,7 +85,7 @@
 
 <!-- ══════════════════════ SCREEN 1: INSPECTION ══════════════════════ -->
 <div id="screen1">
-<main class="pt-[96px] px-4 space-y-3 max-w-md mx-auto w-full">
+<main class="pt-[96px] px-4 space-y-3 max-w-3xl mx-auto w-full">
 
   <!-- GRN Selector Card -->
   <section id="manualSection" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
@@ -110,32 +110,57 @@
           <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
         </div>
       </div>
-      <div>
-        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">AQL Level</label>
-        <div class="relative">
-          <select id="aqlLevel" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
-            <option value="AQL 2.5">AQL 2.5</option>
-            <option value="AQL 0.65">AQL 0.65</option>
-            <option value="AQL 1.0">AQL 1.0</option>
-            <option value="AQL 4.0">AQL 4.0</option>
-            <option value="AQL 6.5">AQL 6.5</option>
-          </select>
-          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+      <!-- ── ISO 2859-1 sampling plan ── -->
+      <div class="grid grid-cols-3 gap-2">
+        <div>
+          <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">Lot size <span class="text-status-danger">*</span></label>
+          <input id="lotSize" type="number" inputmode="numeric" min="1" placeholder="0"
+            class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] font-mono text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+        </div>
+        <div>
+          <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">AQL</label>
+          <div class="relative">
+            <select id="aqlLevel" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+              <option value="2.5">2.5</option>
+              <option value="0.65">0.65</option>
+              <option value="1.0">1.0</option>
+              <option value="1.5">1.5</option>
+              <option value="4.0">4.0</option>
+              <option value="6.5">6.5</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+          </div>
+        </div>
+        <div>
+          <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">Level</label>
+          <div class="relative">
+            <select id="inspLevel" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+              <option value="II">II</option>
+              <option value="I">I</option>
+              <option value="III">III</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+          </div>
         </div>
       </div>
-      <div>
-        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Sampling Method</label>
-        <div class="relative">
-          <select id="samplingMethod" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
-            <option value="Normal">Normal</option>
-            <option value="Tightened">Tightened</option>
-            <option value="Reduced">Reduced</option>
-            <option value="Skip Lot">Skip Lot</option>
-            <option value="100% Inspection">100% Inspection</option>
-          </select>
-          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+
+      <!-- Computed plan (filled by getSamplingPlan) -->
+      <div id="samplingPanel" class="mt-3 rounded-lg border p-3 hidden" style="border-color:#bbf7d0;background:#f0fdf4;">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider" id="samplingTitle" style="color:#16a34a;">Computed plan</span>
+          <span class="ml-auto text-[10px] font-mono text-text-helper" id="samplingStd">ISO 2859-1</span>
         </div>
+        <div class="grid grid-cols-4 gap-2 text-center">
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Sample</div><div class="font-mono text-[21px] font-bold" id="planSample">—</div></div>
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Accept ≤</div><div class="font-mono text-[21px] font-bold" style="color:#16a34a" id="planAc">—</div></div>
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Reject ≥</div><div class="font-mono text-[21px] font-bold" style="color:#dc2626" id="planRe">—</div></div>
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Defects</div>
+            <input id="defectsFound" type="number" inputmode="numeric" min="0" value="0"
+              class="w-full h-[36px] border-[1.5px] border-gray-300 rounded text-center font-mono text-[18px] px-1 focus:border-accent focus:outline-none"></div>
+        </div>
+        <div id="planVerdict" class="mt-2 py-1.5 rounded text-center text-[12px] font-bold text-white" style="background:#16a34a">ACCEPT</div>
       </div>
+      <div id="samplingErr" class="mt-2 text-[12px] text-status-danger hidden"></div>
     </div>
 
     <!-- PO Reference + Invoice No -->
@@ -248,7 +273,7 @@
 
 <!-- Sticky bottom bar — screen 1 -->
 <div class="fixed bottom-0 left-0 w-full bg-white border-t border-border p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-  <div class="max-w-md mx-auto flex items-center justify-between gap-3">
+  <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
     <span id="stickyLabel" class="text-[13px] font-medium text-text-helper">—</span>
     <button id="stickyBtn" disabled onclick="onStickyTap()"
       class="h-[52px] px-6 bg-primary text-white rounded-[10px] font-headline font-semibold text-[15px] flex items-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-40">
@@ -270,7 +295,7 @@
   <span class="w-10"></span>
 </header>
 
-<main id="iqcForm" class="pt-[72px] px-4 space-y-3 mx-auto pb-[100px] w-full">
+<main id="iqcForm" class="pt-[72px] px-4 space-y-3 mx-auto max-w-3xl pb-[100px] w-full">
 
   <!-- Batch info -->
   <section class="span-2 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
@@ -409,7 +434,7 @@
 
 <!-- Sticky footer — screen 2 -->
 <footer class="fixed bottom-0 w-full bg-white border-t border-border p-4 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-  <div class="max-w-md mx-auto flex flex-col gap-2">
+  <div class="max-w-3xl mx-auto flex flex-col gap-2">
     <!-- Save confirmation banner — shown after successful save -->
     <div id="saveConfirmBanner" style="display:none"
       class="w-full rounded-[10px] bg-green-50 border border-green-300 px-4 py-2.5 flex items-center gap-2">
@@ -480,6 +505,75 @@ var lastSavedDocNo = '';
 var prefill        = null;
 var initData       = null;
 var GRN_MAP        = {};
+var SAMPLING_PLAN  = null;   // last computed ISO 2859-1 plan {sampleSize, ac, re, verdict, ...}
+
+// ── ISO 2859-1 sampling (client mirror of AqlSampling.js — instant, no round-trip) ──
+var AQL_LADDER  = [0,1,2,3,5,7,10,14,21,30,44];
+var AQL_LETTERS = ['A','B','C','D','E','F','G','H','J','K','L','M','N','P','Q','R'];
+var AQL_N       = {A:2,B:3,C:5,D:8,E:13,F:20,G:32,H:50,J:80,K:125,L:200,M:315,N:500,P:800,Q:1250,R:2000};
+var AQL_COLS    = {'0.65':0,'1.0':1,'1.5':2,'2.5':3,'4.0':4,'6.5':5};
+var AQL_OFFSET  = 7;
+var AQL_CODE    = [[2,8,{I:'A',II:'A',III:'B'}],[9,15,{I:'A',II:'B',III:'C'}],[16,25,{I:'B',II:'C',III:'D'}],
+  [26,50,{I:'C',II:'D',III:'E'}],[51,90,{I:'C',II:'E',III:'F'}],[91,150,{I:'D',II:'F',III:'G'}],
+  [151,280,{I:'E',II:'G',III:'H'}],[281,500,{I:'F',II:'H',III:'J'}],[501,1200,{I:'G',II:'J',III:'K'}],
+  [1201,3200,{I:'H',II:'K',III:'L'}],[3201,10000,{I:'J',II:'L',III:'M'}],[10001,35000,{I:'K',II:'M',III:'N'}],
+  [35001,150000,{I:'L',II:'N',III:'P'}],[150001,500000,{I:'M',II:'P',III:'Q'}],[500001,1e15,{I:'N',II:'Q',III:'R'}]];
+function aqlCodeLetter(lot, lvl){
+  lvl = (lvl||'II'); for (var i=0;i<AQL_CODE.length;i++){ if(lot>=AQL_CODE[i][0]&&lot<=AQL_CODE[i][1]) return AQL_CODE[i][2][lvl]; }
+  return null;
+}
+function aqlPlan(lot, aql, lvl){
+  lot = parseInt(lot,10);
+  if(!lot||lot<2) return {error:'Enter a lot size of at least 2.'};
+  var col = AQL_COLS[aql]; if(col==null) return {error:'Unsupported AQL'};
+  var letter = aqlCodeLetter(lot,lvl); if(!letter) return {error:'No plan for lot '+lot};
+  var li = AQL_LETTERS.indexOf(letter), guard=0;
+  while(li>=0 && li<AQL_LETTERS.length && guard++<40){
+    var idx = li + col - AQL_OFFSET;
+    if(idx<0){ li++; continue; }
+    if(idx>=AQL_LADDER.length){ li--; continue; }
+    var ac = AQL_LADDER[idx];
+    var n = AQL_N[AQL_LETTERS[li]];
+    if(n>=lot) return {codeLetter:AQL_LETTERS[li],sampleSize:lot,ac:ac,re:ac+1,sampling:'100%'};
+    return {codeLetter:AQL_LETTERS[li],sampleSize:n,ac:ac,re:ac+1,sampling:'single'};
+  }
+  return {error:'No plan'};
+}
+function recomputeSampling(){
+  var lot = (document.getElementById('lotSize')||{}).value;
+  var aql = (document.getElementById('aqlLevel')||{}).value;
+  var lvl = (document.getElementById('inspLevel')||{}).value || 'II';
+  var panel = document.getElementById('samplingPanel');
+  var err   = document.getElementById('samplingErr');
+  if(!lot){ SAMPLING_PLAN=null; if(panel)panel.classList.add('hidden'); if(err)err.classList.add('hidden'); return; }
+  var p = aqlPlan(lot, aql, lvl);
+  if(p.error){ SAMPLING_PLAN=null; if(panel)panel.classList.add('hidden'); if(err){err.textContent=p.error; err.classList.remove('hidden');} return; }
+  SAMPLING_PLAN = p;
+  if(err) err.classList.add('hidden');
+  if(panel) panel.classList.remove('hidden');
+  document.getElementById('planSample').textContent = p.sampleSize;
+  document.getElementById('planAc').textContent = p.ac;
+  document.getElementById('planRe').textContent = p.re;
+  document.getElementById('samplingStd').textContent = 'code '+p.codeLetter+' · '+p.sampling;
+  // mirror sample size into the legacy inspection field so downstream qty logic keeps working
+  var ss = document.getElementById('sampleSize'); if(ss){ ss.value = p.sampleSize; }
+  renderVerdict();
+}
+function renderVerdict(){
+  if(!SAMPLING_PLAN) return;
+  var d = parseInt((document.getElementById('defectsFound')||{}).value,10); if(isNaN(d)||d<0) d=0;
+  var v = (d <= SAMPLING_PLAN.ac) ? 'ACCEPT' : (d >= SAMPLING_PLAN.re ? 'REJECT' : 'ACCEPT');
+  SAMPLING_PLAN.verdict = v;
+  var el = document.getElementById('planVerdict');
+  var panel = document.getElementById('samplingPanel');
+  if(v==='ACCEPT'){
+    el.style.background='#16a34a'; el.textContent='ACCEPT · '+d+' defects ≤ Ac '+SAMPLING_PLAN.ac;
+    if(panel){ panel.style.borderColor='#bbf7d0'; panel.style.background='#f0fdf4'; }
+  } else {
+    el.style.background='#dc2626'; el.textContent='REJECT · '+d+' defects ≥ Re '+SAMPLING_PLAN.re;
+    if(panel){ panel.style.borderColor='#fecaca'; panel.style.background='#fef2f2'; }
+  }
+}
 var currentItems = [];
 var currentIdx   = 0;
 var itemData     = [];
@@ -511,6 +605,14 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('acceptedQty').addEventListener('input', onQtyInput);
   document.getElementById('rejectedQty').addEventListener('input', onQtyInput);
   document.getElementById('holdQty').addEventListener('input', onHoldQtyInput);
+  // ISO 2859-1 sampling — recompute plan on any driver change; re-verdict on defects.
+  ['lotSize','aqlLevel','inspLevel'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', recomputeSampling);
+    if (el) el.addEventListener('change', recomputeSampling);
+  });
+  var defEl = document.getElementById('defectsFound');
+  if (defEl) defEl.addEventListener('input', renderVerdict);
 
   google.script.run
     .withSuccessHandler(onInitLoaded)
@@ -538,27 +640,16 @@ function onInitLoaded(d) {
   var opName = window.QMS ? window.QMS.getOperatorName() : '';
   if (opName) iSel.value = opName;
 
+  // AQL options are the fixed numeric set (0.65..6.5) hardcoded in the markup so they feed
+  // getSamplingPlan directly. Just honour a server default if one is provided.
   var aqlSel = document.getElementById('aqlLevel');
-  if ((d.aqlLevels || []).length) {
-    aqlSel.innerHTML = '';
-    d.aqlLevels.forEach(function(a) {
-      var ao = document.createElement('option');
-      ao.value = a; ao.textContent = a;
-      if (a === d.defaultAql) ao.selected = true;
-      aqlSel.appendChild(ao);
-    });
+  if (aqlSel && d.defaultAql) {
+    var want = String(d.defaultAql).replace(/aql/i, '').trim();
+    for (var ai = 0; ai < aqlSel.options.length; ai++) {
+      if (aqlSel.options[ai].value === want) { aqlSel.selectedIndex = ai; break; }
+    }
   }
-
-  var smSel = document.getElementById('samplingMethod');
-  if ((d.samplingMethods || []).length) {
-    smSel.innerHTML = '';
-    d.samplingMethods.forEach(function(m) {
-      var mo = document.createElement('option');
-      mo.value = m; mo.textContent = m;
-      if (m === (d.defaultSampling || 'Normal')) mo.selected = true;
-      smSel.appendChild(mo);
-    });
-  }
+  // Sampling method / severity is fixed to Normal single sampling — no dropdown.
 
   var gSel = document.getElementById('grnNo');
   (d.recentGRNs || []).forEach(function(g) {
@@ -686,6 +777,10 @@ function onGRNChange() {
       currentIdx = 0;
       renderMaterialChips();
       renderCurrentItem();
+      // Auto-fill lot size = total received qty for the GRN, then compute the plan.
+      var lot = items.reduce(function(s, it){ return s + (Number(it.qtyReceived || it.qty || 0) || 0); }, 0);
+      var lotEl = document.getElementById('lotSize');
+      if (lotEl && lot > 0) { lotEl.value = lot; recomputeSampling(); }
     })
     .withFailureHandler(function(e) { showToast(e.message || 'Error loading GRN items', 'error'); })
     .getGRNItems(grnNo);
@@ -1196,7 +1291,15 @@ function doSaveIQC() {
     supplierName:  prefill ? (prefill.supplierName||'') : document.getElementById('supplierField').value,
     inspector:     document.getElementById('inspector').value,
     aqlLevel:       document.getElementById('aqlLevel').value,
-    samplingMethod: document.getElementById('samplingMethod').value,
+    samplingMethod: 'Normal single (ISO 2859-1)',
+    // ISO 2859-1 computed sampling record
+    lotSize:        parseInt((document.getElementById('lotSize')||{}).value, 10) || 0,
+    inspLevel:      (document.getElementById('inspLevel')||{}).value || 'II',
+    planSampleSize: (SAMPLING_PLAN && SAMPLING_PLAN.sampleSize) || 0,
+    planAc:         (SAMPLING_PLAN && SAMPLING_PLAN.ac != null) ? SAMPLING_PLAN.ac : '',
+    planRe:         (SAMPLING_PLAN && SAMPLING_PLAN.re != null) ? SAMPLING_PLAN.re : '',
+    defectsFound:   parseInt((document.getElementById('defectsFound')||{}).value, 10) || 0,
+    samplingVerdict: (SAMPLING_PLAN && SAMPLING_PLAN.verdict) || '',
     sampleId:      document.getElementById('sampleId').value,
     disposition:   (overallDisp === 'AWD' ? 'ACCEPTED WITH DEVIATION' : overallDisp),
     remarks:       document.getElementById('remarks').value,

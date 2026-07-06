@@ -18,6 +18,16 @@
       font-family: 'Inter', sans-serif;
       min-height: max(884px, 100dvh);
     }
+    /* Compact responsive list (bundle lacks md: grid utils, so plain CSS).
+       NCR is a list view — flow the cards in a multi-column grid on desktop. */
+    #ncrMain { max-width: 32rem; }
+    @media (min-width: 768px) {
+      #ncrMain { max-width: 72rem; }
+      #ncrBody { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    }
+    @media (min-width: 1100px) {
+      #ncrBody { grid-template-columns: repeat(3, 1fr); }
+    }
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
@@ -53,7 +63,7 @@
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('HtmlCache') ?>
 </head>
-<body class="antialiased pb-[80px] flex flex-col pm-narrow">
+<body class="antialiased pb-[80px] flex flex-col">
 
   <!-- ── TOP APP BAR ── -->
   <header class="bg-[#1e3a5f] text-white fixed top-0 w-full h-[56px] shadow-sm flex items-center justify-between px-4 z-50">
@@ -68,7 +78,7 @@
   </header>
 
   <!-- ── STATUS FILTER TABS ── -->
-  <div class="fixed top-[56px] w-full z-40 bg-white border-b border-[#e2e8f0] shadow-sm" style="max-width:600px;left:50%;transform:translateX(-50%);">
+  <div class="fixed top-[56px] w-full z-40 bg-white border-b border-[#e2e8f0] shadow-sm" style="max-width:42rem;left:50%;transform:translateX(-50%);">
     <div class="flex px-4 py-2 gap-2 overflow-x-auto hide-scrollbar" id="ncrFilterTabs">
       <button onclick="setFilter('ALL')" data-filter="ALL"
         class="ncr-tab flex-shrink-0 h-[32px] px-4 text-[12px] font-semibold rounded-full bg-[#1e3a5f] text-white transition-all">ALL</button>
@@ -82,7 +92,7 @@
   </div>
 
   <!-- ── MAIN CONTENT ── -->
-  <main class="flex-1 mt-[56px] pt-[60px] px-4 pb-4 overflow-y-auto max-w-lg mx-auto w-full">
+  <main id="ncrMain" class="flex-1 mt-[56px] pt-[60px] px-4 pb-4 overflow-y-auto mx-auto max-w-2xl w-full">
     <!-- NCR List rendered by JS -->
     <div id="ncrBody" class="flex flex-col gap-3 pt-2">
       <!-- Loading placeholder -->

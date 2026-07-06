@@ -4,6 +4,7 @@ const { spawnSync } = require('child_process');
 
 const SUITES = [
   'e2e-landing.js',
+  'e2e-forms-interaction.js',  // core-form layout regression: primary action button in-viewport + dropdowns populate (non-mutating)
   'e2e-grn.js',
   'e2e-grn-iqc.js',
   'e2e-oqc-dispatch.js',
