@@ -34,6 +34,70 @@ function getCustomerReturnFormInit() {
   };
 }
 
+// Returnable gatepasses for a customer — outbound GPs from GATEPASS_LOG whose PARTY
+// matches the customer, each with its line items {materialCode, materialDesc, batch,
+// qty, unit}. Drives the cascading Gatepass -> Batch dropdowns on the return form.
+//   GATEPASS_LOG cols: 0 GP_NO · 1 DATE · 2 TYPE · 3 OQC_REF · 4 PARTY · 5 MATERIAL_CODE
+//                      · 6 MATERIAL_DESC · 7 QTY · 8 UNIT · 15 STATUS
+function getReturnableGatepasses(customerName) {
+  try {
+    var ss = getSpreadsheet();
+    var sh = ss.getSheetByName('GATEPASS_LOG');
+    if (!sh || sh.getLastRow() < 2) return { gatepasses: [] };
+    var data = sh.getDataRange().getValues();
+    var want = String(customerName || '').trim().toLowerCase();
+
+    // Build OQC No. -> Batch/PO map so each GP item's OQC_REF resolves to its FG batch
+    // (GATEPASS_LOG has no batch column; the batch lives in OQC_LOG "Batch / PO", col 4).
+    var batchByOqc = {};
+    try {
+      var oqc = ss.getSheetByName('OQC_LOG');
+      if (oqc && oqc.getLastRow() > 1) {
+        var od = oqc.getDataRange().getValues();
+        for (var oi = 1; oi < od.length; oi++) {
+          var oNo = String(od[oi][0] || '').trim();
+          if (oNo) batchByOqc[oNo] = String(od[oi][4] || '').trim();   // col4 = Batch / PO
+        }
+      }
+    } catch (oqcErr) {}
+    var byGp = {};   // gpNo -> { gpNo, date, party, items:[] }
+    var order = [];
+    for (var r = 1; r < data.length; r++) {
+      var row = data[r];
+      var type = String(row[2] || '').toUpperCase();
+      if (type.indexOf('OUT') === -1 && type.indexOf('DISPATCH') === -1) continue;   // outbound only
+      var party = String(row[4] || '').trim();
+      if (want && party.toLowerCase() !== want) continue;                            // customer filter
+      var gpNo = String(row[0] || '').trim();
+      if (!gpNo) continue;
+      if (!byGp[gpNo]) {
+        byGp[gpNo] = {
+          gpNo: gpNo,
+          date: row[1] ? Utilities.formatDate(new Date(row[1]), 'Asia/Kolkata', 'dd-MMM-yyyy') : '',
+          party: party,
+          items: []
+        };
+        order.push(gpNo);
+      }
+      var matDesc = String(row[6] || '').trim();
+      // Resolve batch via the row's OQC_REF (col3) -> OQC_LOG "Batch / PO".
+      var oqcRef = String(row[3] || '').trim();
+      var batch = batchByOqc[oqcRef] || '';
+      byGp[gpNo].items.push({
+        materialCode: String(row[5] || '').trim(),
+        materialDesc: matDesc,
+        batch:        batch,
+        oqcRef:       oqcRef,
+        qty:          row[7] != null && row[7] !== '' ? Number(row[7]) : '',
+        unit:         String(row[8] || '').trim()
+      });
+    }
+    return { gatepasses: order.map(function(g){ return byGp[g]; }) };
+  } catch (e) {
+    return { gatepasses: [], error: String(e && e.message || e) };
+  }
+}
+
 function saveCustomerReturn(data) {
   try {
     var ss = getSpreadsheet();
@@ -109,6 +173,76 @@ function saveCustomerReturn(data) {
   }
 }
 
+// Multi-item return — one Return No. shared across N line items (each from a checked
+// gatepass item). data: { returnDate, customerCode, customerName, originalGatepass,
+//   receivedBy, returnReason, remarks, defectCategory, items:[{productCode, productDesc,
+//   fgBatchNo, qtyReturned, unit}] }
+function saveCustomerReturnMulti(data) {
+  try {
+    var items = (data && data.items) || [];
+    if (!items.length) return { success: false, error: 'No items to return.' };
+
+    var ss = getSpreadsheet();
+    var ws = ss.getSheetByName('CUSTOMER_RETURN_LOG');
+    if (!ws) throw new Error('CUSTOMER_RETURN_LOG sheet not found. Run Setup first.');
+    ensureReturnExtraColumns_(ws);
+
+    var rtnNo = getNextDocNumber('rtn');
+    var now   = new Date();
+    var hdrs  = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+    var iDefect = hdrs.indexOf('Defect Category') + 1;
+    var iPhotos = hdrs.indexOf('Photos') + 1;
+    var warnings = [];
+
+    items.forEach(function(it){
+      var qty = Number(it.qtyReturned) || 0;
+      ws.appendRow([
+        rtnNo,
+        data.returnDate ? new Date(data.returnDate) : now,
+        data.customerCode     || '',
+        data.customerName     || '',
+        data.originalGatepass || '',
+        it.productCode        || '',
+        it.productDesc        || '',
+        it.fgBatchNo          || '',
+        qty,
+        it.unit               || '',
+        data.returnReason     || '',
+        data.receivedBy       || '',
+        'PENDING',
+        'PENDING_TRIAGE',
+        '',
+        'OPEN',
+        data.remarks          || '',
+        now
+      ]);
+      var lr = ws.getLastRow();
+      ws.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy');
+      ws.getRange(lr, 18).setNumberFormat('dd-MMM-yyyy HH:mm');
+      ws.getRange(lr, 14).setBackground('#FFF3CD');
+      if (iDefect && data.defectCategory) ws.getRange(lr, iDefect).setValue(data.defectCategory);
+      if (iPhotos && Array.isArray(data.photos) && data.photos.length) {
+        ws.getRange(lr, iPhotos).setValue(JSON.stringify(data.photos));
+      }
+      // Returned FG enters QUARANTINE pending triage.
+      if (typeof writeStockLedger_ === 'function' && it.productCode && it.fgBatchNo && qty > 0) {
+        try {
+          writeStockLedger_('CUSTOMER_RETURN_IN', it.productCode, it.fgBatchNo, 'QUARANTINE',
+            qty, 0, 'CUSTOMER_RETURN', rtnNo, data.receivedBy || '',
+            'Returned by ' + (data.customerName || data.customerCode || 'customer') + ' — pending QA triage');
+        } catch (ledgerErr) {
+          warnings.push('Item ' + (it.fgBatchNo || it.productCode) + ': stock ledger update failed.');
+        }
+      }
+    });
+
+    return { success: true, rtnNo: rtnNo, itemCount: items.length, warnings: warnings };
+  } catch (e) {
+    Logger.log(e);
+    return { success: false, error: e.message };
+  }
+}
+
 function ensureReturnExtraColumns_(ws) {
   var headers = ws.getRange(1, 1, 1, Math.max(ws.getLastColumn(), 18)).getValues()[0];
   var wanted = ['Defect Category', 'Photos'];
@@ -168,10 +302,8 @@ function uploadCustomerReturnPhoto(data) {
 }
 
 function getOrCreateReturnPhotoFolder_() {
-  var folderName = 'PM-QMS — Customer Return Photos';
-  var it = DriveApp.getFoldersByName(folderName);
-  if (it.hasNext()) return it.next();
-  return DriveApp.createFolder(folderName);
+  // <project>/QMS Data/Customer Return Photos — see QmsDrive.js
+  return getQmsSubFolder_('Customer Return Photos');
 }
 
 // Returns OPEN returns awaiting triage.

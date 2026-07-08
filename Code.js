@@ -251,6 +251,33 @@ function doGet(e) {
     return ContentService.createTextOutput(String(to)).setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Drive folder tidy-up (QmsDrive.js) — deploy-token path; avoids clasp run.
+  //   ?diag=folderlist                     → raw list of Drive-root folder names
+  //   ?diag=folderscan                     → dry run: what WOULD move where
+  //   ?diag=foldermigrate&confirm=YES      → LIVE move into <project>/QMS Data
+  //   ?diag=folderrelocate&confirm=YES     → move QMS Data into the PM QMS folder
+  if (diag === 'folderlist' || diag === 'folderscan' || diag === 'foldermigrate' ||
+      diag === 'foldertree' || diag === 'folderrelocate') {
+    var fo;
+    try {
+      if (diag === 'folderlist') {
+        fo = listDriveRootFolders_();
+      } else if (diag === 'foldertree') {
+        fo = describeQmsDataLocation_();
+      } else if (diag === 'folderrelocate') {
+        fo = relocateQmsDataFolder(e.parameter.confirm === 'YES');
+      } else if (typeof migrateQmsFoldersToQmsData !== 'function') {
+        fo = 'migrateQmsFoldersToQmsData missing (is QmsDrive.js pushed?)';
+      } else {
+        var doMove = (diag === 'foldermigrate') && (e.parameter.confirm === 'YES');
+        fo = migrateQmsFoldersToQmsData(doMove);
+      }
+    } catch (er3) { fo = 'ERROR: ' + er3.message + '\n' + (er3.stack || ''); }
+    return ContentService
+      .createTextOutput(typeof fo === 'string' ? fo : JSON.stringify(fo, null, 2))
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // QR code deep-link: ?doc=PM/IQC/2026-189 → route to DocView
   var docParam = e && e.parameter && e.parameter.doc ? String(e.parameter.doc).trim() : '';
   if (docParam) {

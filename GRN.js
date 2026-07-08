@@ -282,10 +282,8 @@ function generateGRNPdf_(docNo) {
   var html = tmpl.evaluate().getContent();
   var blob = Utilities.newBlob(html, 'text/html', docNo + '.html');
 
-  var date    = new Date();
-  var yearMon = Utilities.formatDate(date, 'Asia/Kolkata', 'yyyy-MM');
-  var folders = DriveApp.getFoldersByName('QMS/GRN/' + yearMon);
-  var folder  = folders.hasNext() ? folders.next() : DriveApp.createFolder('QMS/GRN/' + yearMon);
+  // <project>/QMS Data/GRN/yyyy-MM — see QmsDrive.js
+  var folder = getQmsMonthFolder_('GRN', new Date());
 
   var tempFile = DriveApp.createFile(blob);
   var pdfBlob  = tempFile.getAs('application/pdf');

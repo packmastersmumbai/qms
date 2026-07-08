@@ -46,6 +46,31 @@ function raiseNCR_(payload) {
     ws.getRange(lastRow, 17).setNumberFormat('dd-MMM-yyyy HH:mm');
     ws.getRange(lastRow, 11).setBackground('#FFF3CD');  // amber — pending action
 
+    // Telegram alert — NCR raised (covers IQC/OQC reject, IPQC OOS, customer return,
+    // since all of those raise an NCR through this one chokepoint). Best-effort.
+    try {
+      var src  = String(payload.source || '').toUpperCase();
+      var kind = src.indexOf('IQC') === 0 ? 'IQC_REJECT'
+               : src.indexOf('OQC') === 0 ? 'OQC_REJECT'
+               : src.indexOf('IPQC') === 0 ? 'IPQC_OOS'
+               : src.indexOf('CUST') === 0 ? 'CUST_RETURN' : 'NCR';
+      var detail = (payload.sourceRef ? 'Ref ' + payload.sourceRef + ' · ' : '') +
+                   (payload.materialDesc || '') + (payload.defectDesc ? ' — ' + payload.defectDesc : '');
+      sendQmsAlert(kind, docNo, detail);
+    } catch (e) { Logger.log('QMS telegram alert skipped: ' + e.message); }
+
+    // DWM next-action: NCR triage task (idempotent by NCR docNo). Best-effort.
+    try {
+      if (typeof pushDwmNextAction_ === 'function') {
+        pushDwmNextAction_({
+          type: 'NCR', docNo: docNo,
+          material: payload.materialDesc || '',
+          inspector: payload.raisedBy || payload.owner || '',
+          status: 'REJECTED'   // routes to urgent triage in the next-action map
+        });
+      }
+    } catch (e2) { Logger.log('QMS DWM push skipped: ' + e2.message); }
+
     return docNo;
   } catch(e) {
     Logger.log('raiseNCR_ failed: ' + e.message);
@@ -290,10 +315,8 @@ function uploadNCRPhoto(data) {
 }
 
 function getOrCreateNCRPhotoFolder_() {
-  var folderName = 'PM-QMS — NCR Photos';
-  var it = DriveApp.getFoldersByName(folderName);
-  if (it.hasNext()) return it.next();
-  return DriveApp.createFolder(folderName);
+  // <project>/QMS Data/NCR Photos — see QmsDrive.js
+  return getQmsSubFolder_('NCR Photos');
 }
 
 // Append one row to REVISIONS_LOG. Never throws into caller.

@@ -463,8 +463,7 @@ function saveRound(sessionId, roundData) {
 }
 
 function generateIPQCQR_(sessionId) {
-  var GAS_URL = ScriptApp.getService().getUrl();
-  var target  = GAS_URL + '?doc=' + encodeURIComponent(sessionId);
+  var target  = getPublicUrl_() + '?doc=' + encodeURIComponent(sessionId);
   var apiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&format=png&data=' + encodeURIComponent(target);
   var resp    = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
   if (resp.getResponseCode() !== 200) throw new Error('QR API returned ' + resp.getResponseCode());
@@ -477,10 +476,8 @@ function generateIPQCPdf_(sessionId) {
   tmpl.printData = data;
   var html = tmpl.evaluate().getContent();
   var blob = Utilities.newBlob(html, 'text/html', sessionId + '.html');
-  var yearMon = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
-  var rootName = 'QMS/IPQC/' + yearMon;
-  var folders  = DriveApp.getFoldersByName(rootName);
-  var folder   = folders.hasNext() ? folders.next() : DriveApp.createFolder(rootName);
+  // <project>/QMS Data/IPQC/yyyy-MM — see QmsDrive.js
+  var folder   = getQmsMonthFolder_('IPQC', new Date());
   var tempFile = DriveApp.createFile(blob);
   var pdfBlob  = tempFile.getAs('application/pdf');
   pdfBlob.setName(sessionId + '.pdf');
@@ -539,6 +536,35 @@ function getIPQCPrintData(sessionId) {
     qrBase64:    String(r[12] || ''),
     pdfUrl:      String(r[13] || ''),
     printedAt:   Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')
+  };
+}
+
+// Build the notify/WhatsApp record for an IPQC session: per-round pass/fail/leak
+// counts + totals + fail detail, reconstructed from IPQC_LOG via getIPQCPrintData.
+function getIPQCRowForWA(sessionId) {
+  var d;
+  try { d = getIPQCPrintData(sessionId); } catch (e) { return null; }
+  var sum = { pass: 0, fail: 0, na: 0 };
+  var fails = [];
+  var rounds = (d.rounds || []).map(function (rd) {
+    var p = 0, f = 0, leak = 0;
+    (rd.params || []).forEach(function (pr) {
+      var res = String(pr.result || '').toUpperCase();
+      var isLeak = /leak/i.test(pr.name || '');
+      if (/PASS|OK|ACCEPT/.test(res)) { p++; sum.pass++; }
+      else if (/FAIL|REJECT|NG/.test(res)) {
+        f++; sum.fail++;
+        if (isLeak) leak++;
+        fails.push({ roundNo: rd.roundNo, paramName: pr.name, actualValue: pr.actual, remark: pr.remark });
+      } else { sum.na++; }
+    });
+    return { roundNo: rd.roundNo, pass: p, fail: f, leak: leak };
+  });
+  return {
+    type: 'IPQC', sessionId: d.sessionId, docNo: d.sessionId,
+    product: d.productName || d.productCode, batch: d.batch,
+    inspector: d.inspector, date: d.date, pdfUrl: d.pdfUrl || '',
+    status: d.status, rounds: rounds, summary: sum, fails: fails
   };
 }
 

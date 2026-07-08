@@ -346,6 +346,14 @@ function saveOQC(data) {
       }
     }
 
+    // Announce to Telegram + push next-action task to DWM. Best-effort.
+    try {
+      if (typeof qmsAnnounce_ === 'function' && docNos.length) {
+        var rec = getOQCRowForWA(firstAppendRowOQC);
+        if (rec) { rec.ncrRef = ncrNo || rec.ncrRef; qmsAnnounce_(rec); }
+      }
+    } catch (annErr) { Logger.log('OQC announce skipped: ' + annErr.message); }
+
     return { success: true, docNos: docNos, ncrNo: ncrNo, ncrError: ncrError, warnings: warnings };
   } catch(e) {
     Logger.log(e);
@@ -354,8 +362,7 @@ function saveOQC(data) {
 }
 
 function generateOQCQR_(docNo) {
-  var GAS_URL = ScriptApp.getService().getUrl();
-  var target  = GAS_URL + '?doc=' + encodeURIComponent(docNo);
+  var target  = getPublicUrl_() + '?doc=' + encodeURIComponent(docNo);
   var apiUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&format=png&data=' + encodeURIComponent(target);
   var resp    = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
   if (resp.getResponseCode() !== 200) throw new Error('QR API returned ' + resp.getResponseCode());
@@ -368,10 +375,8 @@ function generateOQCPdf_(docNo) {
   tmpl.printData = data;
   var html = tmpl.evaluate().getContent();
   var blob = Utilities.newBlob(html, 'text/html', docNo + '.html');
-  var yearMon = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
-  var rootName = 'QMS/OQC/' + yearMon;
-  var folders  = DriveApp.getFoldersByName(rootName);
-  var folder   = folders.hasNext() ? folders.next() : DriveApp.createFolder(rootName);
+  // <project>/QMS Data/OQC/yyyy-MM — see QmsDrive.js
+  var folder   = getQmsMonthFolder_('OQC', new Date());
   var tempFile = DriveApp.createFile(blob);
   var pdfBlob  = tempFile.getAs('application/pdf');
   pdfBlob.setName(docNo + '.pdf');
@@ -487,6 +492,7 @@ function getOQCRowForWA(row) {
     batchPO:        r[4],
     material:       r[5],
     inspector:      r[13],
-    releaseDecision:r[14]
+    releaseDecision:r[14],
+    pdfUrl:         r[26] || ''
   };
 }

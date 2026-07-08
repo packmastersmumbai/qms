@@ -562,12 +562,9 @@ function generateIQCPdf_(docNo, samplingMethod) {
   var html = tmpl.evaluate().getContent();
   var blob = Utilities.newBlob(html, 'text/html', docNo + '.html');
 
-  var ss       = getSpreadsheet();
-  var date     = new Date();
-  var yearMon  = Utilities.formatDate(date, 'Asia/Kolkata', 'yyyy-MM');
-  var rootName = 'QMS/IQC/' + yearMon;
-  var folders  = DriveApp.getFoldersByName(rootName);
-  var folder   = folders.hasNext() ? folders.next() : DriveApp.createFolder(rootName);
+  var ss     = getSpreadsheet();
+  // <project>/QMS Data/IQC/yyyy-MM — see QmsDrive.js
+  var folder = getQmsMonthFolder_('IQC', new Date());
 
   // Convert HTML blob to PDF via Drive
   var tempFile = DriveApp.createFile(blob);
