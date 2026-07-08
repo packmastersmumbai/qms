@@ -244,6 +244,54 @@ function relocateQmsDataFolder(apply) {
   return { dryRun: false, action: 'moved', folder: QMS_DATA_ROOT_, into: target.getName(), targetId: target.getId() };
 }
 
+/**
+ * verifyQmsDocLinks_ — read-only. For each module, read the stored PDF-URL column,
+ * extract the Drive file ID, and confirm the file still resolves (and where it lives
+ * now). Proves that the folder move did not break any saved link.
+ * @param {number=} samplePerModule cap rows checked per module (default 8).
+ */
+function verifyQmsDocLinks_(samplePerModule) {
+  var CAP = samplePerModule || 8;
+  var ss = getSpreadsheet();
+  // { sheet, urlCol (1-based) } per module
+  var specs = [
+    { module: 'GRN',  sheet: 'GRN_LOG',  urlCol: 25 },
+    { module: 'IQC',  sheet: 'IQC_LOG',  urlCol: 40 },
+    { module: 'IPQC', sheet: 'IPQC_Sessions', urlCol: 14 },
+    { module: 'OQC',  sheet: 'OQC_LOG', urlCol: 27 }
+  ];
+  function idFromUrl(u) {
+    var m = String(u).match(/[-\w]{25,}/); // Drive file IDs are 25+ url-safe chars
+    return m ? m[0] : null;
+  }
+  var report = [];
+  specs.forEach(function (s) {
+    var sh = ss.getSheetByName(s.sheet);
+    if (!sh) { report.push({ module: s.module, error: 'sheet ' + s.sheet + ' not found' }); return; }
+    var last = sh.getLastRow();
+    if (last < 2) { report.push({ module: s.module, checked: 0, note: 'no rows' }); return; }
+    var col = sh.getRange(2, s.urlCol, last - 1, 1).getValues();
+    var checked = 0, ok = 0, broken = [], noUrl = 0, samples = [];
+    for (var i = col.length - 1; i >= 0 && checked < CAP; i--) { // newest first
+      var url = String(col[i][0] || '').trim();
+      if (!url) { noUrl++; continue; }
+      var id = idFromUrl(url);
+      checked++;
+      if (!id) { broken.push({ row: i + 2, why: 'no id in url', url: url.slice(0, 60) }); continue; }
+      try {
+        var f = DriveApp.getFileById(id);
+        var parent = f.getParents().hasNext() ? f.getParents().next().getName() : '(no parent)';
+        ok++;
+        if (samples.length < 3) samples.push({ row: i + 2, name: f.getName(), parent: parent });
+      } catch (e) {
+        broken.push({ row: i + 2, id: id, why: 'getFileById failed: ' + e.message });
+      }
+    }
+    report.push({ module: s.module, checked: checked, resolved: ok, broken: broken, rowsWithNoUrl: noUrl, samples: samples });
+  });
+  return { note: 'read-only link check; broken[] should be empty', modules: report };
+}
+
 /** Read-only: resolve the 'PM QMS' folder(s) at Drive root, with IDs. */
 function findPmQmsFolders_() {
   var out = [], it = DriveApp.getRootFolder().getFolders();

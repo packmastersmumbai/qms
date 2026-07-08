@@ -257,7 +257,7 @@ function doGet(e) {
   //   ?diag=foldermigrate&confirm=YES      → LIVE move into <project>/QMS Data
   //   ?diag=folderrelocate&confirm=YES     → move QMS Data into the PM QMS folder
   if (diag === 'folderlist' || diag === 'folderscan' || diag === 'foldermigrate' ||
-      diag === 'foldertree' || diag === 'folderrelocate') {
+      diag === 'foldertree' || diag === 'folderrelocate' || diag === 'linkcheck') {
     var fo;
     try {
       if (diag === 'folderlist') {
@@ -266,6 +266,8 @@ function doGet(e) {
         fo = describeQmsDataLocation_();
       } else if (diag === 'folderrelocate') {
         fo = relocateQmsDataFolder(e.parameter.confirm === 'YES');
+      } else if (diag === 'linkcheck') {
+        fo = verifyQmsDocLinks_(Number(e.parameter.n) || 8);
       } else if (typeof migrateQmsFoldersToQmsData !== 'function') {
         fo = 'migrateQmsFoldersToQmsData missing (is QmsDrive.js pushed?)';
       } else {
