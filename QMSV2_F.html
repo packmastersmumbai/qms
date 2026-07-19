@@ -7,6 +7,9 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=Public+Sans:wght@500;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+  <!-- Icon FOUT guard: hide Material Symbols ligature text until the font is ready. -->
+  <style>.material-symbols-outlined{visibility:hidden}html.fonts-ready .material-symbols-outlined{visibility:visible}</style>
+  <script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
   <script>
     // VERBATIM from the Stitch design-system "Industrial Quality Management System"
     // (asset f1c072ac30ee4901b96547757f18a349) design-md. Do NOT hand-tune these —

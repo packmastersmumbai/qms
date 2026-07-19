@@ -273,7 +273,9 @@
     }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('FormKit') ?>
 <?!= include('HtmlCache') ?>
+<script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
 </head>
 <body class="bg-surface text-[#0f172a] pb-[100px] antialiased">
 

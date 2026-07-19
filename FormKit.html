@@ -1,0 +1,140 @@
+<!-- FormKit — shared QMS form design system. Include in <head> via:  <?!= include('FormKit') ?>
+     Mirrors the QMS v2 cockpit's Stitch / Material Design 3 tokens as plain CSS (no CDN, so it
+     works inside the GAS double-iframe where cdn.tailwindcss.com is unreliable). Component
+     classes are prefixed `fk-` so they never clash with a form's existing `.prd-*`/`.param-*`. -->
+<style>
+  :root {
+    /* Stitch / M3 palette (verbatim from QMSV2 tailwind.config) */
+    --fk-primary:            #000747;
+    --fk-primary-container:  #0d1b6e;
+    --fk-navy:               #1e3a5f;  /* shared header anchor already used across forms */
+    --fk-surface:            #f9f9ff;
+    --fk-surface-container:  #e7eefe;
+    --fk-surface-low:        #f0f3ff;
+    --fk-card:               #ffffff;
+    --fk-on-surface:         #151c27;
+    --fk-on-surface-variant: #454651;
+    --fk-outline:            #767682;
+    --fk-outline-variant:    #c6c5d3;
+    --fk-pass:               #16a34a;
+    --fk-fail:               #dc2626;
+    --fk-warn:               #d97706;
+    --fk-na:                 #64748b;
+    --fk-accent:             #0ea5e9;
+    /* radii + rhythm */
+    --fk-r-sm: .25rem; --fk-r: .5rem; --fk-r-md: .75rem; --fk-r-lg: 1rem;
+    --fk-space: 8px;
+    --fk-shadow: 0 2px 8px rgba(15,23,42,.08);
+    --fk-shadow-up: 0 -4px 12px rgba(15,23,42,.06);
+    --fk-tap: 44px;
+    --fk-font: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --fk-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  }
+
+  /* Icon FOUT: hide Material Symbols ligature text until the font is ready.
+     A tiny inline script (added per page) sets <html class="fonts-ready"> on load. */
+  .material-symbols-outlined { visibility: hidden; }
+  html.fonts-ready .material-symbols-outlined { visibility: visible; }
+
+  /* ── Page shell ─────────────────────────────────────────────────────────── */
+  .fk-page {
+    max-width: 768px; margin: 0 auto; width: 100%;
+    padding: 16px 16px 96px;      /* bottom clearance for the sticky footer */
+    display: flex; flex-direction: column; gap: 16px;
+    color: var(--fk-on-surface); font-family: var(--fk-font);
+  }
+  @media (min-width: 900px) { .fk-page { max-width: 820px; } }
+
+  /* ── Card ───────────────────────────────────────────────────────────────── */
+  .fk-card {
+    background: var(--fk-card);
+    border: 1px solid var(--fk-outline-variant);
+    border-radius: var(--fk-r-md);
+    box-shadow: var(--fk-shadow);
+    overflow: hidden;                /* keeps the header strip's corners aligned */
+  }
+  .fk-card-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .fk-card-head {
+    background: var(--fk-navy); color: #fff;
+    padding: 10px 16px;
+    font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  /* Standalone light section label (no navy bar) */
+  .fk-sec {
+    font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+    color: var(--fk-on-surface-variant); margin: 2px 0 6px;
+  }
+
+  /* ── Fields ─────────────────────────────────────────────────────────────── */
+  .fk-field { display: flex; flex-direction: column; gap: 6px; }
+  .fk-label { font-size: 13px; font-weight: 600; color: var(--fk-on-surface); }
+  .fk-label .req { color: var(--fk-fail); }
+  .fk-label .opt { color: var(--fk-on-surface-variant); font-weight: 500; }
+  .fk-input, .fk-select {
+    height: var(--fk-tap); width: 100%;
+    border: 1.5px solid var(--fk-outline-variant);
+    border-radius: var(--fk-r); padding: 0 12px;
+    font-size: 15px; color: var(--fk-on-surface); background: var(--fk-card);
+    font-family: var(--fk-font); outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .fk-input.mono, .fk-select.mono { font-family: var(--fk-mono); }
+  .fk-input:focus, .fk-select:focus {
+    border-color: var(--fk-accent);
+    box-shadow: 0 0 0 4px rgba(14,165,233,.15);
+  }
+  .fk-input::placeholder { color: #94a3b8; }
+  .fk-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fk-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  /* ── PASS / FAIL / NA segmented group ───────────────────────────────────── */
+  .fk-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .fk-seg.two { grid-template-columns: repeat(2, 1fr); }
+  .fk-seg-btn {
+    height: 40px; border: 1.5px solid var(--fk-outline-variant); border-radius: var(--fk-r);
+    background: var(--fk-card); color: var(--fk-on-surface-variant);
+    font-size: 12px; font-weight: 700; letter-spacing: .04em; cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .fk-seg-btn:hover { border-color: var(--fk-outline); }
+  .fk-seg-btn.is-pass { background: var(--fk-pass); border-color: var(--fk-pass); color: #fff; }
+  .fk-seg-btn.is-fail { background: var(--fk-fail); border-color: var(--fk-fail); color: #fff; }
+  .fk-seg-btn.is-na   { background: var(--fk-na);   border-color: var(--fk-na);   color: #fff; }
+
+  /* ── Tabs (pill) ────────────────────────────────────────────────────────── */
+  .fk-tabs {
+    display: flex; gap: 4px; background: var(--fk-surface-container);
+    padding: 4px; border-radius: var(--fk-r-lg);
+  }
+  .fk-tab {
+    flex: 1; min-height: 38px; border: 0; border-radius: var(--fk-r-md);
+    background: transparent; color: var(--fk-on-surface-variant);
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .fk-tab.active { background: var(--fk-card); color: var(--fk-primary); box-shadow: var(--fk-shadow); }
+
+  /* ── Sticky footer + buttons ────────────────────────────────────────────── */
+  .fk-footer {
+    position: fixed; bottom: 0; left: 0; width: 100%; z-index: 40;
+    background: var(--fk-card); border-top: 1px solid var(--fk-outline-variant);
+    box-shadow: var(--fk-shadow-up); padding: 12px 16px;
+  }
+  .fk-footer-inner { max-width: 768px; margin: 0 auto; display: flex; gap: 10px; }
+  .fk-btn {
+    min-height: var(--fk-tap); border: 0; border-radius: var(--fk-r); cursor: pointer;
+    font-size: 15px; font-weight: 700; padding: 0 18px; letter-spacing: .01em;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity .15s, background .15s;
+  }
+  .fk-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .fk-btn-primary { flex: 1; background: var(--fk-primary); color: #fff; }
+  .fk-btn-pass    { flex: 1; background: var(--fk-pass); color: #fff; }
+  .fk-btn-ghost   { background: transparent; color: var(--fk-primary); border: 1.5px solid var(--fk-outline-variant); }
+
+  /* Sticky-per-pane save (for tabbed forms without a fixed footer) */
+  .fk-save-sticky {
+    position: sticky; bottom: 8px; z-index: 20; width: 100%;
+    box-shadow: 0 4px 14px rgba(0,7,71,.28);
+  }
+</style>

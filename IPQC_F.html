@@ -19,10 +19,13 @@
 
     body {
       font-family: "Plus Jakarta Sans", sans-serif;
-      background: #f8fafc;
+      background: var(--fk-surface, #f8fafc);
       color: #0f172a;
-      max-width: 480px;
-      margin: 0 auto;
+      max-width: 768px;   /* was 480px — floated as a narrow column on desktop */
+      /* !important: the TailwindBundle preflight resets body margin to 0 and, loading
+         after this block, was pinning the column to the left instead of centering it. */
+      margin-left: auto !important;
+      margin-right: auto !important;
     }
 
     .material-symbols-outlined {
@@ -246,11 +249,18 @@
       .rpt-doc { box-shadow:none; max-width:none; padding:0; }
       .report-body { overflow:visible !important; padding:0 !important; }
     }
+    /* Compact responsive: widen content + sticky action bar to match on desktop. */
+    @media (min-width: 768px) {
+      #ipqcContent { max-width: 768px; margin-left: auto; margin-right: auto; }
+      #ipqcActionBar { max-width: 768px !important; }
+    }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('FormKit') ?>
 <?!= include('HtmlCache') ?>
+<script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
 </head>
-<body class="pm-narrow">
+<body>
 
 <!-- ── Loading overlay ── -->
 <div id="loading">
@@ -272,7 +282,7 @@
 </header>
 
 <!-- ════════════ BOTTOM NAV (shown on Screen A) ════════════ -->
-<nav id="ipqcBottomNav" class="fixed bottom-0 left-0 w-full h-[56px] bg-white border-t border-[#e2e8f0] z-40 flex items-stretch" style="max-width:480px;left:50%;transform:translateX(-50%);">
+<nav id="ipqcBottomNav" class="fixed bottom-0 left-0 w-full h-[56px] bg-white border-t border-[#e2e8f0] z-40 flex items-stretch" style="max-width:768px;left:50%;transform:translateX(-50%);">
   <button onclick="ipqcGoto('Landing')" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
     <span class="material-symbols-outlined text-[20px]">home</span>
     <span class="text-[10px] font-semibold mt-0.5">Home</span>
@@ -297,7 +307,7 @@
 
 <!-- ════════════ SCREEN A — HOME ════════════ -->
 <div id="screenA">
-  <div class="p-4 pb-[80px] flex flex-col gap-3">
+  <div id="ipqcContent" class="p-4 pb-[80px] flex flex-col gap-3">
 
     <!-- Hero card -->
     <div class="bg-[#1e3a5f] rounded-xl p-5 text-center text-white flex flex-col items-center gap-2 shadow-md">
@@ -432,7 +442,7 @@
   </div>
 
   <!-- Sticky footer: stacked Save Round + Close Session, with Report inline -->
-  <div class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.07)] flex flex-col gap-2 px-3 py-2.5"
+  <div id="ipqcActionBar" class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.07)] flex flex-col gap-2 px-3 py-2.5"
     style="padding-bottom: max(10px, env(safe-area-inset-bottom)); z-index: 50;">
     <!-- Video widget -->
     <div id="ipqcVideoBar" class="flex items-center gap-2">
@@ -1203,7 +1213,7 @@ var _NEXT_ROUND_NO = 0;
 function enterAwaitingNextRound(savedRoundNo, elapsedHms) {
   _AWAITING_NEXT_ROUND = true;
   _NEXT_ROUND_NO = savedRoundNo + 1;
-  stopTimer();
+  // Session clock keeps running — only stop on close/back (showScreen A)
   var btn = document.getElementById('btnSaveRound');
   if (!btn) return;
   // Wipe inline onclick so router below decides
@@ -1213,6 +1223,11 @@ function enterAwaitingNextRound(savedRoundNo, elapsedHms) {
   btn.style.background = '#16a34a';
   btn.disabled = false;
   btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">play_arrow</span> Start Round ' + _NEXT_ROUND_NO;
+
+  // Freeze timer display at the saved round's duration
+  stopTimer();
+  var disp = document.getElementById('timerDisplay');
+  if (disp) disp.textContent = elapsedHms;
 
   // Pill shows the saved round with its elapsed time
   var pill = document.getElementById('roundPill');
@@ -1405,6 +1420,20 @@ function shareReport() {
 
   var btn = document.getElementById('btnShareWA');
   if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+
+  // Also post the rich round report to the QMS Telegram channel (best-effort,
+  // fire-and-forget — independent of the WhatsApp share below).
+  try {
+    google.script.run
+      .withSuccessHandler(function(){})
+      .withFailureHandler(function(){})
+      .postIPQCToTelegram({
+        type: 'IPQC', sessionId: SESSION_ID, product: SESSION_NAME, batch: SESSION_BATCH,
+        inspector: SESSION_INSPECTOR, rounds: roundStats,
+        summary: { pass: pass, fail: fail, na: na }, fails: fails,
+        status: (fail > 0 ? 'OOS' : 'PASS')
+      });
+  } catch (e) {}
 
   // Need the deploy URL to embed a record-deep-link
   google.script.run
@@ -1790,8 +1819,9 @@ function stopTimer() {
 }
 
 function getElapsed() {
-  if (!SESSION_START_TS) return '00:00';
-  var s = Math.floor((new Date() - SESSION_START_TS) / 1000);
+  var ts = ROUND_START_TS || SESSION_START_TS;
+  if (!ts) return '00:00';
+  var s = Math.floor((new Date() - ts) / 1000);
   var h = Math.floor(s / 3600);
   var m = Math.floor((s % 3600) / 60);
   var sec = s % 60;

@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
+  <?!= include('FormKit') ?>
   <?!= include('HtmlCache') ?>
+  <script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
   <style>
-    body { background: var(--bg); }
-    .prd-wrap { max-width: 720px; margin: 0 auto; padding-bottom: 40px; }
+    body { background: var(--fk-surface); }
+    .prd-wrap { max-width: 768px; margin: 0 auto; padding: 0 16px 96px; }
 
     .prd-header {
       background: var(--navy); color: var(--white);
@@ -22,39 +24,51 @@
       font-size: 11px; font-weight: 700;
     }
 
-    .prd-tabs { display: flex; background: #f7f7f9; border-bottom: 1px solid #e0e0e0; position: sticky; top: 39px; z-index: 99; }
-    .prd-tab {
-      flex: 1; padding: 10px; cursor: pointer; text-align: center;
-      font-size: 12px; font-weight: 600; color: #777;
-      border-bottom: 2px solid transparent;
+    /* Pill tabs — matches the QMS v2 cockpit / FormKit look */
+    .prd-tabs {
+      display: flex; gap: 4px; background: var(--fk-surface-container);
+      padding: 4px; margin: 12px 0; border-radius: var(--fk-r-lg);
+      position: sticky; top: 52px; z-index: 99;
     }
-    .prd-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: var(--white); }
+    .prd-tab {
+      flex: 1; padding: 9px 4px; cursor: pointer; text-align: center;
+      font-size: 13px; font-weight: 600; color: var(--fk-on-surface-variant);
+      border: 0; border-radius: var(--fk-r-md); background: transparent;
+      transition: background .15s, color .15s;
+    }
+    .prd-tab.active { color: var(--fk-primary); background: var(--fk-card); box-shadow: var(--fk-shadow); }
 
-    .prd-body { padding: 14px; }
+    .prd-body { padding: 4px 0; }
 
     .prd-form {
-      background: var(--white);
-      border: 1px solid #e0e0e0; border-radius: 8px;
-      padding: 14px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      background: var(--fk-card);
+      border: 1px solid var(--fk-outline-variant); border-radius: var(--fk-r-md);
+      padding: 16px;
+      box-shadow: var(--fk-shadow);
     }
     /* DESIGN.md: single-column form. Was 2-col; gloves + 6" phone = misfires. */
     .prd-grid2 { display: flex; flex-direction: column; gap: 0; }
-    .prd-field { margin-bottom: 10px; }
-    .prd-field label { display: block; font-size: 11px; color: #555; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .prd-field { margin-bottom: 14px; }
+    .prd-field label { display: block; font-size: 11px; color: var(--fk-on-surface-variant); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
     .prd-field input, .prd-field select, .prd-field textarea {
       width: 100%; box-sizing: border-box;
-      padding: 8px 10px; border: 1px solid #d0d0d0; border-radius: 5px;
-      font-size: 16px; font-family: inherit; background: var(--white);
+      height: 44px; padding: 0 12px;
+      border: 1.5px solid var(--fk-outline-variant); border-radius: var(--fk-r);
+      font-size: 15px; font-family: inherit; background: var(--fk-card);
+      color: var(--fk-on-surface); outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .prd-field input:focus, .prd-field select:focus, .prd-field textarea:focus {
+      border-color: var(--fk-accent); box-shadow: 0 0 0 4px rgba(14,165,233,.15);
     }
     .prd-field input:disabled { background: #f5f5f5; color: #777; }
     .prd-field textarea { resize: vertical; min-height: 50px; }
 
     .prd-lots {
       margin-top: 8px;
-      border: 1px solid #e0e0e0; border-radius: 6px;
+      border: 1px solid var(--fk-outline-variant); border-radius: var(--fk-r);
       max-height: 280px; overflow-y: auto;
-      background: var(--white);
+      background: var(--fk-surface-low);
     }
     .prd-lot {
       padding: 10px 12px; border-bottom: 1px solid #f0f0f0;
@@ -76,16 +90,16 @@
     .prd-lot-disp.warn { background: var(--amber); color: var(--navy); }
     .prd-lot-disp.bad  { background: #b32a2a; color: #fff; }
 
-    .prd-empty { text-align: center; padding: 40px 20px; color: #888; font-size: 13px; }
-    .prd-empty-icon { font-size: 30px; margin-bottom: 8px; opacity: 0.4; }
+    .prd-empty { text-align: center; padding: 32px 20px; color: var(--fk-na); font-size: 13px; }
+    .prd-empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
 
     .prd-save {
-      width: 100%; padding: 12px;
-      background: var(--navy); color: var(--white);
-      border: 0; border-radius: 6px;
-      font-size: 14px; font-weight: 700;
-      cursor: pointer; margin-top: 8px;
-      letter-spacing: 0.4px;
+      width: 100%; min-height: 44px; padding: 12px;
+      background: var(--fk-primary); color: #fff;
+      border: 0; border-radius: var(--fk-r);
+      font-size: 15px; font-weight: 700;
+      cursor: pointer; margin-top: 12px;
+      letter-spacing: 0.02em;
       /* Pin the primary action to the bottom of the viewport so it is always reachable
          without scrolling past the (often long) form body. */
       position: sticky; bottom: 8px; z-index: 20;
