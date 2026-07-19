@@ -435,14 +435,8 @@ function getOQCPrintHtml(docNo) {
 
 function saveOQCVideo_(base64, mime, ext, docNo, materialDesc, disposition) {
   var ss = getSpreadsheet();
-  var ssFile = DriveApp.getFileById(ss.getId());
-  var parents = ssFile.getParents();
-  if (!parents.hasNext()) throw new Error('Cannot find parent folder of spreadsheet.');
-  var projectFolder = parents.next();
-  var mediaFolder = getOrCreateFolder_(projectFolder, 'Media');
-  var oqcFolder   = getOrCreateFolder_(mediaFolder, 'OQC');
-  var monthKey    = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
-  var monthFolder = getOrCreateFolder_(oqcFolder, monthKey);
+  // <project>/QMS Data/Media/OQC/yyyy-MM — see QmsDrive.js
+  var monthFolder = getQmsMediaFolder_('OQC', new Date());
   var fileName = docNo + '_' + (disposition || 'OQC').replace(/\s+/g, '_') + '.' + ext;
   var bytes = Utilities.base64Decode(base64);
   var blob  = Utilities.newBlob(bytes, mime, fileName);

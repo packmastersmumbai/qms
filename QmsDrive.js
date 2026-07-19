@@ -87,6 +87,17 @@ function getQmsSubFolder_(name) {
   return getOrCreateFolder_(getQmsDataFolder_(), name);
 }
 
+/**
+ * Resolve <project>/QMS Data/Media/<module>/<yyyy-MM> for photos and videos.
+ * Keeps all binary media alongside the PDFs under one QMS Data root.
+ */
+function getQmsMediaFolder_(moduleName, date) {
+  var monthKey = Utilities.formatDate(date || new Date(), 'Asia/Kolkata', 'yyyy-MM');
+  var media = getOrCreateFolder_(getQmsDataFolder_(), 'Media');
+  var moduleFolder = getOrCreateFolder_(media, moduleName);
+  return getOrCreateFolder_(moduleFolder, monthKey);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // One-time migration
 // ─────────────────────────────────────────────────────────────────────────────
@@ -299,6 +310,62 @@ function findPmQmsFolders_() {
     var f = it.next();
     if (/^PM QMS$/i.test(f.getName())) out.push({ name: f.getName(), id: f.getId() });
   }
+  return out;
+}
+
+/**
+ * migrateMediaIntoQmsData — move the root-level "Media" folder (photos/videos, already
+ * structured as Media/<module>/<yyyy-MM>) inside <project>/QMS Data. Idempotent.
+ * Moving the folder preserves every descendant file ID, so links keep working.
+ * @param {boolean} apply pass true to move; omit for dry run.
+ */
+function migrateMediaIntoQmsData(apply) {
+  var qmsData = getQmsDataFolder_();
+
+  // Already nested? (Media directly under QMS Data)
+  var inside = qmsData.getFoldersByName('Media');
+  if (inside.hasNext()) {
+    return { dryRun: !apply, action: 'none', reason: 'Media already under QMS Data', mediaId: inside.next().getId() };
+  }
+
+  // Find a Media at the spreadsheet parent or at root.
+  var ss = getSpreadsheet();
+  var ssParents = DriveApp.getFileById(ss.getId()).getParents();
+  var candidates = [];
+  if (ssParents.hasNext()) { var p = ssParents.next(); var i1 = p.getFoldersByName('Media'); while (i1.hasNext()) candidates.push(i1.next()); }
+  var i2 = DriveApp.getRootFolder().getFoldersByName('Media');
+  while (i2.hasNext()) { var f = i2.next(); if (candidates.indexOf(f) === -1) candidates.push(f); }
+
+  if (!candidates.length) return { dryRun: !apply, action: 'none', reason: 'no external Media folder found' };
+  var media = candidates[0];
+
+  if (!apply) return { dryRun: true, action: 'would move', folder: 'Media', into: 'QMS Data', mediaId: media.getId() };
+  media.moveTo(qmsData);
+  return { dryRun: false, action: 'moved', folder: 'Media', into: 'QMS Data', mediaId: media.getId() };
+}
+
+/** Read-only: locate the Media folder (photos/videos) and its parent. */
+function describeMediaLocation_() {
+  var ss = getSpreadsheet();
+  var ssParents = DriveApp.getFileById(ss.getId()).getParents();
+  var ssParent = ssParents.hasNext() ? ssParents.next() : null;
+  var out = { spreadsheetParent: ssParent ? ssParent.getName() : '(none)', mediaFolders: [] };
+  // Media is created under the spreadsheet's parent; also scan root in case it drifted.
+  function scan(where, label) {
+    if (!where) return;
+    var it = where.getFoldersByName('Media');
+    while (it.hasNext()) {
+      var m = it.next(), subs = [], si = m.getFolders();
+      while (si.hasNext()) {
+        var s = si.next(), months = [], mi = s.getFolders();
+        while (mi.hasNext()) { var mm = mi.next(); var n = 0, f = mm.getFiles(); while (f.hasNext()) { f.next(); n++; } months.push(mm.getName() + ' (' + n + ')'); }
+        subs.push({ module: s.getName(), months: months });
+      }
+      out.mediaFolders.push({ foundUnder: label, id: m.getId(), tree: subs });
+    }
+  }
+  scan(ssParent, 'spreadsheet parent (' + (ssParent ? ssParent.getName() : '?') + ')');
+  scan(DriveApp.getRootFolder(), 'My Drive root');
   return out;
 }
 

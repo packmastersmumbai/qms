@@ -578,14 +578,8 @@ function getIPQCPrintHtml(sessionId) {
 function saveIPQCSessionVideo(sessionId, videoBase64, videoMime, videoExt) {
   try {
     var ss = getSpreadsheet();
-    var ssFile = DriveApp.getFileById(ss.getId());
-    var parents = ssFile.getParents();
-    if (!parents.hasNext()) throw new Error('Cannot find parent folder.');
-    var projectFolder = parents.next();
-    var mediaFolder = getOrCreateFolder_(projectFolder, 'Media');
-    var ipqcFolder  = getOrCreateFolder_(mediaFolder, 'IPQC');
-    var monthKey    = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
-    var monthFolder = getOrCreateFolder_(ipqcFolder, monthKey);
+    // <project>/QMS Data/Media/IPQC/yyyy-MM — see QmsDrive.js
+    var monthFolder = getQmsMediaFolder_('IPQC', new Date());
     var fileName    = sessionId + '.' + (videoExt || 'mp4');
     var bytes = Utilities.base64Decode(videoBase64);
     var blob  = Utilities.newBlob(bytes, videoMime || 'video/mp4', fileName);

@@ -423,16 +423,8 @@ function _testPutawayPayload() {
 
 function saveIQCVideo_(base64, mime, ext, docNo, grnNo, materialDesc, disposition) {
   var ss = getSpreadsheet();
-  var ssFile = DriveApp.getFileById(ss.getId());
-  var parents = ssFile.getParents();
-  if (!parents.hasNext()) throw new Error('Cannot find parent folder of spreadsheet.');
-  var projectFolder = parents.next();
-
-  // Media/IQC/YYYY-MM/
-  var mediaFolder = getOrCreateFolder_(projectFolder, 'Media');
-  var iqcFolder   = getOrCreateFolder_(mediaFolder, 'IQC');
-  var monthKey    = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
-  var monthFolder = getOrCreateFolder_(iqcFolder, monthKey);
+  // <project>/QMS Data/Media/IQC/yyyy-MM — see QmsDrive.js
+  var monthFolder = getQmsMediaFolder_('IQC', new Date());
 
   // Sanitise components for filename
   function clean(s) { return String(s||'').replace(/[^A-Za-z0-9_\-]/g, '_').slice(0, 30); }
@@ -457,14 +449,8 @@ function getOrCreateFolder_(parent, name) {
 
 function uploadIQCImages_(images, docNo, grnNo) {
   var ss = getSpreadsheet();
-  var ssFile = DriveApp.getFileById(ss.getId());
-  var parents = ssFile.getParents();
-  if (!parents.hasNext()) throw new Error('Cannot find parent folder of spreadsheet.');
-  var projectFolder = parents.next();
-  var mediaFolder = getOrCreateFolder_(projectFolder, 'Media');
-  var iqcFolder   = getOrCreateFolder_(mediaFolder, 'IQC');
-  var monthKey    = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
-  var monthFolder = getOrCreateFolder_(iqcFolder, monthKey);
+  // <project>/QMS Data/Media/IQC/yyyy-MM — see QmsDrive.js
+  var monthFolder = getQmsMediaFolder_('IQC', new Date());
 
   function clean(s) { return String(s||'').replace(/[^A-Za-z0-9_\-]/g, '_').slice(0, 20); }
   var urls = [];

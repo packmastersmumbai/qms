@@ -233,15 +233,8 @@ function uploadGRNImages(images) {
   // Called from client before save; returns { docUrls: [], productUrls: [] }
   // images = [{ base64, mime, kind }]  kind = 'doc' | 'product'
   try {
-    var ss = getSpreadsheet();
-    var ssFile = DriveApp.getFileById(ss.getId());
-    var parents = ssFile.getParents();
-    if (!parents.hasNext()) throw new Error('Cannot find parent folder of spreadsheet.');
-    var projectFolder = parents.next();
-    var mediaFolder = getOrCreateFolder_(projectFolder, 'Media');
-    var grnFolder   = getOrCreateFolder_(mediaFolder, 'GRN');
-    var monthKey    = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM');
-    var monthFolder = getOrCreateFolder_(grnFolder, monthKey);
+    // <project>/QMS Data/Media/GRN/yyyy-MM — see QmsDrive.js
+    var monthFolder = getQmsMediaFolder_('GRN', new Date());
 
     var docUrls     = [];
     var productUrls = [];
