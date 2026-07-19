@@ -61,7 +61,9 @@
     #toast.err      { background: #c1334b; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('FormKit') ?>
 <?!= include('HtmlCache') ?>
+<script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
 </head>
 <body class="antialiased pb-[80px] flex flex-col">
 

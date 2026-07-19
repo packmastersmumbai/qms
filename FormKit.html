@@ -137,4 +137,94 @@
     position: sticky; bottom: 8px; z-index: 20; width: 100%;
     box-shadow: 0 4px 14px rgba(0,7,71,.28);
   }
+
+  /* ── Main navigation bar (auto-injected) ────────────────────────────────── */
+  /* Fixed at the very bottom on every form. When a .fk-footer (sticky Save bar)
+     exists, the injector lifts it to sit ABOVE this nav so neither is cut off, and
+     pads the body so form content clears both. Height 56px. */
+  .fk-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%; z-index: 50;
+    height: 56px; background: var(--fk-card);
+    border-top: 1px solid var(--fk-outline-variant);
+    box-shadow: 0 -2px 8px rgba(15,23,42,.05);
+    display: flex; align-items: stretch;
+  }
+  .fk-nav-inner { max-width: 768px; margin: 0 auto; width: 100%; display: flex; }
+  .fk-nav-btn {
+    flex: 1; border: 0; background: transparent; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    color: var(--fk-on-surface-variant); font-family: var(--fk-font);
+    font-size: 10px; font-weight: 600; letter-spacing: .02em;
+    transition: color .15s;
+  }
+  .fk-nav-btn:hover, .fk-nav-btn:active { color: var(--fk-primary); }
+  .fk-nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 </style>
+<script>
+(function () {
+  // FormKit main-nav: one bottom bar (Home / Records / KPIs / Warehouse) injected into
+  // every form that includes FormKit. Uses inline SVG (no icon-font dependency) so the
+  // mini-icons always render. Navigates via the SPA's navigateTo(); falls back to a
+  // server getFormHtml() fetch if navigateTo isn't present.
+  var NAV = [
+    { key: 'QMSV2',     label: 'Home',      d: 'M3 11l9-8 9 8M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10' },
+    { key: 'Records',   label: 'Records',   d: 'M8 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2h-2M8 3a2 2 0 002 2h4a2 2 0 002-2M8 3a2 2 0 012-2h4a2 2 0 012 2M9 12h6M9 16h6' },
+    { key: 'KPI',       label: 'KPIs',      d: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
+    { key: 'Warehouse', label: 'Warehouse', d: 'M3 21V8l9-5 9 5v13M3 21h18M9 21v-6h6v6' }
+  ];
+  function go(key) {
+    try {
+      if (typeof window.navigateTo === 'function') { window.navigateTo(key); return; }
+      if (window.google && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function (html) {
+          document.open(); document.write(html); document.close();
+        }).getFormHtml(key);
+        return;
+      }
+    } catch (e) {}
+  }
+  function build() {
+    if (document.getElementById('fkNav')) return;
+    var nav = document.createElement('nav');
+    nav.className = 'fk-nav'; nav.id = 'fkNav';
+    var inner = document.createElement('div'); inner.className = 'fk-nav-inner';
+    NAV.forEach(function (item) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'fk-nav-btn';
+      b.innerHTML = '<svg viewBox="0 0 24 24"><path d="' + item.d + '"/></svg><span>' + item.label + '</span>';
+      b.addEventListener('click', function () { go(item.key); });
+      inner.appendChild(b);
+    });
+    nav.appendChild(inner);
+    document.body.appendChild(nav);
+
+    // Lift any save footer/button to sit ABOVE the 56px nav so it isn't cut off.
+    // Handles both fixed footers and sticky-per-pane save buttons (Production's .prd-save,
+    // which sticks 8px from the bottom and would otherwise overlap the nav).
+    var NAV_H = 56;
+    ['.fk-footer', '#stickyBar', '#stickyFooter', '#ipqcActionBar', '#dispStickyFooter', '.prd-save', '.fk-save-sticky']
+      .forEach(function (sel) {
+        document.querySelectorAll(sel).forEach(function (el) {
+          var cs = getComputedStyle(el);
+          if (cs.position === 'fixed') { el.style.bottom = NAV_H + 'px'; }
+          else if (cs.position === 'sticky') { el.style.bottom = (NAV_H + 8) + 'px'; }
+        });
+      });
+    // Reserve bottom space on the body so form content clears the nav (+footer if any).
+    var hasFooter = !!document.querySelector('.fk-footer, #stickyBar, #stickyFooter, #ipqcActionBar, #dispStickyFooter');
+    var pad = NAV_H + (hasFooter ? 76 : 8);
+    document.body.style.paddingBottom = pad + 'px';
+    // If the form has its OWN bottom nav (IPQC's #ipqcBottomNav, NCR's tab-bar, etc.),
+    // hide it in favour of this single unified bar to avoid two stacked nav rows.
+    document.querySelectorAll('nav').forEach(function (n) {
+      if (n.id === 'fkNav') return;
+      var cs = getComputedStyle(n);
+      if (cs.position === 'fixed' && parseInt(cs.bottom, 10) === 0) { n.style.display = 'none'; }
+    });
+    var own = document.getElementById('ipqcBottomNav');
+    if (own) { own.style.display = 'none'; }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
+  else build();
+})();
+</script>
