@@ -18,6 +18,34 @@ var IQC_PARAMS = [
   { id: 'coa',    label: 'COA / Test Report',    spec: 'Received & Verified',           ccp: true,  hint: 'COA values must match spec; verify lot no.' }
 ];
 
+// ── Category-driven inspection parameters ────────────────────────────────────
+// ponytail: the MASTERS_Parameters dictionary IS the mapping — a `category` column
+// (idx 11) + `ccp` (12) + `sort` (13). Filter by category; no separate mapping sheet,
+// no join. Add a mapping/override sheet only if a param's per-category spec must
+// diverge from its dictionary default. `flow` is accepted for signature parity;
+// v1 has no per-flow column, so every category param applies to both IQC and IPQC.
+function getCategoryParams(category, flow) {
+  var ws = getSpreadsheet().getSheetByName('MASTERS_Parameters');
+  if (!ws || ws.getLastRow() < 2) return [];
+  var cat = String(category || '').trim();
+  if (!cat) return [];
+  return ws.getDataRange().getValues().slice(1)
+    .filter(function(r){ return String(r[11] || '').trim() === cat; })
+    .map(function(r){ return {
+      paramCode: String(r[0] || ''), label: String(r[1] || r[0] || ''), unit: String(r[2] || ''),
+      std: r[3], tolMin: r[4], tolMax: r[5], method: String(r[6] || ''),
+      checkBrief: String(r[7] || ''), tools: String(r[8] || ''), docRef: String(r[9] || ''),
+      ccp: String(r[12] || '').toUpperCase() === 'Y', sort: Number(r[13]) || 0 }; })
+    .sort(function(a, b){ return a.sort - b.sort; });
+}
+
+var IQCPARAMLOG_HEADERS_ = ['iqcDocNo','timestamp','paramCode','paramName','unit','stdValue','actualValue','result','remark'];
+function ensureIqcParamLogSheet_() {
+  var ss = getSpreadsheet(), ws = ss.getSheetByName('IQC_PARAM_LOG');
+  if (!ws) { ws = ss.insertSheet('IQC_PARAM_LOG'); ws.getRange(1,1,1,IQCPARAMLOG_HEADERS_.length).setValues([IQCPARAMLOG_HEADERS_]); ws.setFrozenRows(1); }
+  return ws;
+}
+
 // ISO 2859-1 / ANSI Z1.4 sampling vocabulary — kept as THREE distinct axes.
 // Do NOT conflate them (the old IQC_SAMPLING_METHODS mixed severities + dispositions
 // under the name "methods"):

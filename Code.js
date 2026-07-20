@@ -294,6 +294,22 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Category-driven inspection params (_SmokeInspectionParams.js + IQC.js seeder).
+  //   ?diag=smokeinspparams   → regression smoke
+  //   ?diag=seedcategoryparams → idempotent live seed of the 5 categories
+  if (diag === 'smokeinspparams') {
+    var sip;
+    try { sip = (typeof smokeInspectionParams === 'function') ? smokeInspectionParams() : { error: 'smokeInspectionParams missing' }; }
+    catch (er7) { sip = { error: er7.message, stack: er7.stack }; }
+    return ContentService.createTextOutput(sip && sip.report ? sip.report : JSON.stringify(sip, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'seedcategoryparams') {
+    var sd;
+    try { sd = (typeof seedInspectionParams === 'function') ? seedInspectionParams() : { error: 'seedInspectionParams missing' }; }
+    catch (er8) { sd = { error: er8.message, stack: er8.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(sd, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Drive folder tidy-up (QmsDrive.js) — deploy-token path; avoids clasp run.
   //   ?diag=folderlist                     → raw list of Drive-root folder names
   //   ?diag=folderscan                     → dry run: what WOULD move where

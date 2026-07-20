@@ -19,9 +19,10 @@
 // the true capacity ceiling is min(volume,weight) regardless (Step 6 fit engine).
 var MAT_COL = {
   CODE: 0, DESC: 1, UNIT: 2, CATEGORY: 3, DEFAULT_LOCATION: 4, REORDER_LEVEL: 5,
-  EACH_L: 6, EACH_W: 7, EACH_H: 8, EACH_WEIGHT: 9, PER_PALLET: 10, FIT_CLASS: 11
+  EACH_L: 6, EACH_W: 7, EACH_H: 8, EACH_WEIGHT: 9, PER_PALLET: 10, FIT_CLASS: 11,
+  INSP_CATEGORY: 12   // product inspection category (HDPE_BOTTLE|LABEL|PAPER|CARTON|BULK) — drives IQC/IPQC params
 };
-var MAT_WIDTH = 12;
+var MAT_WIDTH = 13;
 
 // The 6 geometry columns G→L, in sheet order: key used on the material object,
 // its 0-based column index, and the header text. Single source consumed by the
@@ -68,7 +69,7 @@ function getMaterials() {
         reorderLevel: Number(r[MAT_COL.REORDER_LEVEL]) || 0,  // col F; blank/0 = no low-stock alert
         // Cols G→L (indexes 6–11) round-tripped verbatim for Phase-2 geometry.
         // Optional and backward-compatible — existing callers ignore these.
-        geometry: r.slice(6, MAT_WIDTH).map(function(v) { return v == null ? '' : v; }),
+        geometry: r.slice(6, 12).map(function(v) { return v == null ? '' : v; }),
         // Named geometry fields (G→L) so the material form can bind each input
         // and the fit engine reads by name. Blank cell → '' (falsy), never null.
         eachL:      _geoNum_(r[MAT_COL.EACH_L]),
@@ -76,7 +77,8 @@ function getMaterials() {
         eachH:      _geoNum_(r[MAT_COL.EACH_H]),
         eachWeight: _geoNum_(r[MAT_COL.EACH_WEIGHT]),
         perPallet:  _geoNum_(r[MAT_COL.PER_PALLET]),
-        fitClass:   String(r[MAT_COL.FIT_CLASS] || '').trim()  // '' | 'WEIGHT' | 'VOLUME'
+        fitClass:   String(r[MAT_COL.FIT_CLASS] || '').trim(),  // '' | 'WEIGHT' | 'VOLUME'
+        inspectionCategory: String(r[MAT_COL.INSP_CATEGORY] || '').trim()
       };
     });
 }
@@ -491,7 +493,7 @@ function _upsertMaterialRow_(ws, code, patch) {
     return { ok: true };
   }
 
-  var fresh = _padMaterialRow_([]);                        // 12 blanks
+  var fresh = _padMaterialRow_([]);                        // MAT_WIDTH blanks
   _applyMaterialPatch_(fresh, patch);
   ws.appendRow(fresh);
   return { ok: true };
