@@ -27,6 +27,26 @@ function smokeInspectionParams() {
     ['HDPE_BOTTLE','LABEL','PAPER','CARTON','BULK'].forEach(function(cat){
       assert(cat+' has params', getCategoryParams(cat,'IQC').length>0);
     });
+
+    // ---- Task 3: IQC resolves by category + writes IQC_PARAM_LOG + fallback ----
+    var mCode='TIP-BTL-'+stamp;
+    var mrow=new Array(MAT_WIDTH).fill(''); mrow[0]=mCode; mrow[1]='Test bottle'; mrow[2]='NOS'; mrow[3]='RM'; mrow[MAT_COL.INSP_CATEGORY]='HDPE_BOTTLE';
+    ss.getSheetByName('MASTERS_Materials').appendRow(mrow);
+    var r5=getIqcParamsForProduct(mCode);
+    assert('IQC resolves HDPE_BOTTLE (not fallback)', r5.category==='HDPE_BOTTLE'&&r5.fallback===false&&r5.params.length>=8, JSON.stringify({c:r5.category,n:r5.params.length,f:r5.fallback}));
+    var r5b=getIqcParamsForProduct('TIP-NOCAT-'+stamp);
+    assert('IQC falls back to legacy 12', r5b.fallback===true&&r5b.params.length===12, 'n='+r5b.params.length);
+    var grn5=createTestGRN_({materialCode:mCode,batchNo:'TIPB-'+stamp,qtyReceived:50,locationId:'RM-STORE-A',unit:'NOS'});
+    var iq5=saveIQC({grnNo:grn5.docNo,date:new Date(),inspector:'claude-smoke',disposition:'ACCEPTED',lotSize:50,aqlLevel:'2.5',inspLevel:'II',severity:'Normal',
+      items:[{materialCode:mCode,materialDesc:'Test bottle',batchNo:grn5.batchNo,acceptedQty:50,rejectedQty:0,holdQty:0,sampleSize:8,params:{},
+        paramResults:[{paramCode:'HB_WEIGHT',paramName:'Weight',actualValue:'24.6',result:'PASS',remark:''},{paramCode:'HB_LEAK',paramName:'Leak Test',actualValue:'Pass',result:'PASS',remark:''}]}]});
+    assert('saveIQC success', iq5&&iq5.success, iq5&&(iq5.error||''));
+    var plog=ss.getSheetByName('IQC_PARAM_LOG').getDataRange().getValues().filter(function(r){return iq5.docNos&&String(r[0])===String(iq5.docNos[0]);});
+    assert('IQC_PARAM_LOG got 2 rows', plog.length===2, 'rows='+plog.length);
+    _tipArchivePrefix_('MASTERS_Materials',0,mCode);
+    _tipArchivePrefix_('STOCK_LEDGER',3,mCode); _tipArchivePrefix_('GRN_LOG',6,mCode);
+    _tipArchivePrefix_('IQC_LOG',4,'Test bottle');
+    _tipArchivePrefix_('IQC_PARAM_LOG',2,'HB_WEIGHT'); _tipArchivePrefix_('IQC_PARAM_LOG',2,'HB_LEAK');
   } catch(e){ log.push('EXCEPTION: '+e.message+' '+(e.stack||'')); fail++; }
   finally { if (typeof _QMS_SUPPRESS_NOTIFY!=='undefined') _QMS_SUPPRESS_NOTIFY=false; }
   log.push(''); log.push('RESULT: '+pass+' passed, '+fail+' failed.');

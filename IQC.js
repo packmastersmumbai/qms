@@ -97,6 +97,25 @@ function seedInspectionParams() {
   return { success:true, added:added };
 }
 
+// Resolve the IQC parameter set for a product: by its material inspectionCategory,
+// falling back to the legacy 12 hardcoded IQC_PARAMS (mapped to the same shape) when
+// the material has no category or the category yields no params. Keeps un-categorized
+// products working during rollout.
+function getIqcParamsForProduct(materialCode) {
+  var mc = String(materialCode || '').trim(), cat = '';
+  try {
+    var mats = getMaterials();
+    for (var i = 0; i < mats.length; i++) {
+      if (String(mats[i].code || mats[i].itemCode || '').trim() === mc) { cat = String(mats[i].inspectionCategory || '').trim(); break; }
+    }
+  } catch (e) {}
+  if (cat) { var params = getCategoryParams(cat, 'IQC'); if (params.length) return { category: cat, params: params, fallback: false }; }
+  var legacy = IQC_PARAMS.map(function(p, idx){ return {
+    paramCode: p.id, label: p.label, unit: '', std: p.spec || '', tolMin: null, tolMax: null,
+    ccp: !!p.ccp, method: '', checkBrief: p.hint || '', tools: '', docRef: '', sort: idx }; });
+  return { category: cat || '', params: legacy, fallback: true };
+}
+
 var IQCPARAMLOG_HEADERS_ = ['iqcDocNo','timestamp','paramCode','paramName','unit','stdValue','actualValue','result','remark'];
 function ensureIqcParamLogSheet_() {
   var ss = getSpreadsheet(), ws = ss.getSheetByName('IQC_PARAM_LOG');
@@ -260,6 +279,16 @@ function saveIQC(data) {
       var lastRow = ws.getLastRow();
       ws.getRange(lastRow, 2).setNumberFormat('dd-MMM-yyyy');
       ws.getRange(lastRow, 29).setNumberFormat('dd-MMM-yyyy HH:mm');
+
+      // Category-driven param values → IQC_PARAM_LOG (EAV). Legacy cols 11-22 above
+      // still carry the fixed 12; this adds the variable per-category param results.
+      if (item.paramResults && item.paramResults.length) {
+        var plW = ensureIqcParamLogSheet_();
+        item.paramResults.forEach(function(pr){
+          plW.appendRow([ docNo, new Date(), pr.paramCode || '', pr.paramName || '', pr.unit || '',
+            pr.stdValue != null ? pr.stdValue : '', pr.actualValue || '', pr.result || '', pr.remark || '' ]);
+        });
+      }
 
       // Colour-code disposition cell (col 23)
       var dispCell = ws.getRange(lastRow, 23);
