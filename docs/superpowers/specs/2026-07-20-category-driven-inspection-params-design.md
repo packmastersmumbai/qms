@@ -129,6 +129,26 @@ Returns `[{paramCode, label, unit, std, tolMin, tolMax, ccp, hint, method, sort}
 The IQC/IPQC form builds its checklist from `getCategoryParams`, then fills each param's
 displayed spec via `getInspectionSpec` (material-specific where present).
 
+### Per-parameter operator guidance (ⓘ tooltip)
+
+Every inspection parameter row (IQC **and** IPQC) shows an ⓘ button that reveals a
+how-to-inspect guide, assembled from fields **already stored** — no new columns:
+
+| Tooltip line | Source |
+|---|---|
+| **How** (method) | `MASTERS_Parameters.check_brief` |
+| **Tool** | `MASTERS_Parameters.tools` |
+| **Accept** | resolved spec (`getInspectionSpec`: material › category › dictionary) |
+| **Ref** | `MASTERS_Parameters.doc_ref` (+ CCP badge from `CATEGORY_PARAMS.ccp`) |
+
+`getCategoryParams` returns these in each param object (`hint`/`method`/`tools`/`docRef`/`ccp`
+already implied by the resolver join). The form renders one ⓘ per row.
+
+**Interaction:** GAS runs in a touch-capable double-iframe where `@media (hover:none)` is
+unreliable (see CLAUDE.md). So the ⓘ is **tap-to-toggle** (click opens a small popover,
+click-outside/second-tap closes) rather than hover-only — works on both desktop and mobile.
+One popover open at a time; positioned to stay in-viewport. Respects `prefers-reduced-motion`.
+
 ## Flow Changes
 
 ### IQC (`IQC.js`, `IQC_F.html`)
@@ -153,7 +173,9 @@ displayed spec via `getInspectionSpec` (material-specific where present).
 
 Idempotent seeder (function + `?diag=seedcategoryparams`):
 - Ensures `CATEGORY_PARAMS`, `MATERIAL_SPECS`, `IQC_PARAM_LOG` sheets exist.
-- Appends missing param definitions to `MASTERS_Parameters`.
+- Appends missing param definitions to `MASTERS_Parameters`, including `check_brief`
+  (method / How), `tools`, and `doc_ref` so the ⓘ operator-guidance tooltip has content
+  from day one.
 - Seeds `CATEGORY_PARAMS` starter sets:
   - **HDPE_BOTTLE**: weight, dimensions, neck/thread ø, wall thickness, leak test, drop test, colour, clarity
   - **LABEL**: dimensions, print quality, colour match, adhesion, barcode scan, material/GSM
@@ -178,6 +200,7 @@ Regression smoke (`?diag=smokecatparams`, per this session's harness pattern):
 - Assert `getInspectionSpec` precedence: material spec wins over category over dictionary.
 - Assert a real `saveIQC` writes N `IQC_PARAM_LOG` rows matching the resolved params; round-trip readback.
 - Assert fallback: a material with no category → 12 legacy params.
+- Assert each resolved param carries ⓘ guidance fields (method/tools/docRef) for the tooltip.
 - Self-clean (archive TEST rows), notify-suppressed, per existing smoke conventions.
 
 ## Risks
