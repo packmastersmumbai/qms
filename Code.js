@@ -279,6 +279,21 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Production chain regression smoke (_SmokeProdChain.js) — plan→issue→book with
+  // real handlers; asserts #4 rollback + #12 aggregation + no double-debit. Self-cleans.
+  //   ?diag=smokeprod
+  if (diag === 'smokeprod') {
+    var spc;
+    try {
+      spc = (typeof smokeProdChain === 'function')
+        ? smokeProdChain()
+        : { error: 'smokeProdChain missing (is _SmokeProdChain.js pushed?)' };
+    } catch (er6) { spc = { error: er6.message, stack: er6.stack }; }
+    return ContentService
+      .createTextOutput(spc && spc.report ? spc.report : JSON.stringify(spc, null, 2))
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Drive folder tidy-up (QmsDrive.js) — deploy-token path; avoids clasp run.
   //   ?diag=folderlist                     → raw list of Drive-root folder names
   //   ?diag=folderscan                     → dry run: what WOULD move where
