@@ -39,6 +39,64 @@ function getCategoryParams(category, flow) {
     .sort(function(a, b){ return a.sort - b.sort; });
 }
 
+// Idempotent starter data — appends missing param defs (with category/ccp/sort) to
+// MASTERS_Parameters for the 5 product categories. Codes are category-unique so a
+// param shared across categories is just distinct rows (no one-code-two-categories
+// ambiguity). std/tol left blank for QA to fill per material. Dedupes by code.
+function seedInspectionParams() {
+  if (!CONFIG._TESTING_ENABLED) return { success:false, error:'testing disabled' };
+  // code, name, unit, method, check_brief, tools, doc_ref, category, ccp, sort
+  var ROWS = [
+    ['HB_WEIGHT','Weight','g','Gravimetric','Weigh a unit on a calibrated balance; record grams.','Balance 0.01 g','PM/FRM/IQC-02','HDPE_BOTTLE','Y',1],
+    ['HB_DIM','Dimensions','mm','Dimensional','Measure L/W/H per drawing with vernier vs spec.','Vernier caliper','PM/FRM/IQC-02','HDPE_BOTTLE','N',2],
+    ['HB_NECK','Neck / Thread Ø','mm','Dimensional','Measure neck OD across thread crest, 2 points 90 deg apart.','Vernier / thread gauge','PM/FRM/IQC-02','HDPE_BOTTLE','N',3],
+    ['HB_WALL','Wall Thickness','mm','Dimensional','Section mid-body; measure 4 points 90 deg apart; record minimum.','Dial thickness gauge','PM/FRM/IQC-02','HDPE_BOTTLE','N',4],
+    ['HB_LEAK','Leak Test','','Functional','Pressurise/immerse per method; watch for bubbles / pressure drop.','Leak tester','PM/FRM/IQC-02','HDPE_BOTTLE','Y',5],
+    ['HB_DROP','Drop Test','','Functional','Drop a filled unit from spec height; inspect for crack/leak.','Drop rig','PM/FRM/IQC-02','HDPE_BOTTLE','N',6],
+    ['HB_COLOUR','Colour / Match','','Visual','Compare to approved colour standard under D65 light.','Colour std / light box','PM/FRM/IQC-02','HDPE_BOTTLE','N',7],
+    ['HB_CLARITY','Clarity','','Visual','Inspect haze/opacity against a contrast card.','Contrast card','PM/FRM/IQC-02','HDPE_BOTTLE','N',8],
+
+    ['LB_DIM','Dimensions','mm','Dimensional','Measure label L x W vs artwork spec.','Vernier / ruler','PM/FRM/IQC-02','LABEL','N',1],
+    ['LB_PRINT','Print Quality','','Visual','Check registration, smudge, missing text vs proof.','Loupe / proof','PM/FRM/IQC-02','LABEL','Y',2],
+    ['LB_DE','Colour Delta-E','','Instrumental','Read Delta-E vs approved proof; <= tolerance.','Spectrophotometer','PM/FRM/IQC-02','LABEL','N',3],
+    ['LB_ADH','Adhesion / Peel','N/25mm','Mechanical','Peel a strip at 180 deg; record peel force per 25 mm.','Peel tester','PM/FRM/IQC-02','LABEL','N',4],
+    ['LB_BARCODE','Barcode Scan','','Functional','Scan; must read first attempt, verifier grade >= C.','Barcode verifier','PM/FRM/IQC-02','LABEL','Y',5],
+    ['LB_GSM','Material / GSM','gsm','Gravimetric','Cut known area; weigh; compute grams per m2.','GSM cutter + balance','PM/FRM/IQC-02','LABEL','N',6],
+
+    ['PP_GSM','GSM / Grammage','gsm','Gravimetric','Cut known area; weigh; compute grams per m2.','GSM cutter + balance','PM/FRM/IQC-02','PAPER','N',1],
+    ['PP_MOIST','Moisture','%','Instrumental','Measure moisture with a meter per method.','Moisture meter','PM/FRM/IQC-02','PAPER','N',2],
+    ['PP_DIM','Dimensions','mm','Dimensional','Measure sheet/reel size vs spec.','Ruler / tape','PM/FRM/IQC-02','PAPER','N',3],
+    ['PP_BRIGHT','Brightness','%','Instrumental','Read brightness vs standard tile.','Brightness meter','PM/FRM/IQC-02','PAPER','N',4],
+    ['PP_TENSILE','Tensile Strength','N','Mechanical','Pull a strip to break; record peak force.','Tensile tester','PM/FRM/IQC-02','PAPER','N',5],
+
+    ['CT_DIM','Dimensions','mm','Dimensional','Measure carton L x W x H vs spec.','Tape / ruler','PM/FRM/IQC-02','CARTON','N',1],
+    ['CT_GSM','GSM / Ply','gsm','Gravimetric','Weigh a known area; confirm board GSM / ply.','GSM cutter + balance','PM/FRM/IQC-02','CARTON','N',2],
+    ['CT_BURST','Bursting Strength','kPa','Mechanical','Clamp; apply pressure to burst; record kPa.','Burst tester','PM/FRM/IQC-02','CARTON','Y',3],
+    ['CT_ECT','Edge Crush (ECT)','kN/m','Mechanical','Crush an edge specimen; record kN/m.','ECT tester','PM/FRM/IQC-02','CARTON','N',4],
+    ['CT_PRINT','Print Quality','','Visual','Check print registration/smudge vs proof.','Loupe / proof','PM/FRM/IQC-02','CARTON','N',5],
+    ['CT_PLY','Ply Bond','','Mechanical','Attempt to separate plies; must not delaminate under load.','Ply bond tester','PM/FRM/IQC-02','CARTON','N',6],
+
+    ['BK_NETWT','Net Weight','kg','Gravimetric','Weigh net of packaging; compare to declared.','Platform scale','PM/FRM/IQC-02','BULK','N',1],
+    ['BK_MOIST','Moisture','%','Instrumental','Measure moisture per method.','Moisture meter','PM/FRM/IQC-02','BULK','N',2],
+    ['BK_CONTAM','Contamination','','Visual','Spread a sample; count black specks / foreign matter.','Light table / loupe','PM/FRM/IQC-02','BULK','Y',3],
+    ['BK_MFI','MFI / Melt Index','g/10min','Instrumental','Run melt flow at spec temp/load; record g/10 min.','Melt flow indexer','PM/FRM/IQC-02','BULK','N',4],
+    ['BK_COLOUR','Colour','','Visual','Compare granule colour to standard under D65.','Colour std','PM/FRM/IQC-02','BULK','N',5],
+    ['BK_GRAN','Granule Size','mm','Dimensional','Sieve / measure granule size per method.','Sieve set','PM/FRM/IQC-02','BULK','N',6]
+  ];
+  var ws = getSpreadsheet().getSheetByName('MASTERS_Parameters');
+  if (!ws) return { success:false, error:'MASTERS_Parameters missing' };
+  var existing = {};
+  if (ws.getLastRow() > 1) ws.getRange(2,1,ws.getLastRow()-1,1).getValues().forEach(function(r){ if(r[0]) existing[String(r[0]).trim()] = true; });
+  var added = 0;
+  ROWS.forEach(function(x){
+    if (existing[x[0]]) return;
+    // sheet cols: code,name,unit,std,tolMin,tolMax,method,check_brief,tools,doc_ref,doc_number,category,ccp,sort
+    ws.appendRow([x[0],x[1],x[2],'','','',x[3],x[4],x[5],x[6],'',x[7],x[8],x[9]]);
+    added++;
+  });
+  return { success:true, added:added };
+}
+
 var IQCPARAMLOG_HEADERS_ = ['iqcDocNo','timestamp','paramCode','paramName','unit','stdValue','actualValue','result','remark'];
 function ensureIqcParamLogSheet_() {
   var ss = getSpreadsheet(), ws = ss.getSheetByName('IQC_PARAM_LOG');
