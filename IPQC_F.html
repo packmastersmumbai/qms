@@ -98,6 +98,9 @@
       font-size: 13px; font-weight: 600; color: #0f172a;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .info-btn { background:none; border:none; cursor:pointer; color:#2563eb; font-size:13px; line-height:1; padding:0; }
+    .info-pop { position:absolute; z-index:60; max-width:250px; background:#fff; color:#1e293b; border:1px solid #cbd5e1; border-radius:8px; padding:10px; font-size:12px; line-height:1.4; box-shadow:0 4px 16px rgba(0,0,0,.12); }
+    .info-pop u { text-decoration:none; font-weight:600; color:#475569; }
     .ipqc-row-std { font-size: 11px; color: #64748b; margin-top: 2px; }
 
     /* Numeric input */
@@ -534,7 +537,28 @@ var SESSION_START_TS = null;
 var ROUND_START_TS = null;            // resets per round
 var _LEAK_RESULT = '';                // PASS / FAIL / NA / ''
 var _AWAITING_NEXT_ROUND = false;     // true after save, until user starts next round
-var PARAMS = [];   // [{paramCode, paramName, methodType, stdValue, unit, tolMin, tolMax, checkBrief}]
+var PARAMS = [];   // [{paramCode, paramName, methodType, stdValue, unit, tolMin, tolMax, checkBrief, tools, docRef, ccp}]
+
+// ⓘ operator-guidance popover — tap-to-toggle (GAS touch iframe; hover unreliable).
+function makeIpqcInfoHandler(p) {
+  return function(e) {
+    e.stopPropagation();
+    var open = document.getElementById('infoPop'); closeInfoPopover();
+    if (open && open.getAttribute('data-pc') === p.paramCode) return;
+    var pop = document.createElement('div'); pop.className='info-pop'; pop.id='infoPop'; pop.setAttribute('data-pc', p.paramCode);
+    var html = '<b>' + (p.paramName||p.paramCode) + '</b>';
+    if (p.checkBrief) html += '<div><u>How</u>: ' + p.checkBrief + '</div>';
+    if (p.tools)      html += '<div><u>Tool</u>: ' + p.tools + '</div>';
+    if (p.stdValue!=null && p.stdValue!=='') html += '<div><u>Accept</u>: ' + p.stdValue + (p.unit?' '+p.unit:'') + '</div>';
+    if (p.docRef)     html += '<div><u>Ref</u>: ' + p.docRef + (p.ccp?' · CCP':'') + '</div>';
+    pop.innerHTML = html; document.body.appendChild(pop);
+    var r = e.currentTarget.getBoundingClientRect();
+    pop.style.top = (window.scrollY + r.bottom + 4) + 'px';
+    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 258)) + 'px';
+  };
+}
+function closeInfoPopover(){ var e=document.getElementById('infoPop'); if(e) e.remove(); }
+document.addEventListener('click', closeInfoPopover);
 var SAVED_ROUNDS = [];  // [{roundNo, avgWeight, elapsedHms, weights: {1:'0.45',2:'0.46',...}}]
 var timerInterval = null;
 
@@ -923,6 +947,13 @@ function buildParamRow(p, isVisual) {
   var labelEl = document.createElement('div');
   labelEl.className = 'ipqc-row-label';
   labelEl.textContent = p.paramName || p.paramCode;
+  if (p.checkBrief || p.tools || p.docRef) {
+    var info = document.createElement('button');
+    info.type = 'button'; info.className = 'info-btn'; info.textContent = ' ⓘ';
+    info.setAttribute('aria-label', 'How to inspect ' + (p.paramName||p.paramCode));
+    info.onclick = makeIpqcInfoHandler(p);
+    labelEl.appendChild(info);
+  }
 
   var stdEl = document.createElement('div');
   stdEl.className = 'ipqc-row-std';

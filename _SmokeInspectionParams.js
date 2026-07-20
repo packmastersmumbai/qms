@@ -47,6 +47,14 @@ function smokeInspectionParams() {
     _tipArchivePrefix_('STOCK_LEDGER',3,mCode); _tipArchivePrefix_('GRN_LOG',6,mCode);
     _tipArchivePrefix_('IQC_LOG',4,'Test bottle');
     _tipArchivePrefix_('IQC_PARAM_LOG',2,'HB_WEIGHT'); _tipArchivePrefix_('IQC_PARAM_LOG',2,'HB_LEAK');
+
+    // ---- Task 4: IPQC category layer ----
+    var fg7='TIP-FG-'+stamp; var r7=new Array(MAT_WIDTH).fill(''); r7[0]=fg7; r7[1]='Test FG'; r7[2]='NOS'; r7[3]='FG'; r7[MAT_COL.INSP_CATEGORY]='HDPE_BOTTLE';
+    ss.getSheetByName('MASTERS_Materials').appendRow(r7);
+    var ip=getIPQCParams(fg7);
+    assert('IPQC returns category params for FG', ip&&ip.params&&ip.params.length>0, JSON.stringify(ip&&(ip.warning||('n='+(ip.params&&ip.params.length)))));
+    if (ip&&ip.params&&ip.params.length) assert('IPQC param carries guidance', ('checkBrief' in ip.params[0])||('tools' in ip.params[0]));
+    _tipArchivePrefix_('MASTERS_Materials',0,fg7);
   } catch(e){ log.push('EXCEPTION: '+e.message+' '+(e.stack||'')); fail++; }
   finally { if (typeof _QMS_SUPPRESS_NOTIFY!=='undefined') _QMS_SUPPRESS_NOTIFY=false; }
   log.push(''); log.push('RESULT: '+pass+' passed, '+fail+' failed.');

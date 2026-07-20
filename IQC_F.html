@@ -22,6 +22,9 @@
     button { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 
     /* Param row states */
+    .info-btn { background:none; border:none; cursor:pointer; color:#2563eb; font-size:14px; line-height:1; padding:0 2px; }
+    .info-pop { position:absolute; z-index:60; max-width:250px; background:#fff; color:#1e293b; border:1px solid #cbd5e1; border-radius:8px; padding:10px; font-size:12px; line-height:1.4; box-shadow:0 4px 16px rgba(0,0,0,.12); }
+    .info-pop u { text-decoration:none; font-weight:600; color:#475569; }
     .param-row-pass { background:#f0fdf4; border-color:#86efac !important; }
     .param-row-fail { background:#fef2f2; border-color:#fca5a5 !important; }
     .param-row-na   { background:#f1f5f9; }
@@ -515,6 +518,29 @@ var IQC_PARAMS = [
   {id:'coa',    label:'COA / Test Report',    spec:'Received & Verified',            ccp:true,  hint:'COA values must match spec; verify lot no.'}
 ];
 
+/* IQC_PARAMS above is the LEGACY default (shown before a product is chosen / for
+   un-categorized products). On product select we replace it with the category set
+   from getIqcParamsForProduct, normalized to the same {id,label,ccp,hint} shape the
+   render loop already uses — plus guidance fields (tools/docRef/std) for the ⓘ tip. */
+function applyIqcParams(list, fallback){
+  IQC_PARAMS = (list||[]).map(function(p, idx){
+    return { id: p.paramCode || p.id, label: p.label, ccp: !!p.ccp,
+      hint: p.checkBrief || p.hint || '', tools: p.tools || '', docRef: p.docRef || '',
+      std: (p.std!=null && p.std!=='') ? String(p.std) : (p.specText||''), unit: p.unit||'' };
+  });
+  IQC_PARAMS_FALLBACK = !!fallback;
+}
+var IQC_PARAMS_FALLBACK = true;
+function loadParamsForProduct(materialCode){
+  if(!materialCode){ return; }
+  google.script.run.withSuccessHandler(function(res){
+    applyIqcParams((res&&res.params)||[], res&&res.fallback);
+    // re-init the current item's param map to the new param ids, then re-render.
+    if (itemData[currentIdx]) itemData[currentIdx].params = itemData[currentIdx].params || {};
+    if (typeof buildParamSection === 'function') buildParamSection();
+  }).withFailureHandler(function(){ /* keep legacy defaults */ }).getIqcParamsForProduct(materialCode);
+}
+
 /* ── State ── */
 var formSaved      = false;
 var lastSavedDocNo = '';
@@ -847,6 +873,8 @@ function renderCurrentItem() {
   updateQtyMismatch();
 
   buildParamSection();
+  // Load the category-specific param set for THIS item's material (re-renders on return).
+  loadParamsForProduct(d.materialCode || (currentItems[currentIdx] && currentItems[currentIdx].materialCode) || '');
   updateDispCard();
   updateStickyBar();
 }
@@ -917,6 +945,16 @@ function buildParamSection() {
       ccpBadge.textContent = 'CCP';
       lblTop.appendChild(ccpBadge);
     }
+    // ⓘ operator-guidance button — how/tool/accept/ref, from the param's own fields.
+    if (p.hint || p.tools || p.docRef || p.std) {
+      var info = document.createElement('button');
+      info.type = 'button';
+      info.className = 'shrink-0 info-btn';
+      info.textContent = 'ⓘ';
+      info.setAttribute('aria-label', 'How to inspect ' + p.label);
+      info.onclick = makeInfoHandler(p);
+      lblTop.appendChild(info);
+    }
     lblWrap.appendChild(lblTop);
     if (p.hint) {
       var hint = document.createElement('span');
@@ -958,6 +996,31 @@ function buildParamSection() {
 function makeParamHandler(paramId, val) {
   return function() { setParam(paramId, val); };
 }
+
+// ⓘ tooltip — tap-to-toggle popover (GAS runs in a touch iframe where hover is
+// unreliable, so click, not hover). One open at a time; click-anywhere closes.
+function makeInfoHandler(p) {
+  return function(e) {
+    e.stopPropagation();
+    var open = document.getElementById('infoPop');
+    closeInfoPopover();
+    if (open && open.getAttribute('data-pc') === p.id) return; // second tap on same = close
+    var pop = document.createElement('div');
+    pop.className = 'info-pop'; pop.id = 'infoPop'; pop.setAttribute('data-pc', p.id);
+    var html = '<b>' + p.label + '</b>';
+    if (p.hint)  html += '<div><u>How</u>: '  + p.hint  + '</div>';
+    if (p.tools) html += '<div><u>Tool</u>: ' + p.tools + '</div>';
+    if (p.std)   html += '<div><u>Accept</u>: ' + p.std + (p.unit ? ' ' + p.unit : '') + '</div>';
+    if (p.docRef) html += '<div><u>Ref</u>: ' + p.docRef + (p.ccp ? ' · CCP' : '') + '</div>';
+    pop.innerHTML = html;
+    document.body.appendChild(pop);
+    var r = e.currentTarget.getBoundingClientRect();
+    pop.style.top  = (window.scrollY + r.bottom + 4) + 'px';
+    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 258)) + 'px';
+  };
+}
+function closeInfoPopover() { var e = document.getElementById('infoPop'); if (e) e.remove(); }
+document.addEventListener('click', closeInfoPopover);
 
 function setParam(paramId, val) {
   itemData[currentIdx].params[paramId] = val;
@@ -1291,7 +1354,12 @@ function doSaveIQC() {
         clean:  pmap.clean  ||'NA', odour:  pmap.odour  ||'NA',
         label:  pmap.label  ||'NA', msds:   pmap.msds   ||'NA',
         shelf:  pmap.shelf  ||'NA', coa:    pmap.coa    ||'NA'
-      }
+      },
+      // EAV param results from the LIVE param set (legacy or category) → IQC_PARAM_LOG.
+      paramResults: IQC_PARAMS.map(function(p){
+        return { paramCode:p.id, paramName:p.label, unit:p.unit||'', stdValue:p.std||'',
+          actualValue:'', result:(pmap[p.id]||'NA'), remark:'' };
+      })
     };
   });
 

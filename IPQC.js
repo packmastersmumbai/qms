@@ -32,14 +32,33 @@ function getIPQCParams(productCode) {
   try {
     var ss = getSpreadsheet();
 
+    // Category layer: params from the product's inspectionCategory, mapped to IPQC's
+    // field names. CONTROL_FG (below) still wins for std/tol where it has an override.
+    // If CONTROL_FG has nothing for this product, these category params are the result.
+    var catParams = [];
+    try {
+      var cat = '';
+      var mats = getMaterials();
+      for (var mi = 0; mi < mats.length; mi++) {
+        if (String(mats[mi].code || mats[mi].itemCode || '').trim() === String(productCode).trim()) { cat = String(mats[mi].inspectionCategory || '').trim(); break; }
+      }
+      if (cat && typeof getCategoryParams === 'function') {
+        catParams = getCategoryParams(cat, 'IPQC').map(function(p){
+          return { paramCode:p.paramCode, paramName:p.label, unit:p.unit, stdValue:(p.std!=null?p.std:''),
+            tolMin:(p.tolMin!=null?p.tolMin:''), tolMax:(p.tolMax!=null?p.tolMax:''),
+            methodType:p.method, checkBrief:p.checkBrief, tools:p.tools, docRef:p.docRef, ccp:p.ccp };
+        });
+      }
+    } catch(ce) {}
+
     var cpWs = ss.getSheetByName('CONTROL_FG');
     if (!cpWs) {
-      return { params: [], warning: 'No control plan configured for this product' };
+      return catParams.length ? { params: catParams } : { params: [], warning: 'No control plan configured for this product' };
     }
 
     var cpData = cpWs.getDataRange().getValues();
     if (cpData.length < 2) {
-      return { params: [], warning: 'No control plan configured for this product' };
+      return catParams.length ? { params: catParams } : { params: [], warning: 'No control plan configured for this product' };
     }
 
     // Build map of enabled control plan rows for this product
@@ -57,7 +76,7 @@ function getIPQCParams(productCode) {
     }
 
     if (Object.keys(cpMap).length === 0) {
-      return { params: [], warning: 'No control plan configured for this product' };
+      return catParams.length ? { params: catParams } : { params: [], warning: 'No control plan configured for this product' };
     }
 
     // Load MASTERS_Parameters
