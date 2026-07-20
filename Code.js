@@ -371,7 +371,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v85_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v86_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;
@@ -403,7 +403,7 @@ function clearFormHtmlCache() {
     'NCR','Settings','MastersCrud','Trace','Landing','Recorder','Rework','Scan','QMSV2'];
   var cache = CacheService.getScriptCache();
   var keys = [];
-  ['v80','v81','v82','v83','v84','v85'].forEach(function(v){
+  ['v80','v81','v82','v83','v84','v85','v86'].forEach(function(v){
     forms.forEach(function(f){ keys.push('pmqms_formhtml_' + v + '_' + f); });
   });
   cache.removeAll(keys);

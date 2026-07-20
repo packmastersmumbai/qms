@@ -117,10 +117,19 @@ function submitReworkCompletion(data) {
         ' ≠ original ' + origQty + '. qtyReworked + qtyScrapped must equal original qty.' };
     }
 
-    // Determine material type: NCR source = rework-FG or rework-RM; CustomerReturn = FG
-    var isFG = (source === 'CUSTOMER_RETURN') ||
-               (source === 'NCR' && String(rData[3] || '').indexOf('rework-FG') >= 0) ||
-               reOQCRef !== '';
+    // Determine material type from the AUTHORITATIVE materialType stored at REWORK_LOG
+    // creation (col 18), NOT from whether an OQC ref happens to be present (#14).
+    // Keying off reOQCRef !== '' let an RM item with a mistakenly-populated reOQCRef be
+    // released to FG-STORE, skipping the required re-IQC gate and mislocating the stock.
+    var storedType = String(rData[18] || '').toUpperCase();
+    var isFG;
+    if (storedType === 'FG' || storedType === 'RM') {
+      isFG = (storedType === 'FG');
+    } else {
+      // Fallback for legacy rows written before materialType was captured.
+      isFG = (source === 'CUSTOMER_RETURN') ||
+             (source === 'NCR' && String(rData[3] || '').indexOf('rework-FG') >= 0);
+    }
 
     // Re-inspection gate
     if (isFG && !reOQCRef) {

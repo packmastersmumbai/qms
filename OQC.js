@@ -141,6 +141,15 @@ function saveOQC(data) {
     // Req 6 — duplicate OQC block: reject if a non-REJECTED OQC already exists for this
     // batch+material. Checks every item (not just items[0]). Normalises whitespace on
     // materialDesc (both sides) since materialCode is not stored in OQC_LOG.
+    // Wrapped in withStockLock_ so the duplicate SCAN and the row APPEND (below) are
+    // atomic: without the lock two concurrent releases of the same batch both pass the
+    // check before either appends, double-creating FG lots + double OQC_RELEASE ledger IN.
+    var oqcLock = LockService.getScriptLock();
+    var oqcLockOk = false;
+    try {
+      oqcLockOk = oqcLock.tryLock(15000);
+      if (!oqcLockOk) return { success: false, error: 'System busy (OQC lock timeout). Please retry.' };
+
     if (data.items && data.items.length > 0) {
       var oqcVals = ws.getDataRange().getValues();
       for (var ii = 0; ii < data.items.length; ii++) {
@@ -264,6 +273,12 @@ function saveOQC(data) {
 
       docNos.push(docNo);
     });
+    } finally {
+      // Release the OQC append lock once all rows are written. Duplicate-check and
+      // append are now complete; the remaining NCR/video/QR work is not part of the
+      // check-then-append race and can proceed unlocked.
+      if (oqcLockOk) oqcLock.releaseLock();
+    }
 
     // Auto-raise NCR for rejected OR held OQC sessions.
     var ncrNo = '';
@@ -291,7 +306,11 @@ function saveOQC(data) {
         data.items.forEach(function(item, idx) {
           var rejQty = Number(item.rejectedQty) || 0;
           if (rejQty <= 0) return;
-          var productCode = _resolveProductCodeFromDesc_(item.materialDesc || '');
+          // Prefer the canonical materialCode the UI sent; fuzzy desc-resolution
+          // can match the wrong FG when descriptions overlap, quarantining the
+          // wrong product (or none). Fall back only for pre-fix clients.
+          var productCode = String(item.materialCode || '').trim() ||
+                            _resolveProductCodeFromDesc_(item.materialDesc || '');
           if (!productCode || !item.batchPO) return;
           var fgLocForReject = String((item && item.fgLocation) || data.fgLocation || '').trim() || 'FG-HOLD';
           var qLocs = (typeof getLocations === 'function') ? getLocations('QUARANTINE') : [];

@@ -21,6 +21,18 @@ function raiseNCR_(payload) {
     var now   = new Date();
     var user  = (function() { try { return Session.getActiveUser().getEmail() || 'QA'; } catch(e) { return 'QA'; } })();
 
+    // Optional pre-set disposition/status: used when the CALLER has ALREADY carried
+    // out the disposition action (e.g. customer-return REWORK already moved stock to
+    // REWORK-AREA). Raising such an NCR at OPEN/PENDING_DISPOSITION would invite a
+    // manager to setNCRDisposition('rework-*') and move the SAME stock a second time.
+    // So we record it already dispositioned (status not OPEN) — setNCRDisposition's
+    // OPEN-guard then blocks any re-run.
+    var preDisp   = String(payload.preDisposition || '').trim();
+    var dispCell  = preDisp || 'PENDING_DISPOSITION';
+    var statusCell = preDisp ? (String(payload.preStatus || 'IN_PROGRESS').trim()) : 'OPEN';
+    var dispBy    = preDisp ? (payload.disposedBy || user) : '';
+    var dispAt    = preDisp ? now : '';
+
     ws.appendRow([
       docNo,                                  // c1  NCR No
       payload.date ? new Date(payload.date) : now,  // c2  Date
@@ -32,11 +44,11 @@ function raiseNCR_(payload) {
       payload.qtyAffected != null ? payload.qtyAffected : 0,  // c8  Qty Affected
       payload.unit           || '',           // c9  Unit
       payload.defectDesc     || '',           // c10 Defect Description
-      'PENDING_DISPOSITION',                  // c11 Disposition (default per Lean UX decision)
-      '',                                     // c12 Disposition By
-      '',                                     // c13 Disposition At
+      dispCell,                               // c11 Disposition
+      dispBy,                                 // c12 Disposition By
+      dispAt,                                 // c13 Disposition At
       '',                                     // c14 CAPA Ref
-      'OPEN',                                 // c15 Status
+      statusCell,                             // c15 Status
       user,                                   // c16 Created By
       now                                     // c17 Timestamp
     ]);
@@ -90,13 +102,27 @@ function setNCRDisposition(ncrDocNo, disposition, dispositionBy) {
     var ss = getSpreadsheet();
     var ws = ss.getSheetByName('NCR_LOG');
     if (!ws) throw new Error('NCR_LOG sheet not found.');
-    var data = ws.getDataRange().getValues();
     var ref = String(ncrDocNo).trim();
     var actor = (function() { try { return Session.getActiveUser().getEmail() || dispositionBy || ''; } catch(e) { return dispositionBy || ''; } })();
+    // Atomic: read NCR state + OPEN-guard + stock move under one lock, so two
+    // concurrent dispositions can't both read OPEN and double-write the rework move.
+    return withStockLock_(function(){
+    var data = ws.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][0]).trim() === ref) {
         var row = i + 1;
         var fromStatus = String(data[i][14] || '').toUpperCase() || 'OPEN';
+        // Idempotency guard: once an NCR has been dispositioned (status left OPEN),
+        // a repeat call (double-click / google.script.run retry / two reviewers)
+        // must NOT re-run the stock-move + REWORK_LOG block. Only OPEN NCRs may be
+        // dispositioned; re-submitting the SAME disposition is a no-op success.
+        var priorDisp = String(data[i][10] || '').trim().toUpperCase();
+        if (fromStatus !== 'OPEN') {
+          if (priorDisp === String(disposition).trim().toUpperCase()) {
+            return { success: true, alreadyApplied: true };
+          }
+          return { success: false, error: 'NCR ' + ref + ' is already ' + fromStatus + ' with disposition "' + (data[i][10] || '') + '". Re-disposition not allowed.' };
+        }
         var toStatus = disposition === 'use-as-is' ? 'CLOSED' : 'IN_PROGRESS';
         ws.getRange(row, 11).setValue(disposition).setBackground('#E8F5E9');
         ws.getRange(row, 12).setValue(actor);
@@ -134,6 +160,7 @@ function setNCRDisposition(ncrDocNo, disposition, dispositionBy) {
       }
     }
     return { success: false, error: 'NCR ' + ref + ' not found.' };
+    });
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };

@@ -145,6 +145,7 @@ function saveIQC(data) {
       if (typeof writeStockLedger_ === 'function') {
         try {
           var grnLoc = '';
+          var grnQty = 0;   // received qty for this batch (for accept-remainder reconciliation)
           var grnWs2 = ss.getSheetByName('GRN_LOG');
           if (grnWs2 && grnWs2.getLastRow() > 1 && data.grnNo) {
             var grnData = grnWs2.getDataRange().getValues();
@@ -152,6 +153,7 @@ function saveIQC(data) {
               if (String(grnData[gi][0]).trim() === String(data.grnNo).trim() &&
                   String(grnData[gi][8]).trim() === String(item.batchNo || '').trim()) {
                 grnLoc = String(grnData[gi][20] || '').trim();
+                grnQty = Number(grnData[gi][10]) || 0;
                 break;
               }
             }
@@ -163,11 +165,38 @@ function saveIQC(data) {
 
           if (!matCode || !item.batchNo || !grnLoc) throw new Error('Missing matCode/batch/location for ledger');
 
+          // Input guard (#10): a REJECTED/HOLD disposition with no rejected/hold qty
+          // would leave the whole received balance sitting issuable at the GRN location.
+          // Default a bare REJECTED/HOLD to the full received qty so stock actually moves.
+          if (disp === 'REJECTED' && rejQty <= 0) { rejQty = grnQty - accQty - hldQty; }
+          if (disp === 'HOLD'     && hldQty <= 0) { hldQty = grnQty - accQty - rejQty; }
+          if (rejQty < 0) rejQty = 0;
+          if (hldQty < 0) hldQty = 0;
+
           // Accepted portion — status marker only (stock stays in GRN location)
           if (accQty > 0 || disp === 'ACCEPTED' || disp === 'ACCEPTED WITH DEVIATION') {
             writeStockLedger_('IQC_ACCEPT', matCode, item.batchNo, grnLoc,
               0, 0, 'IQC', docNo, data.inspector || '',
               'IQC accept (' + accQty + ') — stock available for issuance');
+
+            // Reconcile un-accepted remainder (#1): on an ACCEPTED/ACC-W-DEV lot the
+            // ledger balance at the GRN location is still the FULL received qty, so any
+            // received-but-not-accepted units (grnQty − accepted − rejected − hold)
+            // would leak into production as issuable. Move that remainder to QUARANTINE
+            // as un-inspected/held so only acceptedQty stays issuable.
+            if ((disp === 'ACCEPTED' || disp === 'ACCEPTED WITH DEVIATION') && grnQty > 0 && accQty > 0) {
+              var remainder = grnQty - accQty - rejQty - hldQty;
+              if (remainder > 0) {
+                var qLocsR = (typeof getLocations === 'function') ? getLocations('QUARANTINE') : [];
+                var quarIdR = qLocsR.length > 0 ? qLocsR[0].id : 'QUARANTINE';
+                writeStockLedger_('IQC_ACCEPT_REMAINDER_OUT', matCode, item.batchNo, grnLoc,
+                  0, remainder, 'IQC', docNo, data.inspector || '',
+                  'IQC accepted ' + accQty + ' of ' + grnQty + ' — remainder ' + remainder + ' held (not accepted)');
+                writeStockLedger_('IQC_ACCEPT_REMAINDER_QUARANTINE', matCode, item.batchNo, quarIdR,
+                  remainder, 0, 'IQC', docNo, data.inspector || '',
+                  'IQC un-accepted remainder — quarantined, not issuable');
+              }
+            }
 
             // Offer optional putaway (worker confirms slot client-side).
             // Only accepted portions with a real qty and a known source zone qualify.
@@ -244,7 +273,10 @@ function saveIQC(data) {
     // Update GRN status; close GRN when all items have a final IQC disposition
     if (data.grnNo) {
       updateGRNIQCStatus(data.grnNo, disp || 'PENDING');
-      var finalDisps = ['ACCEPTED', 'REJECTED', 'HOLD', 'PARTIAL', 'ACCEPTED WITH DEVIATION'];
+      // HOLD is NOT final — it awaits closeHoldIQC resolution into ACCEPTED/REJECTED/
+      // PARTIAL_CLOSED. Counting it as final would auto-close the GRN while a held
+      // batch is still open. Only truly-terminal dispositions close the GRN.
+      var finalDisps = ['ACCEPTED', 'REJECTED', 'PARTIAL', 'PARTIAL_CLOSED', 'ACCEPTED WITH DEVIATION'];
       if (finalDisps.indexOf(disp) !== -1) {
         try {
           var grnWs3 = ss.getSheetByName('GRN_LOG');

@@ -41,6 +41,10 @@ function getNextDocNumber(type) {
     var docNum  = prefix + String(counter).padStart(3, '0');
 
     ws.getRange(counterRow, 2).setValue(counter + 1);
+    // Durably commit the incremented counter BEFORE releasing the lock. Apps Script
+    // otherwise flushes buffered writes at execution end, which can be AFTER the next
+    // lock waiter has already read the counter — yielding a duplicate doc number.
+    SpreadsheetApp.flush();
     return docNum;
   } finally {
     lock.releaseLock();

@@ -348,10 +348,19 @@ function disposeCustomerReturn(data) {
     var ws = ss.getSheetByName('CUSTOMER_RETURN_LOG');
     if (!ws) throw new Error('CUSTOMER_RETURN_LOG sheet not found.');
     var ref = String(data.rtnNo).trim();
+    // Atomic: read return state + OPEN-guard + disposition writes under one lock,
+    // so two concurrent disposals can't both pass the OPEN check and double-restock.
+    return withStockLock_(function(){
     var rows = ws.getDataRange().getValues();
     for (var i = 1; i < rows.length; i++) {
       if (String(rows[i][0]).trim() !== ref) continue;
       var row = i + 1;
+      // Idempotency guard: only an un-triaged (not yet INSPECTED/CLOSED) return may
+      // be dispositioned. A repeat call is a no-op success — never a second restock.
+      var curStatus = String(rows[i][12] || '').trim().toUpperCase();
+      if (curStatus === 'INSPECTED' || curStatus === 'CLOSED') {
+        return { success: true, alreadyDisposed: true };
+      }
       var productCode = rows[i][5];
       var productDesc = rows[i][6];
       var fgBatchNo   = rows[i][7];
@@ -389,16 +398,25 @@ function disposeCustomerReturn(data) {
           }
         }
       } else if (data.disposition === 'SCRAP') {
+        // Guard the scrap ledger move like RESTOCK/REWORK: if recordScrap throws,
+        // keep the row OPEN (PENDING_RETRY) instead of committing it CLOSED with
+        // stock still sitting in QUARANTINE (which re-triage would scrap again).
         if (typeof recordScrap === 'function') {
-          recordScrap({
-            refDocType: 'CUSTOMER_RETURN', refDocNo: ref,
-            materialCode: productCode, batchOrLotNo: fgBatchNo,
-            qtyScrap: qty, unit: unit,
-            scrapReason: data.remarks || reason || 'Customer return — scrap',
-            scrapDestination: 'DISPOSAL',
-            recordedBy: data.disposedBy || '',
-            locationId: 'QUARANTINE'
-          });
+          try {
+            recordScrap({
+              refDocType: 'CUSTOMER_RETURN', refDocNo: ref,
+              materialCode: productCode, batchOrLotNo: fgBatchNo,
+              qtyScrap: qty, unit: unit,
+              scrapReason: data.remarks || reason || 'Customer return — scrap',
+              scrapDestination: 'DISPOSAL',
+              recordedBy: data.disposedBy || '',
+              locationId: 'QUARANTINE'
+            });
+          } catch (scrapErr) {
+            Logger.log('CustomerReturn SCRAP ledger failed: ' + scrapErr.message);
+            disposeWarnings.push('Scrap move failed — return left OPEN for retry. Admin: ' + scrapErr.message);
+            ledgerFailed = true;
+          }
         }
         if (typeof raiseNCR_ === 'function') {
           ncrNo = raiseNCR_({
@@ -435,16 +453,23 @@ function disposeCustomerReturn(data) {
           }
         }
         if (typeof raiseNCR_ === 'function') {
+          // Stock has ALREADY been moved to REWORK-AREA above, so raise the NCR
+          // already dispositioned (rework-FG / IN_PROGRESS). This blocks a manager
+          // from later calling setNCRDisposition('rework-FG') and moving the SAME
+          // stock a second time (setNCRDisposition's OPEN-guard rejects it).
           ncrNo = raiseNCR_({
-            date:         new Date(),
-            source:       'CUSTOMER_RETURN',
-            sourceRef:    ref,
-            materialCode: productCode || '',
-            materialDesc: productDesc || '',
-            batchNo:      fgBatchNo || '',
-            qtyAffected:  qty,
-            unit:         unit || '',
-            defectDesc:   'Customer return — rework required. ' + (data.remarks || reason || '')
+            date:           new Date(),
+            source:         'CUSTOMER_RETURN',
+            sourceRef:      ref,
+            materialCode:   productCode || '',
+            materialDesc:   productDesc || '',
+            batchNo:        fgBatchNo || '',
+            qtyAffected:    qty,
+            unit:           unit || '',
+            defectDesc:     'Customer return — rework required. ' + (data.remarks || reason || ''),
+            preDisposition: 'rework-FG',
+            preStatus:      'IN_PROGRESS',
+            disposedBy:     data.disposedBy || ''
           });
           if (!ncrNo) {
             ncrError = 'NCR auto-raise FAILED — raise the NCR manually.';
@@ -466,6 +491,7 @@ function disposeCustomerReturn(data) {
       return { success: true, ncrNo: ncrNo, ncrError: ncrError, warnings: disposeWarnings, ledgerFailed: ledgerFailed };
     }
     return { success: false, error: 'Return ' + ref + ' not found.' };
+    });
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };

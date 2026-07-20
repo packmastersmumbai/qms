@@ -51,34 +51,47 @@ function getProductionLotsForMaterial(materialCode) {
   var lots = (typeof getFIFOLots === 'function') ? getFIFOLots(matKey) : [];
   if (!lots.length) return [];
 
-  // Resolve IQC disposition per batch (latest IQC row per GRN)
-  var grnByBatch = {};
-  var grnWs = getSpreadsheet().getSheetByName('GRN_LOG');
-  if (grnWs && grnWs.getLastRow() > 1) {
-    var g = grnWs.getDataRange().getValues();
-    for (var i = 1; i < g.length; i++) {
-      var mat = String(g[i][6] || '').trim();
-      var batch = String(g[i][8] || '').trim();
-      if (mat === matKey && batch && !grnByBatch[batch]) {
-        grnByBatch[batch] = String(g[i][0] || '').trim();
+  // Resolve IQC disposition per batch — request-scoped cached GRN/IQC snapshots
+  // (ProductionReadCache.js), with direct-read fallback if that module is absent.
+  var grnByBatch = {}, dispByGRN;
+  if (typeof prodGrnByBatch_ === 'function' && typeof prodDispByGRN_ === 'function') {
+    var noByMatBatch = prodGrnByBatch_().grnByBatch.noByMatBatch;
+    lots.forEach(function(l){
+      var b = String(l.batchOrLotNo || '').trim();
+      if (b) grnByBatch[b] = noByMatBatch[matKey + '|' + b] || '';
+    });
+    dispByGRN = prodDispByGRN_();
+  } else {
+    var grnWs = getSpreadsheet().getSheetByName('GRN_LOG');
+    if (grnWs && grnWs.getLastRow() > 1) {
+      var g = grnWs.getDataRange().getValues();
+      for (var i = 1; i < g.length; i++) {
+        var mat = String(g[i][6] || '').trim();
+        var batch = String(g[i][8] || '').trim();
+        if (mat === matKey && batch && !grnByBatch[batch]) {
+          grnByBatch[batch] = String(g[i][0] || '').trim();
+        }
       }
     }
-  }
-  var dispByGRN = {};
-  var iqcWs = getSpreadsheet().getSheetByName('IQC_LOG');
-  if (iqcWs && iqcWs.getLastRow() > 1) {
-    var iq = iqcWs.getDataRange().getValues();
-    for (var j = iq.length - 1; j >= 1; j--) {
-      var ref = String(iq[j][2] || '').trim();
-      if (ref && !dispByGRN[ref]) {
-        dispByGRN[ref] = String(iq[j][22] || '').toUpperCase();
+    dispByGRN = {};
+    var iqcWs = getSpreadsheet().getSheetByName('IQC_LOG');
+    if (iqcWs && iqcWs.getLastRow() > 1) {
+      var iq = iqcWs.getDataRange().getValues();
+      for (var j = iq.length - 1; j >= 1; j--) {
+        var ref   = String(iq[j][2] || '').trim();
+        var bch   = String(iq[j][5] || '').trim();
+        if (!ref) continue;
+        var k = ref + '|' + bch;
+        if (dispByGRN[k] === undefined) dispByGRN[k] = String(iq[j][22] || '').toUpperCase();
       }
     }
   }
 
   return lots.map(function(l){
-    var grnNo = grnByBatch[l.batchOrLotNo] || '';
-    var disp  = dispByGRN[grnNo] || 'PENDING';
+    var batch = String(l.batchOrLotNo || '').trim();
+    var grnNo = grnByBatch[batch] || '';
+    // Disposition is per-batch (GRN|batch), never per-GRN — see prodDispByGRN_.
+    var disp  = dispByGRN[grnNo + '|' + batch] || 'PENDING';
     var dateOut = '';
     try { if (l.grnDate) dateOut = new Date(l.grnDate).toISOString(); } catch(e){}
     return {
@@ -779,7 +792,15 @@ function issueProductionJob(data) {
         if (!res.success) {
           // Partial-issue: prior components were debited inside this lock. Roll them
           // back automatically so stock is never left wrongly decremented, then fail.
-          var rev = reverseProductionIssue(perCompResults, poNo, issuedBy);
+          // CRITICAL (#4): also reverse the lots the FAILING component itself already
+          // issued before it hit the bad lot — issueRMMultiLot returns them in
+          // res.issuedBefore. Omitting them orphans those PROD_BOOK debits (silent
+          // stock loss), since perCompResults only holds fully-successful components.
+          var reverseList = perCompResults.slice();
+          if (res.issuedBefore && res.issuedBefore.length) {
+            reverseList.push({ compCode: line.compCode, issueId: (res.issueId || ''), qty: 0, lots: res.issuedBefore });
+          }
+          var rev = reverseProductionIssue(reverseList, poNo, issuedBy);
           Logger.log('issueProductionJob PARTIAL FAILURE on ' + line.compCode +
             ' — auto-reversed ' + rev.reversedLots + ' lot(s), credited ' + rev.credited +
             (rev.errors.length ? ' [reversal errors: ' + rev.errors.join('; ') + ']' : ''));
@@ -1052,21 +1073,35 @@ function getJobBookedDetail(jobId) {
     if (b && b.compCode) consumByComp[String(b.compCode).trim()] = Number(b.consum) || 0;
   });
   // PROD_ISSUE_LOG: Issue ID[0], Timestamp[1], PO[2], MatCode[3], MatName[4], Batch[5], Loc[6], Qty[7], Unit[8], ...
-  var lines = [];
+  // AGGREGATE by compCode|batch|location (#12): a component can be issued across
+  // multiple FIFO passes that draw from the SAME batch+location, producing two rows.
+  // submitProductionBooking keys bookedMap by that same tuple, so un-merged rows would
+  // collapse and its reversal would credit only the LAST row's qty, under-reversing the
+  // rest. Summing bookedQty here makes one line per tuple with the true total.
+  var lineMap = {};
+  var lineOrder = [];
   for (var p = 1; p < pilData.length; p++) {
     var iid = String(pilData[p][0] || '').trim();
     if (!issueIdSet[iid]) continue;
     var code = String(pilData[p][3] || '').trim();
-    lines.push({
-      compCode:   code,
-      compName:   String(pilData[p][4] || ''),
-      batchOrLot: String(pilData[p][5] || ''),
-      location:   String(pilData[p][6] || ''),
-      bookedQty:  Number(pilData[p][7]) || 0,
-      uom:        String(pilData[p][8] || ''),
-      consum:     consumByComp[code] || 0
-    });
+    var batch = String(pilData[p][5] || '');
+    var loc   = String(pilData[p][6] || '');
+    var key   = code + '|' + batch + '|' + loc;
+    if (!lineMap[key]) {
+      lineMap[key] = {
+        compCode:   code,
+        compName:   String(pilData[p][4] || ''),
+        batchOrLot: batch,
+        location:   loc,
+        bookedQty:  0,
+        uom:        String(pilData[p][8] || ''),
+        consum:     consumByComp[code] || 0
+      };
+      lineOrder.push(key);
+    }
+    lineMap[key].bookedQty += Number(pilData[p][7]) || 0;
   }
+  var lines = lineOrder.map(function(k){ return lineMap[k]; });
 
   return { success: true, job: job, lines: lines };
 }

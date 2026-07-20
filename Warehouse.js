@@ -9,6 +9,28 @@
 
 // ---------- Ledger primitives ----------
 
+// ------------------------------------------------------------
+// withStockLock_ — run a check-then-write critical section under the SAME
+// script lock writeStockLedger_ uses, so a caller's availability read and its
+// ledger append are atomic against concurrent requests (fixes the TOCTOU
+// over-issue class). GAS script locks are reentrant within one execution, so
+// wrapping a section that itself calls writeStockLedger_ does NOT deadlock.
+// Returns fn()'s result. On lock-acquire failure returns {success:false,...}.
+// ------------------------------------------------------------
+function withStockLock_(fn) {
+  var lock = LockService.getScriptLock();
+  var acquired = false;
+  try {
+    acquired = lock.tryLock(15000);
+    if (!acquired) {
+      return { success: false, error: 'System busy (stock lock timeout). Please retry.' };
+    }
+    return fn();
+  } finally {
+    if (acquired) lock.releaseLock();
+  }
+}
+
 function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
                             qtyIn, qtyOut, refDocType, refDocNo, operator, remarks, materialDesc) {
   var ss = getSpreadsheet();
@@ -51,6 +73,9 @@ function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
   } finally {
     if (lockAcquired) lock.releaseLock();
   }
+  // Invalidate the request-scoped read snapshot so any subsequent read in this
+  // same request (e.g. the next lot's warehouse gate) sees this debit/credit.
+  if (typeof prodCacheReset_ === 'function') prodCacheReset_();
   return txnId;
 }
 
@@ -259,30 +284,38 @@ function getLowStockItems() {
 // against fifoLots[0].batchOrLotNo before permitting the write.
 function getFIFOLots(materialCode) {
   var quarantineTypes = { 'QUARANTINE': 1, 'SCRAP': 1, 'SAMPLE': 1 };
-  var locTypeById = {};
-  var locWs = getSpreadsheet().getSheetByName('LOCATIONS');
-  if (locWs && locWs.getLastRow() > 1) {
-    locWs.getRange(2, 1, locWs.getLastRow() - 1, 12).getValues().forEach(function(r){
-      if (r[0]) locTypeById[String(r[0]).trim()] = String(r[8] || '').toUpperCase();
-    });
-  }
+  // Request-scoped cached reads (LOCATIONS, STOCK_LEDGER, GRN dates) — see
+  // ProductionReadCache.js. Falls back to direct reads if that module is absent.
+  var locTypeById = (typeof prodLocTypes_ === 'function') ? prodLocTypes_() : (function(){
+    var m = {}, w = getSpreadsheet().getSheetByName('LOCATIONS');
+    if (w && w.getLastRow() > 1) w.getRange(2,1,w.getLastRow()-1,12).getValues().forEach(function(r){
+      if (r[0]) m[String(r[0]).trim()] = String(r[8]||'').toUpperCase(); });
+    return m;
+  })();
 
   var matKey = String(materialCode == null ? '' : materialCode).trim();
-  var summary = getStockSummary().filter(function(s){
+  var stockSummary = (typeof prodStockSummary_ === 'function') ? prodStockSummary_() : getStockSummary();
+  var summary = stockSummary.filter(function(s){
     if (String(s.materialCode).trim() !== matKey) return false;
     if (s.balance <= 0) return false;
     var t = locTypeById[String(s.locationId).trim()] || '';
     return !quarantineTypes[t];
-  });
+  }).map(function(s){ return { materialCode: s.materialCode, batchOrLotNo: s.batchOrLotNo,
+    locationId: s.locationId, balance: s.balance }; }); // copy — we set grnDate below, don't mutate the shared snapshot
 
-  // GRN dates by batch/lot
-  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
-  var grnDates = {};
-  if (ws && ws.getLastRow() > 1) {
-    var data = ws.getDataRange().getValues();
-    for (var i = 1; i < data.length; i++) {
-      var lotNo = String(data[i][8] || '').trim();
-      if (lotNo && !grnDates[lotNo]) grnDates[lotNo] = data[i][1];
+  // GRN dates by batch/lot (cached)
+  var grnDates;
+  if (typeof prodGrnByBatch_ === 'function') {
+    grnDates = prodGrnByBatch_().grnByBatch.dateByBatch;
+  } else {
+    grnDates = {};
+    var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+    if (ws && ws.getLastRow() > 1) {
+      var data = ws.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        var lotNo = String(data[i][8] || '').trim();
+        if (lotNo && !grnDates[lotNo]) grnDates[lotNo] = data[i][1];
+      }
     }
   }
   summary.forEach(function(s){ s.grnDate = grnDates[s.batchOrLotNo] || new Date(0); });
@@ -689,15 +722,19 @@ function recordLocationTransfer(data) {
   try {
     var qty = Number(data.qty) || 0;
     if (qty <= 0) return { success: false, error: 'Transfer qty must be > 0.' };
-    var bal = getStockBalance_(data.materialCode, data.batchOrLotNo, data.fromLocationId);
-    if (bal < qty) return { success: false, error: 'Insufficient stock at source (' + bal + ').' };
+    // Atomic: balance check + both ledger appends under one lock so a concurrent
+    // transfer can't pass the same availability check and over-issue the source.
+    return withStockLock_(function(){
+      var bal = getStockBalance_(data.materialCode, data.batchOrLotNo, data.fromLocationId);
+      if (bal < qty) return { success: false, error: 'Insufficient stock at source (' + bal + ').' };
 
-    var id = 'TRF-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd-HHmmss');
-    writeStockLedger_('LOCATION_TRANSFER', data.materialCode, data.batchOrLotNo,
-      data.fromLocationId, 0, qty, 'TRANSFER', id, data.transferredBy, 'OUT → ' + data.toLocationId);
-    writeStockLedger_('LOCATION_TRANSFER', data.materialCode, data.batchOrLotNo,
-      data.toLocationId, qty, 0, 'TRANSFER', id, data.transferredBy, 'IN ← ' + data.fromLocationId);
-    return { success: true, transferId: id };
+      var id = 'TRF-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd-HHmmss');
+      writeStockLedger_('LOCATION_TRANSFER', data.materialCode, data.batchOrLotNo,
+        data.fromLocationId, 0, qty, 'TRANSFER', id, data.transferredBy, 'OUT → ' + data.toLocationId);
+      writeStockLedger_('LOCATION_TRANSFER', data.materialCode, data.batchOrLotNo,
+        data.toLocationId, qty, 0, 'TRANSFER', id, data.transferredBy, 'IN ← ' + data.fromLocationId);
+      return { success: true, transferId: id };
+    });
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };
@@ -832,12 +869,16 @@ function issueRMForProduction(data) {
     if (!grnNoForBatch) {
       return { success: false, error: 'No GRN found for ' + mat + ' / ' + batch + '.' };
     }
-    // Resolve IQC disposition for that GRN — use latest row (last in IQC_LOG)
+    // Resolve IQC disposition for THIS batch under that GRN — match on GRN ref
+    // (col 3 / idx 2) AND batch (col 6 / idx 5). A single GRN can hold multiple
+    // batches with different dispositions; keying by GRN alone would let an
+    // ACCEPTED sibling batch flip a REJECTED batch to issuable. Latest row wins.
     var iqcDisp = '';
     if (iqcWs && iqcWs.getLastRow() > 1) {
       var iq = iqcWs.getDataRange().getValues();
       for (var j = iq.length - 1; j >= 1; j--) {
-        if (String(iq[j][2]).trim() === grnNoForBatch) {
+        if (String(iq[j][2]).trim() === grnNoForBatch &&
+            String(iq[j][5]).trim() === batch) {
           iqcDisp = String(iq[j][22] || '').toUpperCase();
           break;
         }
@@ -863,21 +904,22 @@ function issueRMForProduction(data) {
       return { success: false, error: 'Cannot issue from location type ' + locType + '.' };
     }
 
-    // Gate: stock must be available at this location
-    var bal = getStockBalance_(mat, batch, loc);
-    if (bal < qty) {
-      return { success: false, error: 'Insufficient stock at ' + loc + ' (have ' + bal + ', need ' + qty + ').' };
-    }
-
-    // Pass — write ledger entry
-    var txnType = (data.txnType === 'PROD_BOOK') ? 'PROD_BOOK' : 'RM_ISSUE';
-    var refNo = data.productionOrderNo || ('PROD-' + Date.now());
-    writeStockLedger_(txnType, mat, batch, loc,
-      0, qty,
-      'PRODUCTION', refNo,
-      data.issuedBy || '',
-      txnType === 'PROD_BOOK' ? 'Booked for FG production — pending consumption' : 'RM issued — IQC pass verified');
-    return { success: true, balance: bal - qty, grnNo: grnNoForBatch, iqcDisposition: iqcDisp };
+    // Atomic: balance gate + ledger write under one lock so two concurrent
+    // issues can't both pass the same availability check and over-issue the lot.
+    return withStockLock_(function(){
+      var bal = getStockBalance_(mat, batch, loc);
+      if (bal < qty) {
+        return { success: false, error: 'Insufficient stock at ' + loc + ' (have ' + bal + ', need ' + qty + ').' };
+      }
+      var txnType = (data.txnType === 'PROD_BOOK') ? 'PROD_BOOK' : 'RM_ISSUE';
+      var refNo = data.productionOrderNo || ('PROD-' + Date.now());
+      writeStockLedger_(txnType, mat, batch, loc,
+        0, qty,
+        'PRODUCTION', refNo,
+        data.issuedBy || '',
+        txnType === 'PROD_BOOK' ? 'Booked for FG production — pending consumption' : 'RM issued — IQC pass verified');
+      return { success: true, balance: bal - qty, grnNo: grnNoForBatch, iqcDisposition: iqcDisp };
+    });
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };

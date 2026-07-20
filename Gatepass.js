@@ -26,10 +26,13 @@ function saveGatepass(data) {
     var ws = ss.getSheetByName('GATEPASS_LOG');
     if (!ws) throw new Error('GATEPASS_LOG sheet not found. Run Setup first.');
 
-    // Outbound dispatches must reference a RELEASED/ACCEPTED OQC that has not been used.
-    // UI dropdown already filters; this defends against crafted-JSON bypass.
+    // Legacy OUTBOUND is DISABLED (#5): this path never decremented FG_DISPATCH_LOTS,
+    // so a lot shipped here stayed AVAILABLE and could be re-dispatched via FIFO —
+    // the same finished goods leaving twice on paper. Outbound dispatch now goes
+    // exclusively through Dispatch.js (saveDispatchWithFIFO), which is the single
+    // channel that reserves/decrements the FG lot. Reject any OUTBOUND payload here.
     if (String(data.type || '').toUpperCase() === 'OUTBOUND') {
-      assertOQCReleasedForRef_(data.oqcRef, ss);
+      return { success: false, error: 'Outbound dispatch must be done via the Dispatch screen (FIFO), not the legacy Gatepass. This ensures the FG lot is decremented and cannot be dispatched twice.' };
     }
 
     var docNo = getNextDocNumber('gp');
@@ -125,7 +128,12 @@ function assertOQCReleasedForRef_(oqcRef, ssOpt) {
   for (var i = 1; i < oqcData.length; i++) {
     if (String(oqcData[i][0]).trim() === ref) {
       var decision = String(oqcData[i][14] || '').toUpperCase();
-      if (decision !== 'RELEASED' && decision !== 'ACCEPTED') {
+      // Use the canonical release-decision test so this path agrees with OQC mirror
+      // and FIFO dispatch, which both treat 'ACCEPTED WITH DEVIATION' as releasable (#16).
+      var releasable = (typeof _isOQCReleasedDecision_ === 'function')
+        ? _isOQCReleasedDecision_(decision)
+        : (decision === 'RELEASED' || decision === 'ACCEPTED' || decision === 'ACCEPTED WITH DEVIATION');
+      if (!releasable) {
         throw new Error('Cannot dispatch — OQC ' + ref + ' has decision "' + (decision || 'PENDING') + '".');
       }
       found = true;

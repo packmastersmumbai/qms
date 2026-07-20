@@ -150,6 +150,16 @@ function saveGRN(data) {
           warnings.push('Stock ledger update failed for ' + (item.materialCode || 'item') +
             ' — GRN document saved but ledger is out of sync. Contact admin.');
         }
+      } else if (typeof writeStockLedger_ === 'function') {
+        // Guard was false: a missing materialCode / batchNo / location means the receipt
+        // was NOT mirrored to STOCK_LEDGER, so this stock has 0 balance and can never be
+        // issued — but the GRN row exists. Surface it instead of skipping silently (#11).
+        var missing = [];
+        if (!item.materialCode) missing.push('material code');
+        if (!item.batchNo)      missing.push('batch/lot no');
+        if (!itemLocation)      missing.push('location');
+        warnings.push('Stock NOT added to inventory for ' + (item.materialDesc || item.materialCode || 'an item') +
+          ' — missing ' + missing.join(', ') + '. The GRN is saved but this stock is not issuable until corrected.');
       }
     });
 
