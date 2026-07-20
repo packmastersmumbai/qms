@@ -712,6 +712,32 @@ function computeProductionPlan(fgCode, fgQtyRequested) {
   };
 }
 
+/**
+ * reverseProductionIssue — restore stock for components already debited when a
+ * multi-component job fails partway. Writes an offsetting PROD_BOOK_REVERSE credit for
+ * each lot that was consumed. `components` is the perCompResults array built by
+ * issueProductionJob: [{ compCode, issueId, qty, lots:[{batch,qty,location}] }].
+ * Returns { success, reversedLots, credited }.
+ */
+function reverseProductionIssue(components, jobRef, operator) {
+  var reversedLots = 0, credited = 0, errors = [];
+  (components || []).forEach(function (comp) {
+    (comp.lots || []).forEach(function (lot) {
+      var q = Number(lot.qty) || 0;
+      if (q <= 0) return;
+      try {
+        writeStockLedger_('PROD_BOOK_REVERSE', comp.compCode, lot.batch, lot.location,
+          q, 0, 'PRODUCTION', jobRef || comp.issueId, operator || '',
+          'Auto-reversal of partial issue ' + comp.issueId + ' (' + comp.compCode + ')');
+        reversedLots++; credited += q;
+      } catch (e) {
+        errors.push(comp.compCode + '/' + lot.batch + ': ' + e.message);
+      }
+    });
+  });
+  return { success: errors.length === 0, reversedLots: reversedLots, credited: credited, errors: errors };
+}
+
 // Issue a production job. Loops each BOM component, calls issueRMMultiLot to
 // decrement stock via the existing FIFO + IQC gate. Writes one PROD_JOBS row
 // with the rolled-up Issue IDs.
@@ -751,20 +777,21 @@ function issueProductionJob(data) {
                    (line.masterP > 0 ? ' (' + line.packsToIssue + ' pack × ' + line.masterP + ' ' + line.compUom + ')' : '')
         });
         if (!res.success) {
-          // Partial-issue: prior components have ALREADY been debited inside the
-          // same lock. Without a true rollback we surface the issue IDs that
-          // need manual reversal. Operator should run reverseProductionIssue
-          // for each id in `partial` to restore stock.
-          Logger.log('issueProductionJob PARTIAL FAILURE — manual reversal required for: ' +
-            perCompResults.map(function(r){ return r.issueId; }).join(', '));
+          // Partial-issue: prior components were debited inside this lock. Roll them
+          // back automatically so stock is never left wrongly decremented, then fail.
+          var rev = reverseProductionIssue(perCompResults, poNo, issuedBy);
+          Logger.log('issueProductionJob PARTIAL FAILURE on ' + line.compCode +
+            ' — auto-reversed ' + rev.reversedLots + ' lot(s), credited ' + rev.credited +
+            (rev.errors.length ? ' [reversal errors: ' + rev.errors.join('; ') + ']' : ''));
           return {
             success: false,
-            error: 'PARTIAL ISSUE — failed on ' + line.compCode + ': ' + res.error +
-                   '. Already-debited components: ' +
-                   perCompResults.map(function(r){ return r.compCode + '(' + r.issueId + ')'; }).join(', ') +
-                   '. Contact admin to reverse these IDs.',
+            error: 'Could not issue ' + line.compCode + ': ' + res.error +
+                   '. The ' + perCompResults.length + ' component(s) issued before it were ' +
+                   (rev.success ? 'automatically returned to stock — no job was created. Please retry.'
+                                : 'partially reversed; some lots need manual review: ' + rev.errors.join('; ')),
             partial: perCompResults,
-            requiresReversal: true
+            reversal: rev,
+            requiresReversal: !rev.success
           };
         }
         issueIds.push(res.issueId);
@@ -1093,6 +1120,20 @@ function submitProductionBooking(data) {
     var lock = LockService.getScriptLock();
     lock.waitLock(30000);
     try {
+      // Re-check job status INSIDE the lock to block a double-submit: the status read in
+      // getJobBookedDetail() above happens before the lock, so two rapid submits could both
+      // pass it. Re-reading here ensures the second caller sees the first's COMPLETED flip.
+      var reDetail = getJobBookedDetail(jobId);
+      if (!reDetail.success) return reDetail;
+
+      // Bound fgProduced: it cannot exceed the job's planned FG quantity (guards fat-finger
+      // over-booking). detail.job.fgQty is the ordered/planned FG count.
+      var plannedFg = Number(reDetail.job && reDetail.job.fgQty) || Number(detail.job && detail.job.fgQty) || 0;
+      if (plannedFg > 0 && fgProd > plannedFg + 0.001) {
+        return { success: false, error: 'FG produced (' + fgProd + ') exceeds the planned ' +
+                 plannedFg + ' for this job. Re-check the quantity.' };
+      }
+
       var bookingId = getNextDocNumber('prod') + '-BK';
       var bookWs = ensureProdBookingSheet_();
       var ledgerOps = 0;
@@ -1106,20 +1147,28 @@ function submitProductionBooking(data) {
         var wastage  = Number(L.wastage)  || 0;
         var loss     = Number(L.loss)     || 0;
 
-        // PROD_CONSUME — finalise: removes from booked, no free change
+        // ── Reverse the original PROD_BOOK reservation in full (credit it back), then
+        // debit only what actually left stock (consume/scrap/wastage/loss). Returned qty
+        // needs NO separate credit — it is already restored by reversing the full booking.
+        // Net effect on the ledger = -(consumed+scrap+wastage+loss), which is correct.
+        // (Previously the BOOK debit was never reversed, so consumed was debited twice.)
+        var bookedQty2 = Number(src2.bookedQty) || 0;
+        if (bookedQty2 > 0) {
+          writeStockLedger_('PROD_BOOK_REVERSE', L.compCode, L.batchOrLot, L.location,
+            bookedQty2, 0, 'PRODUCTION', jobId, bookedBy,
+            'Reversed booking of ' + bookedQty2 + ' ' + (src2.uom || '') + ' (booking ' + bookingId + ')');
+          ledgerOps++;
+        }
+
+        // PROD_CONSUME — actual material consumed by the run
         if (consumed > 0) {
           writeStockLedger_('PROD_CONSUME', L.compCode, L.batchOrLot, L.location,
             0, consumed, 'PRODUCTION', jobId, bookedBy,
             'Consumed ' + consumed + ' ' + (src2.uom || '') + ' (booking ' + bookingId + ')');
           ledgerOps++;
         }
-        // PROD_RETURN — returns to free stock at original location
-        if (returned > 0) {
-          writeStockLedger_('PROD_RETURN', L.compCode, L.batchOrLot, L.location,
-            returned, 0, 'PRODUCTION', jobId, bookedBy,
-            'Returned ' + returned + ' ' + (src2.uom || '') + ' (booking ' + bookingId + ')');
-          ledgerOps++;
-        }
+        // Returned qty needs no ledger row — reversing the full booking already put it back
+        // to free stock. We still record it on the PROD_BOOKING_LOG row for traceability.
         if (scrap > 0) {
           writeStockLedger_('PROD_SCRAP', L.compCode, L.batchOrLot, L.location,
             0, scrap, 'PRODUCTION', jobId, bookedBy,
@@ -1193,6 +1242,70 @@ function getRecentProductionBookings(limit) {
       bookedBy: r[19]
     };
   });
+}
+
+/**
+ * auditProductionLedgerDamage_ — READ-ONLY. Quantifies the PROD_BOOK double-debit.
+ *
+ * For each booked job (Ref Doc No on PROD_BOOK rows), a correct ledger nets to:
+ *   consumed + scrap + wastage + loss   (returned is credited back)
+ * i.e. the BOOK debit should have been reversed at submit and replaced by the actual
+ * outcome debits. Because it is NOT reversed, the ledger over-debits by exactly the
+ * BOOK amount for every job that has been submitted (has CONSUME/SCRAP/… rows).
+ *
+ * Returns per-job over-debit and a grand total, plus lots driven negative.
+ */
+function auditProductionLedgerDamage_() {
+  var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+  if (!ws || ws.getLastRow() < 2) return { rows: 0, jobs: [], totalOverDebit: 0 };
+  var data = ws.getDataRange().getValues();
+
+  // Per job (ref doc no): sum booked vs finalised-outcome debits.
+  var byJob = {};        // jobId -> { booked, consumed, scrap, wastage, loss, returned, hasSubmit }
+  // Per lot key: running net balance, to flag negatives.
+  var lotNet = {};
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    var txn = String(r[2] || '').trim().toUpperCase();
+    var job = String(r[10] || '').trim();
+    var qIn = Number(r[6]) || 0, qOut = Number(r[7]) || 0;
+    var lotKey = String(r[3]).trim() + '|' + String(r[4]).trim() + '|' + String(r[5]).trim();
+    lotNet[lotKey] = (lotNet[lotKey] || 0) + qIn - qOut;
+
+    if (!job) continue;
+    if (!byJob[job]) byJob[job] = { booked: 0, consumed: 0, scrap: 0, wastage: 0, loss: 0, returned: 0, hasSubmit: false };
+    var b = byJob[job];
+    if (txn === 'PROD_BOOK')      b.booked   += qOut;
+    else if (txn === 'PROD_CONSUME') { b.consumed += qOut; b.hasSubmit = true; }
+    else if (txn === 'PROD_SCRAP')   { b.scrap    += qOut; b.hasSubmit = true; }
+    else if (txn === 'PROD_WASTAGE') { b.wastage  += qOut; b.hasSubmit = true; }
+    else if (txn === 'PROD_LOSS')    { b.loss     += qOut; b.hasSubmit = true; }
+    else if (txn === 'PROD_RETURN')  { b.returned += qIn;  b.hasSubmit = true; }
+  }
+
+  var jobs = [], total = 0;
+  Object.keys(byJob).forEach(function (jid) {
+    var b = byJob[jid];
+    if (b.booked <= 0 || !b.hasSubmit) return; // only submitted booked jobs are double-debited
+    // Over-debit = the un-reversed BOOK amount (the whole booked qty was double-counted).
+    var over = b.booked;
+    total += over;
+    jobs.push({ jobId: jid, booked: b.booked, consumed: b.consumed, scrap: b.scrap,
+                wastage: b.wastage, loss: b.loss, returned: b.returned, overDebit: over });
+  });
+  jobs.sort(function (a, c) { return c.overDebit - a.overDebit; });
+
+  var negativeLots = Object.keys(lotNet).filter(function (k) { return lotNet[k] < -0.0001; })
+    .map(function (k) { return { lot: k, balance: Math.round(lotNet[k] * 1000) / 1000 }; });
+
+  return {
+    ledgerRows: data.length - 1,
+    submittedBookedJobs: jobs.length,
+    totalOverDebit: Math.round(total * 1000) / 1000,
+    jobs: jobs.slice(0, 40),
+    negativeLotCount: negativeLots.length,
+    negativeLots: negativeLots.slice(0, 40)
+  };
 }
 
 function diag_openJobs() {

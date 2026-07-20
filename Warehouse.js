@@ -173,6 +173,27 @@ function getStockSummary() {
   }).filter(function(r){ return r.balance > 0; });
 }
 
+// Negative-balance lots — the ones getStockSummary() silently drops (balance > 0 filter).
+// Surfaced so over-issues can't hide. Returns [{materialCode, batchOrLotNo, locationId, balance}].
+function getNegativeStockLots() {
+  var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+  if (!ws || ws.getLastRow() < 2) return [];
+  var data = ws.getDataRange().getValues();
+  var map = {};
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    var key = String(r[3]||'').trim() + '|' + String(r[4]||'').trim() + '|' + String(r[5]||'').trim();
+    if (!map[key]) map[key] = { materialCode: String(r[3]||'').trim(), batchOrLotNo: String(r[4]||'').trim(),
+                                locationId: String(r[5]||'').trim(), bal: 0 };
+    map[key].bal += (Number(r[6])||0) - (Number(r[7])||0);
+  }
+  return Object.keys(map).map(function(k){ return map[k]; })
+    .filter(function(m){ return m.bal < -0.0001; })
+    .map(function(m){ return { materialCode: m.materialCode, batchOrLotNo: m.batchOrLotNo,
+                               locationId: m.locationId, balance: Math.round(m.bal*1000)/1000 }; })
+    .sort(function(a,b){ return a.balance - b.balance; });
+}
+
 function getStockByMaterial() {
   var summary = getStockSummary();
   var mats = (typeof getMaterials === 'function') ? getMaterials() : [];

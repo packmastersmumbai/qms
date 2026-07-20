@@ -251,6 +251,19 @@ function doGet(e) {
     return ContentService.createTextOutput(String(to)).setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Production ledger damage audit (read-only) — quantifies the PROD_BOOK double-debit.
+  if (diag === 'proddamage') {
+    var pd;
+    try {
+      pd = (typeof auditProductionLedgerDamage_ === 'function')
+        ? auditProductionLedgerDamage_()
+        : 'auditProductionLedgerDamage_ missing';
+    } catch (er4) { pd = 'ERROR: ' + er4.message + '\n' + (er4.stack || ''); }
+    return ContentService
+      .createTextOutput(typeof pd === 'string' ? pd : JSON.stringify(pd, null, 2))
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Drive folder tidy-up (QmsDrive.js) — deploy-token path; avoids clasp run.
   //   ?diag=folderlist                     → raw list of Drive-root folder names
   //   ?diag=folderscan                     → dry run: what WOULD move where
@@ -358,7 +371,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v84_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v85_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;
@@ -390,7 +403,7 @@ function clearFormHtmlCache() {
     'NCR','Settings','MastersCrud','Trace','Landing','Recorder','Rework','Scan','QMSV2'];
   var cache = CacheService.getScriptCache();
   var keys = [];
-  ['v79','v80','v81','v82','v83','v84'].forEach(function(v){
+  ['v80','v81','v82','v83','v84','v85'].forEach(function(v){
     forms.forEach(function(f){ keys.push('pmqms_formhtml_' + v + '_' + f); });
   });
   cache.removeAll(keys);
