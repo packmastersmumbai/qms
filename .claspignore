@@ -21,6 +21,23 @@ tailwind.config.cjs
 tailwind-input.css
 tailwind-generated.css
 _swap-tailwind.js
+_Diag.js
+_DispatchDiag.js
+_J07.js
+_KPIDiag.js
+_KPITieOut.js
+_LedgerReconDiag.js
+_POPDiag.js
+_ProductionDiag.js
+_RestoreDrill.js
+# NOTE: _SmokeReviewFixes.js, _SmokeFullChain.js, _TestHelpers.js are intentionally
+# NOT ignored — they back the ?diag=smokefixes regression route (runnable via
+# node e2e-diag.js smokefixes). All are gated by CONFIG._TESTING_ENABLED; set it
+# false in Config.js for a hard production lockdown. Do not re-add them here.
+_SmokeIntegration.js
+_SmokeIPQCOutOfSpec.js
+_SmokeRejectIQC.js
+_SmokeRejectOQC.js
 PM-QMS-PROJECT-BRIEF.md
 e2e-*.js
 e2e-*.json

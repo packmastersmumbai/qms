@@ -264,6 +264,21 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Pipeline-review regression smoke (_SmokeReviewFixes.js) — exercises the real
+  // handlers for the @450 fixes and archives its own TEST rows. Avoids clasp run.
+  //   ?diag=smokefixes
+  if (diag === 'smokefixes') {
+    var sf;
+    try {
+      sf = (typeof smokeReviewFixes === 'function')
+        ? smokeReviewFixes({ preflightOnly: e.parameter.step === 'preflight', maxBlock: e.parameter.block != null ? Number(e.parameter.block) : 99 })
+        : { error: 'smokeReviewFixes missing (is _SmokeReviewFixes.js pushed?)' };
+    } catch (er5) { sf = { error: er5.message, stack: er5.stack }; }
+    return ContentService
+      .createTextOutput(sf && sf.report ? sf.report : JSON.stringify(sf, null, 2))
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Drive folder tidy-up (QmsDrive.js) — deploy-token path; avoids clasp run.
   //   ?diag=folderlist                     → raw list of Drive-root folder names
   //   ?diag=folderscan                     → dry run: what WOULD move where
