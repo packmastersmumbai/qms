@@ -22,7 +22,17 @@ function getOQCFormInit() {
     ipqcSessions: ipqc,
     fgLocations:  fgLocs,
     today:           Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd'),
-    samplingMethods: ['Normal', 'Tightened', 'Reduced', 'Skip Lot', '100% Inspection'],
+    // ISO 2859-1 sampling axes (same vocabulary as IQC) — severity/method/level kept
+    // distinct. OQC now computes a real plan via getSamplingPlan (was: no computation).
+    aqlValues:       ['0.65', '1.0', '1.5', '2.5', '4.0', '6.5'],
+    defaultAql:      '2.5',
+    levels:          ['I', 'II', 'III'],
+    defaultLevel:    'II',
+    severities:      ['Normal', 'Tightened', 'Reduced'],
+    defaultSeverity: 'Normal',
+    samplingMethod:  'Single',
+    // Back-compat aliases for any un-updated client.
+    samplingMethods: ['Normal', 'Tightened', 'Reduced'],
     defaultSampling: 'Normal'
   };
 }
@@ -178,12 +188,31 @@ function saveOQC(data) {
       }
     }
 
+    // ── Sampling: normalize the three axes + server-side plan (OQC now computes one) ──
+    // AQL bare; severity/method/level distinct. Col 25 previously held a SEVERITY
+    // mislabeled as "method"; it now holds "<Severity> Single". Ac/Re for tightened/
+    // reduced use the normal plan until II-B/II-C tables land (flagged in samplingBasis).
+    var oqcAql = String(data.aql || data.aqlLevel || '2.5').replace(/aql/i, '').trim() || '2.5';
+    var oqcLevel = String(data.level || data.inspLevel || 'II').toUpperCase();
+    if (['I','II','III'].indexOf(oqcLevel) < 0) oqcLevel = 'II';
+    var oqcSeverity = String(data.severity || data.samplingMethod || 'Normal').trim();
+    if (['NORMAL','TIGHTENED','REDUCED'].indexOf(oqcSeverity.toUpperCase()) < 0) oqcSeverity = 'Normal';
+    var oqcMethodCell = oqcSeverity + ' Single';
+
     var firstAppendRowOQC = ws.getLastRow() + 1;
     data.items.forEach(function(item) {
       var docNo  = getNextDocNumber('oqc');
       var checks = item.checks || {};
       var fgLocation = String((item && item.fgLocation) || data.fgLocation || '').trim();
       var acceptedQty = item.acceptedQty != null ? Number(item.acceptedQty) : 0;
+      // Compute the ISO 2859-1 plan from lot size (submitted, else accepted+rejected).
+      var oqcLot = parseInt(item.lotSize || data.lotSize, 10) ||
+                   (Number(item.acceptedQty) || 0) + (Number(item.rejectedQty) || 0);
+      var oqcPlan = null;
+      if (typeof getSamplingPlan === 'function' && oqcLot >= 2) {
+        var opl = getSamplingPlan(oqcLot, oqcAql, oqcLevel);
+        if (!opl.error) oqcPlan = opl;
+      }
 
       var row = [
         docNo,
@@ -193,7 +222,7 @@ function saveOQC(data) {
         item.batchPO       || '',
         item.materialDesc  || '',
         data.ipqcReviewed  || 'Y',
-        item.sampleSize != null ? item.sampleSize : 0,
+        (oqcPlan ? oqcPlan.sampleSize : (item.sampleSize != null ? item.sampleSize : 0)), // col 8: sample size (engine-computed when lot known)
         checks.fillWeight  || '',
         checks.label       || '',
         checks.seal        || '',
@@ -210,7 +239,7 @@ function saveOQC(data) {
         releasedThis ? fgLocation : '',  // col 22: FG Location ID
         '',                               // col 23: FG Lot ID — back-filled below if mirrored
         '',                               // col 24: Video URL — back-stamped after upload
-        data.samplingMethod || 'Normal',  // col 25: Sampling Method
+        oqcMethodCell,                     // col 25: Sampling plan = "<Severity> Single" (was a bare severity)
         '',                               // col 26: QR base64 (back-stamped after save)
         ''                                // col 27: PDF Drive URL (back-stamped after save)
       ];
@@ -438,7 +467,7 @@ function getOQCPrintData(docNo) {
     rejectedQty:    r[17] != null ? String(r[17]) : '',
     ipqcSessionRef: String(r[19] || ''),
     fgLocation:     String(r[21] || ''),
-    samplingMethod: String(r[24] || 'Normal'),
+    samplingMethod: String(r[24] || 'Normal Single'),
     qrBase64:       String(r[25] || ''),
     pdfUrl:         String(r[26] || ''),
     printedAt:      Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')

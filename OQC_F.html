@@ -394,18 +394,52 @@
       <p class="text-[11px] text-[#94a3b8] mt-2">Where this FG batch is being stored. Used for FIFO dispatch traceability.</p>
     </div>
 
-    <!-- SAMPLING METHOD -->
+    <!-- SAMPLING (ISO 2859-1) — lot/AQL/level/severity drive a computed plan -->
     <div class="bg-card rounded-lg shadow-card border border-border p-4">
-      <label class="label-base" for="oqcSamplingMethod">Sampling Method</label>
-      <div class="relative">
-        <select id="oqcSamplingMethod" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
-          <option value="Normal">Normal</option>
-          <option value="Tightened">Tightened</option>
-          <option value="Reduced">Reduced</option>
-          <option value="Skip Lot">Skip Lot</option>
-          <option value="100% Inspection">100% Inspection</option>
-        </select>
-        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+      <div class="text-[11px] font-bold uppercase tracking-wider text-text-helper mb-2">Sampling — ISO 2859-1</div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label-base" for="oqcLotSize">Lot Size</label>
+          <input id="oqcLotSize" type="number" inputmode="numeric" min="1" placeholder="0"
+            class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] font-mono text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+        </div>
+        <div>
+          <label class="label-base" for="oqcAql">AQL</label>
+          <div class="relative">
+            <select id="oqcAql" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+              <option value="2.5">2.5</option><option value="0.65">0.65</option><option value="1.0">1.0</option>
+              <option value="1.5">1.5</option><option value="4.0">4.0</option><option value="6.5">6.5</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+          </div>
+        </div>
+        <div>
+          <label class="label-base" for="oqcLevel">Level</label>
+          <div class="relative">
+            <select id="oqcLevel" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+              <option value="II">II</option><option value="I">I</option><option value="III">III</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+          </div>
+        </div>
+        <div>
+          <label class="label-base" for="oqcSamplingSeverity">Severity</label>
+          <div class="relative">
+            <select id="oqcSamplingSeverity" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+              <option value="Normal">Normal</option><option value="Tightened">Tightened</option><option value="Reduced">Reduced</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
+          </div>
+        </div>
+      </div>
+      <div id="oqcSamplingPanel" class="mt-3 rounded-lg border p-3 hidden" style="border-color:#bbf7d0;background:#f0fdf4;">
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Sample</div><div class="font-mono text-[21px] font-bold" id="oqcPlanSample">—</div></div>
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Accept ≤</div><div class="font-mono text-[21px] font-bold" style="color:#16a34a" id="oqcPlanAc">—</div></div>
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Reject ≥</div><div class="font-mono text-[21px] font-bold" style="color:#dc2626" id="oqcPlanRe">—</div></div>
+        </div>
+        <div class="mt-1 text-[10px] font-mono text-text-helper text-center" id="oqcPlanStd">ISO 2859-1</div>
+        <p id="oqcSeverityNote" class="mt-1 text-[10px] text-text-helper text-center hidden">Tightened/Reduced — Ac/Re shown are normal-plan values (II-B/II-C table pending).</p>
       </div>
     </div>
 
@@ -497,9 +531,52 @@ var gSaved       = false;
 // ══════════════════════════════════════════════════════════
 // Init
 // ══════════════════════════════════════════════════════════
+// ── OQC client-side ISO 2859-1 plan preview (server re-computes authoritatively) ──
+// Mirrors AqlSampling.js normal-single diagonal. Tightened/Reduced show the normal
+// Ac/Re until II-B/II-C tables land (flagged), matching the server's samplingBasis.
+var OQC_LAD=[0,1,2,3,5,7,10,14,21,30,44];
+var OQC_LET=['A','B','C','D','E','F','G','H','J','K','L','M','N','P','Q','R'];
+var OQC_N={A:2,B:3,C:5,D:8,E:13,F:20,G:32,H:50,J:80,K:125,L:200,M:315,N:500,P:800,Q:1250,R:2000};
+var OQC_COL={'0.65':0,'1.0':1,'1.5':2,'2.5':3,'4.0':4,'6.5':5};
+var OQC_CODE=[[2,8,{I:'A',II:'A',III:'B'}],[9,15,{I:'A',II:'B',III:'C'}],[16,25,{I:'B',II:'C',III:'D'}],[26,50,{I:'C',II:'D',III:'E'}],[51,90,{I:'C',II:'E',III:'F'}],[91,150,{I:'D',II:'F',III:'G'}],[151,280,{I:'E',II:'G',III:'H'}],[281,500,{I:'F',II:'H',III:'J'}],[501,1200,{I:'G',II:'J',III:'K'}],[1201,3200,{I:'H',II:'K',III:'L'}],[3201,10000,{I:'J',II:'L',III:'M'}],[10001,35000,{I:'K',II:'M',III:'N'}],[35001,150000,{I:'L',II:'N',III:'P'}],[150001,500000,{I:'M',II:'P',III:'Q'}],[500001,Infinity,{I:'N',II:'Q',III:'R'}]];
+function oqcPlan(lot,aql,lvl){
+  lot=parseInt(lot,10); if(!lot||lot<2) return {error:'lot'};
+  var L='II'; lvl=String(lvl||'II').toUpperCase(); if(['I','II','III'].indexOf(lvl)>=0)L=lvl;
+  var letter=null; for(var i=0;i<OQC_CODE.length;i++){if(lot>=OQC_CODE[i][0]&&lot<=OQC_CODE[i][1]){letter=OQC_CODE[i][2][L];break;}}
+  var ai=OQC_COL[String(aql)]; if(letter==null||ai==null) return {error:'aql'};
+  var li=OQC_LET.indexOf(letter),g=0;
+  while(li>=0&&li<OQC_LET.length&&g++<40){var idx=li+ai-7; if(idx<0){li++;continue} if(idx>=OQC_LAD.length){li--;continue}
+    var ac=OQC_LAD[idx],n=OQC_N[OQC_LET[li]];
+    return {codeLetter:OQC_LET[li],sampleSize:(n>=lot?lot:n),ac:ac,re:ac+1,sampling:(n>=lot?'100%':'single')};}
+  return {error:'plan'};
+}
+function oqcRecomputeSampling(){
+  var lot=(document.getElementById('oqcLotSize')||{}).value;
+  var aql=(document.getElementById('oqcAql')||{}).value;
+  var lvl=(document.getElementById('oqcLevel')||{}).value||'II';
+  var sev=(document.getElementById('oqcSamplingSeverity')||{}).value||'Normal';
+  var panel=document.getElementById('oqcSamplingPanel');
+  if(!lot){ if(panel)panel.classList.add('hidden'); return; }
+  var p=oqcPlan(lot,aql,lvl);
+  if(p.error){ if(panel)panel.classList.add('hidden'); return; }
+  if(panel)panel.classList.remove('hidden');
+  document.getElementById('oqcPlanSample').textContent=p.sampleSize;
+  document.getElementById('oqcPlanAc').textContent=p.ac;
+  document.getElementById('oqcPlanRe').textContent=p.re;
+  document.getElementById('oqcPlanStd').textContent='ISO 2859-1 · code '+p.codeLetter+' · '+sev.toLowerCase()+' '+p.sampling;
+  var note=document.getElementById('oqcSeverityNote');
+  if(note){ if(sev!=='Normal')note.classList.remove('hidden'); else note.classList.add('hidden'); }
+}
+function bindOqcSampling(){
+  ['oqcLotSize','oqcAql','oqcLevel','oqcSamplingSeverity'].forEach(function(id){
+    var el=document.getElementById(id); if(el){ el.addEventListener('input',oqcRecomputeSampling); el.addEventListener('change',oqcRecomputeSampling); }
+  });
+}
+
 window.addEventListener('DOMContentLoaded', function() {
   renderParamRows();
   bindEvents();
+  bindOqcSampling();
   loadInit();
 });
 
@@ -949,7 +1026,11 @@ function doSave() {
     videoMime:       oqcVideoMime || '',
     videoExt:        oqcVideoExt  || '',
     videoUrl:        oqcVideoUrl  || '',
-    samplingMethod:  (document.getElementById('oqcSamplingMethod') ? document.getElementById('oqcSamplingMethod').value : 'Normal'),
+    // ISO 2859-1 sampling axes — server re-computes the plan from these.
+    severity:        (document.getElementById('oqcSamplingSeverity')||{}).value || 'Normal',
+    aql:             (document.getElementById('oqcAql')||{}).value || '2.5',
+    level:           (document.getElementById('oqcLevel')||{}).value || 'II',
+    lotSize:         parseInt((document.getElementById('oqcLotSize')||{}).value, 10) || 0,
     remarks:         document.getElementById('inpRemarks').value,
     fgLocation:    (document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : ''),
     items: [{

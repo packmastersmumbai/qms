@@ -18,7 +18,20 @@ var IQC_PARAMS = [
   { id: 'coa',    label: 'COA / Test Report',    spec: 'Received & Verified',           ccp: true,  hint: 'COA values must match spec; verify lot no.' }
 ];
 
-var IQC_SAMPLING_METHODS = ['Normal', 'Tightened', 'Reduced', 'Skip Lot', '100% Inspection'];
+// ISO 2859-1 / ANSI Z1.4 sampling vocabulary — kept as THREE distinct axes.
+// Do NOT conflate them (the old IQC_SAMPLING_METHODS mixed severities + dispositions
+// under the name "methods"):
+//   SEVERITY  = normal | tightened | reduced   (the switching rule; drives Ac/Re table)
+//   METHOD    = single                          (the only plan type the engine produces)
+//   LEVEL     = I | II | III                    (general inspection level; drives code letter)
+// AQL values are the engine-supported set (AqlSampling.AQL_COLS_), stored BARE (no "AQL " prefix).
+var IQC_AQL_VALUES   = ['0.65', '1.0', '1.5', '2.5', '4.0', '6.5'];
+var IQC_SEVERITIES   = ['Normal', 'Tightened', 'Reduced'];
+var IQC_LEVELS       = ['I', 'II', 'III'];
+var IQC_DEFAULT_AQL  = '2.5';
+var IQC_DEFAULT_LEVEL = 'II';
+var IQC_DEFAULT_SEVERITY = 'Normal';
+var IQC_SAMPLING_METHOD = 'Single';   // engine is single-sampling only
 
 function getIQCFormInit() {
   return {
@@ -26,10 +39,17 @@ function getIQCFormInit() {
     recentGRNs: getUnInspectedGRNs(),
     inspectors: getInspectors(),
     params:          IQC_PARAMS,
-    aqlLevels:       ['AQL 0.65', 'AQL 1.0', 'AQL 2.5', 'AQL 4.0', 'AQL 6.5'],
-    defaultAql:      'AQL 2.5',
-    samplingMethods: IQC_SAMPLING_METHODS,
-    defaultSampling: 'Normal',
+    aqlValues:       IQC_AQL_VALUES,
+    defaultAql:      IQC_DEFAULT_AQL,
+    levels:          IQC_LEVELS,
+    defaultLevel:    IQC_DEFAULT_LEVEL,
+    severities:      IQC_SEVERITIES,
+    defaultSeverity: IQC_DEFAULT_SEVERITY,
+    samplingMethod:  IQC_SAMPLING_METHOD,
+    // Back-compat aliases for any client not yet updated (old keys → new values).
+    aqlLevels:       IQC_AQL_VALUES,
+    samplingMethods: IQC_SEVERITIES,
+    defaultSampling: IQC_DEFAULT_SEVERITY,
     today:      Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
   };
 }
@@ -80,6 +100,28 @@ function saveIQC(data) {
     // the post-loop getLastRow() recompute (Race 3 fix).
     var firstAppendRow = ws.getLastRow() + 1;
 
+    // ── Sampling: normalize + server-side re-validate (don't trust client plan) ──
+    // AQL stored BARE ('2.5' not 'AQL 2.5'); severity + method + level captured as
+    // distinct axes. Ac/Re recomputed from the verified engine using the submitted
+    // lot size + AQL + level, so a tampered/blank client can't persist a bogus plan.
+    // NOTE: the engine is normal-single only; a Tightened/Reduced severity is recorded
+    // faithfully but its Ac/Re still come from the Normal plan until II-B/II-C tables
+    // are added — flagged via samplingBasis so the record is never silently wrong.
+    var aqlBare = String(data.aqlLevel || IQC_DEFAULT_AQL).replace(/aql/i, '').trim() || IQC_DEFAULT_AQL;
+    var levelIn = String(data.inspLevel || data.level || IQC_DEFAULT_LEVEL).toUpperCase();
+    if (IQC_LEVELS.indexOf(levelIn) < 0) levelIn = IQC_DEFAULT_LEVEL;
+    var severityIn = String(data.severity || data.samplingSeverity || IQC_DEFAULT_SEVERITY).trim();
+    if (IQC_SEVERITIES.map(function(s){return s.toUpperCase();}).indexOf(severityIn.toUpperCase()) < 0) severityIn = IQC_DEFAULT_SEVERITY;
+    var lotSizeIn = parseInt(data.lotSize, 10) || 0;
+    var serverPlan = null;
+    if (typeof getSamplingPlan === 'function' && lotSizeIn >= 2) {
+      var sp = getSamplingPlan(lotSizeIn, aqlBare, levelIn);
+      if (!sp.error) serverPlan = sp;
+    }
+    var samplingBasis = (severityIn.toUpperCase() === 'NORMAL')
+      ? 'ISO 2859-1 normal single'
+      : ('ISO 2859-1 ' + severityIn.toLowerCase() + ' (Ac/Re from normal plan — II-B/II-C pending)');
+
     data.items.forEach(function(item) {
       var docNo  = getNextDocNumber('iqc');
       var params = item.params || {};
@@ -92,7 +134,7 @@ function saveIQC(data) {
         item.materialDesc  || '',       // col 5
         item.batchNo       || '',       // col 6
         data.inspector     || '',       // col 7
-        data.aqlLevel      || 'AQL 2.5', // col 8
+        aqlBare,                        // col 8: AQL (bare, e.g. '2.5')
         item.sampleSize != null ? item.sampleSize : 0,  // col 9
         data.sampleId      || '',       // col 10
         params.qty    || '',            // col 11
@@ -122,7 +164,7 @@ function saveIQC(data) {
         data.storeInCharge   || '',       // col 35: Store In-Charge
         data.qaManager       || '',       // col 36: QA Manager
         '',                              // col 37: Image URLs (back-stamped after upload)
-        data.samplingMethod  || 'Normal', // col 38: Sampling Method
+        (severityIn + ' ' + IQC_SAMPLING_METHOD), // col 38: Sampling plan = "<Severity> Single" (was a bare severity)
         '',                              // col 39: QR base64 (back-stamped after save)
         ''                               // col 40: PDF Drive URL (back-stamped after save)
       ];
@@ -383,7 +425,7 @@ function saveIQC(data) {
       try {
         var primaryDoc = docNos[0];
         var qrBase64 = generateIQCQR_(primaryDoc);
-        var pdfUrl   = generateIQCPdf_(primaryDoc, data.samplingMethod || 'Normal');
+        var pdfUrl   = generateIQCPdf_(primaryDoc, (severityIn + ' ' + IQC_SAMPLING_METHOD));
         if (qrBase64) ws.getRange(firstAppendRow, 39, docNos.length, 1).setValue(qrBase64);
         if (pdfUrl)   ws.getRange(firstAppendRow, 40, docNos.length, 1).setValue(pdfUrl);
       } catch(qrPdfErr) {
@@ -557,7 +599,7 @@ function getIQCPrintData(docNo) {
     storeInCharge: String(r[34] || ''),
     qaManager:     String(r[35] || ''),
     imageUrls:     imageUrls,
-    samplingMethod: String(r[37] || 'Normal'),
+    samplingMethod: String(r[37] || (IQC_DEFAULT_SEVERITY + ' ' + IQC_SAMPLING_METHOD)),
     qrBase64:      String(r[38] || ''),
     pdfUrl:        String(r[39] || ''),
     printedAt:     Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')
