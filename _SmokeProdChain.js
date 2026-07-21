@@ -153,6 +153,31 @@ function smokeProdChain(opts) {
     assert('#4 compB fully rolled back (no orphaned PROD_BOOK debit)',
       Math.abs(balBBefore - balBAfter) < 0.001, 'before=' + balBBefore + ' after=' + balBAfter + ' (must be equal)');
 
+    // ---- cancelProductionJob: un-issue a stuck job, stock returns to where it was ----
+    header('cancelProductionJob returns stock + marks CANCELLED');
+    var matX = 'PCMAT-X-' + stamp, batchX = 'PCB-X-' + stamp, fgX = 'PCFGX-' + stamp;
+    ensureBomSheet_().appendRow([TAG, fgX, 'Test FG X ' + stamp, '1', 'NOS', matX, 'Comp X', '4', 'KGS', 4, 'RM', 0]);
+    madeBom.push(fgX);
+    var grnX = createTestGRN_({ materialCode: matX, batchNo: batchX, qtyReceived: 60, locationId: 'RM-STORE-A', unit: 'KGS' });
+    saveIQC({ grnNo: grnX.docNo, date: new Date(), inspector: 'claude-smoke', disposition: 'ACCEPTED',
+      items: [{ materialCode: matX, materialDesc: 'Comp X', batchNo: batchX, acceptedQty: 60, rejectedQty: 0, holdQty: 0, sampleSize: 8, params: {} }] });
+    SpreadsheetApp.flush();
+    var balX0 = bal(matX, batchX, 'RM-STORE-A');
+    var jobX = issueProductionJob({ fgCode: fgX, fgQtyToIssue: 5, issuedBy: 'claude-smoke', productionOrderNo: 'PJX-' + TAG });
+    assert('cancel: job issued', jobX && jobX.success, jobX && (jobX.error || ''));
+    var balX1 = bal(matX, batchX, 'RM-STORE-A');
+    assert('cancel: stock debited by issue', balX1 < balX0, 'before=' + balX0 + ' after=' + balX1);
+    var canc = cancelProductionJob(jobX.jobId, 'claude-smoke', 'smoke test');
+    assert('cancel succeeds', canc && canc.success, canc && (canc.error || ''));
+    var balX2 = bal(matX, batchX, 'RM-STORE-A');
+    assert('cancel: stock fully returned to pre-issue level',
+      Math.abs(balX2 - balX0) < 0.001, 'pre=' + balX0 + ' post-cancel=' + balX2);
+    assert('cancel: job marked CANCELLED', String(_pcJobStatus_(ss, jobX.jobId)).toUpperCase() === 'CANCELLED',
+      'status=' + _pcJobStatus_(ss, jobX.jobId));
+    // a cancelled job must not be bookable
+    var afterCancel = getJobBookedDetail(jobX.jobId);
+    assert('cancel: cancelled job is not bookable', !afterCancel.success, JSON.stringify(afterCancel && afterCancel.error));
+
   } catch (e) {
     log.push(''); log.push('EXCEPTION: ' + (e && e.message)); log.push((e && e.stack) || ''); fail++;
   } finally {

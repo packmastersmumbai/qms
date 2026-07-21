@@ -347,6 +347,13 @@
               <input id="bkRemarks" placeholder="batch notes, deviation refs" />
             </div>
             <button class="prd-save" id="btnSubmitBooking" onclick="submitBooking()">Submit Production Booking</button>
+            <!-- Escape hatch: a job whose FG has no CLOSED IPQC can never be booked.
+                 Without this its stock stays debited forever and every later plan shows
+                 false shortfalls. Credits all booked lots back and marks the job CANCELLED. -->
+            <button id="btnCancelJob" onclick="cancelJob()"
+              style="width:100%;margin-top:8px;min-height:44px;background:#fff;color:#dc2626;border:1.5px solid #dc2626;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">
+              Cancel Job &amp; Return Stock
+            </button>
           </div>
         </div>
       </div>
@@ -1026,8 +1033,13 @@
           document.getElementById('fgQty').value = '';
         })
         .withFailureHandler(function(e){
+          // A failure here does NOT mean the server didn't commit (a lost response on
+          // flaky wifi looks identical). Clear the plan so a re-tap can't fire a second
+          // identical job — operator must re-plan, which shows the post-debit stock.
+          FG_PLAN = null;
+          document.getElementById('fgPlanResult').style.display = 'none';
           btn.disabled = false; btn.textContent = 'Issue Production Job';
-          showToast('Issue error: ' + (e.message || e), 'error');
+          showToast('Issue error: ' + (e.message || e) + ' — re-plan to check if the job was created.', 'error');
         })
         .issueProductionJob({
           fgCode: FG_PLAN.fgCode,
@@ -1209,6 +1221,30 @@
       var diff = sum - L.bookedQty;
       var bad = Math.abs(diff) > 0.001;
       row.style.background = bad ? '#fdecec' : '';
+    }
+
+    function cancelJob() {
+      if (!BK_JOB) { showToast('Pick a job first.', 'error'); return; }
+      var who = document.getElementById('bkBookedBy').value;
+      if (!who) { showToast('Pick Booked By (who is cancelling).', 'error'); return; }
+      var reason = window.prompt('Cancel job ' + BK_JOB.jobId + ' and return ALL issued stock?\n\nReason:');
+      if (reason === null) return;                       // operator backed out
+      var btn = document.getElementById('btnCancelJob');
+      btn.disabled = true; btn.textContent = 'Cancelling…';
+      google.script.run
+        .withSuccessHandler(function(r){
+          btn.disabled = false; btn.textContent = 'Cancel Job & Return Stock';
+          if (!r || !r.success) { showToast(r && r.error || 'Cancel failed.', 'error'); return; }
+          showToast('Job cancelled — ' + r.credited + ' units returned to stock.');
+          BK_JOB = null; BK_LINES = [];
+          document.getElementById('bkLines').innerHTML = '';
+          loadOpenJobs();
+        })
+        .withFailureHandler(function(e){
+          btn.disabled = false; btn.textContent = 'Cancel Job & Return Stock';
+          showToast('Cancel error: ' + (e.message || e), 'error');
+        })
+        .cancelProductionJob(BK_JOB.jobId, who, reason);
     }
 
     function submitBooking() {

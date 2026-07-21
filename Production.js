@@ -1173,6 +1173,14 @@ function submitProductionBooking(data) {
       var bookWs = ensureProdBookingSheet_();
       var ledgerOps = 0;
 
+      // Lines whose ledger rows are already written this pass. If a later line throws
+      // mid-loop we credit these back — otherwise the operator's natural retry replays
+      // them (bookedQty is derived from PROD_ISSUE_LOG, so earlier writes are invisible
+      // to the recomputation) and balances diverge. Same compensating-reversal pattern
+      // issueProductionJob already uses; reuses reverseProductionIssue.
+      var bookedSoFar = [];
+      try {
+
       for (var j = 0; j < data.lines.length; j++) {
         var L = data.lines[j];
         var src2 = bookedMap[L.compCode + '|' + L.batchOrLot + '|' + L.location];
@@ -1231,6 +1239,40 @@ function submitProductionBooking(data) {
           bookedBy, String(data.remarks || '')
         ]);
         bookWs.getRange(bookWs.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy HH:mm');
+
+        // Net stock effect of this line = -(consumed+scrap+wastage+loss). Record it so a
+        // later line's failure can undo it exactly.
+        var netOut = consumed + scrap + wastage + loss;
+        if (netOut > 0) {
+          bookedSoFar.push({ compCode: L.compCode, issueId: bookingId, qty: netOut,
+            lots: [{ batch: L.batchOrLot, qty: netOut, location: L.location }] });
+        }
+      }
+
+      } catch (loopErr) {
+        // Mid-loop failure: credit back every line already written so a retry starts clean.
+        var undo = reverseProductionIssue(bookedSoFar, jobId, bookedBy);
+        // PROD_BOOKING_LOG rows for this aborted bookingId are orphans — stamp them VOID
+        // so reports don't count them. ponytail: stamp-in-place, no delete (audit trail).
+        try {
+          var bkData = bookWs.getDataRange().getValues();
+          for (var vb = bkData.length - 1; vb >= 1; vb--) {
+            if (String(bkData[vb][0]).trim() === bookingId) {
+              bookWs.getRange(vb + 1, 21).setValue('VOID (booking failed, rolled back)');
+            }
+          }
+        } catch (ve) { Logger.log('void-stamp failed: ' + ve.message); }
+        Logger.log('submitProductionBooking PARTIAL FAILURE on job ' + jobId + ': ' + loopErr.message +
+          ' — reversed ' + undo.reversedLots + ' lot(s), credited ' + undo.credited +
+          (undo.errors.length ? ' [reversal errors: ' + undo.errors.join('; ') + ']' : ''));
+        return {
+          success: false,
+          error: 'Booking failed on ' + loopErr.message + '. ' +
+                 (undo.success ? 'Partial writes were rolled back — the job is unchanged, please retry.'
+                               : 'Partial writes could NOT be fully rolled back; contact admin before retrying: ' + undo.errors.join('; ')),
+          requiresReview: !undo.success,
+          reversal: undo
+        };
       }
 
       // Flip job status to PRODUCED + write IPQC ID + Booking ID + Closed At
@@ -1253,6 +1295,60 @@ function submitProductionBooking(data) {
         ledgerOps: ledgerOps,
         linesBooked: data.lines.length
       };
+    } finally {
+      lock.releaseLock();
+    }
+  } catch(e) {
+    Logger.log(e);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * cancelProductionJob — un-issue an IN_PROGRESS job: credit every booked lot back to
+ * stock and mark the job CANCELLED. Without this a job whose FG has no CLOSED IPQC
+ * session can never be booked and its PROD_BOOK debit is stranded forever, making every
+ * later plan show false shortfalls.
+ * ponytail: reuses reverseProductionIssue (the same compensating-credit loop the issue
+ * path already uses) — no new ledger logic.
+ * Returns { success, jobId, reversedLots, credited } or { success:false, error }.
+ */
+function cancelProductionJob(jobId, cancelledBy, reason) {
+  try {
+    var id = String(jobId || '').trim();
+    if (!id) return { success: false, error: 'Job ID required.' };
+    var who = String(cancelledBy || '').trim();
+    if (!who) return { success: false, error: 'Cancelled By required.' };
+
+    var lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      var detail = getJobBookedDetail(id);
+      if (!detail.success) return detail;   // covers not-found and already-closed status
+
+      // Credit back every booked lot (compCode|batch|location → bookedQty).
+      var comps = (detail.lines || []).map(function(L){
+        return { compCode: L.compCode, issueId: id, qty: L.bookedQty,
+          lots: [{ batch: L.batchOrLot, qty: L.bookedQty, location: L.location }] };
+      });
+      var rev = reverseProductionIssue(comps, id, who);
+
+      // Flip status to CANCELLED (col 9) + stamp Closed At (col 12) + reason in Booking ID col.
+      var jobsWs = ensureProdJobsSheet_();
+      var jd = jobsWs.getDataRange().getValues();
+      for (var r = 1; r < jd.length; r++) {
+        if (String(jd[r][0]).trim() === id) {
+          jobsWs.getRange(r + 1, 9).setValue('CANCELLED');
+          jobsWs.getRange(r + 1, 11).setValue('CANCELLED: ' + (reason || 'no reason given'));
+          jobsWs.getRange(r + 1, 12).setValue(new Date());
+          jobsWs.getRange(r + 1, 12).setNumberFormat('dd-MMM-yyyy HH:mm');
+          break;
+        }
+      }
+      return { success: rev.success, jobId: id, reversedLots: rev.reversedLots,
+        credited: rev.credited,
+        error: rev.success ? '' : 'Job cancelled but some lots failed to credit back: ' + rev.errors.join('; '),
+        requiresReview: !rev.success };
     } finally {
       lock.releaseLock();
     }
