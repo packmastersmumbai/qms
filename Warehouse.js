@@ -70,6 +70,10 @@ function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
     ]);
     var lr = ws.getLastRow();
     ws.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy HH:mm');
+    // Keep the balance memo correct WITHOUT a rescan: we just computed this key's new
+    // balance above, so store it. This is what keeps multi-lot issue / multi-line
+    // booking fast (no full-sheet read per ledger row).
+    if (_STOCK_BAL_CACHE) _STOCK_BAL_CACHE[_stockBalKey_(materialCode, batchOrLotNo, locationId)] = balance;
   } finally {
     if (lockAcquired) lock.releaseLock();
   }
@@ -155,23 +159,35 @@ function getStockMovements(limit) {
   }
 }
 
+// Request-scoped balance memo, keyed mat|batch|loc. Module-global = one execution, so
+// it cannot leak across requests (same lifetime as _SS_CACHE).
+// ponytail: writeStockLedger_ is the ONLY mutation path, so it updates this in place
+// instead of forcing a rescan — that is what makes issue/booking fast. Anything that
+// writes to STOCK_LEDGER outside writeStockLedger_ must call _stockBalCacheReset_().
+var _STOCK_BAL_CACHE = null;
+function _stockBalKey_(mc, bn, lc) {
+  return String(mc || '').trim() + '|' + String(bn || '').trim() + '|' + String(lc || '').trim();
+}
+function _stockBalCacheReset_() { _STOCK_BAL_CACHE = null; }
+
 function getStockBalance_(materialCode, batchOrLotNo, locationId) {
+  var key = _stockBalKey_(materialCode, batchOrLotNo, locationId);
+  if (_STOCK_BAL_CACHE && _STOCK_BAL_CACHE[key] !== undefined) return _STOCK_BAL_CACHE[key];
+
   var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
   if (!ws || ws.getLastRow() < 2) return 0;
+  // One full scan builds EVERY key's balance, not just the one asked for — the next
+  // lot/component in the same request is then free. Was: a full scan per call, i.e.
+  // ~5 scans per booking line (reverse/consume/scrap/wastage/loss).
   var data = ws.getDataRange().getValues();
-  var balance = 0;
-  var mc = String(materialCode || '').trim();
-  var bn = String(batchOrLotNo || '').trim();
-  var lc = String(locationId || '').trim();
+  var map = {};
   for (var i = 1; i < data.length; i++) {
     var r = data[i];
-    if (String(r[3]).trim() === mc &&
-        String(r[4]).trim() === bn &&
-        String(r[5]).trim() === lc) {
-      balance += (Number(r[6]) || 0) - (Number(r[7]) || 0);
-    }
+    var k = _stockBalKey_(r[3], r[4], r[5]);
+    map[k] = (map[k] || 0) + (Number(r[6]) || 0) - (Number(r[7]) || 0);
   }
-  return balance;
+  _STOCK_BAL_CACHE = map;
+  return map[key] || 0;
 }
 
 // ---------- Reads ----------
