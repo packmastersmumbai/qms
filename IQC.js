@@ -325,10 +325,27 @@ function saveIQC(data) {
           // Input guard (#10): a REJECTED/HOLD disposition with no rejected/hold qty
           // would leave the whole received balance sitting issuable at the GRN location.
           // Default a bare REJECTED/HOLD to the full received qty so stock actually moves.
-          if (disp === 'REJECTED' && rejQty <= 0) { rejQty = grnQty - accQty - hldQty; }
-          if (disp === 'HOLD'     && hldQty <= 0) { hldQty = grnQty - accQty - rejQty; }
+          // Default off the LIVE balance at the GRN location, not the received qty:
+          // samples pulled for inspection have already left, so defaulting to grnQty
+          // over-debits and drives the location negative.
+          var liveAtGrnLoc = getStockBalance_(matCode, item.batchNo, grnLoc);
+          // The inspection sample is pulled further down (recordSample) but is physically
+          // gone as of this inspection, so exclude it here — otherwise the remainder /
+          // reject default claims stock the sample is about to take, over-debiting the
+          // location. ponytail: subtract rather than reorder the block (smaller, no
+          // scope churn); if recordSample ever moves above this, drop the subtraction.
+          var pendingSample = Number(item.sampleSize) || 0;
+          var liveMovable = Math.max(0, (liveAtGrnLoc > 0 ? liveAtGrnLoc : 0) - pendingSample);
+          // Scope to THIS GRN's own receipt: balances are keyed mat|batch|loc, so two
+          // receipts of the same batch share one balance. Defaulting off the shared
+          // balance would move the sibling receipt's stock too.
+          var movable = Math.min(liveMovable, Math.max(0, grnQty - pendingSample));
+          if (disp === 'REJECTED' && rejQty <= 0) { rejQty = movable - accQty - hldQty; }
+          if (disp === 'HOLD'     && hldQty <= 0) { hldQty = movable - accQty - rejQty; }
           if (rejQty < 0) rejQty = 0;
           if (hldQty < 0) hldQty = 0;
+          // Never move more than is physically there.
+          if (rejQty + hldQty > movable) { rejQty = Math.min(rejQty, movable); hldQty = Math.max(0, movable - rejQty); }
 
           // Accepted portion — status marker only (stock stays in GRN location)
           if (accQty > 0 || disp === 'ACCEPTED' || disp === 'ACCEPTED WITH DEVIATION') {
@@ -342,7 +359,8 @@ function saveIQC(data) {
             // would leak into production as issuable. Move that remainder to QUARANTINE
             // as un-inspected/held so only acceptedQty stays issuable.
             if ((disp === 'ACCEPTED' || disp === 'ACCEPTED WITH DEVIATION') && grnQty > 0 && accQty > 0) {
-              var remainder = grnQty - accQty - rejQty - hldQty;
+              // movable is already scoped to THIS GRN's receipt less its sample.
+              var remainder = movable - accQty - rejQty - hldQty;
               if (remainder > 0) {
                 var qLocsR = (typeof getLocations === 'function') ? getLocations('QUARANTINE') : [];
                 var quarIdR = qLocsR.length > 0 ? qLocsR[0].id : 'QUARANTINE';
@@ -414,6 +432,9 @@ function saveIQC(data) {
             samplePurpose: 'IQC inspection',
             takenBy:       data.inspector || operatorId,
             locationStored: 'SAMPLE-CABINET',
+            // Real holding location, so the sample is a paired move (OUT here, IN cabinet)
+            // instead of a bare debit against the cabinet.
+            sourceLocationId: (typeof grnLoc !== 'undefined' ? grnLoc : ''),
             locationId:    'SAMPLE-CABINET'
           });
         } catch(sampErr) {

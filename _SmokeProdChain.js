@@ -63,21 +63,28 @@ function smokeProdChain(opts) {
       compA, 'Test comp A', '6', 'KGS', 6, 'RM', 0]);
     madeBom.push(fgCode); madeMats.push('PCMAT-');
     // Two receipts of the SAME batch+loc → two lots that share the aggregation key.
-    var grnA1 = createTestGRN_({ materialCode: compA, batchNo: batchA, qtyReceived: 30, locationId: 'RM-STORE-A', unit: 'KGS' });
-    var grnA2 = createTestGRN_({ materialCode: compA, batchNo: batchA, qtyReceived: 30, locationId: 'RM-STORE-A', unit: 'KGS' });
+    var grnA1 = createTestGRN_({ materialCode: compA, batchNo: batchA, qtyReceived: 38, locationId: 'RM-STORE-A', unit: 'KGS' });
+    var grnA2 = createTestGRN_({ materialCode: compA, batchNo: batchA, qtyReceived: 38, locationId: 'RM-STORE-A', unit: 'KGS' });
     assert('two GRN receipts created', grnA1.success && grnA2.success, grnA1.docNo + ' / ' + grnA2.docNo);
     // Accept both via real saveIQC (per GRN). acceptedQty = full receipt (no remainder).
     saveIQC({ grnNo: grnA1.docNo, date: new Date(), inspector: 'claude-smoke', disposition: 'ACCEPTED',
-      items: [{ materialCode: compA, materialDesc: 'Test comp A', batchNo: batchA, acceptedQty: 30, rejectedQty: 0, holdQty: 0, sampleSize: 8, params: {} }] });
+      items: [{ materialCode: compA, materialDesc: 'Test comp A', batchNo: batchA, acceptedQty: 38, rejectedQty: 0, holdQty: 0, sampleSize: 8, params: {} }] });
     saveIQC({ grnNo: grnA2.docNo, date: new Date(), inspector: 'claude-smoke', disposition: 'ACCEPTED',
-      items: [{ materialCode: compA, materialDesc: 'Test comp A', batchNo: batchA, acceptedQty: 30, rejectedQty: 0, holdQty: 0, sampleSize: 8, params: {} }] });
+      items: [{ materialCode: compA, materialDesc: 'Test comp A', batchNo: batchA, acceptedQty: 38, rejectedQty: 0, holdQty: 0, sampleSize: 8, params: {} }] });
     SpreadsheetApp.flush();
     var issuableA = 0;
     getProductionLotsForMaterial(compA).forEach(function(l){
       var d = String(l.iqcDisposition||'').toUpperCase();
       if (d==='ACCEPTED'||d==='PASS'||d==='ACCEPTED WITH DEVIATION') issuableA += Number(l.balance)||0;
     });
-    assert('compA issuable = 60 (two lots)', Math.abs(issuableA - 60) < 0.001, 'issuable=' + issuableA);
+    // 60 received, less IQC samples actually pulled to the cabinet (sampleSize 8 per
+    // receipt x 2 = 16). Sampling is now a paired move, so it really leaves the RM
+    // location — it used to vanish from the ledger, which is what this expected before.
+    assert('compA issuable = 60 (76 received - 16 sampled)', Math.abs(issuableA - 60) < 0.001, 'issuable=' + issuableA);
+    // The sampled units must be AT the cabinet, not gone — proves the pairing.
+    var cabinetBal = bal(compA, batchA, 'SAMPLE-CABINET');
+    assert('sampled 16 units are held at SAMPLE-CABINET (paired move, not a bare debit)',
+      Math.abs(cabinetBal - 16) < 0.001, 'cabinet=' + cabinetBal);
 
     // ---- computeProductionPlan ----
     header('computeProductionPlan');
@@ -109,7 +116,7 @@ function smokeProdChain(opts) {
     assert('detail success', det && det.success, det && (det.error||''));
     var aLines = (det.lines||[]).filter(function(l){ return l.compCode === compA && l.location === 'RM-STORE-A'; });
     assert('#12 compA collapses to ONE line (not two)', aLines.length === 1, 'lines=' + aLines.length);
-    assert('#12 aggregated bookedQty = 48 (30+18 across two lots)',
+    assert('#12 aggregated bookedQty = 48 (38+10 across two lots)',
       aLines.length === 1 && Math.abs(aLines[0].bookedQty - 48) < 0.001,
       aLines.length ? ('bookedQty=' + aLines[0].bookedQty) : 'n/a');
 
@@ -177,6 +184,18 @@ function smokeProdChain(opts) {
     // a cancelled job must not be bookable
     var afterCancel = getJobBookedDetail(jobX.jobId);
     assert('cancel: cancelled job is not bookable', !afterCancel.success, JSON.stringify(afterCancel && afterCancel.error));
+
+    // Regression: cancelling a job whose stock was ALREADY credited back must not credit
+    // a second time (was: cancel credited bookedQty from the issue log regardless).
+    header('cancel is idempotent (no double-credit)');
+    var balBeforeSecond = bal(matX, batchX, 'RM-STORE-A');
+    var canc2 = cancelProductionJob(jobX.jobId, 'claude-smoke', 'double-cancel probe');
+    var balAfterSecond = bal(matX, batchX, 'RM-STORE-A');
+    assert('second cancel does NOT invent stock',
+      Math.abs(balAfterSecond - balBeforeSecond) < 0.001,
+      'before=' + balBeforeSecond + ' after=' + balAfterSecond + ' (must be equal)');
+    assert('second cancel is refused (job already CANCELLED)', canc2 && canc2.success === false,
+      JSON.stringify(canc2 && (canc2.error || 'unexpected success')));
 
   } catch (e) {
     log.push(''); log.push('EXCEPTION: ' + (e && e.message)); log.push((e && e.stack) || ''); fail++;

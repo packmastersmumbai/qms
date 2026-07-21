@@ -1178,7 +1178,7 @@ function submitProductionBooking(data) {
       // them (bookedQty is derived from PROD_ISSUE_LOG, so earlier writes are invisible
       // to the recomputation) and balances diverge. Same compensating-reversal pattern
       // issueProductionJob already uses; reuses reverseProductionIssue.
-      var bookedSoFar = [];
+      var bookedUndo = [];
       try {
 
       for (var j = 0; j < data.lines.length; j++) {
@@ -1240,18 +1240,40 @@ function submitProductionBooking(data) {
         ]);
         bookWs.getRange(bookWs.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy HH:mm');
 
-        // Net stock effect of this line = -(consumed+scrap+wastage+loss). Record it so a
-        // later line's failure can undo it exactly.
-        var netOut = consumed + scrap + wastage + loss;
-        if (netOut > 0) {
-          bookedSoFar.push({ compCode: L.compCode, issueId: bookingId, qty: netOut,
-            lots: [{ batch: L.batchOrLot, qty: netOut, location: L.location }] });
-        }
+        // Record the EXACT rows written for this line so a later failure can undo them.
+        // Two opposite effects were written: a +bookedQty2 credit (PROD_BOOK_REVERSE) and
+        // -(consumed+scrap+wastage+loss) of debits. Undoing needs BOTH — crediting only
+        // the net would leave the +bookedQty2 credit standing (stock invented from nothing).
+        bookedUndo.push({
+          compCode: L.compCode, batch: L.batchOrLot, location: L.location,
+          creditWritten: bookedQty2,                          // undo by debiting this back
+          debitWritten: consumed + scrap + wastage + loss     // undo by crediting this back
+        });
       }
 
       } catch (loopErr) {
-        // Mid-loop failure: credit back every line already written so a retry starts clean.
-        var undo = reverseProductionIssue(bookedSoFar, jobId, bookedBy);
+        // Mid-loop failure: undo BOTH sides of every line already written so a retry
+        // starts from the pre-booking state. Written directly (not via
+        // reverseProductionIssue, which only credits) because each line needs a debit
+        // AND a credit to cancel out exactly.
+        var undo = { reversedLots: 0, credited: 0, errors: [] };
+        bookedUndo.forEach(function(u){
+          try {
+            if (u.creditWritten > 0) {   // cancel the PROD_BOOK_REVERSE credit
+              writeStockLedger_('PROD_BOOK_ROLLBACK', u.compCode, u.batch, u.location,
+                0, u.creditWritten, 'PRODUCTION', jobId, bookedBy,
+                'Rollback of failed booking ' + bookingId + ' — undo reversal credit');
+            }
+            if (u.debitWritten > 0) {    // cancel the consume/scrap/wastage/loss debits
+              writeStockLedger_('PROD_BOOK_ROLLBACK', u.compCode, u.batch, u.location,
+                u.debitWritten, 0, 'PRODUCTION', jobId, bookedBy,
+                'Rollback of failed booking ' + bookingId + ' — undo consumption debits');
+              undo.credited += u.debitWritten;
+            }
+            undo.reversedLots++;
+          } catch (ue) { undo.errors.push(u.compCode + '/' + u.batch + ': ' + ue.message); }
+        });
+        undo.success = undo.errors.length === 0;
         // PROD_BOOKING_LOG rows for this aborted bookingId are orphans — stamp them VOID
         // so reports don't count them. ponytail: stamp-in-place, no delete (audit trail).
         try {
@@ -1326,12 +1348,28 @@ function cancelProductionJob(jobId, cancelledBy, reason) {
       var detail = getJobBookedDetail(id);
       if (!detail.success) return detail;   // covers not-found and already-closed status
 
-      // Credit back every booked lot (compCode|batch|location → bookedQty).
+      // Credit back only what is STILL OUTSTANDING for this job, not the original issued
+      // qty. A job may already carry PROD_BOOK_REVERSE / PROD_BOOK_ROLLBACK credits from a
+      // failed booking attempt; crediting bookedQty again would invent stock. So we net
+      // this job's own ledger rows per comp|batch|location and credit back the shortfall.
+      var outstanding = _jobOutstandingByLot_(id);
       var comps = (detail.lines || []).map(function(L){
-        return { compCode: L.compCode, issueId: id, qty: L.bookedQty,
-          lots: [{ batch: L.batchOrLot, qty: L.bookedQty, location: L.location }] };
-      });
+        var k = L.compCode + '|' + L.batchOrLot + '|' + L.location;
+        var owed = outstanding[k];
+        if (owed === undefined) owed = Number(L.bookedQty) || 0;  // no ledger rows found → fall back
+        return { compCode: L.compCode, issueId: id, qty: owed,
+          lots: [{ batch: L.batchOrLot, qty: owed, location: L.location }] };
+      }).filter(function(c){ return c.qty > 0; });   // nothing owed → nothing to credit
       var rev = reverseProductionIssue(comps, id, who);
+
+      // Do NOT close the job if we could not credit everything back — closing it would
+      // strand the un-credited debits with no way to retry. Leave it IN_PROGRESS so the
+      // operator can cancel again once the cause is cleared.
+      if (!rev.success) {
+        return { success: false, jobId: id, reversedLots: rev.reversedLots, credited: rev.credited,
+          error: 'Could not return all stock — job left OPEN so you can retry: ' + rev.errors.join('; '),
+          requiresReview: true };
+      }
 
       // Flip status to CANCELLED (col 9) + stamp Closed At (col 12) + reason in Booking ID col.
       var jobsWs = ensureProdJobsSheet_();
@@ -1356,6 +1394,33 @@ function cancelProductionJob(jobId, cancelledBy, reason) {
     Logger.log(e);
     return { success: false, error: e.message };
   }
+}
+
+/**
+ * _jobOutstandingByLot_ — how much this job still owes back to stock, per
+ * compCode|batch|location. Nets every STOCK_LEDGER row whose Ref Doc No is this job:
+ * PROD_BOOK debited it out, PROD_BOOK_REVERSE / PROD_BOOK_ROLLBACK credited some back,
+ * PROD_CONSUME/SCRAP/WASTAGE/LOSS are real consumption that must NOT be credited back.
+ * outstanding = qtyOut - qtyIn over this job's rows, floored at 0.
+ * Returns {} when the job has no ledger rows (caller falls back to bookedQty).
+ * ponytail: one ledger scan, uses the request-scoped read the balance memo already warms.
+ */
+function _jobOutstandingByLot_(jobId) {
+  var out = {};
+  var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+  if (!ws || ws.getLastRow() < 2) return out;
+  var id = String(jobId || '').trim();
+  var d = ws.getDataRange().getValues();
+  // cols: txnType[2], material[3], batch[4], location[5], qtyIn[6], qtyOut[7], refDocNo[10]
+  for (var i = 1; i < d.length; i++) {
+    if (String(d[i][10] || '').trim() !== id) continue;
+    var t = String(d[i][2] || '').toUpperCase();
+    if (t.indexOf('PROD_') !== 0) continue;
+    var k = String(d[i][3]).trim() + '|' + String(d[i][4]).trim() + '|' + String(d[i][5]).trim();
+    out[k] = (out[k] || 0) + (Number(d[i][7]) || 0) - (Number(d[i][6]) || 0);
+  }
+  Object.keys(out).forEach(function(k){ if (out[k] < 0) out[k] = 0; });
+  return out;
 }
 
 function getRecentProductionBookings(limit) {

@@ -328,15 +328,29 @@ function recordScan(payload) {
     writeStockLedger_('SCAN_RECEIVE', rcvMat, lotId, target, rcvQty, 0, 'SCAN', refNo, op.name, 'Gate-In scan receive', desc);
     mat = rcvMat;
   } else if (action === 'MOVE') {
-    // OUT at source, IN at target floor — a real location transfer of the whole balance.
-    moved = look.totalBalance;
-    var fromLoc = look.fromLocation;
-    writeStockLedger_('SCAN_MOVE', mat, lotId, fromLoc, 0, moved, 'SCAN', refNo, op.name, 'Move → ' + target, desc);
-    writeStockLedger_('SCAN_MOVE', mat, lotId, target,  moved, 0, 'SCAN', refNo, op.name, 'Move ← ' + fromLoc, desc);
+    // Debit EACH holding location for what it actually holds, then one IN at the target.
+    // Was: the lot's TOTAL balance debited from the single largest holder — which drove
+    // that location negative and left phantom stock at every other location.
+    moved = 0;
+    (look.current || []).forEach(function(c){
+      var q = Number(c.balance) || 0;
+      if (q <= 0) return;
+      writeStockLedger_('SCAN_MOVE', mat, lotId, c.locationId, 0, q, 'SCAN', refNo, op.name, 'Move → ' + target, desc);
+      moved += q;
+    });
+    if (moved > 0) {
+      writeStockLedger_('SCAN_MOVE', mat, lotId, target, moved, 0, 'SCAN', refNo, op.name,
+        'Move ← ' + (look.current || []).map(function(c){ return c.locationId; }).join(', '), desc);
+    }
   } else if (action === 'SHIP') {
-    // OUT reducing the lot's balance to zero (dispatched / left the building).
-    moved = look.totalBalance;
-    writeStockLedger_('SCAN_SHIP', mat, lotId, look.fromLocation, 0, moved, 'SCAN', refNo, op.name, 'Dispatched via Gate-Out scan', desc);
+    // Debit each holding location for its own balance so the lot goes to zero everywhere.
+    moved = 0;
+    (look.current || []).forEach(function(c){
+      var q = Number(c.balance) || 0;
+      if (q <= 0) return;
+      writeStockLedger_('SCAN_SHIP', mat, lotId, c.locationId, 0, q, 'SCAN', refNo, op.name, 'Dispatched via Gate-Out scan', desc);
+      moved += q;
+    });
   }
 
   // ---- Pilot compliance log (SCAN_EVENTS) — unchanged measurement stream ----

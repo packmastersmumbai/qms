@@ -467,6 +467,9 @@ function saveRound(sessionId, roundData) {
           samplePurpose: 'IPQC round ' + roundNo,
           takenBy:       roundData.inspector || '',
           locationStored: 'SAMPLE-CABINET',
+          // No sourceLocationId: in-process material has no STOCK_LEDGER balance (IPQC
+          // does not write stock), so there is nothing to debit. recordSample logs the
+          // sample and deliberately skips the ledger move rather than inventing a debit.
           locationId:    'SAMPLE-CABINET'
         });
       } catch(sampErr) {

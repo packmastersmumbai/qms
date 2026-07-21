@@ -299,7 +299,11 @@ function getLowStockItems() {
 // issueForDispatch() by calling getFIFOLots() and comparing the operator-selected lotId
 // against fifoLots[0].batchOrLotNo before permitting the write.
 function getFIFOLots(materialCode) {
-  var quarantineTypes = { 'QUARANTINE': 1, 'SCRAP': 1, 'SAMPLE': 1 };
+  // Parked material must never be issuable. HOLD / FG_HOLD / REWORK were missing here
+  // even though getPutawayQueue and getStockView both treat them as parked — so stock
+  // awaiting a decision could be picked into production.
+  var quarantineTypes = { 'QUARANTINE': 1, 'SCRAP': 1, 'SAMPLE': 1,
+                          'HOLD': 1, 'FG_HOLD': 1, 'FG-HOLD': 1, 'REWORK': 1 };
   // Request-scoped cached reads (LOCATIONS, STOCK_LEDGER, GRN dates) — see
   // ProductionReadCache.js. Falls back to direct reads if that module is absent.
   var locTypeById = (typeof prodLocTypes_ === 'function') ? prodLocTypes_() : (function(){
@@ -314,8 +318,17 @@ function getFIFOLots(materialCode) {
   var summary = stockSummary.filter(function(s){
     if (String(s.materialCode).trim() !== matKey) return false;
     if (s.balance <= 0) return false;
-    var t = locTypeById[String(s.locationId).trim()] || '';
-    return !quarantineTypes[t];
+    var locId = String(s.locationId).trim();
+    var t = locTypeById[locId] || '';
+    if (quarantineTypes[t]) return false;
+    // Fallback: a location missing from the LOCATIONS sheet resolves to '' and would
+    // otherwise pass — so a lot literally parked at 'QUARANTINE'/'SCRAP'/'FG-HOLD' could
+    // be issued. Judge by the id itself when the type is unknown.
+    if (!t) {
+      var up = locId.toUpperCase();
+      if (/QUARANTINE|SCRAP|SAMPLE|HOLD|REWORK/.test(up)) return false;
+    }
+    return true;
   }).map(function(s){ return { materialCode: s.materialCode, batchOrLotNo: s.batchOrLotNo,
     locationId: s.locationId, balance: s.balance }; }); // copy — we set grnDate below, don't mutate the shared snapshot
 
@@ -844,11 +857,30 @@ function recordSample(data) {
       data.locationStored || 'SAMPLE-CABINET'
     ]);
     ws.getRange(ws.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy HH:mm');
-    writeStockLedger_('SAMPLE', data.materialCode, data.batchOrLotNo,
-      data.locationId || 'SAMPLE-CABINET',
-      0, Number(data.qtySample) || 0,
-      data.refDocType || '', data.refDocNo || '',
-      data.takenBy || '', data.samplePurpose || '');
+
+    // Taking a sample is a MOVE, not a disappearance: OUT of the location the material
+    // actually sits in, IN to the sample cabinet. Previously this wrote a single OUT at
+    // the CABINET — a location never credited — so the cabinet went negative while the
+    // full received qty stayed issuable at source, double-counting the sampled units.
+    var qty = Number(data.qtySample) || 0;
+    var cabinet = String(data.locationStored || 'SAMPLE-CABINET').trim() || 'SAMPLE-CABINET';
+    // sourceLocationId is the real holding location; fall back to the legacy locationId
+    // only when it is not the cabinet itself (older callers passed the cabinet here).
+    var src = String(data.sourceLocationId || '').trim();
+    if (!src && String(data.locationId || '').trim() !== cabinet) src = String(data.locationId || '').trim();
+    if (qty > 0 && src) {
+      writeStockLedger_('SAMPLE_OUT', data.materialCode, data.batchOrLotNo, src,
+        0, qty, data.refDocType || '', data.refDocNo || '',
+        data.takenBy || '', 'Sample pulled → ' + cabinet + (data.samplePurpose ? ' (' + data.samplePurpose + ')' : ''));
+      writeStockLedger_('SAMPLE_IN', data.materialCode, data.batchOrLotNo, cabinet,
+        qty, 0, data.refDocType || '', data.refDocNo || '',
+        data.takenBy || '', 'Sample held ← ' + src);
+    } else if (qty > 0) {
+      // No source known (legacy caller): record the sample without touching stock rather
+      // than driving the cabinet negative. Surfaced so it can be reconciled.
+      Logger.log('recordSample: no source location for ' + data.materialCode + '/' + data.batchOrLotNo + ' — ledger skipped');
+      return { success: true, sampleId: id, warning: 'Sample logged but stock not moved — source location unknown.' };
+    }
     return { success: true, sampleId: id };
   } catch(e) {
     Logger.log(e);

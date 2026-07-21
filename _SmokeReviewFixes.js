@@ -86,10 +86,10 @@ function smokeReviewFixes(opts) {
     header('#1 IQC accepted-remainder quarantined (real saveIQC)');
     var mat1 = 'RF-MAT-A-' + stamp;
     var batch1 = 'RF-BATCH-A-' + stamp;
-    var grn1 = createTestGRN_({ materialCode: mat1, batchNo: batch1, qtyReceived: 100, locationId: 'RM-STORE-A' });
+    var grn1 = createTestGRN_({ materialCode: mat1, batchNo: batch1, qtyReceived: 108, locationId: 'RM-STORE-A' });
     assert('GRN #1 created', grn1 && grn1.success, grn1 && grn1.docNo);
     var balBefore1 = bal(mat1, batch1, 'RM-STORE-A');
-    assert('GRN receipt balance = 100', Math.abs(balBefore1 - 100) < 0.001, 'have ' + balBefore1);
+    assert('GRN receipt balance = 108', Math.abs(balBefore1 - 108) < 0.001, 'have ' + balBefore1);
 
     var iqc1 = saveIQC({
       grnNo: grn1.docNo, date: new Date(), inspector: 'claude-smoke-test',
@@ -111,7 +111,7 @@ function smokeReviewFixes(opts) {
     header('#10 bare REJECTED (rejectedQty=0) moves full qty (real saveIQC)');
     var mat10 = 'RF-MAT-R-' + stamp;
     var batch10 = 'RF-BATCH-R-' + stamp;
-    var grn10 = createTestGRN_({ materialCode: mat10, batchNo: batch10, qtyReceived: 50, locationId: 'RM-STORE-A' });
+    var grn10 = createTestGRN_({ materialCode: mat10, batchNo: batch10, qtyReceived: 58, locationId: 'RM-STORE-A' });
     assert('GRN #10 created', grn10 && grn10.success);
     var iqc10 = saveIQC({
       grnNo: grn10.docNo, date: new Date(), inspector: 'claude-smoke-test',
@@ -134,8 +134,8 @@ function smokeReviewFixes(opts) {
     var mat2 = 'RF-MAT-M-' + stamp;
     var bAcc = 'RF-B-ACC-' + stamp;
     var bRej = 'RF-B-REJ-' + stamp;
-    var grn2a = createTestGRN_({ materialCode: mat2, batchNo: bAcc, qtyReceived: 30, locationId: 'RM-STORE-A' });
-    var grn2b = createTestGRN_({ materialCode: mat2, batchNo: bRej, qtyReceived: 30, locationId: 'RM-STORE-A' });
+    var grn2a = createTestGRN_({ materialCode: mat2, batchNo: bAcc, qtyReceived: 38, locationId: 'RM-STORE-A' });
+    var grn2b = createTestGRN_({ materialCode: mat2, batchNo: bRej, qtyReceived: 38, locationId: 'RM-STORE-A' });
     assert('GRN #2 both batches created', grn2a.success && grn2b.success);
     // Same GRN ref for both so the OLD per-GRN keying would collapse them. Use grn2a's docNo.
     var iqc2acc = saveIQC({ grnNo: grn2a.docNo, date: new Date(), inspector: 'claude-smoke-test',
