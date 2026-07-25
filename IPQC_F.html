@@ -563,7 +563,7 @@ var SAVED_ROUNDS = [];  // [{roundNo, avgWeight, elapsedHms, weights: {1:'0.45',
 var timerInterval = null;
 
 // ── Boot ───────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
+pmReady(function() {
   showLoading('Loading…');
   google.script.run
     .withSuccessHandler(function(d) {
@@ -1295,7 +1295,7 @@ function startNextRound(nextNo) {
 
 /* Single click router for btnSaveRound — picks Save vs Start-Next based on state.
    Bound once on DOM ready; survives innerHTML rewrites. */
-document.addEventListener('DOMContentLoaded', function () {
+pmReady(function () {
   var btn = document.getElementById('btnSaveRound');
   if (!btn) return;
   btn.removeAttribute('onclick');  // strip the inline handler

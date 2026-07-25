@@ -1103,7 +1103,7 @@ function init() {
 }
 
 // ── Event wiring ───────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
+pmReady(function() {
   // Set today's date in header card
   var td = document.getElementById('todayDate');
   if (td) {

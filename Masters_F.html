@@ -934,7 +934,7 @@
   }
 
   /* ── Init ── */
-  document.addEventListener('DOMContentLoaded', function() {
+  pmReady(function() {
     if (!checkRole()) return;
 
     document.getElementById('backBtn').addEventListener('click', function() {

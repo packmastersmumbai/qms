@@ -314,7 +314,7 @@
   }
 
   // ── init ──────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function() {
+  pmReady(function() {
     // Role
     var role = getRole();
     _canEdit = ['admin', 'owner', 'master', 'qc manager', 'manager'].indexOf(role) !== -1;

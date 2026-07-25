@@ -792,6 +792,23 @@
     window.PMShowFormError = showFormError;   // forms can surface caught errors the same way
   })();
 
+  // ── pmReady — run init whether or not DOMContentLoaded already fired ───────────
+  // GAS injects forms via document.write, so DOMContentLoaded may have ALREADY fired
+  // by the time a form's inline <script> attaches its listener — meaning the init
+  // (which wires every button/select) NEVER runs, and taps do nothing. This is the
+  // "sometimes the buttons don't work" bug. pmReady() runs the fn immediately if the
+  // DOM is already parsed, else on DOMContentLoaded — so init always happens.
+  window.pmReady = function (fn) {
+    try {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn);
+      } else {
+        // already parsed — run on next tick so the rest of the inline script finishes first
+        setTimeout(fn, 0);
+      }
+    } catch (e) { try { fn(); } catch (_) {} }
+  };
+
   function goHome() {
     google.script.run
       .withSuccessHandler(function(html) {

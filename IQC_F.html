@@ -635,7 +635,7 @@ var videoUrl     = '';
 var imageFiles   = [];  // [{base64, mime, name}] max 5
 
 /* ── Init ── */
-document.addEventListener('DOMContentLoaded', function() {
+pmReady(function() {
   var pfRaw = sessionStorage.getItem('grnPrefill');
   if (pfRaw) {
     sessionStorage.removeItem('grnPrefill');

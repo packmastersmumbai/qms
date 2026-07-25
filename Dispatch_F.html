@@ -844,7 +844,7 @@
       loadInit();
     });
 
-    document.addEventListener('DOMContentLoaded', function(){
+    pmReady(function(){
       document.getElementById('fCustomer').addEventListener('change', function(){
         // Customer change should clear all plans (product availability is customer-scoped)
         var blocks = document.getElementById('itemsContainer').querySelectorAll('.dsp-item-block');

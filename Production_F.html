@@ -650,7 +650,7 @@
         .getRecentProductionIssues(20);
     }
 
-    document.addEventListener('DOMContentLoaded', function(){
+    pmReady(function(){
       document.getElementById('fMaterial').addEventListener('change', onMaterialChange);
       document.getElementById('fQty').addEventListener('input', function(){
         if (CURRENT_PLAN) clearPlan();

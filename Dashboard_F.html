@@ -431,7 +431,7 @@ var openDetailIdx = -1;   // index into currentRows of the open detail row
 var loading = false;
 
 // ── Init ───────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
+pmReady(function() {
   // Role chip
   var roleEl = document.getElementById('roleChip');
   if (roleEl) roleEl.style.display = 'none';
