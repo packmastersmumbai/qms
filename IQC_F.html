@@ -535,8 +535,12 @@ function loadParamsForProduct(materialCode){
   if(!materialCode){ return; }
   google.script.run.withSuccessHandler(function(res){
     applyIqcParams((res&&res.params)||[], res&&res.fallback);
-    // re-init the current item's param map to the new param ids, then re-render.
-    if (itemData[currentIdx]) itemData[currentIdx].params = itemData[currentIdx].params || {};
+    // This is an async callback: the user may have changed GRN while it was in flight,
+    // which resets itemData=[]. Only touch the current item + re-render if it still
+    // exists — buildParamSection reads itemData[currentIdx].params unguarded, and an
+    // uncaught error here tears down the GAS iframe and bounces the user to the homepage.
+    if (!itemData[currentIdx]) return;
+    itemData[currentIdx].params = itemData[currentIdx].params || {};
     if (typeof buildParamSection === 'function') buildParamSection();
   }).withFailureHandler(function(){ /* keep legacy defaults */ }).getIqcParamsForProduct(materialCode);
 }

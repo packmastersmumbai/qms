@@ -1237,7 +1237,7 @@
           if (!r || !r.success) { showToast(r && r.error || 'Cancel failed.', 'error'); return; }
           showToast('Job cancelled — ' + r.credited + ' units returned to stock.');
           BK_JOB = null; BK_LINES = [];
-          document.getElementById('bkLines').innerHTML = '';
+          var bl = document.getElementById('bkLinesBody'); if (bl) bl.innerHTML = '';
           loadOpenJobs();
         })
         .withFailureHandler(function(e){
