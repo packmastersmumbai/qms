@@ -76,7 +76,7 @@
 <!-- ══ TOP APP BAR ══ -->
 <header class="fixed top-0 w-full bg-primary shadow-md z-50">
   <div class="h-[56px] flex items-center justify-between px-4">
-    <button id="s1BackBtn" aria-label="Go Back" class="text-white active:scale-95 transition-transform p-2 -ml-2">
+    <button id="s1BackBtn" onclick="onScreen1Back()" aria-label="Go Back" class="text-white active:scale-95 transition-transform p-2 -ml-2">
       <span class="material-symbols-outlined">arrow_back</span>
     </button>
     <h1 class="font-headline text-[20px] font-bold text-white text-center flex-1">IQC Inspection</h1>
@@ -648,7 +648,9 @@ document.addEventListener('DOMContentLoaded', function() {
     ('0'+(today.getMonth()+1)).slice(-2) + '-' +
     ('0'+today.getDate()).slice(-2);
 
-  document.getElementById('s1BackBtn').addEventListener('click', onScreen1Back);
+  // Inline onclick (reliable on GAS mobile iframe); expose the handler on window.
+  // addEventListener was silently not firing on touch. ponytail: match the working pattern.
+  window.onScreen1Back = onScreen1Back; window.goHome = goHome;
   document.getElementById('s2BackBtn').addEventListener('click', onScreen2Back);
   document.getElementById('grnNo').addEventListener('change', onGRNChange);
   document.getElementById('sampleSize').addEventListener('input', saveQtyState);

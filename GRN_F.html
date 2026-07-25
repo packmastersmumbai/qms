@@ -100,7 +100,7 @@
 
 <!-- ── Top App Bar ── -->
 <header class="fixed top-0 left-0 w-full z-50 h-[56px] bg-primary flex items-center justify-between px-4 shadow-md">
-  <button id="backBtn" class="text-white hover:bg-white/10 active:opacity-80 transition-all p-2 rounded-full flex items-center justify-center" aria-label="Back">
+  <button id="backBtn" onclick="goHome()" class="text-white hover:bg-white/10 active:opacity-80 transition-all p-2 rounded-full flex items-center justify-center" aria-label="Back">
     <span class="material-symbols-outlined">arrow_back</span>
   </button>
   <h1 class="font-headline text-[18px] font-bold text-white">New GRN</h1>
@@ -523,7 +523,12 @@ function navigate(page) {
 
 function goHome() {
   if (!formSaved) {
-    var hasData = document.getElementById('supplier').value || document.getElementById('batchNo').value || disposition;
+    // disposition defaults to 'PENDING' (truthy), so it must NOT count as entered data —
+    // otherwise every back-tap on a blank form fires the confirm, and the confirm dialog is
+    // itself flaky inside the GAS double-iframe on mobile, making Back feel broken.
+    var hasData = document.getElementById('supplier').value ||
+                  document.getElementById('batchNo').value ||
+                  (disposition && disposition !== 'PENDING');
     if (hasData && !confirm('Unsaved changes. Leave?')) return;
   }
   navigate('Landing');
@@ -1105,7 +1110,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var d = new Date();
     td.textContent = d.toLocaleDateString('en-GB', {day:'2-digit',month:'2-digit',year:'numeric'});
   }
-  document.getElementById('backBtn').addEventListener('click', goHome);
+  // Back button uses inline onclick="goHome()" (reliable on the GAS document.write mobile
+  // iframe); expose goHome on window so the inline handler resolves. addEventListener here
+  // was silently not firing on touch. ponytail: match OQC's working inline-onclick pattern.
+  window.goHome = goHome;
   document.getElementById('supplier').addEventListener('change', onSupplierChange);
   document.getElementById('item').addEventListener('change', onItemChange);
   document.getElementById('qtyReceived').addEventListener('input', function() { onQtyReceivedInput(); checkOverReceiptWarning(); });
