@@ -755,6 +755,43 @@
   }
 </style>
 <script>
+  // ── Global error trap (loads in every form via Theme) ─────────────────────────
+  // In the GAS document.write double-iframe, an UNCAUGHT JS error tears down the frame
+  // and the shell bounces the operator to the homepage — the recurring "form redirects
+  // to home after a selection" bug. This catches those errors, shows a non-blocking
+  // banner, and KEEPS THE FORM OPEN so a stray null-access can't lose the operator's work.
+  // It never navigates and never throws itself.
+  (function () {
+    var shown = 0;
+    function showFormError(msg) {
+      try {
+        if (shown > 3) return;            // don't spam on an error storm
+        shown++;
+        var bar = document.getElementById('__pm_errbar__');
+        if (!bar) {
+          bar = document.createElement('div');
+          bar.id = '__pm_errbar__';
+          bar.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;' +
+            'background:#7f1d1d;color:#fff;padding:10px 14px;border-radius:10px;font:600 12px/1.4 system-ui,sans-serif;' +
+            'box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;gap:10px;align-items:flex-start;';
+          document.body.appendChild(bar);
+        }
+        bar.innerHTML = '<span style="flex:1">Something hiccuped — your entry is safe, please continue. ' +
+          '<span style="opacity:.75;font-weight:400">(' + String(msg || 'error').slice(0, 90) + ')</span></span>' +
+          '<button onclick="var e=document.getElementById(\'__pm_errbar__\');if(e)e.remove();" ' +
+          'style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;line-height:1;padding:0 2px;">&times;</button>';
+      } catch (e) { /* the error handler must never throw */ }
+    }
+    window.addEventListener('error', function (ev) {
+      showFormError(ev && ev.message ? ev.message : 'script error');
+      // returning true would suppress the default; we let it log to console too.
+    });
+    window.addEventListener('unhandledrejection', function (ev) {
+      var r = ev && ev.reason; showFormError(r && r.message ? r.message : String(r || 'promise error'));
+    });
+    window.PMShowFormError = showFormError;   // forms can surface caught errors the same way
+  })();
+
   function goHome() {
     google.script.run
       .withSuccessHandler(function(html) {
@@ -862,5 +899,47 @@
     if (document.body) { start(); }
     else { document.addEventListener('DOMContentLoaded', start); }
     window.addEventListener('load', scan);
+  })();
+
+  // ── Return-to-cockpit shim ───────────────────────────────────────────
+  // When the QMS v2 cockpit launches a legacy form (GRN/IQC/OQC/…), it sets
+  // localStorage.qmsReturnTo='QMSV2'. Forms navigate "home" by calling
+  // google.script.run...getFormHtml('Landing'). This shim rewrites that single
+  // 'Landing' target to 'QMSV2' so the user lands back in the cockpit instead
+  // of the legacy Landing — without editing each form's varied nav code.
+  // One-shot: the flag is consumed on the navigation that leaves this form.
+  (function () {
+    try {
+      if (!window.google || !google.script || !google.script.run) return;
+      var want = null;
+      try { want = window.localStorage.getItem('qmsReturnTo'); } catch (e) {}
+      if (want !== 'QMSV2') return;            // only active right after a cockpit launch
+
+      // google.script.run chains: each .withSuccessHandler()/.withFailureHandler()
+      // returns a NEW runner object that carries its OWN getFormHtml (not on the
+      // prototype). So we must (a) rewrite getFormHtml on each runner, and
+      // (b) wrap the chain factories so every derived runner is patched too.
+      function patchRunner(run) {
+        if (!run || run.__qmsReturnWrapped) return run;
+        run.__qmsReturnWrapped = true;
+        if (typeof run.getFormHtml === 'function') {
+          var origForm = run.getFormHtml;
+          run.getFormHtml = function (type) {
+            if (type === 'Landing') {
+              try { window.localStorage.removeItem('qmsReturnTo'); } catch (e) {}
+              return origForm.call(this, 'QMSV2');   // home → cockpit
+            }
+            return origForm.apply(this, arguments);
+          };
+        }
+        ['withSuccessHandler', 'withFailureHandler', 'withUserObject'].forEach(function (m) {
+          if (typeof run[m] !== 'function') return;
+          var origChain = run[m];
+          run[m] = function () { return patchRunner(origChain.apply(this, arguments)); };
+        });
+        return run;
+      }
+      patchRunner(google.script.run);
+    } catch (e) {}
   })();
 </script>
