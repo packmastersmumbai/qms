@@ -294,6 +294,34 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // BOM component gaps (_BomGapFix.js). Report is READ-ONLY; create needs confirm=YES.
+  //   ?diag=bomgaps                    → report
+  //   ?diag=bomfix                     → dry run of the creation
+  //   ?diag=bomfix&confirm=YES         → create missing components
+  if (diag === 'bomgaps') {
+    var bg;
+    try { bg = (typeof reportBomComponentGaps === 'function') ? reportBomComponentGaps() : 'reportBomComponentGaps missing'; }
+    catch (er13) { bg = 'ERROR: ' + er13.message; }
+    return ContentService.createTextOutput(String(bg)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'bomfix') {
+    var bf;
+    try {
+      bf = (typeof createMissingBomComponents === 'function')
+        ? createMissingBomComponents(e.parameter.confirm === 'YES')
+        : 'createMissingBomComponents missing';
+    } catch (er14) { bf = 'ERROR: ' + er14.message + '\n' + (er14.stack || ''); }
+    return ContentService.createTextOutput(String(bf)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // MASTERS_Materials column probe (_MatColProbe.js). READ-ONLY.
+  if (diag === 'matprobe') {
+    var mp;
+    try { mp = (typeof probeMaterialColumns === 'function') ? probeMaterialColumns() : 'probeMaterialColumns missing'; }
+    catch (er12) { mp = 'ERROR: ' + er12.message; }
+    return ContentService.createTextOutput(String(mp)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // One-off supplier approval backfill (_ApproveSuppliers.js). Dry run unless confirm=YES.
   //   ?diag=approvesuppliers              → dry run
   //   ?diag=approvesuppliers&confirm=YES  → write 'Y' into blank Approved cells

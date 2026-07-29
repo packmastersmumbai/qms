@@ -13,6 +13,8 @@ function diagMastersDropdowns() {
   out.push('');
   out.push(_ddMaterials_());
   out.push('');
+  out.push(_ddMaterialsContract_());
+  out.push('');
   out.push(_ddBom_());
   return out.join('\n');
 }
@@ -42,6 +44,59 @@ function _ddSuppliers_() {
     o.push('  ✘ HIDDEN rows (' + hidden.length + ') — approval cell not exactly "Y":');
     hidden.forEach(function(h) { o.push(h); });
   }
+  return o.join('\n');
+}
+
+// Compare the LIVE MASTERS_Materials header against the MAT_COL contract the
+// code reads by. This is the check that caught the supplier shift: a header
+// that has drifted means every reader is silently addressing the wrong cell.
+function _ddMaterialsContract_() {
+  var ws = getSpreadsheet().getSheetByName('MASTERS_Materials');
+  if (!ws) return 'MATERIALS CONTRACT: sheet not found.';
+  var header = ws.getRange(1, 1, 1, Math.max(ws.getLastColumn(), MAT_WIDTH)).getValues()[0];
+
+  // Expected header text per MAT_COL index. Cols G→L come from MAT_GEOMETRY_COLS
+  // so the expectation stays in one place.
+  var expect = {};
+  expect[MAT_COL.CODE] = 'Item Code';
+  expect[MAT_COL.DESC] = 'Item Description';
+  expect[MAT_COL.UNIT] = 'Unit';
+  expect[MAT_COL.CATEGORY] = 'Category';
+  expect[MAT_COL.DEFAULT_LOCATION] = 'Default Location';
+  expect[MAT_COL.REORDER_LEVEL] = 'Reorder Level';
+  MAT_GEOMETRY_COLS.forEach(function(g) { expect[g.col] = g.header; });
+  expect[MAT_COL.INSP_CATEGORY] = 'Inspection Category';
+
+  var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var o = [];
+  o.push('MATERIALS COLUMN CONTRACT  (MAT_WIDTH=' + MAT_WIDTH + ', sheet cols=' + ws.getLastColumn() + ')');
+  var drift = 0;
+  Object.keys(expect).map(Number).sort(function(a, b) { return a - b; }).forEach(function(idx) {
+    var want = expect[idx];
+    var got  = String(header[idx] == null ? '' : header[idx]).trim();
+    var ok   = got.toLowerCase() === want.toLowerCase();
+    if (!ok) drift++;
+    o.push('  ' + letters.charAt(idx) + ' [' + idx + ']  ' + (ok ? 'OK  ' : 'DRIFT ') +
+           'want="' + want + '"  got="' + got + '"');
+  });
+
+  o.push('');
+  if (!drift) {
+    o.push('  ✔ header matches the MAT_COL contract exactly.');
+    return o.join('\n');
+  }
+
+  o.push('  ✘ ' + drift + ' column(s) drifted. Consequences of the mismatched ones:');
+  var rl = String(header[MAT_COL.REORDER_LEVEL] == null ? '' : header[MAT_COL.REORDER_LEVEL]).trim();
+  if (rl.toLowerCase() !== 'reorder level') {
+    o.push('    - reorderLevel reads col F ("' + rl + '") → low-stock alerts use the wrong value.');
+  }
+  MAT_GEOMETRY_COLS.forEach(function(g) {
+    var got = String(header[g.col] == null ? '' : header[g.col]).trim();
+    if (got.toLowerCase() !== g.header.toLowerCase()) {
+      o.push('    - ' + g.key + ' reads col ' + letters.charAt(g.col) + ' ("' + got + '") → floorplan fit engine misreads it.');
+    }
+  });
   return o.join('\n');
 }
 
@@ -88,22 +143,45 @@ function _ddBom_() {
   var mats = {};
   getMaterials().forEach(function(m) { mats[String(m.code).trim()] = true; });
 
+  // Real BOM shape (matches Production.getBomRows_):
+  //   A Client | B FGIDH (fgCode) | C Material Description | D Base Quantity
+  //   E UoM | F Component (compCode) | G Mat Desc Component | H Quantity (STPO) | ...
+  // An earlier version of this diag assumed A=parent/B=component and reported
+  // hundreds of false "unresolved" rows. Column indices below follow the reader.
+  var BOM_FG = 1, BOM_COMP = 5;
+
   var o = [];
   o.push('BOM  (sheet "' + used + '", rows: ' + (data.length - 1) + ')');
   o.push('  header: ' + data[0].join(' | '));
-  var bad = [];
+  o.push('  RULE: fgCode = col B, compCode = col F (per Production.getBomRows_).');
+
+  var missFg = {}, missComp = {}, okRows = 0;
   for (var j = 1; j < data.length; j++) {
     var r = data[j];
-    if (!r[0] && !r[1]) continue;
-    var parent = String(r[0] || '').trim();
-    var comp   = String(r[1] || '').trim();
-    if (parent && !mats[parent]) bad.push('    row ' + (j + 1) + '  PARENT "' + parent + '" not in MASTERS_Materials');
-    if (comp   && !mats[comp])   bad.push('    row ' + (j + 1) + '  COMPONENT "' + comp + '" not in MASTERS_Materials');
+    var fg   = String(r[BOM_FG] || '').trim();
+    var comp = String(r[BOM_COMP] || '').trim();
+    if (!fg && !comp) continue;
+    if (fg   && !mats[fg])   missFg[fg]     = (missFg[fg] || 0) + 1;
+    if (comp && !mats[comp]) missComp[comp] = (missComp[comp] || 0) + 1;
+    if ((!fg || mats[fg]) && (!comp || mats[comp])) okRows++;
   }
-  if (!bad.length) o.push('  ✔ all BOM parent/component codes resolve to materials.');
-  else {
-    o.push('  ✘ UNRESOLVED codes (' + bad.length + ') — BOM references a code the material master lacks:');
-    bad.forEach(function(b) { o.push(b); });
+
+  o.push('  rows fully resolving to MASTERS_Materials: ' + okRows);
+  var fgKeys = Object.keys(missFg), compKeys = Object.keys(missComp);
+  if (!fgKeys.length && !compKeys.length) {
+    o.push('  ✔ every FG and component code resolves.');
+    return o.join('\n');
+  }
+  if (fgKeys.length) {
+    o.push('  ✘ FG codes not in MASTERS_Materials (' + fgKeys.length + ' distinct):');
+    fgKeys.slice(0, 25).forEach(function(k) { o.push('    "' + k + '"  ×' + missFg[k] + ' rows'); });
+    if (fgKeys.length > 25) o.push('    … +' + (fgKeys.length - 25) + ' more');
+  }
+  if (compKeys.length) {
+    o.push('  ✘ COMPONENT codes not in MASTERS_Materials (' + compKeys.length + ' distinct)');
+    o.push('     — these are the ones that matter: production cannot locate stock for them.');
+    compKeys.slice(0, 25).forEach(function(k) { o.push('    "' + k + '"  ×' + missComp[k] + ' rows'); });
+    if (compKeys.length > 25) o.push('    … +' + (compKeys.length - 25) + ' more');
   }
   return o.join('\n');
 }
