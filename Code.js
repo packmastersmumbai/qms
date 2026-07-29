@@ -294,6 +294,30 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Real getStockView() bucket counts (_StockViewCheck.js). READ-ONLY.
+  if (diag === 'stockview') {
+    var sv;
+    try { sv = (typeof checkStockViewBuckets === 'function') ? checkStockViewBuckets() : 'checkStockViewBuckets missing'; }
+    catch (er17) { sv = 'ERROR: ' + er17.message + '\n' + (er17.stack || ''); }
+    return ContentService.createTextOutput(String(sv)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // Warehouse RM/FG view classification (_WhViewDiag.js). READ-ONLY.
+  if (diag === 'whview') {
+    var wv;
+    try { wv = (typeof diagWarehouseViews === 'function') ? diagWarehouseViews() : 'diagWarehouseViews missing'; }
+    catch (er16) { wv = 'ERROR: ' + er16.message + '\n' + (er16.stack || ''); }
+    return ContentService.createTextOutput(String(wv)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // Parameter library + control plan dump (_ParamDump.js). READ-ONLY.
+  if (diag === 'paramdump') {
+    var pdz;
+    try { pdz = (typeof dumpParameters === 'function') ? dumpParameters() : 'dumpParameters missing'; }
+    catch (er15) { pdz = 'ERROR: ' + er15.message; }
+    return ContentService.createTextOutput(String(pdz)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // BOM component gaps (_BomGapFix.js). Report is READ-ONLY; create needs confirm=YES.
   //   ?diag=bomgaps                    → report
   //   ?diag=bomfix                     → dry run of the creation
@@ -484,7 +508,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v94_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v95_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

@@ -600,7 +600,12 @@ function getStockView() {
     }
 
     // --- Classify stock lots by location type ---
-    var rmRows = [], fgRows = [], quarRows = [];
+    // PM (packaging material) is a first-class grade everywhere else in this file —
+    // categoryToGrade_ maps LABEL/CARTON/CAP/etc to it and the bay map reserves
+    // C/D for it — but it had no branch here, so ~86 lots in B026..B049 appeared
+    // in NO view at all. `unclassified` is a catch-all so a location whose Type is
+    // blank or unrecognised surfaces instead of silently dropping its stock.
+    var rmRows = [], pmRows = [], fgRows = [], quarRows = [], unclRows = [];
     summary.forEach(function(s) {
       var locType = locTypeMap[s.locationId] || inferLocType(s.locationId);
       var grn     = grnMap[s.batchOrLotNo]  || {};
@@ -609,8 +614,10 @@ function getStockView() {
       var ageDate = grn.date || oqc.date || null;
       var age     = ageDays(ageDate);
 
-      if (locType === 'RM') {
-        rmRows.push({
+      if (locType === 'RM' || locType === 'PM') {
+        // PM shares RM's row shape (supplier / GRN date / IQC status all apply to
+        // bought-in packaging), so one builder serves both; only the bucket differs.
+        (locType === 'PM' ? pmRows : rmRows).push({
           materialCode: s.materialCode,
           materialDesc: mat.name,
           batchNo:      s.batchOrLotNo,
@@ -647,14 +654,33 @@ function getStockView() {
           ageDays:      age,
           sourceRef:    grn.grnNo || oqc.oqcNo || ''
         });
+      } else if (!_WH_OWN_VIEW_TYPES_[locType]) {
+        // Anything that is not handled above AND does not have its own dedicated
+        // view (WIP / SCRAP / SAMPLE / REWORK are surfaced elsewhere) lands here
+        // rather than disappearing. A row showing up in this list means a
+        // LOCATIONS Type is blank, misspelled, or genuinely new.
+        unclRows.push({
+          materialCode: s.materialCode,
+          materialDesc: mat.name,
+          batchNo:      s.batchOrLotNo,
+          location:     s.locationId,
+          locType:      locType || '(blank)',
+          qty:          s.balance,
+          unit:         mat.unit || '',
+          since:        fmtDate(grn.date || oqc.date),
+          ageDays:      age,
+          sourceRef:    grn.grnNo || oqc.oqcNo || ''
+        });
       }
     });
 
     return {
-      rm:         rmRows,
-      fg:         fgRows,
-      wip:        wipRows,
-      quarantine: quarRows,
+      rm:           rmRows,
+      pm:           pmRows,
+      fg:           fgRows,
+      wip:          wipRows,
+      quarantine:   quarRows,
+      unclassified: unclRows,
       rework:     reworkRows.map(function(r) {
         var age2 = ageDays(r.date);
         return {
@@ -674,9 +700,16 @@ function getStockView() {
     };
   } catch(e) {
     Logger.log('getStockView failed: ' + e.message);
-    return { rm: [], fg: [], wip: [], quarantine: [], rework: [] };
+    return { rm: [], pm: [], fg: [], wip: [], quarantine: [], unclassified: [], rework: [] };
   }
 }
+
+// Location types that are deliberately NOT in the unclassified catch-all because
+// they are surfaced by their own dedicated view/flow. Anything outside this set
+// and outside the RM/PM/FG/QUARANTINE branches is a data problem worth showing.
+var _WH_OWN_VIEW_TYPES_ = {
+  'WIP': true, 'SCRAP': true, 'SAMPLE': true, 'REWORK': true
+};
 
 function saveLocation(d) {
   var ws = getSpreadsheet().getSheetByName('LOCATIONS');
@@ -1109,12 +1142,25 @@ function suggestSlot(materialCode, qty, deps) {
 // RM→Bay A, PM→Bays C/D, FG→Bay E). Unknown categories return '' (no segregation).
 function categoryToGrade_(category) {
   var c = String(category || '').toUpperCase().trim();
+  // Singular/plural both occur in MASTERS_Materials (LABEL + LABELS, CARTON +
+  // CARTONS). Strip a trailing S so a plural never falls through to '' — a
+  // gradeless material gets no bay segregation on putaway.
+  if (c.length > 3 && c.charAt(c.length - 1) === 'S') {
+    var singular = c.slice(0, -1);
+    if (_WH_PM_CATEGORIES_[singular]) return 'PM';
+  }
   if (c === 'BULK') return 'RM';
   if (c === 'FG')   return 'FG';
-  if (c === 'LABEL' || c === 'CARTONS' || c === 'CARTON' || c === 'CANS' ||
-      c === 'BOTTLES' || c === 'RIBBON' || c === 'TAPE' || c === 'PLUG' || c === 'CAP') return 'PM';
+  if (_WH_PM_CATEGORIES_[c]) return 'PM';
   return '';
 }
+
+// Material categories that live in PM (packaging) bays. Singular forms only —
+// categoryToGrade_ handles the plural by stripping a trailing S.
+var _WH_PM_CATEGORIES_ = {
+  'LABEL': true, 'CARTON': true, 'CAN': true, 'BOTTLE': true,
+  'RIBBON': true, 'TAPE': true, 'PLUG': true, 'CAP': true
+};
 
 // Find a material record by code across getMaterials()' several possible key names.
 function _findMaterial_(materials, code) {
