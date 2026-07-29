@@ -289,8 +289,28 @@
   var _canEdit  = false;
 
   // ── role ──────────────────────────────────────────────
+  // sessionStorage.userRole is never written by anything in this app, so it was
+  // always '' and every user fell through to "guest" (read-only). The role now
+  // comes from the server (Masters.getUiRole), which derives it from the signed-in
+  // Google session / ownerMode — the same authority Code.js uses for admin pages.
+  // sessionStorage is kept only as an optimistic pre-fill so the chip is not blank
+  // on first paint; the server answer always overwrites it.
   function getRole() {
     return (sessionStorage.getItem('userRole') || '').toLowerCase();
+  }
+
+  // Apply a resolved role to the page: edit gating, the role chip and the
+  // read-only note. Safe to call twice (optimistic pre-fill, then server truth).
+  function applyRole(role) {
+    role = String(role || '').toLowerCase();
+    _canEdit = ['admin', 'owner', 'master', 'qc manager', 'manager'].indexOf(role) !== -1;
+    var chip = document.getElementById('roleChip');
+    if (chip) {
+      chip.textContent = role || 'guest';
+      chip.style.visibility = 'visible';
+    }
+    var ro = document.getElementById('roNote');
+    if (ro) ro.style.display = _canEdit ? 'none' : 'flex';
   }
 
   // ── XSS helper ────────────────────────────────────────
@@ -315,15 +335,19 @@
 
   // ── init ──────────────────────────────────────────────
   pmReady(function() {
-    // Role
-    var role = getRole();
-    _canEdit = ['admin', 'owner', 'master', 'qc manager', 'manager'].indexOf(role) !== -1;
-    var chip = document.getElementById('roleChip');
-    chip.textContent = role || 'guest';
-    chip.style.visibility = 'visible';
-    if (!_canEdit) {
-      document.getElementById('roNote').style.display = 'flex';
-    }
+    // Role — optimistic pre-fill from sessionStorage (usually empty), then the
+    // authoritative answer from the server. loadPlan() re-renders on arrival so
+    // the toggles/inputs pick up the real permission without a page reload.
+    applyRole(getRole());
+    google.script.run
+      .withSuccessHandler(function(info) {
+        var r = (info && info.role) || 'guest';
+        try { sessionStorage.setItem('userRole', r); } catch (e) {}
+        applyRole(r);
+        if (_itemCode) loadPlan(_itemCode);   // re-render with edit controls enabled
+      })
+      .withFailureHandler(function() { applyRole('guest'); })
+      .getUiRole();
 
     document.getElementById('backBtn').addEventListener('click', function() {
       google.script.run

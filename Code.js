@@ -294,6 +294,16 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // What role does this session resolve to? READ-ONLY.
+  if (diag === 'whoami') {
+    var wi;
+    try {
+      var r = (typeof getUiRole === 'function') ? getUiRole() : { error: 'getUiRole missing' };
+      wi = JSON.stringify(r, null, 2);
+    } catch (er20) { wi = 'ERROR: ' + er20.message; }
+    return ContentService.createTextOutput(String(wi)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Material/batch lookup (_LotLookup.js). READ-ONLY.  ?diag=lotlookup&q=<code>
   if (diag === 'lotlookup') {
     var ll;
@@ -524,7 +534,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v95_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v96_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

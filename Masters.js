@@ -198,6 +198,37 @@ function getFG() {
   }).map(function(m) { return { code: m.code, name: m.desc, category: m.category, uom: m.unit, description: m.desc }; });
 }
 
+// ------------------------------------------------------------
+// getUiRole — the role the client should use for edit gating.
+//
+// WHY THIS EXISTS: ControlPlan_F, Masters_F and Warehouse_F all read
+// sessionStorage.getItem('userRole'), but NOTHING in the codebase ever writes
+// that key. It was therefore always '' → every user resolved to "guest" and the
+// Control Plan was permanently read-only for everyone, toggles included.
+//
+// Role is derived from the same two authorities the server already trusts for
+// admin pages (Code.js doGet / _diagRequireOwner_):
+//   - a signed-in Google session (Session.getActiveUser().getEmail())
+//   - the pm.ui.ownerMode Script Property
+// Returning it from the server also means the client cannot simply set a
+// sessionStorage key to grant itself edit rights.
+// ------------------------------------------------------------
+function getUiRole() {
+  var email = '';
+  try { email = Session.getActiveUser().getEmail() || ''; } catch (e) {}
+  var ownerOn = false;
+  try {
+    ownerOn = String(PropertiesService.getScriptProperties()
+              .getProperty('pm.ui.ownerMode') || 'false') === 'true';
+  } catch (e2) {}
+
+  var role = 'guest';
+  if (email) role = 'owner';
+  else if (ownerOn) role = 'admin';
+
+  return { role: role, email: email, ownerMode: ownerOn, canEdit: role !== 'guest' };
+}
+
 function getParameters() {
   var ws = getSpreadsheet().getSheetByName('MASTERS_Parameters');
   if (!ws) return [];
