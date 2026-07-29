@@ -294,6 +294,17 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Add packing-line inspection params (_AddPackParams.js). Dry run unless confirm=YES.
+  if (diag === 'addpackparams') {
+    var app;
+    try {
+      app = (typeof addPackingLineParams === 'function')
+        ? addPackingLineParams(e.parameter.confirm === 'YES')
+        : 'addPackingLineParams missing (is _AddPackParams.js pushed?)';
+    } catch (er21) { app = 'ERROR: ' + er21.message + '\n' + (er21.stack || ''); }
+    return ContentService.createTextOutput(String(app)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // What role does this session resolve to? READ-ONLY.
   if (diag === 'whoami') {
     var wi;
