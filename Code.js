@@ -294,6 +294,45 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // One-off supplier approval backfill (_ApproveSuppliers.js). Dry run unless confirm=YES.
+  //   ?diag=approvesuppliers              → dry run
+  //   ?diag=approvesuppliers&confirm=YES  → write 'Y' into blank Approved cells
+  if (diag === 'approvesuppliers') {
+    var asr;
+    try {
+      asr = (typeof approveBlankSuppliers === 'function')
+        ? approveBlankSuppliers(e.parameter.confirm === 'YES')
+        : 'approveBlankSuppliers missing (is _ApproveSuppliers.js pushed?)';
+    } catch (er11) { asr = 'ERROR: ' + er11.message + '\n' + (er11.stack || ''); }
+    return ContentService.createTextOutput(String(asr)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // Masters → dropdown visibility (_MastersDropdownDiag.js). READ-ONLY, writes nothing.
+  //   ?diag=dropdiag   → which supplier/material/BOM rows are hidden and why
+  if (diag === 'dropdiag') {
+    var dd;
+    try {
+      dd = (typeof diagMastersDropdowns === 'function')
+        ? diagMastersDropdowns()
+        : 'diagMastersDropdowns missing (is _MastersDropdownDiag.js pushed?)';
+    } catch (er10) { dd = 'ERROR: ' + er10.message + '\n' + (er10.stack || ''); }
+    return ContentService.createTextOutput(String(dd)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // Negative-stock-lot forensic trace (_NegativeLotTrace.js). READ-ONLY, writes nothing.
+  //   ?diag=negtrace   → per-lot cause + suggested treatment
+  if (diag === 'negtrace') {
+    var nlt;
+    try {
+      nlt = (typeof traceNegativeLots === 'function')
+        ? traceNegativeLots()
+        : { error: 'traceNegativeLots missing (is _NegativeLotTrace.js pushed?)' };
+    } catch (er9) { nlt = { error: er9.message, stack: er9.stack }; }
+    return ContentService
+      .createTextOutput(nlt && nlt.report ? nlt.report : JSON.stringify(nlt, null, 2))
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Category-driven inspection params (_SmokeInspectionParams.js + IQC.js seeder).
   //   ?diag=smokeinspparams   → regression smoke
   //   ?diag=seedcategoryparams → idempotent live seed of the 5 categories

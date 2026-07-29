@@ -135,11 +135,13 @@ function _upsertMasterByCode_(ss, sheetName, codeCol, row) {
   ws.appendRow(row);                                              // new → append
 }
 
-// MASTERS_Suppliers cols: Code, Name, Contact, Phone, Email, Material Supplied, City, Approved, State Code
+// MASTERS_Suppliers live cols (A→H): Code, Name, Contact, Phone, Material Supplied,
+// City / Location, Approved (Y/N), State Code. There is NO Email column — the old
+// mapping assumed one at E and shifted Approved into State Code.
 function importSupplierRow_(cols, rowNum) {
   _upsertMasterByCode_(getSpreadsheet(), 'MASTERS_Suppliers', 0, [
     cols[0] || ('SUP-' + rowNum), cols[1] || '', cols[2] || '', cols[3] || '',
-    cols[4] || '', cols[5] || '', cols[6] || '', (cols[7] || 'Y'), cols[8] || ''
+    cols[4] || '', cols[5] || '', (cols[6] || 'Y'), cols[7] || ''
   ]);
 }
 

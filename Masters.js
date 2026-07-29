@@ -37,12 +37,46 @@ var MAT_GEOMETRY_COLS = [
   { key: 'fitClass',   col: MAT_COL.FIT_CLASS,   header: 'Fit Class' }
 ];
 
+// MASTERS_Suppliers live column contract (A→J):
+//   A Supplier Code | B Supplier Name | C Contact Person | D Phone / WhatsApp
+//   E Material Supplied | F City / Location | G Approved (Y/N) | H State Code
+//   I LastModified | J ModifiedBy
+// The original schema had an Email column at E which pushed E→H right by one; it was
+// removed from the sheet but not from this reader, so `email` was silently reading
+// Material Supplied and `material` was reading City/Location. Indices below match the
+// live header. There is no Email column today — `email` stays '' for compatibility
+// with callers that read it (notification paths fall back to contact/phone).
+var SUP_COL = {
+  CODE: 0, NAME: 1, CONTACT: 2, PHONE: 3, MATERIAL: 4, CITY: 5,
+  APPROVED: 6, STATE_CODE: 7
+};
+
+// Approval is a deliberate gate: an unapproved vendor must not be receivable in GRN.
+// Accepts Y / y / Yes / TRUE (checkbox) so a hand-ticked cell isn't silently dropped.
+function _supApproved_(v) {
+  if (v === true) return true;
+  var s = String(v == null ? '' : v).trim().toUpperCase();
+  return s === 'Y' || s === 'YES' || s === 'TRUE';
+}
+
 function getSuppliers() {
   var ws = getSpreadsheet().getSheetByName('MASTERS_Suppliers');
   if (!ws) return [];
   var data = ws.getDataRange().getValues();
-  return data.slice(1).filter(function(r) { return r[0] && (r[7] === 'Y' || r[6] === 'Y'); })
-    .map(function(r) { return { code: r[0], name: r[1], contact: r[2], phone: r[3], email: r[4] || '', material: r[5] || r[4] || '' }; });
+  return data.slice(1)
+    .filter(function(r) { return r[SUP_COL.CODE] && _supApproved_(r[SUP_COL.APPROVED]); })
+    .map(function(r) {
+      return {
+        code:     String(r[SUP_COL.CODE] || '').trim(),
+        name:     r[SUP_COL.NAME],
+        contact:  r[SUP_COL.CONTACT],
+        phone:    r[SUP_COL.PHONE],
+        email:    '',                                    // no Email column in the live sheet
+        material: r[SUP_COL.MATERIAL] || '',
+        city:     r[SUP_COL.CITY] || '',
+        stateCode: String(r[SUP_COL.STATE_CODE] || '').trim()
+      };
+    });
 }
 
 // Normalize a stored geometry cell to a positive number, or '' when blank/invalid.
@@ -389,7 +423,13 @@ function saveMaster(type, data) {
   if (type === 'supplier') {
     var ws = ss.getSheetByName('MASTERS_Suppliers');
     if (!ws) throw new Error('Sheet MASTERS_Suppliers not found');
-    row = [data.code, data.name, data.contact, data.phone, data.email || '', data.material, data.city, data.approved];
+    // Column order MUST match the live sheet (SUP_COL above): there is NO Email
+    // column. Writing one shifted every later field right by one, which landed
+    // `approved` in H (State Code) and left G blank — the reason newly added
+    // suppliers silently vanished from the GRN dropdown.
+    row = [data.code, data.name, data.contact, data.phone,
+           data.material || '', data.city || '', data.approved || 'Y',
+           data.stateCode || ''];
     sheetName = 'MASTERS_Suppliers';
     var values = ws.getDataRange().getValues();
     for (var i = 1; i < values.length; i++) {
