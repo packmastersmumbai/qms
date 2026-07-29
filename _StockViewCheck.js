@@ -24,6 +24,15 @@ function checkStockViewBuckets() {
                '  type=' + r.locType + '  qty=' + r.qty);
     });
   }
+  if ((v.fg || []).length) {
+    out.push('');
+    out.push('FG rows (all ' + v.fg.length + '):');
+    v.fg.forEach(function(r) {
+      out.push('  ' + r.materialCode + '  lot=' + r.batchNo + '  loc=' + r.location +
+               '  qty=' + r.qty + ' ' + r.unit + '  cust=' + (r.customer || '-') +
+               '  oqc=' + (r.oqcRef || '-'));
+    });
+  }
   if ((v.pm || []).length) {
     out.push('');
     out.push('PM sample (first 5):');

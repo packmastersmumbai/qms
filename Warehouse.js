@@ -7,6 +7,33 @@
 //   11 Operator | 12 Remarks | 13 Material Desc
 // ============================================================
 
+// ---------- Storage-grade classification ----------
+// Declared at the top of the file because getStockView() (line ~459) reads both
+// while classifying, and these are `var` assignments — they are only populated
+// once top-level code has run. Keeping them above their first use removes any
+// dependency on statement order.
+
+// Material categories that live in PM (packaging) bays. Singular forms only —
+// categoryToGrade_ handles the plural by stripping a trailing S.
+var _WH_PM_CATEGORIES_ = {
+  'LABEL': true, 'CARTON': true, 'CAN': true, 'BOTTLE': true,
+  'RIBBON': true, 'TAPE': true, 'PLUG': true, 'CAP': true,
+  // Pack components found live in MASTERS_Materials that previously mapped to no
+  // grade at all (and therefore got no bay segregation on putaway):
+  //   SACHET / MONO CARTON / OUTER — Dorf Ketal pack build
+  //   SLEVE — sheet spelling of SLEEVE; both accepted
+  //   RUBBER — bands/gaskets used in packing
+  'SACHET': true, 'MONO CARTON': true, 'OUTER': true,
+  'SLEEVE': true, 'SLEVE': true, 'RUBBER': true, 'SHRINK': true, 'POUCH': true
+};
+
+// Location types that are deliberately NOT in the unclassified catch-all because
+// they are surfaced by their own dedicated view/flow. Anything outside this set
+// and outside the RM/PM/FG/QUARANTINE branches is a data problem worth showing.
+var _WH_OWN_VIEW_TYPES_ = {
+  'WIP': true, 'SCRAP': true, 'SAMPLE': true, 'REWORK': true
+};
+
 // ---------- Ledger primitives ----------
 
 // ------------------------------------------------------------
@@ -503,7 +530,10 @@ function getStockView() {
     var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
     mats.forEach(function(m) {
       var code = String(m.code || m.itemCode || '').trim();
-      if (code) matMap[code] = { name: m.name || m.itemDescription || m.desc || code, unit: m.unit || '' };
+      // category is required: getStockView routes a lot to its RM/PM/FG tab by
+      // material grade, not by where it is stored.
+      if (code) matMap[code] = { name: m.name || m.itemDescription || m.desc || code,
+                                 unit: m.unit || '', category: m.category || '' };
     });
 
     // --- current balances by (matCode, batch, locationId) ---
@@ -608,6 +638,16 @@ function getStockView() {
     var rmRows = [], pmRows = [], fgRows = [], quarRows = [], unclRows = [];
     summary.forEach(function(s) {
       var locType = locTypeMap[s.locationId] || inferLocType(s.locationId);
+
+      // WHICH TAB a lot belongs in follows WHAT IT IS (material category), not where
+      // it happens to be stored. Storing a pallet of labels in RM-STORE-A is an
+      // ordinary warehouse reality; it must still be found under PM. Location type
+      // still governs the special states below (quarantine/WIP/scrap/sample/rework)
+      // because those describe the stock's STATUS, which storage genuinely defines.
+      var matCat   = (matMap[s.materialCode] || {}).category || '';
+      var matGrade = categoryToGrade_(matCat);          // 'RM' | 'PM' | 'FG' | ''
+      var isStateLoc = (locType === 'QUARANTINE' || _WH_OWN_VIEW_TYPES_[locType]);
+      if (!isStateLoc && matGrade) locType = matGrade;
       var grn     = grnMap[s.batchOrLotNo]  || {};
       var oqc     = oqcMap[s.batchOrLotNo]  || {};
       var mat     = matMap[s.materialCode]   || { name: s.materialCode, unit: '' };
@@ -704,12 +744,7 @@ function getStockView() {
   }
 }
 
-// Location types that are deliberately NOT in the unclassified catch-all because
-// they are surfaced by their own dedicated view/flow. Anything outside this set
-// and outside the RM/PM/FG/QUARANTINE branches is a data problem worth showing.
-var _WH_OWN_VIEW_TYPES_ = {
-  'WIP': true, 'SCRAP': true, 'SAMPLE': true, 'REWORK': true
-};
+// (_WH_OWN_VIEW_TYPES_ declared at top of file, above first use.)
 
 function saveLocation(d) {
   var ws = getSpreadsheet().getSheetByName('LOCATIONS');
@@ -1155,12 +1190,7 @@ function categoryToGrade_(category) {
   return '';
 }
 
-// Material categories that live in PM (packaging) bays. Singular forms only —
-// categoryToGrade_ handles the plural by stripping a trailing S.
-var _WH_PM_CATEGORIES_ = {
-  'LABEL': true, 'CARTON': true, 'CAN': true, 'BOTTLE': true,
-  'RIBBON': true, 'TAPE': true, 'PLUG': true, 'CAP': true
-};
+// (_WH_PM_CATEGORIES_ declared at top of file, above first use.)
 
 // Find a material record by code across getMaterials()' several possible key names.
 function _findMaterial_(materials, code) {

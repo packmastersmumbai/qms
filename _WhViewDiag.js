@@ -53,8 +53,10 @@ function diagWarehouseViews() {
   summary.forEach(function(s) {
     var lt = locType[s.locationId] || infer(s.locationId);
     var view = (lt === 'RM') ? 'RM view'
+             : (lt === 'PM') ? 'PM view'
              : (lt === 'FG' || lt === 'FG_HOLD') ? 'FG view'
              : (lt === 'QUARANTINE') ? 'Quarantine view'
+             : (lt === 'WIP' || lt === 'SCRAP' || lt === 'SAMPLE' || lt === 'REWORK') ? (lt + ' flow')
              : 'NO VIEW';
     buckets[view] = (buckets[view] || 0) + 1;
 
@@ -66,11 +68,21 @@ function diagWarehouseViews() {
                      qty: s.balance, locType: lt || '(unresolved)',
                      cat: mats[String(s.materialCode).trim()] || '(no material row)' });
     } else {
+      // Use the REAL grade mapper so unknown categories are reported as unknown
+      // rather than silently assumed to be PM.
       var cat = String(mats[String(s.materialCode).trim()] || '').toUpperCase();
-      var grade = (cat === 'FG') ? 'FG' : (cat === 'BULK') ? 'RM'
-                : (cat ? 'PM' : '');
-      if (grade === 'FG' && view === 'RM view') mismatch.push(s.materialCode + ' lot ' + s.batchOrLotNo + ' — FG material sitting in RM location ' + s.locationId);
-      if (grade && grade !== 'FG' && view === 'FG view') mismatch.push(s.materialCode + ' lot ' + s.batchOrLotNo + ' — ' + cat + ' material sitting in FG location ' + s.locationId);
+      var grade = (typeof categoryToGrade_ === 'function') ? categoryToGrade_(cat) : '';
+      var viewGrade = (view === 'FG view') ? 'FG' : (view === 'RM view') ? 'RM' : (view === 'PM view') ? 'PM' : '';
+      if (!cat) {
+        mismatch.push({ kind: 'NO_CATEGORY', code: s.materialCode, lot: s.batchOrLotNo,
+                        loc: s.locationId, cat: '(blank)', grade: '', view: view, qty: s.balance });
+      } else if (!grade) {
+        mismatch.push({ kind: 'UNKNOWN_CATEGORY', code: s.materialCode, lot: s.batchOrLotNo,
+                        loc: s.locationId, cat: cat, grade: '', view: view, qty: s.balance });
+      } else if (viewGrade && grade !== viewGrade) {
+        mismatch.push({ kind: grade + '_IN_' + viewGrade, code: s.materialCode, lot: s.batchOrLotNo,
+                        loc: s.locationId, cat: cat, grade: grade, view: view, qty: s.balance });
+      }
     }
   });
 
@@ -104,9 +116,26 @@ function diagWarehouseViews() {
   out.push('');
 
   if (mismatch.length) {
-    out.push('⚠ CATEGORY / LOCATION MISMATCH (' + mismatch.length + '):');
-    mismatch.slice(0, 30).forEach(function(m) { out.push('  ' + m); });
-    if (mismatch.length > 30) out.push('  … +' + (mismatch.length - 30) + ' more');
+    var byKind = {};
+    mismatch.forEach(function(m) { (byKind[m.kind] = byKind[m.kind] || []).push(m); });
+    out.push('⚠ CATEGORY / LOCATION MISMATCH (' + mismatch.length + ' lots):');
+    Object.keys(byKind).sort().forEach(function(k) {
+      out.push('');
+      out.push('  ── ' + k + '  (' + byKind[k].length + ')');
+      byKind[k].forEach(function(m) {
+        out.push('     ' + _wvPad_(m.code, 18) + 'lot=' + _wvPad_(m.lot, 26) +
+                 'loc=' + _wvPad_(m.loc, 14) + 'cat=' + _wvPad_(m.cat, 14) +
+                 'qty=' + m.qty);
+      });
+    });
+    out.push('');
+    out.push('  NOTE: since @494 the Warehouse tab follows the MATERIAL grade, so these');
+    out.push('  lots ARE filed correctly in the UI (a LABEL shows under PM wherever it is');
+    out.push('  stored). This list is now a PHYSICAL PUTAWAY report: it shows packaging or');
+    out.push('  raw material occupying a bay of a different grade. Act on it only if you');
+    out.push('  want the stock physically relocated — no display bug remains.');
+    out.push('  NO_CATEGORY / UNKNOWN_CATEGORY rows ARE still real data faults: a material');
+    out.push('  with no recognised category gets no grade and no bay segregation.');
   } else {
     out.push('✔ no material-category vs location-type mismatches.');
   }

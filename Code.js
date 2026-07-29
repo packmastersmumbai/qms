@@ -294,6 +294,22 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Material/batch lookup (_LotLookup.js). READ-ONLY.  ?diag=lotlookup&q=<code>
+  if (diag === 'lotlookup') {
+    var ll;
+    try { ll = (typeof lookupCodeOrLot === 'function') ? lookupCodeOrLot(e.parameter.q || '') : 'lookupCodeOrLot missing'; }
+    catch (er19) { ll = 'ERROR: ' + er19.message + '\n' + (er19.stack || ''); }
+    return ContentService.createTextOutput(String(ll)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // OQC record trace (_OqcTrace.js). READ-ONLY.  ?diag=oqctrace&q=<text>
+  if (diag === 'oqctrace') {
+    var ot;
+    try { ot = (typeof traceOqc === 'function') ? traceOqc(e.parameter.q || '') : 'traceOqc missing'; }
+    catch (er18) { ot = 'ERROR: ' + er18.message + '\n' + (er18.stack || ''); }
+    return ContentService.createTextOutput(String(ot)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Real getStockView() bucket counts (_StockViewCheck.js). READ-ONLY.
   if (diag === 'stockview') {
     var sv;
