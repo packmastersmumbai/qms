@@ -21,7 +21,10 @@
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     /* ── table ── */
-    .cp-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+    /* Single source of truth for the table box — column widths are set on the
+       header cells further down. min-width keeps the 6 columns legible; the
+       wrapper (.overflow-x-auto) scrolls when the viewport is narrower. */
+    .cp-table { width: 100%; border-collapse: collapse; min-width: 860px; }
     .cp-table thead th {
       background: #f1f5f9;
       color: #1e3a5f;
@@ -67,13 +70,25 @@
     .cp-table thead th.th-overrides,
     .cp-table tbody td.td-overrides { display: table-cell; }
 
-    /* Fixed layout so column widths are decided by the header alone and never
-       shift as cell content changes. This is what removes the misalignment. */
-    .cp-table { table-layout: fixed; width: 100%; }
-    .cp-table th, .cp-table td { overflow: hidden; text-overflow: ellipsis; }
-    .cp-table .td-code   { width: 74px; }
-    .cp-table .td-toggle { width: 56px; text-align: center; }
-    .td-overrides, .th-overrides { width: 300px; }
+    /* Column widths are set on the HEADER cells, which is what the browser sizes
+       columns from. An earlier attempt put them on the body .td-* classes with
+       table-layout:fixed — fixed sizes from the first row, so those rules were
+       never consulted and overflow:hidden then clipped the overrides column.
+       `auto` layout is kept so long parameter names can still wrap naturally;
+       min-width on the table keeps the columns from collapsing, and the wrapper
+       already scrolls horizontally (.overflow-x-auto). */
+    .cp-table thead th:nth-child(1) { width: 88px; }   /* CODE       */
+    .cp-table thead th:nth-child(2) { width: 26%;  }   /* PARAMETER  */
+    /* SPEC is blank for every category-seeded param (std/tol deliberately unset),
+       so it no longer gets the widest column — that space goes to PARAMETER. */
+    .cp-table thead th:nth-child(3) { width: 16%;  }   /* SPEC       */
+    .cp-table thead th:nth-child(4) { width: 104px; }  /* METHOD     */
+    .cp-table thead th:nth-child(5) { width: 72px; }   /* ENABLED    */
+    /* 3 inputs (66px) + gaps + Save. Sized to content so the inputs never wrap
+       onto a second line, which is what made rows look ragged. */
+    .cp-table thead th.th-overrides { width: 290px; }
+    .cp-table tbody td.td-overrides { white-space: nowrap; }
+    .ov-wrap { align-items: flex-end; }
 
     /* Write in flight — the control stays usable, this only hints at pending. */
     .row-pending { position: relative; }
@@ -121,7 +136,11 @@
     .ov-input:focus   { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
     .ov-input:disabled { background: #f8fafc; color: #94a3b8; }
     .ov-save-btn {
+      /* Sits on the same baseline as the inputs. The inputs carry a label above
+         them, so flex-end alone dropped the button below their bottom edge. */
       align-self: flex-end;
+      margin-bottom: 0;
+      height: 27px;
       padding: 5px 8px;
       border: none;
       border-radius: 6px;
@@ -136,7 +155,12 @@
     }
     .ov-save-btn:hover   { background: #0ea5e9; }
     .ov-save-btn:active  { transform: scale(0.96); }
-    .ov-save-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    /* A disabled Save belongs to a row that is not enabled yet — recede it rather
+       than render a solid grey block on every unconfigured row. */
+    .ov-save-btn:disabled {
+      background: transparent; color: #cbd5e1; cursor: not-allowed;
+      border: 1px solid #e2e8f0;
+    }
 
     /* ── method badge ── */
     .method-badge {
@@ -251,7 +275,7 @@
 
 <!-- Product bar -->
 <div class="sticky top-[56px] z-40 bg-white border-b border-[#e2e8f0] shadow-sm px-4 py-3">
-  <div class="max-w-3xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4">
       <label class="block text-[13px] font-[600] text-[#374151] mb-1.5">Product (FG)</label>
       <div class="relative">
@@ -269,7 +293,7 @@
 </div>
 
 <!-- Content area -->
-<div class="flex-1 px-4 pt-4 pb-28 max-w-3xl mx-auto w-full" id="contentArea">
+<div class="flex-1 px-4 pt-4 pb-28 max-w-6xl mx-auto w-full" id="contentArea">
   <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] state-box">
     <span class="icon">📋</span>
     Select a finished good above to view its control plan.
@@ -277,7 +301,7 @@
 </div>
 
 <!-- Weight Matrix toggle card (fix #25) -->
-<div class="px-4 max-w-3xl mx-auto w-full mb-4" id="weightMatrixCardWrap" style="display:none;">
+<div class="px-4 max-w-6xl mx-auto w-full mb-4" id="weightMatrixCardWrap" style="display:none;">
   <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4 flex items-center justify-between">
     <div>
       <div class="text-[14px] font-[600] text-[#0f172a]">Enable weight matrix capture</div>
@@ -294,7 +318,7 @@
 <!-- Sticky Save footer (fix #24) -->
 <div id="cpStickyFooter" class="fixed bottom-0 left-0 w-full bg-white border-t border-[#e2e8f0] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 px-4 py-3" style="display:none;">
   <button id="btnSaveControlPlan" onclick="saveControlPlan()"
-    class="w-full max-w-3xl mx-auto h-[52px] bg-[#1e3a5f] hover:bg-[#162d4a] text-white rounded-[10px] font-headline text-[15px] font-semibold transition-colors shadow-sm">
+    class="w-full max-w-6xl mx-auto h-[52px] bg-[#1e3a5f] hover:bg-[#162d4a] text-white rounded-[10px] font-headline text-[15px] font-semibold transition-colors shadow-sm">
     Save Control Plan
   </button>
 </div>
