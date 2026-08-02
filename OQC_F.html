@@ -187,13 +187,18 @@
       padding: 12px 0;
       text-align: center;
     }
+    /* grid-template-rows, not max-height: animating max-height drives layout on
+       every frame, and the 300px cap would clip the disposition panel if another
+       option is ever added. This animates to the panel's real height. */
     .disp-expanded-panel {
-      max-height: 0;
+      display: grid;
+      grid-template-rows: 0fr;
       overflow: hidden;
-      transition: max-height 0.25s ease;
+      transition: grid-template-rows 0.25s ease;
     }
+    .disp-expanded-panel:not(.open) > * { min-height: 0; }
     .disp-expanded-panel.open {
-      max-height: 300px;
+      grid-template-rows: 1fr;
     }
 
     /* Pulse amber for disposition card */

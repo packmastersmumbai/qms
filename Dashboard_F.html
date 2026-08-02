@@ -279,15 +279,20 @@
       padding: 0;
       cursor: default;
     }
+    /* grid-template-rows, not max-height. Safe inside a table because the grid is
+       on the DIV inside the cell, not on the tr/td themselves — table layout is
+       untouched. Also drops the 500px cap that would clip a long detail panel. */
     tr.detail-row td > div {
       background: var(--navy-light);
+      display: grid;
+      grid-template-rows: 0fr;
       overflow: hidden;
-      max-height: 0;
-      transition: max-height 0.2s ease, opacity 0.2s ease;
+      transition: grid-template-rows 0.2s ease, opacity 0.2s ease;
       opacity: 0;
     }
+    tr.detail-row:not(.open) td > div > * { min-height: 0; }
     tr.detail-row.open td > div {
-      max-height: 500px;
+      grid-template-rows: 1fr;
       opacity: 1;
     }
     .detail-inner {

@@ -106,22 +106,35 @@
     }
 
     /* ── Custom date expander ── */
+    /* grid-template-rows 0fr->1fr instead of max-height. Animating max-height
+       drives layout on every frame, and the magic 90px cap silently clips content
+       that grows past it. This animates to the element's real height, no cap. */
     .date-expander {
-      max-height: 0;
+      display: grid;
+      grid-template-rows: 0fr;
       overflow: hidden;
-      transition: max-height .2s ease;
+      transition: grid-template-rows .2s ease;
     }
-    .date-expander.is-open { max-height: 90px; }
+    /* min-height:0 ONLY while closed. Applied unconditionally it also let the open
+       child collapse to 4px — the flex row inside has no intrinsic height of its own,
+       so 1fr resolved to nothing and the panel never appeared to open. */
+    .date-expander:not(.is-open) > * { min-height: 0; }
+    .date-expander.is-open { grid-template-rows: 1fr; }
 
     /* ── Detail panel ── */
+    /* grid-template-rows, not max-height: the 600px cap clipped any record detail
+       taller than that, and animating max-height forces layout every frame.
+       Opacity stays — it composites, so it is free. */
     .detail-inner {
+      display: grid;
+      grid-template-rows: 0fr;
       overflow: hidden;
-      max-height: 0;
       opacity: 0;
-      transition: max-height 0.25s ease, opacity 0.2s ease;
+      transition: grid-template-rows 0.25s ease, opacity 0.2s ease;
     }
+    .detail-inner:not(.open) > * { min-height: 0; }
     .detail-inner.open {
-      max-height: 600px;
+      grid-template-rows: 1fr;
       opacity: 1;
     }
 
