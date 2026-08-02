@@ -24,6 +24,26 @@ var MAT_COL = {
 };
 var MAT_WIDTH = 13;
 
+// MASTERS_Parameters column contract — the inspection-parameter DICTIONARY.
+// Named for the same reason MAT_COL is: this sheet had NO contract, and two
+// writers silently claimed the same slots. `_AddPackParams`/`getCategoryParams`
+// write and read category/ccp/sort at 11/12/13, while MastersCrud appends its
+// audit columns by name lookup (hdr.indexOf('LastModified')) and had labelled
+// 11/12 as LastModified/ModifiedBy. The DATA was always category/ccp/sort —
+// only the header row was wrong — so the fix is a header rename plus this
+// contract, and the audit columns move after `sort`.
+// Verified before changing anything (?diag=paramcolscan): 31 categories intact,
+// 0 dates in the category column, 0 emails in ccp, 0 bad sort values.
+var PARAM_COL = {
+  CODE: 0, NAME: 1, UNIT: 2, STD_VALUE: 3, TOL_MIN: 4, TOL_MAX: 5,
+  METHOD_TYPE: 6, CHECK_BRIEF: 7, TOOLS: 8, DOC_REF: 9, DOC_NUMBER: 10,
+  CATEGORY: 11,   // inspectionCategory this param belongs to — drives IQC/IPQC
+  CCP: 12,        // 'Y' = critical control point
+  SORT: 13,       // display order within a category
+  LAST_MODIFIED: 14, MODIFIED_BY: 15
+};
+var PARAM_WIDTH = 16;
+
 // The 6 geometry columns G→L, in sheet order: key used on the material object,
 // its 0-based column index, and the header text. Single source consumed by the
 // reader, the writer patch, and the header-ensuring seed so the mapping lives

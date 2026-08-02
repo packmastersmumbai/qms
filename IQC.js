@@ -29,13 +29,22 @@ function getCategoryParams(category, flow) {
   if (!ws || ws.getLastRow() < 2) return [];
   var cat = String(category || '').trim();
   if (!cat) return [];
+  // Indices come from PARAM_COL (Masters.js) — the single source of truth for
+  // this sheet's layout. Hardcoding them here is what let the header drift.
+  var C = (typeof PARAM_COL !== 'undefined') ? PARAM_COL : {
+    CODE:0, NAME:1, UNIT:2, STD_VALUE:3, TOL_MIN:4, TOL_MAX:5, METHOD_TYPE:6,
+    CHECK_BRIEF:7, TOOLS:8, DOC_REF:9, DOC_NUMBER:10, CATEGORY:11, CCP:12, SORT:13
+  };
   return ws.getDataRange().getValues().slice(1)
-    .filter(function(r){ return String(r[11] || '').trim() === cat; })
+    .filter(function(r){ return String(r[C.CATEGORY] || '').trim() === cat; })
     .map(function(r){ return {
-      paramCode: String(r[0] || ''), label: String(r[1] || r[0] || ''), unit: String(r[2] || ''),
-      std: r[3], tolMin: r[4], tolMax: r[5], method: String(r[6] || ''),
-      checkBrief: String(r[7] || ''), tools: String(r[8] || ''), docRef: String(r[9] || ''),
-      ccp: String(r[12] || '').toUpperCase() === 'Y', sort: Number(r[13]) || 0 }; })
+      paramCode: String(r[C.CODE] || ''), label: String(r[C.NAME] || r[C.CODE] || ''),
+      unit: String(r[C.UNIT] || ''),
+      std: r[C.STD_VALUE], tolMin: r[C.TOL_MIN], tolMax: r[C.TOL_MAX],
+      method: String(r[C.METHOD_TYPE] || ''),
+      checkBrief: String(r[C.CHECK_BRIEF] || ''), tools: String(r[C.TOOLS] || ''),
+      docRef: String(r[C.DOC_REF] || ''),
+      ccp: String(r[C.CCP] || '').toUpperCase() === 'Y', sort: Number(r[C.SORT]) || 0 }; })
     .sort(function(a, b){ return a.sort - b.sort; });
 }
 

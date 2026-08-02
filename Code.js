@@ -348,6 +348,27 @@ function doGet(e) {
   }
 
   // Parameter library + control plan dump (_ParamDump.js). READ-ONLY.
+  if (diag === 'paramlink') {
+    var pla;
+    try { pla = (typeof auditParamLinks === 'function') ? auditParamLinks() : 'auditParamLinks missing'; }
+    catch (erpl) { pla = 'ERROR: ' + erpl.message; }
+    return ContentService.createTextOutput(String(pla)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'paramheaderfix') {
+    var phf;
+    try {
+      phf = (typeof fixParamHeader === 'function')
+        ? fixParamHeader(String(e.parameter.confirm || '') === 'YES')
+        : 'fixParamHeader missing';
+    } catch (erph) { phf = 'ERROR: ' + erph.message; }
+    return ContentService.createTextOutput(String(phf)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'paramcolscan') {
+    var pcs;
+    try { pcs = (typeof scanParamColumns === 'function') ? scanParamColumns() : 'scanParamColumns missing'; }
+    catch (erpc) { pcs = 'ERROR: ' + erpc.message; }
+    return ContentService.createTextOutput(String(pcs)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'paramdump') {
     var pdz;
     try { pdz = (typeof dumpParameters === 'function') ? dumpParameters() : 'dumpParameters missing'; }
@@ -545,7 +566,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v99_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v122_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

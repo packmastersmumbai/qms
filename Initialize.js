@@ -258,9 +258,14 @@ var CONTROL_FG_HEADERS = [
 ];
 
 // Masters — inspection parameters library
+// Must stay in lockstep with PARAM_COL in Masters.js. category/ccp/sort are
+// REAL columns written by _AddPackParams and read by getCategoryParams — they
+// were previously absent here, so the header row said LastModified/ModifiedBy
+// where the data was actually category/ccp. Audit columns come after `sort`.
 var MASTERS_PARAMETERS_HEADERS = [
   'code', 'name', 'unit', 'std_value', 'tol_min', 'tol_max',
-  'method_type', 'check_brief', 'tools', 'doc_ref', 'doc_number'
+  'method_type', 'check_brief', 'tools', 'doc_ref', 'doc_number',
+  'category', 'ccp', 'sort', 'LastModified', 'ModifiedBy'
 ];
 
 var REWORK_LOG_HEADERS = [
