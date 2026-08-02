@@ -10,6 +10,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <style>
+    /* Compact responsive layout — widen container; triage list flows multi-column. */
+    #crMain { max-width: 42rem; }
+    @media (min-width: 768px) {
+      #crMain { max-width: 64rem; }
+      #triageList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    }
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
@@ -36,7 +42,7 @@
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('HtmlCache') ?>
 </head>
-<body class="pb-20 pm-narrow">
+<body class="pb-20">
 
   <!-- TopAppBar -->
   <header class="bg-[#1e3a5f] text-white font-headline sticky top-0 w-full h-14 shadow flex items-center justify-between px-4 z-40">
@@ -62,7 +68,7 @@
   </div>
 
   <!-- Main Content -->
-  <main class="p-4 flex flex-col gap-4 max-w-2xl mx-auto">
+  <main id="crMain" class="p-4 flex flex-col gap-4 mx-auto w-full">
 
     <!-- TRIAGE PANE -->
     <div id="paneTriage">
@@ -97,40 +103,22 @@
           </select>
         </div>
 
-        <div class="flex gap-3">
-          <div class="flex flex-col gap-1 flex-1">
-            <label class="text-sm font-medium text-slate-600">Original Gatepass No.</label>
-            <input id="fGatepass" placeholder="e.g. PM/GP/2026-014"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
-          </div>
-          <div class="flex flex-col gap-1 flex-1">
-            <label class="text-sm font-medium text-slate-600">FG Batch No.</label>
-            <input id="fBatch"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
-          </div>
-        </div>
-
+        <!-- Original Gatepass — dropdown, dependent on the selected customer. -->
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-slate-600">Product Code / Description</label>
-          <!-- Product dropdown populated from getCustomerReturnFormInit().products (FG masters). -->
-          <select id="fProductCode"
-            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100 mb-2">
-            <option value="">— select product —</option>
+          <label class="text-sm font-medium text-slate-600">Original Gatepass No.</label>
+          <select id="fGatepass" disabled
+            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:bg-slate-50 disabled:text-slate-400">
+            <option value="">— select customer first —</option>
           </select>
-          <input id="fProductDesc" placeholder="Product description (auto-filled or enter manually)"
-            class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
         </div>
 
-        <div class="flex gap-3">
-          <div class="flex flex-col gap-1 flex-1">
-            <label class="text-sm font-medium text-slate-600">Qty Returned</label>
-            <input type="number" id="fQty" min="0" step="any"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
-          </div>
-          <div class="flex flex-col gap-1 w-28">
-            <label class="text-sm font-medium text-slate-600">Unit</label>
-            <input id="fUnit" placeholder="PC / KG / M"
-              class="h-12 w-full border border-slate-300 rounded-lg px-3 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+        <!-- Items from the selected gatepass — tick the ones being returned + enter return qty. -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-slate-600">Items Returned</label>
+          <div id="fItems" class="flex flex-col gap-2">
+            <div class="text-[13px] text-slate-400 py-4 text-center border border-dashed border-slate-200 rounded-lg">
+              Select a gatepass to list its items.
+            </div>
           </div>
         </div>
 
@@ -189,13 +177,15 @@
   </main>
 
   <!-- Toast -->
-  <div id="toast"></div>
+  <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <script>
     /* ── state ── */
     var INIT = null;
     var OPEN_RETURNS = [];
     var DISPOSITIONS = [];
+    var GATEPASSES = [];       // returnable gatepasses for the selected customer
+    var CURRENT_GP = null;     // the selected gatepass object (with .items)
 
     /* ── utils ── */
     function showToast(msg, kind) {
@@ -272,20 +262,9 @@
               var n = i.name || i;
               return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>';
             }).join('');
-          // Populate product dropdown from getCustomerReturnFormInit().products (FG masters).
-          var prodSel = document.getElementById('fProductCode');
-          if (data.products && data.products.length) {
-            prodSel.innerHTML = '<option value="">— select product —</option>' +
-              data.products.map(function(p){
-                return '<option value="' + escapeHtml(p.code) + '" data-desc="' + escapeHtml(p.desc || '') + '" data-unit="' + escapeHtml(p.unit || '') + '">' +
-                       escapeHtml(p.code + (p.desc ? ' — ' + p.desc : '')) + '</option>';
-              }).join('');
-            prodSel.addEventListener('change', function(){
-              var opt = prodSel.options[prodSel.selectedIndex];
-              if (opt && opt.dataset.desc) document.getElementById('fProductDesc').value = opt.dataset.desc;
-              if (opt && opt.dataset.unit) document.getElementById('fUnit').value = opt.dataset.unit;
-            });
-          }
+          // Customer → fetch its returnable gatepasses; gatepass → render its items.
+          cust.addEventListener('change', onCustomerChange);
+          document.getElementById('fGatepass').addEventListener('change', onGatepassChange);
         })
         .withFailureHandler(function(e){ showToast('Init failed: ' + (e.message || e), 'error'); })
         .getCustomerReturnFormInit();
@@ -433,27 +412,121 @@
       return sel && sel.value ? sel.value : '';
     }
 
+    /* ── cascading gatepass → items ── */
+    function onCustomerChange() {
+      var custOpt = document.getElementById('fCustomer').selectedOptions[0];
+      var custName = custOpt ? (custOpt.dataset.name || custOpt.textContent) : '';
+      var gpSel = document.getElementById('fGatepass');
+      CURRENT_GP = null; renderItems();
+      gpSel.disabled = true;
+      gpSel.innerHTML = '<option value="">Loading gatepasses…</option>';
+      if (!custName) { gpSel.innerHTML = '<option value="">— select customer first —</option>'; return; }
+      google.script.run
+        .withSuccessHandler(function(res){
+          GATEPASSES = (res && res.gatepasses) || [];
+          if (!GATEPASSES.length) {
+            gpSel.innerHTML = '<option value="">— no gatepasses for this customer —</option>';
+            gpSel.disabled = true; return;
+          }
+          gpSel.innerHTML = '<option value="">— select gatepass —</option>' +
+            GATEPASSES.map(function(g){
+              var n = g.items ? g.items.length : 0;
+              return '<option value="' + escapeHtml(g.gpNo) + '">' +
+                escapeHtml(g.gpNo) + (g.date ? ' · ' + escapeHtml(g.date) : '') +
+                ' · ' + n + ' item' + (n === 1 ? '' : 's') + '</option>';
+            }).join('');
+          gpSel.disabled = false;
+        })
+        .withFailureHandler(function(e){ gpSel.innerHTML = '<option value="">Load failed</option>'; showToast('Gatepass load failed: ' + (e.message || e), 'error'); })
+        .getReturnableGatepasses(custName);
+    }
+
+    function onGatepassChange() {
+      var gpNo = document.getElementById('fGatepass').value;
+      CURRENT_GP = GATEPASSES.filter(function(g){ return g.gpNo === gpNo; })[0] || null;
+      renderItems();
+    }
+
+    function renderItems() {
+      var box = document.getElementById('fItems');
+      if (!CURRENT_GP || !CURRENT_GP.items || !CURRENT_GP.items.length) {
+        box.innerHTML = '<div class="text-[13px] text-slate-400 py-4 text-center border border-dashed border-slate-200 rounded-lg">Select a gatepass to list its items.</div>';
+        return;
+      }
+      box.innerHTML = CURRENT_GP.items.map(function(it, i){
+        var label = (it.materialDesc || it.materialCode || 'Item ' + (i + 1));
+        var shipped = (it.qty !== '' ? it.qty : '?') + (it.unit ? ' ' + it.unit : '');
+        return '<div class="js-ri border border-slate-200 rounded-lg p-3 flex flex-col gap-2" data-i="' + i + '">' +
+            '<label class="flex items-start gap-2 cursor-pointer">' +
+              '<input type="checkbox" class="js-ri-check mt-1 w-4 h-4 accent-sky-600" data-i="' + i + '">' +
+              '<span class="flex-1 min-w-0">' +
+                '<span class="block text-[14px] font-medium text-slate-700 truncate">' + escapeHtml(label) + '</span>' +
+                '<span class="block text-[12px] text-slate-400">Code ' + escapeHtml(it.materialCode || '—') + ' · shipped ' + escapeHtml(shipped) + '</span>' +
+              '</span>' +
+            '</label>' +
+            '<div class="js-ri-qtyrow hidden flex-col gap-2 pl-6">' +
+              '<div class="flex items-center gap-2">' +
+                '<input type="number" min="0" step="any" placeholder="Return qty" class="js-ri-qty h-10 w-32 border border-slate-300 rounded-lg px-2 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100">' +
+                '<span class="text-[13px] text-slate-500">' + escapeHtml(it.unit || '') + '</span>' +
+              '</div>' +
+              '<input type="text" placeholder="FG Batch No." value="' + escapeHtml(it.batch || '') + '" class="js-ri-batch h-10 w-full border border-slate-300 rounded-lg px-2 text-base focus:border-sky-400 focus:ring-2 focus:ring-sky-100">' +
+            '</div>' +
+          '</div>';
+      }).join('');
+      // toggle qty row on check
+      Array.prototype.forEach.call(box.querySelectorAll('.js-ri-check'), function(cb){
+        cb.addEventListener('change', function(){
+          var row = cb.closest('.js-ri').querySelector('.js-ri-qtyrow');
+          if (cb.checked) {
+            row.classList.remove('hidden'); row.style.display = 'flex';
+            var q = row.querySelector('.js-ri-qty');
+            if (q && !q.value && CURRENT_GP.items[cb.dataset.i].qty) q.value = CURRENT_GP.items[cb.dataset.i].qty;
+          } else {
+            row.classList.add('hidden'); row.style.display = '';
+          }
+        });
+      });
+    }
+
+    // Collect checked items into the multi-item save payload.
+    function collectReturnItems() {
+      var out = [];
+      if (!CURRENT_GP) return out;
+      Array.prototype.forEach.call(document.querySelectorAll('#fItems .js-ri'), function(rowEl){
+        var cb = rowEl.querySelector('.js-ri-check');
+        if (!cb || !cb.checked) return;
+        var it = CURRENT_GP.items[Number(cb.dataset.i)];
+        var qtyEl = rowEl.querySelector('.js-ri-qty');
+        var batchEl = rowEl.querySelector('.js-ri-batch');
+        out.push({
+          productCode: it.materialCode || '',
+          productDesc: it.materialDesc || '',
+          fgBatchNo:   (batchEl && batchEl.value.trim()) || it.batch || '',
+          qtyReturned: Number(qtyEl && qtyEl.value) || 0,
+          unit:        it.unit || ''
+        });
+      });
+      return out;
+    }
+
     function saveReturn() {
+      var items = collectReturnItems();
       var data = {
         returnDate:       document.getElementById('fDate').value,
         customerCode:     document.getElementById('fCustomer').value,
         customerName:     (function(){ var o = document.getElementById('fCustomer').selectedOptions[0]; return o ? o.dataset.name || o.textContent : ''; })(),
-        originalGatepass: document.getElementById('fGatepass').value.trim(),
-        productCode:      document.getElementById('fProductCode').value.trim(),
-        productDesc:      document.getElementById('fProductDesc').value.trim(),
-        fgBatchNo:        document.getElementById('fBatch').value.trim(),
-        qtyReturned:      Number(document.getElementById('fQty').value) || 0,
-        unit:             document.getElementById('fUnit').value.trim(),
+        originalGatepass: document.getElementById('fGatepass').value,
         returnReason:     document.getElementById('fReason').value.trim(),
         receivedBy:       document.getElementById('fReceivedBy').value,
         remarks:          document.getElementById('fRemarks').value.trim(),
-        defectCategory:   _selectedDefect || ''
+        defectCategory:   _selectedDefect || '',
+        items:            items
       };
-      if (!data.customerCode)                         { showToast('Customer is required', 'error'); return; }
-      if (!data.productCode && !data.productDesc)     { showToast('Product code or description required', 'error'); return; }
-      if (!data.fgBatchNo)                            { showToast('FG batch is required', 'error'); return; }
-      if (!data.qtyReturned)                          { showToast('Qty must be > 0', 'error'); return; }
-      if (!data.receivedBy)                           { showToast('Received By required', 'error'); return; }
+      if (!data.customerCode)        { showToast('Customer is required', 'error'); return; }
+      if (!data.originalGatepass)    { showToast('Select a gatepass', 'error'); return; }
+      if (!items.length)             { showToast('Tick at least one item to return', 'error'); return; }
+      if (items.some(function(it){ return !it.qtyReturned; })) { showToast('Enter return qty for each ticked item', 'error'); return; }
+      if (!data.receivedBy)          { showToast('Received By required', 'error'); return; }
 
       var btn = document.getElementById('btnSave');
       btn.disabled = true;
@@ -489,12 +562,10 @@
             });
           }
           // Reset form
-          document.getElementById('fGatepass').value   = '';
-          document.getElementById('fBatch').value      = '';
-          document.getElementById('fProductCode').value = '';
-          document.getElementById('fProductDesc').value = '';
-          document.getElementById('fQty').value        = '';
-          document.getElementById('fUnit').value       = '';
+          CURRENT_GP = null; GATEPASSES = [];
+          var gpSel = document.getElementById('fGatepass');
+          gpSel.innerHTML = '<option value="">— select customer first —</option>'; gpSel.disabled = true;
+          renderItems();
           document.getElementById('fReason').value     = '';
           document.getElementById('fRemarks').value    = '';
           if (photoInput) photoInput.value = '';
@@ -511,7 +582,7 @@
           btn.textContent = 'Save Return';
           showToast('Save error: ' + (e.message || e), 'error');
         })
-        .saveCustomerReturn(data);
+        .saveCustomerReturnMulti(data);
     }
 
     /* ── boot ── */

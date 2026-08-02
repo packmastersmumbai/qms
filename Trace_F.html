@@ -49,6 +49,16 @@
      transparent and its white title sat on the #f8fafc page at 1.05 contrast.
      Real CSS instead. Verify against the bundle before using an arbitrary value. */
   .pm-navy-bg { background-color: #0D1B6E !important; }
+
+  /* WCAG 2.2 AA 2.4.7. These chips are keyboard-reachable (role=button + tabindex),
+     so focus must be visible or a keyboard user is lost on the page. */
+  .tr-chip:focus-visible,
+  .tr-step-row:focus-visible,
+  .tr-issue-pill:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 3px solid #0070F3;
+    outline-offset: 2px;
+  }
 </style>
 </head>
 <body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px] pm-wide">
@@ -161,6 +171,17 @@
     try { sessionStorage.setItem('pmRecordsFilter', type); } catch(e){}
     gotoForm('Records');
   }
+  // The trace chips are spans, not buttons, so role="button" + tabindex makes them
+  // focusable but Enter/Space still would not fire their onclick. One delegated
+  // handler covers every chip, including the ones built later by renderTrace.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    var el = e.target;
+    if (!el || el.getAttribute('role') !== 'button' || !el.hasAttribute('onclick')) return;
+    e.preventDefault();          // stop Space from scrolling the page
+    el.click();
+  });
+
   window.__traceOpen = function(t, d){ openDocChip(t, d); };
   window.__traceFollow = function(d){
     var el = document.getElementById('qInput');
@@ -172,11 +193,11 @@
   function chip(label, type, docNo, color, title){
     var cls = 'tr-chip ' + (color || 'blue');
     return '<span class="' + cls + '" title="' + esc(title||'') + '"' +
-      ' onclick="window.__traceOpen(\'' + esc(type) + '\',\'' + esc(docNo) + '\')">' + esc(label) + '</span>';
+      ' role="button" tabindex="0" onclick="window.__traceOpen(\'' + esc(type) + '\',\'' + esc(docNo) + '\')">' + esc(label) + '</span>';
   }
   function followChip(label, docNo){
     return '<span class="tr-chip blue" title="Re-trace from this node"' +
-      ' onclick="window.__traceFollow(\'' + esc(docNo) + '\')">' +
+      ' role="button" tabindex="0" onclick="window.__traceFollow(\'' + esc(docNo) + '\')">' +
       '<span class="material-symbols-outlined" style="font-size:13px;">account_tree</span>' + esc(label) + '</span>';
   }
 
@@ -273,7 +294,7 @@
     var f = trace.thisBatch.focus;
     if (f) {
       if (f.type === 'PRODUCTION') {
-        html += '<div class="tr-step-row" onclick="window.__traceOpen(\'Production\',\'' + esc(f.docNo) + '\')">' +
+        html += '<div class="tr-step-row" role="button" tabindex="0" onclick="window.__traceOpen(\'Production\',\'' + esc(f.docNo) + '\')">' +
           '<div class="flex items-center"><span class="tr-step-dot tr-dot-blue"></span>' +
             '<div><div class="font-bold text-[13px]">Production · ' + esc(f.docNo) + '</div>' +
                  '<div class="tr-step-meta">' + esc(f.fgCode) + ' — ' + esc(f.fgDesc) + ' · ' + esc(f.fgQty) + ' ' + esc(f.fgUom||'') + ' · ' + esc(f.status) + (f.dateLabel ? ' · ' + esc(f.dateLabel) : '') + '</div></div>' +
@@ -293,7 +314,7 @@
     if (trace.thisBatch.ipqc && trace.thisBatch.ipqc.length) {
       trace.thisBatch.ipqc.forEach(function(ip){
         var c2 = statusColor(ip.status);
-        html += '<div class="tr-step-row" onclick="window.__traceOpen(\'IPQC\',\'' + esc(ip.docNo) + '\')">' +
+        html += '<div class="tr-step-row" role="button" tabindex="0" onclick="window.__traceOpen(\'IPQC\',\'' + esc(ip.docNo) + '\')">' +
           '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c2 + '"></span>' +
             '<div><div class="font-bold text-[13px]">IPQC · ' + esc(ip.docNo) + '</div>' +
                  '<div class="tr-step-meta">' + esc(ip.status) + ' · Round ' + esc(ip.rounds) + ' · ' + esc(ip.inspector || '') + (ip.dateLabel ? ' · ' + esc(ip.dateLabel) : '') + '</div></div>' +
@@ -309,7 +330,7 @@
     function pushDownRows(arr, type){
       arr.forEach(function(r){
         var c3 = statusColor(r.status);
-        dHtml += '<div class="tr-step-row" onclick="window.__traceOpen(\'' + esc(type) + '\',\'' + esc(r.docNo) + '\')">' +
+        dHtml += '<div class="tr-step-row" role="button" tabindex="0" onclick="window.__traceOpen(\'' + esc(type) + '\',\'' + esc(r.docNo) + '\')">' +
           '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c3 + '"></span>' +
             '<div><div class="font-bold text-[13px]">' + esc(type) + ' · ' + esc(r.docNo) + '</div>' +
                  '<div class="tr-step-meta">' + esc(r.status) + (r.customer || r.party ? ' · ' + esc(r.customer || r.party) : '') + (r.dateLabel ? ' · ' + esc(r.dateLabel) : '') + '</div></div>' +
@@ -326,7 +347,7 @@
     if (trace.downstream.fgJobs && trace.downstream.fgJobs.length) {
       trace.downstream.fgJobs.forEach(function(j){
         var c4 = statusColor(j.status);
-        dHtml += '<div class="tr-step-row" onclick="window.__traceFollow(\'' + esc(j.jobId) + '\')">' +
+        dHtml += '<div class="tr-step-row" role="button" tabindex="0" onclick="window.__traceFollow(\'' + esc(j.jobId) + '\')">' +
           '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c4 + '"></span>' +
             '<div><div class="font-bold text-[13px]">FG Job · ' + esc(j.jobId) + '</div>' +
                  '<div class="tr-step-meta">' + esc(j.fgCode) + ' · ' + esc(j.fgQty) + ' ' + esc(j.fgUom||'') + ' · ' + esc(j.status) + (j.dateLabel ? ' · ' + esc(j.dateLabel) : '') + '</div></div>' +
@@ -351,7 +372,7 @@
       });
       trace.issues.ncr.forEach(function(n){
         var c5 = statusColor(n.status);
-        html += '<div class="tr-step-row" onclick="window.__traceOpen(\'NCR\',\'' + esc(n.docNo) + '\')">' +
+        html += '<div class="tr-step-row" role="button" tabindex="0" onclick="window.__traceOpen(\'NCR\',\'' + esc(n.docNo) + '\')">' +
           '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c5 + '"></span>' +
             '<div><div class="font-bold text-[13px]">NCR · ' + esc(n.docNo) + ' <span class="text-[10px] font-bold text-[#b91c1c] bg-[#fee2e2] px-2 py-0.5 rounded ml-1">' + esc(n.raisedAtStep) + '</span></div>' +
                  '<div class="tr-step-meta">' + esc(n.status) + ' · ' + esc(n.defect || '') + (n.dateLabel ? ' · ' + esc(n.dateLabel) : '') + '</div></div>' +
@@ -361,7 +382,7 @@
       });
       trace.issues.customerReturn.forEach(function(cr){
         var c6 = statusColor(cr.status);
-        html += '<div class="tr-step-row" onclick="window.__traceOpen(\'CustomerReturn\',\'' + esc(cr.docNo) + '\')">' +
+        html += '<div class="tr-step-row" role="button" tabindex="0" onclick="window.__traceOpen(\'CustomerReturn\',\'' + esc(cr.docNo) + '\')">' +
           '<div class="flex items-center"><span class="tr-step-dot tr-dot-' + c6 + '"></span>' +
             '<div><div class="font-bold text-[13px]">Customer Return · ' + esc(cr.docNo) + '</div>' +
                  '<div class="tr-step-meta">' + esc(cr.status) + ' · ' + esc(cr.reason || '') + (cr.dateLabel ? ' · ' + esc(cr.dateLabel) : '') + '</div></div>' +

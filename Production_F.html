@@ -171,10 +171,10 @@
     </div>
 
     <div class="prd-tabs">
-      <div class="prd-tab active" data-tab="issue" onclick="switchTab('issue')" title="Ad-hoc issue without FG order — samples, rework, R&amp;D">Quick Issue</div>
-      <div class="prd-tab" data-tab="fgplan" onclick="switchTab('fgplan')" title="BOM-driven issue against an FG production order">Production Issue</div>
-      <div class="prd-tab" data-tab="book" onclick="switchTab('book')" title="Close a booked production job against IPQC + actual consumption">Book Production</div>
-      <div class="prd-tab" data-tab="recent" onclick="switchTab('recent')">Recent</div>
+      <button type="button" class="prd-tab active" data-tab="issue" onclick="switchTab('issue')" title="Ad-hoc issue without FG order — samples, rework, R&amp;D">Quick Issue</button>
+      <button type="button" class="prd-tab" data-tab="fgplan" onclick="switchTab('fgplan')" title="BOM-driven issue against an FG production order">Production Issue</button>
+      <button type="button" class="prd-tab" data-tab="book" onclick="switchTab('book')" title="Close a booked production job against IPQC + actual consumption">Book Production</button>
+      <button type="button" class="prd-tab" data-tab="recent" onclick="switchTab('recent')">Recent</button>
     </div>
 
     <div class="prd-body">
@@ -395,7 +395,7 @@
     </div>
   </div>
 
-  <div class="prd-toast" id="toast"></div>
+  <div class="prd-toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <script>
     var INIT = null;

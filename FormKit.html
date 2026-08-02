@@ -278,6 +278,22 @@
     transition: opacity .15s, background .15s;
   }
   .fk-btn:disabled { opacity: .45; cursor: not-allowed; }
+  /* WCAG 2.2 AA 2.4.7 Focus Visible. .fk-btn and .fk-tab previously had NO focus
+     state at all, so a keyboard user could not see where they were. :focus-visible
+     (not :focus) so a mouse press does not leave a ring behind. The offset keeps the
+     ring outside the button fill, which matters on the navy primary. */
+  .fk-btn:focus-visible,
+  .fk-tab:focus-visible,
+  .fk-seg-btn:focus-visible,
+  .fk-nav-btn:focus-visible {
+    outline: 3px solid var(--fk-link);
+    outline-offset: 2px;
+  }
+  /* Hover was also missing on both. Keyboard and pointer users get the same
+     affordance; the primary darkens rather than lightens so it reads as pressable. */
+  .fk-btn:hover:not(:disabled)       { filter: brightness(0.93); }
+  .fk-btn:active:not(:disabled)      { transform: scale(0.985); }
+  .fk-tab:hover:not(.active)         { background: var(--fk-surface-low); }
   .fk-btn-primary { flex: 1; background: var(--fk-primary); color: #fff; }
   .fk-btn-pass    { flex: 1; background: var(--fk-pass); color: #fff; }
   .fk-btn-ghost   { background: transparent; color: var(--fk-primary); border: 1.5px solid var(--fk-outline-variant); }

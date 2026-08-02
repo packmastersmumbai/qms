@@ -269,17 +269,22 @@
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 // Injected by server
 var DOC_TYPE = '<?= type ?>';
 var DOC_NO   = '<?= docNo ?>';
 
-// Deep-link: derive type from doc number when not injected (e.g. PM/IQC/2026-189 → IQC)
+// Deep-link: derive type from doc number when not injected. The docNo PREFIX may differ from
+// the DOC_FIELD_MAPS key (GP→Gatepass, RTN→CustomerReturn), so alias it to match the server.
+var DOC_PREFIX_TYPE = { GRN:'GRN', IQC:'IQC', OQC:'OQC', GP:'Gatepass', NCR:'NCR', RTN:'CustomerReturn', PO:'PO' };
 if (!DOC_TYPE && DOC_NO) {
   var _parts = DOC_NO.split('/');
-  if (_parts.length >= 2) DOC_TYPE = _parts[_parts.length - 2];
+  if (_parts.length >= 2) {
+    var _pfx = _parts[_parts.length - 2].toUpperCase();
+    DOC_TYPE = DOC_PREFIX_TYPE[_pfx] || _parts[_parts.length - 2];
+  }
 }
 
 var currentRecord  = null;

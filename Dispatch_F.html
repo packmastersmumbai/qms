@@ -194,8 +194,8 @@
     </div>
 
     <div class="dsp-tabs">
-      <div class="dsp-tab active" data-tab="new"    onclick="switchTab('new')">New Dispatch</div>
-      <div class="dsp-tab"        data-tab="recent" onclick="switchTab('recent')">Recent</div>
+      <button type="button" class="dsp-tab active" data-tab="new"    onclick="switchTab('new')">New Dispatch</button>
+      <button type="button" class="dsp-tab"        data-tab="recent" onclick="switchTab('recent')">Recent</button>
     </div>
 
     <div class="dsp-body">
@@ -282,7 +282,7 @@
     </button>
   </div>
 
-  <div class="dsp-toast" id="toast"></div>
+  <div class="dsp-toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <script>
     var INIT = null;

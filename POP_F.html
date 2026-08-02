@@ -10,6 +10,12 @@
   <style>
     .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
     body { min-height: max(884px, 100dvh); }
+    /* Compact responsive layout (bundle lacks md: grid utils, so plain CSS). */
+    #poForm { max-width: 28rem; }
+    @media (min-width: 768px) {
+      #poForm { max-width: 64rem; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-content: start; }
+      #poForm > .span-2 { grid-column: 1 / -1; }
+    }
 
     /* Line cards: blue left border accent */
     .line-card { border-left: 4px solid #0ea5e9; }
@@ -39,7 +45,7 @@
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('HtmlCache') ?>
 </head>
-<body class="bg-[#f8fafc] font-body text-[#0f172a] antialiased min-h-screen pb-[100px] pm-narrow">
+<body class="bg-[#f8fafc] font-body text-[#0f172a] antialiased min-h-screen pb-[100px]">
 
 <!-- ── Top App Bar ── -->
 <header class="fixed top-0 w-full h-[56px] z-50 bg-[#1e3a5f] shadow-sm flex items-center px-3 gap-2">
@@ -59,10 +65,10 @@
 </header>
 
 <!-- ── Main Content ── -->
-<main class="mt-[56px] px-4 pt-4 space-y-4">
+<main id="poForm" class="mt-[56px] px-4 pt-4 space-y-4 mx-auto w-full">
 
   <!-- DOC ID CARD -->
-  <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] px-4 py-3 flex justify-between items-center">
+  <div class="span-2 bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.08)] px-4 py-3 flex justify-between items-center">
     <div>
       <div class="flex items-center gap-2">
         <p id="poDocNo" class="font-headline text-[16px] font-bold text-[#1e3a5f]">PM/PO/—</p>
@@ -214,7 +220,7 @@
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 (function(){

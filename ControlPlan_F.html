@@ -43,11 +43,17 @@
     .cp-table tbody tr:last-child { border-bottom: none; }
     .cp-table tbody tr.row-enabled { background: #ffffff; border-left: 3px solid #0ea5e9; }
     .cp-table tbody tr:not(.row-enabled) { border-left: 3px solid transparent; }
+    /* Compact rows: 66 parameters made this an extremely long scroll. Row height
+       was driven by the stacked label-over-input in the overrides cell, so the
+       labels move to the header (see .ov-group label below) and the vertical
+       padding drops. ~71px -> ~40px per row, i.e. the whole list is roughly
+       half the scroll it was. */
     .cp-table tbody td {
-      padding: 10px 12px;
+      padding: 5px 10px;
       font-size: 12px;
       color: #374151;
       vertical-align: middle;
+      line-height: 1.25;
     }
     .cp-table tbody td.td-code {
       font-family: monospace;
@@ -88,7 +94,12 @@
        onto a second line, which is what made rows look ragged. */
     .cp-table thead th.th-overrides { width: 290px; }
     .cp-table tbody td.td-overrides { white-space: nowrap; }
-    .ov-wrap { align-items: flex-end; }
+
+    /* Header captions sitting directly over their inputs. Widths and gap mirror
+       .ov-input / .ov-wrap exactly so the columns line up. */
+    .ovh-wrap { display: flex; gap: 4px; align-items: center; }
+    .ovh-cell { width: 66px; text-align: center; }
+    .ovh-spacer { flex: 1; }
 
     /* Write in flight — the control stays usable, this only hints at pending. */
     .row-pending { position: relative; }
@@ -120,9 +131,13 @@
     .toggle-btn[disabled] { opacity: 0.4; cursor: default; pointer-events: none; }
 
     /* ── override inputs ── */
-    .ov-wrap { display: flex; gap: 4px; flex-wrap: nowrap; }
+    .ov-wrap { display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; }
     .ov-group { display: flex; flex-direction: column; gap: 1px; }
-    .ov-group label { font-size: 9px; font-weight: 600; color: #64748b; letter-spacing: 0.3px; }
+    /* The Std/Min/Max captions are identical on all 66 rows, and stacking one
+       above every input was what made each row ~30px taller than it needed to
+       be. They now appear once in the OVERRIDES column header instead; the
+       inputs keep them as placeholders/title for accessibility. */
+    .ov-group label { display: none; }
     .ov-input {
       width: 66px;
       padding: 5px 6px;
@@ -293,7 +308,9 @@
 </div>
 
 <!-- Content area -->
-<div class="flex-1 px-4 pt-4 pb-28 max-w-6xl mx-auto w-full" id="contentArea">
+<!-- pb-4 only: the weight-matrix card below owns the clearance for the fixed Save
+     footer. pb-28 here as well produced a tall empty gap between the two. -->
+<div class="flex-1 px-4 pt-4 pb-4 max-w-6xl mx-auto w-full" id="contentArea">
   <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] state-box">
     <span class="icon">📋</span>
     Select a finished good above to view its control plan.
@@ -301,7 +318,10 @@
 </div>
 
 <!-- Weight Matrix toggle card (fix #25) -->
-<div class="px-4 max-w-6xl mx-auto w-full mb-4" id="weightMatrixCardWrap" style="display:none;">
+<!-- Sits OUTSIDE #contentArea, so it does not inherit that element's pb-28. Without
+     its own bottom padding it ran under the fixed Save footer, leaving an empty
+     white band between the table and the button. -->
+<div class="px-4 max-w-6xl mx-auto w-full mb-4 pb-24" id="weightMatrixCardWrap" style="display:none;">
   <div class="bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-4 flex items-center justify-between">
     <div>
       <div class="text-[14px] font-[600] text-[#0f172a]">Enable weight matrix capture</div>
@@ -317,13 +337,18 @@
 
 <!-- Sticky Save footer (fix #24) -->
 <div id="cpStickyFooter" class="fixed bottom-0 left-0 w-full bg-white border-t border-[#e2e8f0] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 px-4 py-3" style="display:none;">
-  <button id="btnSaveControlPlan" onclick="saveControlPlan()"
-    class="w-full max-w-6xl mx-auto h-[52px] bg-[#1e3a5f] hover:bg-[#162d4a] text-white rounded-[10px] font-headline text-[15px] font-semibold transition-colors shadow-sm">
-    Save Control Plan
-  </button>
+  <!-- mx-auto does not centre a <button>: it is inline-block by default, so the
+       auto margins had nothing to centre against and it sat left in a full-width
+       bar. A block wrapper does the centring; the button just fills it. -->
+  <div class="max-w-6xl mx-auto w-full">
+    <button id="btnSaveControlPlan" onclick="saveControlPlan()"
+      class="block w-full h-[52px] bg-[#1e3a5f] hover:bg-[#162d4a] text-white rounded-[10px] font-headline text-[15px] font-semibold transition-colors shadow-sm">
+      Save Control Plan
+    </button>
+  </div>
 </div>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
   var _params   = [];
@@ -578,7 +603,16 @@
               '<th>SPECIFICATION</th>' +
               '<th>METHOD</th>' +
               '<th style="text-align:center;">ENABLED</th>' +
-              '<th class="th-overrides">OVERRIDES</th>' +
+              // Std/Min/Max captions live here once, aligned over the inputs,
+              // instead of being repeated on every one of the 66 rows.
+              '<th class="th-overrides">' +
+                '<div class="ovh-wrap">' +
+                  '<span class="ovh-cell">STD</span>' +
+                  '<span class="ovh-cell">MIN</span>' +
+                  '<span class="ovh-cell">MAX</span>' +
+                  '<span class="ovh-spacer"></span>' +
+                '</div>' +
+              '</th>' +
             '</tr></thead>' +
             '<tbody id="tableBody">' + tRows + '</tbody>' +
           '</table>' +
