@@ -22,8 +22,13 @@ var MASTERS_SCHEMA_ = {
       { key:'material',  label:'Material',   type:'text' },
       { key:'city',      label:'City',       type:'text' },
       { key:'approved',  label:'Approved',   type:'enum:Y/N' },
-      { key:'stateCode', label:'State Code', type:'text' },
-      { key:'email',     label:'Email',      type:'text' }
+      { key:'stateCode', label:'State Code', type:'text' }
+      // No 'email' entry: MASTERS_Suppliers has no Email column. Because
+      // getMastersTable maps schema[i] -> cell[i] positionally, a 9th entry read
+      // cell 8 = LastModified and rendered the audit timestamp as "Email:" —
+      // and an edit would have written the field back over LastModified.
+      // Initialize.js:311 does list Email, but the live sheet and the repair
+      // header at Initialize.js:688 both omit it; the sheet is the truth here.
     ]
   },
   Materials: {
@@ -142,6 +147,16 @@ function getMastersTable(name) {
     var hdr = data[0].map(function(h){ return String(h||'').trim(); });
     var auditModIdx = hdr.indexOf('LastModified');
     var auditByIdx = hdr.indexOf('ModifiedBy');
+    // The schema maps positionally (schema[i] -> cell[i]) and never reads the header,
+    // so a sheet whose columns drift silently renders the wrong data under the right
+    // label. Guard it: an audit column inside the mapped span means the schema is
+    // longer than the sheet's data columns. Report instead of showing bad values.
+    var mappedSpan = hdr.slice(0, s.columns.length);
+    var collision = mappedSpan.filter(function(h){ return MASTERS_AUDIT_COLS_.indexOf(h) >= 0; });
+    if (collision.length) {
+      return { ok:false, error: 'Schema/sheet mismatch in ' + s.sheet + ': ' + s.columns.length +
+        ' schema columns overlap audit column "' + collision[0] + '". Sheet header: ' + hdr.join(' | ') };
+    }
     var rows = data.slice(1).filter(function(r){ return r[s.codeCol]; }).map(function(r){
       var obj = {};
       s.columns.forEach(function(c, i){ obj[c.key] = _mastersCellSafe_(r[i]); });
