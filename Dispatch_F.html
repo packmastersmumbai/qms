@@ -43,7 +43,7 @@
       background: var(--white);
       border: 1px solid #e2e8f0; border-radius: 12px;
       padding: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      box-shadow: var(--pm-shadow-1);
     }
     /* DESIGN.md: one-column form layout. Side-by-side fields fail on 6"
        phones used by gloved operators. Both grids collapse to a single
@@ -65,7 +65,7 @@
 
     /* Plan card list (fix #12) */
     .dsp-plan-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-    .plan-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .plan-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; box-shadow: var(--pm-shadow-1); }
     .plan-card.is-fifo { border-left: 4px solid #16a34a; }
     .plan-card.is-over { border-left: 4px solid #d97706; }
     .plan-card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
@@ -113,7 +113,7 @@
       background: var(--white);
       border: 1px solid #e0e0e0; border-radius: 8px;
       margin-bottom: 10px; padding: 10px 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      box-shadow: var(--pm-shadow-1);
     }
     .dsp-rec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .dsp-rec-id { font-weight: 700; color: var(--navy); font-size: 13px; flex: 1; }
@@ -140,7 +140,7 @@
     /* Success card */
     .dsp-success-card {
       background: var(--white); border: 1px solid #bbf7d0; border-radius: 12px;
-      padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 20px; box-shadow: var(--pm-shadow-1);
       text-align: center;
     }
     .dsp-success-icon { font-size: 48px; margin-bottom: 8px; color: #16a34a; }

@@ -201,6 +201,23 @@
     .confirm-badge.HOLD   { background: #FEF3C7; color: #B45309; }
     .confirm-badge.AWD    { background: #FFEDD5; color: #C2410C; }
     .confirm-badge.PENDING{ background: #E0F2FE; color: #0369A1; }
+
+    /* Primary CTA. Real CSS, not bg-[#0D1B6E]: that value is absent from the static
+       TailwindBundle and the class would resolve to nothing (the Records-header bug).
+       !important because the bundle loads after this block. */
+    .pm-btn-primary { background-color: #0D1B6E !important; color: #fff !important; }
+
+    /* '+ Add Item' is a SECONDARY action but was styled full-width navy at 40,230px2
+       — 5.3x the area of the primary Save button, which measured 7,600px2 and ships
+       disabled. Demoted to an outline button so the eye lands on Save first. */
+    #btnAddItem {
+      background: transparent !important;
+      color: #0D1B6E !important;
+      border: 1.5px solid var(--pm-border, #e2e8f0) !important;
+      width: auto !important;
+      padding: 10px 16px !important;
+    }
+    #btnAddItem:hover { border-color: #0D1B6E !important; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
   <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
@@ -458,10 +475,18 @@
 
 <!-- ── Sticky footer ── -->
 <div id="stickyFooter" class="fixed bottom-0 left-0 w-full bg-white border-t border-border p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40">
-  <button id="btnSubmit" disabled
-    class="w-full max-w-lg mx-auto flex items-center justify-center h-[56px] bg-accent text-white rounded-[10px] font-headline text-[16px] font-semibold transition-colors disabled:opacity-40 shadow-sm">
+  <!-- pm-btn-primary, not bg-accent: accent was the retired #0ea5e9, so the primary
+       CTA on this form did not match the primary CTA anywhere else. -->
+  <button id="btnSubmit" disabled aria-describedby="submitHint"
+    class="w-full max-w-lg mx-auto flex items-center justify-center h-[56px] pm-btn-primary text-white rounded-[10px] font-headline text-[16px] font-semibold transition-colors disabled:opacity-40 shadow-sm">
     Save GRN
   </button>
+  <!-- The button ships disabled and nothing said why. Supplier + disposition +
+       quantity are what actually gate it (see updateSubmitState). Hidden once
+       enabled so it does not become permanent chrome. -->
+  <p id="submitHint" class="max-w-lg mx-auto text-center text-[11px] text-[#64748b] mt-1.5">
+    Choose a supplier, a disposition, and enter a quantity to save.
+  </p>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -525,6 +550,7 @@ function refreshSaveBtn() {
       if ((parseFloat(inp.value) || 0) > 0) anyQty = true;
     });
     document.getElementById('btnSubmit').disabled = !(document.getElementById('supplier').value && disposition && anyQty);
+    syncSubmitHint_();
     return;
   }
   var topValid = document.getElementById('item').value &&
@@ -534,6 +560,16 @@ function refreshSaveBtn() {
   var ok = document.getElementById('supplier').value &&
            (topValid || extraValid);
   document.getElementById('btnSubmit').disabled = !ok;
+  syncSubmitHint_();
+}
+
+// The "what's missing" hint is only useful while Save is blocked. Driven off the
+// button's own disabled state so BOTH enable paths (multi-PO above and the single
+// item path here) stay in sync without duplicating the validation rules.
+function syncSubmitHint_() {
+  var b = document.getElementById('btnSubmit');
+  var h = document.getElementById('submitHint');
+  if (b && h) h.style.display = b.disabled ? '' : 'none';
 }
 
 function hasValidExtraItem() {
