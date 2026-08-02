@@ -67,7 +67,7 @@
     .modal-table th {
       text-align: left; font-size: 10px; font-weight: 700;
       text-transform: uppercase; color: #1e3a5f;
-      background: #f1f5f9; padding: 7px 10px;
+      background: var(--pm-chip, #f1f5f9); padding: 7px 10px;
       border-bottom: 1px solid #e2e8f0;
     }
     .modal-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
@@ -79,21 +79,21 @@
     .otd-tab {
       font-size: 11px; font-weight: 600; padding: 5px 12px;
       border-radius: 20px; cursor: pointer;
-      background: #f1f5f9; color: #1e3a5f; border: none;
+      background: var(--pm-chip, #f1f5f9); color: #1e3a5f; border: none;
     }
     .otd-tab.active { background: #1e3a5f; color: #fff; }
 
     /* ── Tile status border (left accent only; 3 sides stay 1px grey) ── */
-    .tile-green { border-left: 3px solid #16a34a; border-top-color:#e2e8f0; border-right-color:#e2e8f0; border-bottom-color:#e2e8f0; }
-    .tile-amber { border-left: 3px solid #d97706; border-top-color:#e2e8f0; border-right-color:#e2e8f0; border-bottom-color:#e2e8f0; }
-    .tile-red   { border-left: 3px solid #dc2626; border-top-color:#e2e8f0; border-right-color:#e2e8f0; border-bottom-color:#e2e8f0; }
-    .tile-grey  { border-left: 3px solid #94a3b8; border-top-color:#e2e8f0; border-right-color:#e2e8f0; border-bottom-color:#e2e8f0; }
+    .tile-green { border-left: 3px solid #16a34a; border-top-color:var(--pm-border, #e2e8f0); border-right-color:var(--pm-border, #e2e8f0); border-bottom-color:var(--pm-border, #e2e8f0); }
+    .tile-amber { border-left: 3px solid #d97706; border-top-color:var(--pm-border, #e2e8f0); border-right-color:var(--pm-border, #e2e8f0); border-bottom-color:var(--pm-border, #e2e8f0); }
+    .tile-red   { border-left: 3px solid #dc2626; border-top-color:var(--pm-border, #e2e8f0); border-right-color:var(--pm-border, #e2e8f0); border-bottom-color:var(--pm-border, #e2e8f0); }
+    .tile-grey  { border-left: 3px solid #94a3b8; border-top-color:var(--pm-border, #e2e8f0); border-right-color:var(--pm-border, #e2e8f0); border-bottom-color:var(--pm-border, #e2e8f0); }
 
     /* ── Tile status icon chip tint ── */
     .ic-green { background:#dcfce7; color:#16a34a; }
     .ic-amber { background:#fef3c7; color:#d97706; }
     .ic-red   { background:#fee2e2; color:#dc2626; }
-    .ic-grey  { background:#f1f5f9; color:#64748b; }
+    .ic-grey  { background:var(--pm-chip, #f1f5f9); color:#64748b; }
 
     /* ── Value color helpers ── */
     .val-green { color: #16a34a; }

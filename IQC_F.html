@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
-    body { min-height: max(884px,100dvh); font-family:'Inter',sans-serif; background:#f8fafc; }
+    body { min-height: max(884px,100dvh); font-family:'Inter',sans-serif; background:var(--pm-page, #f8fafc); }
     /* Compact responsive layout (bundle lacks md: grid utils, so plain CSS).
        Inspection form becomes a 2-col grid >=768px; wide groups span both. */
     #iqcForm { max-width: 28rem; }
@@ -99,7 +99,7 @@
     .info-pop u { text-decoration:none; font-weight:600; color:#475569; }
     .param-row-pass { background:#f0fdf4; border-color:#86efac !important; }
     .param-row-fail { background:#fef2f2; border-color:#fca5a5 !important; }
-    .param-row-na   { background:#f1f5f9; }
+    .param-row-na   { background:var(--pm-chip, #f1f5f9); }
 
     /* Param button states */
     .btn-pass-active { background:#16a34a !important; color:#fff !important; border-color:#16a34a !important; }
@@ -1061,7 +1061,7 @@ function buildParamSection() {
   var bulkRow = document.createElement('div');
   bulkRow.setAttribute('style', 'display:flex;align-items:center;justify-content:space-between;background:#f0f6ff;border:1px dashed #94a3b8;border-radius:8px;padding:8px 12px;margin-bottom:4px;');
   bulkRow.innerHTML =
-    '<span style="font-size:12px;font-weight:600;color:#0B2A4A;">Set All:</span>' +
+    '<span style="font-size:12px;font-weight:600;color:var(--pm-header-ink, #0b2a4a);">Set All:</span>' +
     '<div style="display:flex;gap:6px;">' +
       '<button type="button" onclick="setAllParams(\'PASS\')" style="font-size:13px;font-weight:700;color:#15803d;background:#fff;border:1.5px solid #16a34a;border-radius:6px;padding:10px 16px;min-height:44px;cursor:pointer;">PASS</button>' +
       '<button type="button" onclick="setAllParams(\'FAIL\')" style="font-size:13px;font-weight:700;color:#dc2626;background:#fff;border:1.5px solid #dc2626;border-radius:6px;padding:10px 16px;min-height:44px;cursor:pointer;">FAIL</button>' +
@@ -1789,7 +1789,7 @@ function renderImagePreviews() {
   wrap.style.display = 'flex';
   imageFiles.forEach(function(f, i) {
     var thumb = document.createElement('div');
-    thumb.style.cssText = 'position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;background:#f1f5f9;flex-shrink:0;';
+    thumb.style.cssText = 'position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;background:var(--pm-chip, #f1f5f9);flex-shrink:0;';
     var imgEl = document.createElement('img');
     imgEl.src = f.previewSrc || ('data:image/jpeg;base64,' + f.base64);
     imgEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';

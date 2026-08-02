@@ -27,7 +27,12 @@
     --pm-ink-2:           #1A1A2E;
     --pm-body:            #374151;
     --pm-muted:           #6B7280;
-    --pm-faint:           #94A3B8;
+    /* #94A3B8 is 2.56:1 on white — below the WCAG AA 4.5:1 floor. FormKit's
+       --fk-faint was corrected to #64748B (4.76:1) on 2026-08-02, but this token
+       kept the failing value and Theme.html reaches 23 forms vs FormKit's 7, so
+       the fix had far less coverage than it appeared. Same slate hue, one step
+       darker. Do not lighten past #6B7280 (4.83:1) without re-checking contrast. */
+    --pm-faint:           #64748B;
 
     /* Surface */
     --pm-canvas:          #F5F7FA;
@@ -38,6 +43,19 @@
     --pm-hairline:        #E5E7EB;
     --pm-hairline-strong: #CBD5E1;
     --pm-rule:            #EEF1F5;
+    /* Neutral/surface ramp — added 2026-08-03 by /impeccable extract.
+       The SIGNAL ramp was already fully tokenised; these were the real gap. Each
+       appears 13+ times as a raw literal across the forms (#E2E8F0 alone: 178).
+       Named for ROLE, not value, so a palette change is one edit.
+       Declared HERE rather than in FormKit because Theme.html is included by all
+       23 forms while FormKit reaches only 7 — the tokens have to exist where the
+       literals actually are. FormKit mirrors these as --fk-* for its own grammar. */
+    --pm-border:          #E2E8F0;   /* default 1px card/input border */
+    --pm-page:            #F8FAFC;   /* page canvas behind cards */
+    --pm-input-line:      #D1D5DB;   /* heavier 1.5px input border */
+    --pm-chip:            #F1F5F9;   /* unselected pill/chip fill */
+    --pm-info-soft:       #EFF6FF;   /* informational tint */
+    --pm-header-ink:      #0B2A4A;   /* sheet/table header fill */
 
     /* Signal */
     --pm-pass:            #16A34A;

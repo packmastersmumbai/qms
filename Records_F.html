@@ -13,7 +13,7 @@
     * { box-sizing: border-box; }
     html, body {
       overflow-x: hidden;
-      background-color: #f8fafc;
+      background-color: var(--pm-page, #f8fafc);
       font-family: 'Inter', sans-serif;
       color: #0f172a;
       touch-action: manipulation;
@@ -100,7 +100,7 @@
       min-width: 18px; text-align: center;
     }
     .tab-count.is-loading {
-      background: #e2e8f0;
+      background: var(--pm-border, #e2e8f0);
       color: transparent;
       animation: skeleton-pulse 1s ease-in-out infinite;
     }
@@ -134,7 +134,7 @@
     .skel-bar {
       height: 14px;
       border-radius: 6px;
-      background: #e2e8f0;
+      background: var(--pm-border, #e2e8f0);
       animation: skeleton-pulse 1s ease-in-out infinite;
     }
 

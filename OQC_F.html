@@ -18,7 +18,7 @@
     #oqcForm  { padding-top: 68px; }
 
     body {
-      background-color: #f8fafc;
+      background-color: var(--pm-page, #f8fafc);
       font-family: 'Plus Jakarta Sans', sans-serif;
       -webkit-tap-highlight-color: transparent;
       min-height: max(884px, 100dvh);
@@ -198,9 +198,9 @@
 
     /* Pulse amber for disposition card */
     @keyframes pulse-amber {
-      0%   { border-color: #e2e8f0; box-shadow: none; }
+      0%   { border-color: var(--pm-border, #e2e8f0); box-shadow: none; }
       50%  { border-color: #d97706; box-shadow: 0 0 0 4px rgba(217,119,6,0.25); }
-      100% { border-color: #e2e8f0; box-shadow: none; }
+      100% { border-color: var(--pm-border, #e2e8f0); box-shadow: none; }
     }
     .pulse-amber-card {
       animation: pulse-amber 0.4s ease;
@@ -223,7 +223,7 @@
       font-size: 12px;
       font-weight: 600;
     }
-    .chip-navy  { background: #EFF6FF; color: #1e3a5f; }
+    .chip-navy  { background: var(--pm-info-soft, #eff6ff); color: #1e3a5f; }
     .chip-muted { background: #F3F4F6; color: #6b7280; }
     .chip-acc   { background: #DCFCE7; color: #15803D; }
     .chip-rej   { background: #FEE2E2; color: #B91C1C; }

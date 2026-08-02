@@ -9,14 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family:'Plus Jakarta Sans',sans-serif; background:#0f172a; color:#f8fafc; margin:0; min-height:100dvh; -webkit-tap-highlight-color:transparent; }
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:#0f172a; color:var(--pm-page, #f8fafc); margin:0; min-height:100dvh; -webkit-tap-highlight-color:transparent; }
     .wrap { max-width:520px; margin:0 auto; padding:16px; }
     .card { background:#1e293b; border-radius:12px; padding:16px; margin-bottom:12px; }
     h1 { font-size:18px; margin:0 0 8px 0; font-weight:700; }
     h2 { font-size:14px; margin:0 0 8px 0; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; }
-    .pin-display { font-size:36px; letter-spacing:18px; text-align:center; padding:16px; background:#0f172a; border-radius:8px; margin-bottom:12px; min-height:48px; font-weight:700; color:#f8fafc; }
+    .pin-display { font-size:36px; letter-spacing:18px; text-align:center; padding:16px; background:#0f172a; border-radius:8px; margin-bottom:12px; min-height:48px; font-weight:700; color:var(--pm-page, #f8fafc); }
     .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-    .key { background:#334155; color:#f8fafc; border:none; border-radius:10px; padding:18px 0; font-size:24px; font-weight:600; cursor:pointer; touch-action:manipulation; }
+    .key { background:#334155; color:var(--pm-page, #f8fafc); border:none; border-radius:10px; padding:18px 0; font-size:24px; font-weight:600; cursor:pointer; touch-action:manipulation; }
     .key:active { background:#475569; transform:scale(0.97); }
     .key.action { background:#0ea5e9; }
     .key.danger { background:#7f1d1d; }
@@ -25,12 +25,12 @@
     .who-meta { font-size:12px; color:#94a3b8; }
     .logout { background:#7f1d1d; color:#fee2e2; border:none; padding:8px 14px; border-radius:6px; font-size:13px; cursor:pointer; }
     .chokepoint-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .chokepoint { background:#334155; padding:18px 12px; text-align:center; border-radius:10px; border:none; color:#f8fafc; font-weight:600; cursor:pointer; touch-action:manipulation; }
+    .chokepoint { background:#334155; padding:18px 12px; text-align:center; border-radius:10px; border:none; color:var(--pm-page, #f8fafc); font-weight:600; cursor:pointer; touch-action:manipulation; }
     .chokepoint:active { transform:scale(0.97); }
     .chokepoint.active { background:#0ea5e9; box-shadow:0 0 0 3px rgba(14,165,233,0.3); }
     .chokepoint .verb { display:block; font-size:18px; margin-bottom:4px; }
     .chokepoint .label { display:block; font-size:11px; opacity:0.7; }
-    .lot-input { width:100%; box-sizing:border-box; padding:14px; font-size:18px; background:#0f172a; border:2px solid #334155; border-radius:8px; color:#f8fafc; margin-bottom:12px; font-family:inherit; }
+    .lot-input { width:100%; box-sizing:border-box; padding:14px; font-size:18px; background:#0f172a; border:2px solid #334155; border-radius:8px; color:var(--pm-page, #f8fafc); margin-bottom:12px; font-family:inherit; }
     .lot-input:focus { outline:none; border-color:#0ea5e9; }
     .btn-primary { width:100%; padding:16px; font-size:16px; font-weight:700; background:#10b981; color:#fff; border:none; border-radius:10px; cursor:pointer; }
     .btn-primary:active { background:#059669; }

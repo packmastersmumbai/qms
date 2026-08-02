@@ -349,7 +349,7 @@
   <section id="extra-items-section" class="fk-card">
     <h2 class="fk-section" style="margin:0 0 2px;">Additional Items</h2>
     <button type="button" id="btnAddItem" onclick="addExtraItem()"
-      style="font-size:14px;font-weight:700;color:#fff;background:#0B2A4A;padding:12px;border:none;border-radius:8px;cursor:pointer;width:100%;">
+      style="font-size:14px;font-weight:700;color:#fff;background:var(--pm-header-ink, #0b2a4a);padding:12px;border:none;border-radius:8px;cursor:pointer;width:100%;">
       + Add Item
     </button>
     <div id="extra-items-list" class="flex flex-col gap-3"></div>
@@ -1294,7 +1294,7 @@ function showConfirm(g) {
     }).join('');
     tbl.innerHTML =
       '<table style="width:100%;border-collapse:collapse;">' +
-        '<thead style="background:#0B2A4A;color:#fff;font-size:10px;letter-spacing:0.3px;"><tr>' +
+        '<thead style="background:var(--pm-header-ink, #0b2a4a);color:#fff;font-size:10px;letter-spacing:0.3px;"><tr>' +
           '<th style="padding:6px 8px;text-align:left;">#</th>' +
           '<th style="padding:6px 8px;text-align:left;">Material</th>' +
           '<th style="padding:6px 8px;text-align:left;">Batch</th>' +
@@ -1402,7 +1402,7 @@ function addExtraItem() {
   var list = document.getElementById('extra-items-list');
   var card = document.createElement('div');
   card.id = id;
-  card.setAttribute('style','border:1.5px solid #d1d5db;border-radius:10px;padding:12px;background:#f8fafc;display:flex;flex-direction:column;gap:8px;position:relative;');
+  card.setAttribute('style','border:1.5px solid #d1d5db;border-radius:10px;padding:12px;background:var(--pm-page, #f8fafc);display:flex;flex-direction:column;gap:8px;position:relative;');
   card.dataset.idx = EXTRA_ITEMS_SEQ;
 
   var matOpts = '<option value="">Select material</option>' +
@@ -1416,7 +1416,7 @@ function addExtraItem() {
   var inputStyle = 'height:42px;border:1.5px solid #d1d5db;border-radius:6px;padding:0 10px;font-size:14px;width:100%;box-sizing:border-box;background:#fff;';
   card.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-      '<span style="font-size:11px;font-weight:700;color:#0B2A4A;letter-spacing:0.4px;">ITEM #' + idxNum + '</span>' +
+      '<span style="font-size:11px;font-weight:700;color:var(--pm-header-ink, #0b2a4a);letter-spacing:0.4px;">ITEM #' + idxNum + '</span>' +
       '<button type="button" onclick="removeExtraItem(\'' + id + '\')" style="color:#b32a2a;font-size:22px;line-height:1;background:none;border:none;cursor:pointer;padding:2px 8px;">&times;</button>' +
     '</div>' +
     '<select class="xi-mat" style="' + inputStyle + '">' + matOpts + '</select>' +

@@ -10,7 +10,7 @@
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #f8fafc;
+      background-color: var(--pm-page, #f8fafc);
       -webkit-tap-highlight-color: transparent;
       min-height: max(884px, 100dvh);
     }
@@ -26,7 +26,7 @@
        wrapper (.overflow-x-auto) scrolls when the viewport is narrower. */
     .cp-table { width: 100%; border-collapse: collapse; min-width: 860px; }
     .cp-table thead th {
-      background: #f1f5f9;
+      background: var(--pm-chip, #f1f5f9);
       color: #1e3a5f;
       font-size: 10px;
       font-weight: 700;
@@ -149,7 +149,7 @@
       background: #fff;
     }
     .ov-input:focus   { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
-    .ov-input:disabled { background: #f8fafc; color: #94a3b8; }
+    .ov-input:disabled { background: var(--pm-page, #f8fafc); color: #94a3b8; }
     .ov-save-btn {
       /* Sits on the same baseline as the inputs. The inputs carry a label above
          them, so flex-end alone dropped the button below their bottom edge. */

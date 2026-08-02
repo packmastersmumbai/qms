@@ -12,7 +12,7 @@
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #f8fafc;
+      background-color: var(--pm-page, #f8fafc);
       -webkit-tap-highlight-color: transparent;
     }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -32,7 +32,7 @@
     .skel-bar {
       display: inline-block;
       height: 13px;
-      background: #e2e8f0;
+      background: var(--pm-border, #e2e8f0);
       border-radius: 4px;
       animation: skeleton-pulse 0.8s ease-in-out infinite;
     }
@@ -52,7 +52,7 @@
     /* masters table */
     .masters-table { width: 100%; border-collapse: collapse; table-layout: auto; }
     .masters-table thead th {
-      background: #f1f5f9;
+      background: var(--pm-chip, #f1f5f9);
       color: #1e3a5f;
       font-size: 11px;
       font-weight: 700;
@@ -69,7 +69,7 @@
       transition: background 0.1s;
     }
     .masters-table tbody tr:last-child { border-bottom: none; }
-    .masters-table tbody tr:nth-child(even) { background: #f8fafc; }
+    .masters-table tbody tr:nth-child(even) { background: var(--pm-page, #f8fafc); }
     .masters-table tbody tr:hover { background: #eef4ff; }
     .masters-table tbody td {
       padding: 10px;
@@ -216,7 +216,7 @@
       display: flex;
       align-items: center;
     }
-    .modal-close-btn:hover { background: #f1f5f9; }
+    .modal-close-btn:hover { background: var(--pm-chip, #f1f5f9); }
 
     .modal-body {
       padding: 16px;
@@ -257,7 +257,7 @@
       border-color: #0ea5e9;
       box-shadow: 0 0 0 4px rgba(14,165,233,0.15);
     }
-    .field-row input:disabled { background: #f1f5f9; color: #94a3b8; }
+    .field-row input:disabled { background: var(--pm-chip, #f1f5f9); color: #94a3b8; }
 
     .field-row-2col {
       display: grid;
@@ -319,7 +319,7 @@
       border-radius: 8px;
       cursor: pointer;
     }
-    .btn-cancel:hover { background: #f8fafc; }
+    .btn-cancel:hover { background: var(--pm-page, #f8fafc); }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('HtmlCache') ?>

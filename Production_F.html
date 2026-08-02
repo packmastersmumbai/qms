@@ -240,7 +240,7 @@
       </div>
 
       <div id="paneFgPlan" style="display:none;">
-        <div style="background:#e8f0fe;border-left:3px solid #1a73e8;padding:6px 10px;margin-bottom:10px;font-size:11px;color:#0B2A4A;">
+        <div style="background:#e8f0fe;border-left:3px solid #1a73e8;padding:6px 10px;margin-bottom:10px;font-size:11px;color:var(--pm-header-ink, #0b2a4a);">
           <b>Production Issue</b> — pick FG + qty, BOM explodes to components, FIFO picks oldest IQC-passed lots, qty rounds up to whole supplier packs. Writes <code>PROD_BOOK</code> (booked, not yet consumed) and creates a Production Job for later reconciliation in <b>Book Production</b>.
         </div>
         <div class="prd-form">
@@ -277,7 +277,7 @@
             <div id="fgBanner" style="padding:10px;border-radius:6px;font-size:13px;font-weight:600;margin-bottom:10px;"></div>
             <div style="overflow-x:auto;border:1px solid #e0e0e0;border-radius:6px;-webkit-overflow-scrolling:touch;">
               <table id="fgPlanTbl" style="width:100%;min-width:780px;border-collapse:collapse;font-size:11px;">
-                <thead style="background:#0B2A4A;color:#fff;">
+                <thead style="background:var(--pm-header-ink, #0b2a4a);color:#fff;">
                   <tr>
                     <th style="padding:6px 8px;text-align:left;">Component</th>
                     <th style="padding:6px 8px;text-align:left;">Type</th>
@@ -307,14 +307,14 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;">FIFO Pick List</div>
-              <div id="pickListTitle" style="font-size:15px;font-weight:700;color:#0B2A4A;"></div>
+              <div id="pickListTitle" style="font-size:15px;font-weight:700;color:var(--pm-header-ink, #0b2a4a);"></div>
             </div>
             <button onclick="document.getElementById('pickListModal').style.display='none';"
                     style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;padding:0 4px;">&times;</button>
           </div>
           <div id="pickListBody" style="font-size:12px;"></div>
           <div style="display:flex;gap:8px;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:10px;flex-wrap:wrap;">
-            <button onclick="printPickList()" style="flex:1;min-width:120px;padding:9px;background:#0B2A4A;color:#fff;border:0;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨 Print Final List</button>
+            <button onclick="printPickList()" style="flex:1;min-width:120px;padding:9px;background:var(--pm-header-ink, #0b2a4a);color:#fff;border:0;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨 Print Final List</button>
             <button onclick="sharePickList()" style="flex:1;min-width:120px;padding:9px;background:#16a34a;color:#fff;border:0;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">📤 Share (WhatsApp)</button>
             <button onclick="document.getElementById('pickListModal').style.display='none';" style="padding:9px 14px;background:#fff;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Close</button>
           </div>
@@ -356,7 +356,7 @@
             <div style="font-size:11px;color:#555;font-weight:600;margin:8px 0 4px;">Per-component split — Consumed = FG produced × BOM Consum (editable). Constraint: Consumed + Returned + Scrap + Wastage + Loss = Booked.</div>
             <div style="overflow-x:auto;border:1px solid #e0e0e0;border-radius:6px;">
               <table style="width:100%;border-collapse:collapse;font-size:11px;">
-                <thead style="background:#0B2A4A;color:#fff;">
+                <thead style="background:var(--pm-header-ink, #0b2a4a);color:#fff;">
                   <tr>
                     <th style="padding:6px;text-align:left;">Component</th>
                     <th style="padding:6px;text-align:left;">Lot/Loc</th>
@@ -813,12 +813,12 @@
         : slip.fgQty + ' ' + escapeHtml(slip.fgUom);
       var html = '<!doctype html><html><head><title>Issue Slip ' + escapeHtml(slip.jobId) + '</title>' +
         '<style>body{font-family:Arial,sans-serif;padding:20px;color:#222;}' +
-        'h1{font-size:18px;margin:0 0 4px;}h2{font-size:13px;margin:14px 0 6px;color:#0B2A4A;}' +
+        'h1{font-size:18px;margin:0 0 4px;}h2{font-size:13px;margin:14px 0 6px;color:var(--pm-header-ink, #0b2a4a);}' +
         '.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:12px;border:1px solid #ccc;padding:10px;border-radius:4px;}' +
         '.meta b{color:#555;font-weight:600;}' +
         'table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;}' +
         'th,td{border:1px solid #999;padding:5px 7px;vertical-align:top;}' +
-        'th{background:#0B2A4A;color:#fff;text-align:left;}' +
+        'th{background:var(--pm-header-ink, #0b2a4a);color:#fff;text-align:left;}' +
         '.sig{margin-top:30px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;font-size:11px;}' +
         '.sig div{border-top:1px solid #333;padding-top:4px;text-align:center;}' +
         '@media print{button{display:none;}}</style></head><body>' +
@@ -837,7 +837,7 @@
         '<table><thead><tr><th>#</th><th>Component</th><th>Type</th><th style="text-align:right;">Required</th><th style="text-align:right;">Issue As (Packs)</th><th>Picked ✓</th></tr></thead>' +
         '<tbody>' + lines + '</tbody></table>' +
         '<div class="sig"><div>Issued By</div><div>Picked By (Stores)</div><div>Received By (Production)</div></div>' +
-        '<div style="margin-top:20px;text-align:right;"><button onclick="window.print()" style="padding:8px 16px;font-size:13px;background:#0B2A4A;color:#fff;border:none;border-radius:4px;cursor:pointer;">🖨 Print</button></div>' +
+        '<div style="margin-top:20px;text-align:right;"><button onclick="window.print()" style="padding:8px 16px;font-size:13px;background:var(--pm-header-ink, #0b2a4a);color:#fff;border:none;border-radius:4px;cursor:pointer;">🖨 Print</button></div>' +
         '</body></html>';
       w.document.write(html);
       w.document.close();
@@ -874,19 +874,19 @@
       document.getElementById('pickListTitle').textContent =
         d.fgCode + ' — ' + (d.fgDesc || '') + ' × ' + d.fgQty + ' ' + (d.fgUom || '');
       var html = '';
-      html += '<div style="background:#f7faff;border:1px solid #cfdcef;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#0B2A4A;">' +
+      html += '<div style="background:#f7faff;border:1px solid #cfdcef;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:var(--pm-header-ink, #0b2a4a);">' +
         'Tick each row as you pick from the rack. FIFO order — oldest lot first. ' +
         'Issued qty rounds up to whole supplier packs.' +
         '</div>';
       d.components.forEach(function(c, idx){
         html += '<div style="border:1px solid #e2e8f0;border-radius:6px;margin-bottom:10px;overflow:hidden;">' +
-          '<div style="background:#0B2A4A;color:#fff;padding:6px 10px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;">' +
+          '<div style="background:var(--pm-header-ink, #0b2a4a);color:#fff;padding:6px 10px;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;">' +
             '<span>' + (idx+1) + '. ' + escapeHtml(c.compCode) + ' — ' + escapeHtml(c.compDesc) + '</span>' +
             '<span style="font-size:10px;font-weight:600;background:#1a3a6a;padding:2px 6px;border-radius:3px;">' + escapeHtml(c.type || '') + '</span>' +
           '</div>' +
           '<div style="padding:8px 10px;font-size:11px;background:#fafbfc;border-bottom:1px solid #eef0f3;color:#334155;">' +
             'Required: <b>' + Number(c.required).toFixed(3) + ' ' + escapeHtml(c.compUom) + '</b>' +
-            ' &nbsp;|&nbsp; Issue qty: <b style="color:#0B2A4A;">' + Number(c.issueQty).toFixed(3) + ' ' + escapeHtml(c.compUom) + '</b>' +
+            ' &nbsp;|&nbsp; Issue qty: <b style="color:var(--pm-header-ink, #0b2a4a);">' + Number(c.issueQty).toFixed(3) + ' ' + escapeHtml(c.compUom) + '</b>' +
             (c.masterP > 0 ? ' (' + c.packsToIssue + ' × ' + c.masterP + ' ' + escapeHtml(c.compUom) + ')' : '') +
           '</div>';
         if (c.error) {
@@ -895,7 +895,7 @@
           html += '<div style="padding:10px;color:#64748b;font-size:12px;">No lots to pick.</div>';
         } else {
           html += '<table style="width:100%;border-collapse:collapse;font-size:11px;">' +
-            '<thead style="background:#f0f4f8;color:#0B2A4A;">' +
+            '<thead style="background:#f0f4f8;color:var(--pm-header-ink, #0b2a4a);">' +
               '<tr>' +
                 '<th style="padding:5px 6px;text-align:left;width:34px;">Pick</th>' +
                 '<th style="padding:5px 6px;text-align:left;">Batch/Lot</th>' +
@@ -908,7 +908,7 @@
             var rowId = 'pl_' + idx + '_' + li;
             html += '<tr style="border-top:1px solid #f0f0f0;">' +
               '<td style="padding:4px 6px;text-align:center;"><input type="checkbox" id="' + rowId + '" class="pl-chk" data-c="' + idx + '" data-l="' + li + '" style="width:18px;height:18px;cursor:pointer;"></td>' +
-              '<td style="padding:4px 6px;font-weight:600;color:#0B2A4A;">' + escapeHtml(lot.batch || '—') + '</td>' +
+              '<td style="padding:4px 6px;font-weight:600;color:var(--pm-header-ink, #0b2a4a);">' + escapeHtml(lot.batch || '—') + '</td>' +
               '<td style="padding:4px 6px;"><span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-weight:600;">' + escapeHtml(lot.location || '—') + '</span></td>' +
               '<td style="padding:4px 6px;color:#64748b;">' + escapeHtml(lot.grnNo || '—') + '</td>' +
               '<td style="padding:4px 6px;text-align:right;font-weight:600;">' + Number(lot.qty).toFixed(3) + ' ' + escapeHtml(c.compUom) + '</td>' +
@@ -958,13 +958,13 @@
       if (!w) { showToast('Pop-up blocked. Allow pop-ups to print.', 'error'); return; }
       var html = '<!doctype html><html><head><title>Pick List ' + escapeHtml(PICK_LIST.fgCode) + '</title>' +
         '<style>body{font-family:Arial,sans-serif;padding:18px;color:#222;}' +
-        'h1{font-size:17px;margin:0 0 4px;}h2{font-size:12px;margin:14px 0 6px;color:#0B2A4A;border-bottom:1px solid #ccc;padding-bottom:3px;}' +
+        'h1{font-size:17px;margin:0 0 4px;}h2{font-size:12px;margin:14px 0 6px;color:var(--pm-header-ink, #0b2a4a);border-bottom:1px solid #ccc;padding-bottom:3px;}' +
         '.meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:11px;border:1px solid #ccc;padding:8px;border-radius:4px;margin-bottom:12px;}' +
         'table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px;}' +
         'th,td{border:1px solid #999;padding:4px 6px;}' +
-        'th{background:#0B2A4A;color:#fff;text-align:left;}' +
+        'th{background:var(--pm-header-ink, #0b2a4a);color:#fff;text-align:left;}' +
         '.chkcol{width:32px;text-align:center;}' +
-        '.tick{display:inline-block;width:14px;height:14px;border:1.5px solid #0B2A4A;border-radius:2px;background:#0B2A4A;color:#fff;font-size:11px;line-height:14px;text-align:center;}' +
+        '.tick{display:inline-block;width:14px;height:14px;border:1.5px solid #0B2A4A;border-radius:2px;background:var(--pm-header-ink, #0b2a4a);color:#fff;font-size:11px;line-height:14px;text-align:center;}' +
         '.empty{display:inline-block;width:14px;height:14px;border:1.5px solid #999;border-radius:2px;}' +
         '.sig{margin-top:22px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;font-size:11px;}' +
         '.sig div{border-top:1px solid #333;padding-top:4px;text-align:center;}' +
@@ -999,7 +999,7 @@
         html += '</tbody></table>';
       });
       html += '<div class="sig"><div>Picked By (Stores)</div><div>Verified By</div><div>Received By (Production)</div></div>' +
-        '<div style="margin-top:14px;text-align:right;"><button onclick="window.print()" style="padding:8px 16px;font-size:13px;background:#0B2A4A;color:#fff;border:none;border-radius:4px;cursor:pointer;">🖨 Print</button></div>' +
+        '<div style="margin-top:14px;text-align:right;"><button onclick="window.print()" style="padding:8px 16px;font-size:13px;background:var(--pm-header-ink, #0b2a4a);color:#fff;border:none;border-radius:4px;cursor:pointer;">🖨 Print</button></div>' +
         '</body></html>';
       w.document.write(html);
       w.document.close();

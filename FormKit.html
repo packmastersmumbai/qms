@@ -25,10 +25,31 @@
     /* #94A3B8 was 2.56:1 on white — below the 4.5:1 WCAG AA minimum, and this token
        paints the "Optional" field hints on every form. #64748B is 4.76:1: same slate
        hue, one step darker. Do not lighten past #6B7280 (4.83:1) without re-checking. */
-    --fk-faint:              #64748B;
+    --fk-faint:              var(--pm-faint, #64748B);
     /* lines */
     --fk-hairline:           #E5E7EB;
     --fk-hairline-strong:    #CBD5E1;
+    /* Neutral/surface ramp — added 2026-08-03 by /impeccable extract.
+       The SIGNAL ramp below was already complete and tokenised; these six neutrals
+       were the real gap: every one appears 13+ times as a raw literal across the
+       forms, and #E2E8F0 alone appears 178 times. Named for their ROLE, not their
+       value, so a future palette change is one edit.
+         border     #E2E8F0  the default 1px card/input border (178 uses)
+         page       #F8FAFC  the page canvas behind cards (59)
+         input-line #D1D5DB  the heavier 1.5px input border (45)
+         chip       #F1F5F9  unselected pill/chip fill (44)
+         info-soft  #EFF6FF  informational tint (16)
+         header-ink #0B2A4A  sheet/table header fill (24) */
+       Each REFERENCES its --pm-* counterpart in Theme.html rather than repeating the
+       literal. Theme is included by all 23 forms, FormKit by 7; duplicating the value
+       is how --pm-faint kept a failing 2.56:1 contrast for a day after --fk-faint was
+       fixed. The fallback keeps FormKit standalone if Theme is ever absent. */
+    --fk-border:             var(--pm-border, #E2E8F0);
+    --fk-page:               var(--pm-page, #F8FAFC);
+    --fk-input-line:         var(--pm-input-line, #D1D5DB);
+    --fk-chip:               var(--pm-chip, #F1F5F9);
+    --fk-info-soft:          var(--pm-info-soft, #EFF6FF);
+    --fk-header-ink:         var(--pm-header-ink, #0B2A4A);
     /* signal states — colour is reserved for these, never decoration */
     --fk-pass:  #16A34A;  --fk-pass-soft: #DCFCE7;  --fk-pass-deep: #15803D;
     --fk-fail:  #DC2626;  --fk-fail-soft: #FEE2E2;  --fk-fail-deep: #B91C1C;

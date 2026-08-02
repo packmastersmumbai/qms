@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; background:#f8fafc; color:#0f172a; min-height:max(884px,100dvh); }
+    body { font-family: 'Inter', sans-serif; background:var(--pm-page, #f8fafc); color:#0f172a; min-height:max(884px,100dvh); }
     h1,h2,h3,.font-headline { font-family:'Plus Jakarta Sans',sans-serif; }
 
     /* Tab strip */
@@ -42,7 +42,7 @@
 
     /* Skeleton */
     @keyframes skel-pulse { 0%{opacity:.4}50%{opacity:1}100%{opacity:.4} }
-    .skel-bar { display:inline-block; height:13px; background:#e2e8f0; border-radius:4px; animation:skel-pulse 0.8s ease-in-out infinite; }
+    .skel-bar { display:inline-block; height:13px; background:var(--pm-border, #e2e8f0); border-radius:4px; animation:skel-pulse 0.8s ease-in-out infinite; }
 
     /* ── FILTER BAR ── */
     .filter-zone { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
@@ -61,13 +61,13 @@
     /* ── SUMMARY BAR ── */
     .summary-bar { font-size:11px; color:#64748b; padding:4px 0 2px; display:flex; align-items:center; gap:10px; }
     .summary-bar strong { color:#1e3a5f; font-weight:700; }
-    .summary-pill { display:inline-flex; align-items:center; gap:3px; background:#f1f5f9; border-radius:6px; padding:2px 8px; font-weight:600; }
+    .summary-pill { display:inline-flex; align-items:center; gap:3px; background:var(--pm-chip, #f1f5f9); border-radius:6px; padding:2px 8px; font-weight:600; }
 
     /* ── STOCK TABLE ── */
     .stock-wrap { overflow-x:auto; background:#fff; box-shadow:0 1px 6px rgba(30,58,95,.07); }
     .stock-tbl { width:100%; border-collapse:collapse; }
     .stock-tbl thead th {
-      background:#f1f5f9; color:#1e3a5f; font-size:11px; font-weight:700;
+      background:var(--pm-chip, #f1f5f9); color:#1e3a5f; font-size:11px; font-weight:700;
       text-transform:uppercase; letter-spacing:.4px; padding:10px 14px;
       text-align:left; white-space:nowrap;
       position:sticky; top:0; z-index:5;
@@ -98,7 +98,7 @@
     .ledger-table thead th:last-child,.ledger-table tbody td:last-child { text-align:right; }
     .ledger-table thead th:nth-child(4),.ledger-table tbody td:nth-child(4) { text-align:right; }
     .ledger-table tbody tr { border-top:1px solid #f1f5f9; }
-    .ledger-table tbody tr:hover { background:#f8fafc; }
+    .ledger-table tbody tr:hover { background:var(--pm-page, #f8fafc); }
     .ledger-table tbody td { padding:7px 6px; vertical-align:middle; }
     .lt-dot  { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; flex-shrink:0; vertical-align:middle; }
     .lt-type { font-weight:700; text-transform:uppercase; letter-spacing:.3px; font-size:10px; white-space:nowrap; }
@@ -106,10 +106,10 @@
     .lt-delta{ font-weight:700; font-size:13px; white-space:nowrap; }
     .lt-bal  { font-size:10px; color:#94a3b8; white-space:nowrap; }
     .lt-ts   { font-size:10px; color:#94a3b8; white-space:nowrap; }
-    .ledger-expand-row td { padding:0; background:#f8fafc; border-bottom:2px solid #e2e8f0; }
+    .ledger-expand-row td { padding:0; background:var(--pm-page, #f8fafc); border-bottom:2px solid #e2e8f0; }
     .ledger-expand-inner { padding:10px 14px 12px 22px; }
-    .batch-row.ledger-open { background:#eff6ff !important; }
-    .batch-row.ledger-open td { background:#eff6ff !important; }
+    .batch-row.ledger-open { background:var(--pm-info-soft, #eff6ff) !important; }
+    .batch-row.ledger-open td { background:var(--pm-info-soft, #eff6ff) !important; }
 
     /* Type accent stripe */
     .stripe-rm         { border-left:3px solid #3b5bdb; }
@@ -140,7 +140,7 @@
     .iqc-badge { font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; }
 
     /* Location type chip */
-    .loc-chip    { display:inline-block; font-size:10px; padding:2px 7px; border-radius:12px; background:#e2e8f0; color:#1e3a5f; font-weight:600; }
+    .loc-chip    { display:inline-block; font-size:10px; padding:2px 7px; border-radius:12px; background:var(--pm-border, #e2e8f0); color:#1e3a5f; font-weight:600; }
     .loc-chip.q  { background:#FFE9D6; color:#B5650F; }
     .loc-chip.s  { background:#FCD9D9; color:#A4271A; }
     .loc-chip.sm { background:#E7EBFA; color:#4F4E96; }
@@ -156,15 +156,15 @@
     /* Loc table */
     .wh-table { width:100%; border-collapse:collapse; }
     .wh-table thead th {
-      background:#f1f5f9; color:#1e3a5f; font-size:11px; font-weight:700;
+      background:var(--pm-chip, #f1f5f9); color:#1e3a5f; font-size:11px; font-weight:700;
       text-transform:uppercase; letter-spacing:.5px; padding:8px 10px;
       text-align:left; white-space:nowrap;
     }
     .wh-table tbody tr  { border-bottom:1px solid #e2e8f0; }
-    .wh-table tbody tr:nth-child(even) { background:#f8fafc; }
+    .wh-table tbody tr:nth-child(even) { background:var(--pm-page, #f8fafc); }
     .wh-table tbody td  { padding:9px 10px; font-size:12px; color:#0f172a; vertical-align:middle; }
     .loc-row { cursor:pointer; }
-    .loc-row:hover { background:#eff6ff !important; }
+    .loc-row:hover { background:var(--pm-info-soft, #eff6ff) !important; }
 
     /* Movements */
     .mv-card { background:#fff; border-radius:12px; border:1px solid #e2e8f0; padding:12px 14px; margin-bottom:8px; }
@@ -208,7 +208,7 @@
     .btn-primary   { background:#1e3a5f; color:#fff; }
     .btn-primary:hover:not(:disabled) { background:#162e4f; }
     .btn-ghost     { background:transparent; color:#64748b; }
-    .btn-ghost:hover { background:#f1f5f9; }
+    .btn-ghost:hover { background:var(--pm-chip, #f1f5f9); }
     .btn-danger    { background:#dc2626; color:#fff; }
 
     /* Toast */
@@ -631,7 +631,7 @@
         batchRows = g.batches.map(function(r, bi) {
           var statusHtml = '';
           if (t === 'rm' || t === 'pm' || t === 'fg') statusHtml = iqcBadge(r.status);
-          else if (r.status) statusHtml = '<span style="background:#f1f5f9;color:#475569;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;">' + esc(r.status) + '</span>';
+          else if (r.status) statusHtml = '<span style="background:var(--pm-chip, #f1f5f9);color:#475569;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;">' + esc(r.status) + '</span>';
 
           return '<tr class="batch-row" data-gi="' + gi + '" data-bi="' + bi + '" onclick="toggleLedger(this)">' +
             '<td style="border-left:3px solid ' + typeColor + ';background:#fafafa;"></td>' +
@@ -789,7 +789,7 @@
   // ── Skeleton ──
   function showSkeleton() {
     document.getElementById('stockSkelWrap').innerHTML =
-      [0,1,2,3,4].map(function(){ return '<div style="height:36px;background:#e2e8f0;border-radius:6px;margin-bottom:4px;animation:skel-pulse .8s ease-in-out infinite;"></div>'; }).join('');
+      [0,1,2,3,4].map(function(){ return '<div style="height:36px;background:var(--pm-border, #e2e8f0);border-radius:6px;margin-bottom:4px;animation:skel-pulse .8s ease-in-out infinite;"></div>'; }).join('');
     var wrap = document.getElementById('stockWrap');
     if (wrap) wrap.style.display = 'none';
   }
