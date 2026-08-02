@@ -6,7 +6,7 @@
 -->
 <script>
 (function(){
-  var PFX = 'pmqms_html_v30_'; // bump on breaking layout changes to force cache reset
+  var PFX = 'pmqms_html_v53_'; // bump on breaking layout changes to force cache reset
   var TTL_MS = 5 * 60 * 1000; // 5 min — HTML is largely static; CacheService handles data freshness
 
   // One-time sweep: remove any older-version cache keys lingering in sessionStorage.
@@ -64,16 +64,54 @@
       window.location.reload();
       return;
     }
+    // Watchdog: google.script.run can hang indefinitely when the page's bridge
+    // is stale (e.g. the tab was open across a deploy) — neither handler ever
+    // fires and the loader sits on "Opening …" forever with no way out.
+    // A hard reload re-establishes the bridge and picks up the new version.
+    var settled = false;
+    var watchdog = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      try { clearAll(); } catch (e) {}          // drop any stale cached HTML
+      window.location.reload();
+    }, 15000);
+
     google.script.run
       .withSuccessHandler(function(html){
+        if (settled) return;
+        settled = true; clearTimeout(watchdog);
         writeCache(form, html);
         document.open(); document.write(html); document.close();
       })
-      .withFailureHandler(function(){
+      .withFailureHandler(function(e){
+        if (settled) return;
+        settled = true; clearTimeout(watchdog);
         hideInlineLoader();
-        alert('Could not open ' + form);
+        showLoadError(form, (e && e.message) || 'Connection problem');
       })
       .getFormHtml(form);
+  }
+
+  // Recoverable error panel — alert() is unreliable inside the GAS double-iframe,
+  // and a bare alert left the user on a dead page with no way to retry.
+  function showLoadError(form, msg) {
+    var d = document.createElement('div');
+    d.id = '__pmqms_err__';
+    d.style.cssText = 'position:fixed;inset:0;background:#f8fafc;color:#0f172a;display:flex;' +
+      'flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:14px;' +
+      'font-family:Inter,system-ui,sans-serif;padding:24px;text-align:center;';
+    d.innerHTML =
+      '<div style="font-size:15px;font-weight:700;">Could not open ' + form + '</div>' +
+      '<div style="font-size:13px;color:#6B7280;max-width:340px;">' + msg + '</div>' +
+      '<button type="button" id="__pmqms_retry__" style="min-height:44px;padding:0 22px;border:0;' +
+      'border-radius:8px;background:#0D1B6E;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">' +
+      'Reload</button>';
+    document.body.appendChild(d);
+    var btn = document.getElementById('__pmqms_retry__');
+    if (btn) btn.addEventListener('click', function () {
+      try { clearAll(); } catch (e) {}
+      window.location.reload();
+    });
   }
 
   function prefetch(forms) {
