@@ -164,6 +164,40 @@
 
     /* ── Table loading dim ── */
     .table-loading { opacity: 0.45; pointer-events: none; transition: opacity 0.1s; }
+    /* pt-[150px] and max-w-[880px] on #mainContent are arbitrary-value classes
+       absent from this project's static Tailwind block, so both resolved to
+       nothing: the list had no width cap and slid under the fixed header.
+       Declared as real CSS. 960px matches every other QMS screen. */
+    #mainContent { max-width: 960px; margin: 0 auto; padding-top: 150px; }
+    /* Touch targets — DESIGN.md mandates 48px for gloved shop-floor use.
+       Record-type tabs were 40px; the status filter pills were 28px, the
+       worst offenders on this screen. Both are primary navigation.
+       Desktop shrinks them back via the density rule below. */
+    .tab-btn { min-height: 48px; }
+    #statusBar .status-pill { min-height: 48px; padding-inline: 14px; }
+    /* 8px minimum between adjacent targets (WCAG 2.2 target spacing). The tab
+       and status rows previously sat with sub-8px gaps, so a gloved fingertip
+       spanning two pills could fire the wrong filter. */
+    #tabBar, #statusBar { gap: 10px; }
+    /* Time-range pills measured 19px tall: their h-[30px] utility is absent
+       from the static Tailwind bundle, so the height came from padding alone.
+       The date-range calendar toggle was 18x18px — the smallest target in the
+       app. Both are declared here in real CSS. */
+    .time-pill { min-height: 48px; }
+    #customDateBtn { min-width: 48px; min-height: 48px; display: inline-flex;
+                     align-items: center; justify-content: center; }
+    #fromDate, #toDate { min-height: 48px; }
+    @media (min-width: 900px) and (pointer: fine) {
+      /* Dates are fixed-length; the search box legitimately spans the width. */
+      #fromDate, #toDate { max-width: 180px; height: 36px; font-size: 14px; }
+      #searchInput { height: 36px; font-size: 14px; }
+      .tab-btn { min-height: 36px; }
+      #statusBar .status-pill { min-height: 30px; }
+      #tabBar, #statusBar { gap: 8px; }
+      .time-pill { min-height: 30px; }
+      #customDateBtn { min-width: 32px; min-height: 32px; }
+      #fromDate, #toDate { min-height: 36px; }
+    }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('HtmlCache') ?>

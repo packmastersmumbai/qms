@@ -21,6 +21,78 @@
     input,select,textarea { font-size:16px !important; }
     button { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 
+    /* Header clearance + bottom clearance as REAL CSS.
+       TailwindBundle.html is a static pre-compiled block with no JIT, and it
+       contains no arbitrary padding/margin utilities at all — pt-[96px],
+       pt-[72px], pb-[88px] and pb-[100px] all silently resolve to 0, so the
+       form rendered underneath the fixed header. Verified in-browser: a probe
+       div with pt-[96px] computes to 0px (h-[56px] does work, so this is
+       specific to spacing). Heights are left to the utilities that do resolve. */
+    #iqcIntro    { padding-top: 96px; padding-bottom: 88px; }
+    /* Collapse the chips row until it actually holds chips. */
+    #materialChips:empty { display: none; }
+
+    /* ── Multi-item chips ─────────────────────────────────────────────────
+       One chip per GRN line. They WRAP: a 10-line GRN previously overflowed
+       its row, and every chip rendered identically because the material code
+       led the label. Batch leads now, since that is what differs. */
+    #materialChips { flex-wrap: wrap; gap: 8px; }
+    .iqc-chip {
+      display: flex; flex-direction: column; align-items: flex-start;
+      min-height: 48px; padding: 6px 12px;      /* 48px: gloved shop-floor use */
+      border: 1.5px solid var(--fk-hairline-strong, #CBD5E1);
+      border-radius: 8px; background: #fff; cursor: pointer;
+      font-family: 'Inter', sans-serif; text-align: left;
+      transition: border-color .15s, background .15s;
+    }
+    .iqc-chip:hover { border-color: var(--fk-muted, #6B7280); }
+    /* The active item must be unmistakable — an inspector recording a result
+       needs to know which lot it lands on. */
+    .iqc-chip.is-active {
+      border-color: var(--fk-primary, #0D1B6E); border-width: 2px;
+      background: var(--fk-primary-soft, #EEF1FA);
+    }
+    .iqc-chip-num {
+      font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      color: var(--fk-muted, #6B7280);
+    }
+    .iqc-chip.is-active .iqc-chip-num { color: var(--fk-primary, #0D1B6E); }
+    .iqc-chip-main {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 13px; font-weight: 600; color: var(--fk-ink, #0F172A);
+      line-height: 1.25;
+    }
+    .iqc-chip-sub { font-size: 11px; color: var(--fk-muted, #6B7280); }
+
+    /* Desktop: the sticky action bar is a toolbar, not a thumb bar. The 52px
+       button + 16px padding made an 85px strip that dominated the viewport. */
+    @media (min-width: 900px) and (pointer: fine) {
+      #stickyBtn { height: 36px; font-size: 14px; padding: 0 18px; }
+      .fixed.bottom-0.left-0.w-full.bg-white { padding: 8px 16px; }
+    }
+    main#iqcForm { padding-top: 72px; padding-bottom: 100px; }
+
+    /* Focus visibility (WCAG 2.4.7) — :focus-visible only, so a touch tap never
+       paints a ring but keyboard/switch users always see position.
+       DESIGN.md link token #0070F3. */
+    :focus-visible { outline:2px solid #0070F3; outline-offset:2px; border-radius:3px; }
+
+    /* Reduced motion (WCAG 2.3.3) — state changes still commit, the motion goes. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration:0.01ms !important; animation-iteration-count:1 !important;
+        transition-duration:0.01ms !important; scroll-behavior:auto !important;
+      }
+    }
+
+    /* GRN item-list load failure — persistent, cannot be missed or dismissed.
+       DESIGN.md hold tokens (hold-soft bg / hold border / hold-deep text). */
+    #grnLoadWarn {
+      margin-top:8px; padding:8px 10px; border-radius:6px;
+      background:#FEF3C7; border-left:3px solid #D97706; color:#B45309;
+      font-size:12px; font-weight:600; line-height:1.45;
+    }
+
     /* Param row states */
     .info-btn { background:none; border:none; cursor:pointer; color:#2563eb; font-size:14px; line-height:1; padding:0 2px; }
     .info-pop { position:absolute; z-index:60; max-width:250px; background:#fff; color:#1e293b; border:1px solid #cbd5e1; border-radius:8px; padding:10px; font-size:12px; line-height:1.4; box-shadow:0 4px 16px rgba(0,0,0,.12); }
@@ -79,7 +151,7 @@
     <button id="s1BackBtn" onclick="onScreen1Back()" aria-label="Go Back" class="text-white active:scale-95 transition-transform p-2 -ml-2">
       <span class="material-symbols-outlined">arrow_back</span>
     </button>
-    <h1 class="font-headline text-[20px] font-bold text-white text-center flex-1">IQC Inspection</h1>
+    <h1 class="font-headline text-[18px] font-bold text-white text-center flex-1">IQC Inspection</h1>
     <span id="docBadge" class="text-[13px] font-semibold text-white/90 bg-white/20 px-3 py-1 rounded-full">IQC</span>
   </div>
   <div class="flex items-center justify-between px-4 py-1.5 bg-primary/90 border-t border-white/10">
@@ -90,73 +162,69 @@
 
 <!-- ══════════════════════ SCREEN 1: INSPECTION ══════════════════════ -->
 <div id="screen1">
-<main class="pt-[96px] px-4 space-y-3 max-w-3xl mx-auto w-full">
+<main id="iqcIntro" class="px-4 space-y-3 max-w-3xl mx-auto w-full">
 
   <!-- GRN Selector Card -->
-  <section id="manualSection" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
-    <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Select GRN to Inspect</label>
-    <div class="relative mb-3">
-      <select id="grnNo" class="w-full h-[52px] border-[1.5px] border-accent rounded-lg text-[16px] text-text-value px-3 appearance-none focus:outline-none bg-white">
-        <option value="">— Select GRN —</option>
+  <section id="manualSection" class="fk-card">
+    <div class="fk-field">
+      <label class="fk-label" for="grnNo">Select GRN to Inspect</label>
+      <select id="grnNo" class="fk-select fk-select-hero" disabled>
+        <!-- Starts disabled: getIQCFormInit takes ~5-8s, and an enabled select
+             showing "— Select GRN —" with nothing in it reads as "there are no
+             GRNs / I can't add an item". onInitLoaded re-enables it. -->
+        <option value="">Loading GRNs…</option>
       </select>
-      <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
     </div>
-    <!-- Material chips (populated on GRN select) -->
+    <!-- Material chips (populated on GRN select). :empty collapses it so an
+         unselected GRN doesn't leave a gap between the select and Inspector. -->
     <div id="materialChips" class="flex flex-wrap gap-2"></div>
 
-    <!-- Inspector + AQL: single column per DESIGN.md -->
-    <div class="flex flex-col gap-3 mt-3">
-      <div>
-        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Inspector</label>
-        <div class="relative">
-          <select id="inspector" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
-            <option value="">— Select —</option>
-          </select>
-          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
-        </div>
+    <!-- Inspector, then Lot/AQL/Level on one row. (The old "single column per
+         DESIGN.md" note cited the superseded 430px-mobile-only spec; the Stitch
+         authority states DESKTOP IS SUPPORTED.) -->
+    <div class="flex flex-col gap-3">
+      <div class="fk-field">
+        <label class="fk-label" for="inspector">Inspector</label>
+        <select id="inspector" class="fk-select fk-w-mid">
+          <option value="">— Select —</option>
+        </select>
       </div>
-      <!-- ── ISO 2859-1 sampling plan ── -->
-      <div class="grid grid-cols-3 gap-2">
-        <div>
-          <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">Lot size <span class="text-status-danger">*</span></label>
+      <!-- ── ISO 2859-1 sampling plan ──
+           Auto-fit row: these are all short values, so they sit on one line on
+           desktop and wrap on narrow screens. Widths come from the content, not
+           the container — lot size is a number, not a 229px field. -->
+      <div class="fk-row tight">
+        <div class="fk-field">
+          <label class="fk-label" for="lotSize">Lot size <span class="req">*</span></label>
           <input id="lotSize" type="number" inputmode="numeric" min="1" placeholder="0"
-            class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] font-mono text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+            class="fk-input mono fk-w-num">
         </div>
-        <div>
-          <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">AQL</label>
-          <div class="relative">
-            <select id="aqlLevel" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
-              <option value="2.5">2.5</option>
-              <option value="0.65">0.65</option>
-              <option value="1.0">1.0</option>
-              <option value="1.5">1.5</option>
-              <option value="4.0">4.0</option>
-              <option value="6.5">6.5</option>
-            </select>
-            <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
-          </div>
+        <div class="fk-field">
+          <label class="fk-label" for="aqlLevel">AQL</label>
+          <select id="aqlLevel" class="fk-select fk-w-num">
+            <option value="2.5">2.5</option>
+            <option value="0.65">0.65</option>
+            <option value="1.0">1.0</option>
+            <option value="1.5">1.5</option>
+            <option value="4.0">4.0</option>
+            <option value="6.5">6.5</option>
+          </select>
         </div>
-        <div>
-          <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">Level</label>
-          <div class="relative">
-            <select id="inspLevel" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
-              <option value="II">II</option>
-              <option value="I">I</option>
-              <option value="III">III</option>
-            </select>
-            <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
-          </div>
+        <div class="fk-field">
+          <label class="fk-label" for="inspLevel">Level</label>
+          <select id="inspLevel" class="fk-select fk-w-num">
+            <option value="II">II</option>
+            <option value="I">I</option>
+            <option value="III">III</option>
+          </select>
         </div>
-        <div>
-          <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">Severity</label>
-          <div class="relative">
-            <select id="samplingSeverity" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
+        <div class="fk-field">
+          <label class="fk-label" for="samplingSeverity">Severity</label>
+          <select id="samplingSeverity" class="fk-select fk-w-code">
               <option value="Normal">Normal</option>
               <option value="Tightened">Tightened</option>
               <option value="Reduced">Reduced</option>
-            </select>
-            <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
-          </div>
+          </select>
         </div>
       </div>
       <!-- Method is single-sampling (ISO 2859-1); Ac/Re for Tightened/Reduced still
@@ -182,17 +250,16 @@
       <div id="samplingErr" class="mt-2 text-[12px] text-status-danger hidden"></div>
     </div>
 
-    <!-- PO Reference + Invoice No -->
-    <div class="flex flex-col gap-3 mt-3">
-      <div>
-        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">PO Reference <span class="font-normal text-text-helper">(optional)</span></label>
-        <input id="poRef" type="text" placeholder="e.g. PO-2025-0042"
-          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+    <!-- PO Reference + Invoice No — both short codes, so they pair on one row
+         and stop at their content width instead of spanning 702px each. -->
+    <div class="fk-row tight">
+      <div class="fk-field">
+        <label class="fk-label" for="poRef">PO Reference <span class="opt">Optional</span></label>
+        <input id="poRef" type="text" placeholder="e.g. PO-2025-0042" class="fk-input fk-w-short">
       </div>
-      <div>
-        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Invoice No. <span class="font-normal text-text-helper">(optional)</span></label>
-        <input id="invoiceNo" type="text" placeholder="Supplier invoice number"
-          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+      <div class="fk-field">
+        <label class="fk-label" for="invoiceNo">Invoice No. <span class="opt">Optional</span></label>
+        <input id="invoiceNo" type="text" placeholder="Supplier invoice number" class="fk-input fk-w-short">
       </div>
     </div>
 
@@ -206,6 +273,9 @@
   <div id="prefillStrip" style="display:none" class="bg-blue-50 border-l-4 border-accent rounded-lg p-3">
     <div id="pfItemName" class="text-[14px] font-semibold text-primary"></div>
     <div id="pfMeta" class="text-[12px] text-text-helper mt-1"></div>
+    <!-- Shown only when the GRN item list could not be loaded. DESIGN.md hold
+         tokens: hold #D97706 / hold-soft #FEF3C7 / hold-deep #B45309. -->
+    <div id="grnLoadWarn" role="alert" style="display:none"></div>
   </div>
 
   <!-- IQC doc number -->
@@ -228,7 +298,7 @@
   <div id="paramSectionWrap"></div>
 
   <!-- Disposition card -->
-  <section id="dispCard" style="display:none" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-5">
+  <section id="dispCard" style="display:none" class="fk-card">
     <h3 class="font-headline text-[16px] font-semibold text-text-heading">Final Disposition</h3>
 
     <!-- Locked placeholder -->
@@ -264,26 +334,26 @@
       </div>
       <div class="flex flex-col gap-3 mb-4">
         <div>
-          <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty Accepted</label>
+          <label class="fk-label">Qty Accepted</label>
           <input id="acceptedQty" type="number" min="0" placeholder="0"
-            class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+            class="fk-input">
         </div>
         <div>
-          <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty Rejected</label>
+          <label class="fk-label">Qty Rejected</label>
           <input id="rejectedQty" type="number" min="0" placeholder="0"
-            class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+            class="fk-input">
         </div>
         <div>
-          <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Qty On Hold <span class="font-normal text-text-helper">(pending decision)</span></label>
+          <label class="fk-label">Qty On Hold <span class="font-normal text-text-helper">(pending decision)</span></label>
           <input id="holdQty" type="number" min="0" placeholder="0"
             class="w-full h-[44px] border-[1.5px] border-amber-300 rounded-lg text-[16px] text-text-value px-3 focus:border-amber-400 focus:outline-none bg-amber-50">
         </div>
         <div id="qtyMismatchWarn" class="hidden bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 text-[12px] text-amber-700 font-medium"></div>
       </div>
       <div>
-        <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Sample Size</label>
+        <label class="fk-label">Sample Size</label>
         <input id="sampleSize" type="number" min="0" placeholder="0"
-          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+          class="fk-input">
       </div>
     </div>
   </section>
@@ -310,14 +380,14 @@
   <button id="s2BackBtn" class="text-white active:scale-95 transition-transform p-2 -ml-2">
     <span class="material-symbols-outlined">arrow_back</span>
   </button>
-  <h1 class="font-headline text-[20px] font-bold text-white text-center flex-1">IQC Summary</h1>
+  <h1 class="font-headline text-[18px] font-bold text-white text-center flex-1">IQC Summary</h1>
   <span class="w-10"></span>
 </header>
 
 <main id="iqcForm" class="pt-[72px] px-4 space-y-3 mx-auto max-w-3xl pb-[100px] w-full">
 
   <!-- Batch info -->
-  <section class="span-2 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border">
+  <section class="span-2 fk-card">
     <div id="sumBatchName" class="text-[15px] font-semibold text-primary font-headline"></div>
     <div id="sumBatchMeta" class="text-[13px] text-text-helper mt-1"></div>
   </section>
@@ -331,7 +401,7 @@
   </section>
 
   <!-- Overall disposition -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+  <section class="fk-card">
     <h3 class="font-headline text-[16px] font-semibold text-text-heading">Overall Disposition</h3>
     <div class="grid grid-cols-3 gap-2">
       <button id="odAcc" onclick="setOverallDisp('ACCEPTED')"
@@ -354,9 +424,9 @@
   </section>
 
   <!-- Remarks + NCR/Deviation refs -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+  <section class="fk-card">
     <div>
-      <label class="block font-label text-[14px] font-medium text-text-field mb-[6px]">Remarks</label>
+      <label class="fk-label">Remarks</label>
       <textarea id="remarks" rows="3" placeholder="Any deviations, observations, or notes"
         class="w-full border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value p-3 focus:border-accent focus:outline-none bg-white resize-none"></textarea>
     </div>
@@ -375,7 +445,7 @@
   </section>
 
   <!-- Signatures -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+  <section class="fk-card">
     <h3 class="font-headline text-[15px] font-semibold text-text-heading">Signatures</h3>
     <div class="flex flex-col gap-3">
       <div>
@@ -386,18 +456,18 @@
       <div>
         <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">Store In-Charge</label>
         <input id="storeInCharge" type="text" placeholder="Name"
-          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[15px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+          class="fk-input">
       </div>
       <div>
         <label class="block font-label text-[13px] font-medium text-text-field mb-[6px]">QA Manager</label>
         <input id="qaManager" type="text" placeholder="Name"
-          class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[15px] text-text-value px-3 focus:border-accent focus:outline-none bg-white">
+          class="fk-input">
       </div>
     </div>
   </section>
 
   <!-- Image Upload -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+  <section class="fk-card">
     <div class="flex items-center gap-2">
       <span class="material-symbols-outlined text-[20px] text-text-helper">photo_camera</span>
       <h3 class="font-headline text-[15px] font-semibold text-text-heading">IQC Documents <span class="text-[12px] font-normal text-text-helper">(photos, optional, max 5)</span></h3>
@@ -412,7 +482,7 @@
   </section>
 
   <!-- Defect Video Upload -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
+  <section class="fk-card">
     <div class="flex items-center gap-2">
       <span class="material-symbols-outlined text-[20px] text-text-helper">videocam</span>
       <h3 class="font-headline text-[15px] font-semibold text-text-heading">IQC Video <span class="text-[12px] font-normal text-text-helper">(optional)</span></h3>
@@ -542,11 +612,18 @@ function loadParamsForProduct(materialCode){
     if (!itemData[currentIdx]) return;
     itemData[currentIdx].params = itemData[currentIdx].params || {};
     if (typeof buildParamSection === 'function') buildParamSection();
-  }).withFailureHandler(function(){ /* keep legacy defaults */ }).getIqcParamsForProduct(materialCode);
+  }).withFailureHandler(function(e){
+    // Keeps the legacy default parameters, but the inspector MUST be told:
+    // these may not be the category-specific params for this material, and
+    // inspecting against the wrong parameter set is a silent quality escape.
+    showToast('Could not load inspection parameters for ' + materialCode +
+              ' — using generic defaults. Verify against the Control Plan.', 'warning');
+  }).getIqcParamsForProduct(materialCode);
 }
 
 /* ── State ── */
-var formSaved      = false;
+var formSaved          = false;
+var _iqcSaveInFlight   = false;  // true between save dispatch and its response
 var lastSavedDocNo = '';
 var prefill        = null;
 var initData       = null;
@@ -668,7 +745,13 @@ pmReady(function() {
 
   google.script.run
     .withSuccessHandler(onInitLoaded)
-    .withFailureHandler(function(e) { showToast(e.message || 'Load error', 'error'); })
+    .withFailureHandler(function(e) {
+      // Must re-enable: the select starts disabled showing "Loading GRNs…", so
+      // without this a load failure leaves it stuck on that label forever.
+      var gs = document.getElementById('grnNo');
+      if (gs) { gs.disabled = false; gs.options[0].textContent = 'Could not load GRNs — reload'; }
+      showToast((e && e.message) || 'Could not load GRN list — check connection and reload.', 'error');
+    })
     .getIQCFormInit();
 });
 
@@ -704,13 +787,26 @@ function onInitLoaded(d) {
   // Sampling method / severity is fixed to Normal single sampling — no dropdown.
 
   var gSel = document.getElementById('grnNo');
-  (d.recentGRNs || []).forEach(function(g) {
+  var grnList = d.recentGRNs || [];
+  grnList.forEach(function(g) {
     GRN_MAP[g.grnNo] = g;
     var go = document.createElement('option');
     go.value = g.grnNo;
     go.textContent = g.grnNo + ' — ' + (g.supplierName || '').substring(0,24) + (g.date ? ' (' + g.date + ')' : '');
     gSel.appendChild(go);
   });
+  // getIQCFormInit takes ~5-8s. Until it returns, the select is disabled and
+  // reads "Loading GRNs…" — previously it sat ENABLED and empty, which users
+  // read as "there are no GRNs / I can't add an item".
+  // The empty result is stated explicitly rather than shown as a blank list,
+  // because "none pending" and "still loading" must not look identical.
+  gSel.options[0].textContent = grnList.length
+    ? '— Select GRN —'
+    : 'No GRNs pending IQC';
+  gSel.disabled = false;
+  if (!grnList.length) {
+    showToast('No GRNs are pending IQC right now.', 'warning');
+  }
 
   // Prefill from Records "Do IQC" routing
   try {
@@ -729,6 +825,33 @@ function onInitLoaded(d) {
   if (prefill && prefill.grnId) renderPrefill();
 }
 
+/* Fallback when the GRN item list is unavailable or empty.
+   Renders the single scanned item, but marks the form as UNVERIFIED so the
+   inspector can see the list is incomplete. Toast alone is not enough — it
+   disappears, and this state must survive scrolling and tab switches. */
+function _usePrefillFallback(reason) {
+  currentItems = [{
+    materialCode: prefill.itemCode || '',
+    materialDesc: prefill.itemName || prefill.itemCode || 'Item',
+    batchNo:      prefill.batchNo  || '', qtyReceived: '', unit: ''
+  }];
+  itemData   = [makeBlankItemData()];
+  currentIdx = 0;
+
+  var warn = document.getElementById('grnLoadWarn');
+  if (warn) {
+    warn.textContent = reason;
+    warn.style.display = 'block';
+  }
+  var meta = document.getElementById('pfMeta');
+  if (meta) {
+    meta.textContent = (prefill.supplierName || '') +
+      ' · GRN #' + (prefill.grnId || '') + ' · item list unavailable';
+  }
+  showToast(reason, 'warning');
+  renderCurrentItem();
+}
+
 /* ── Prefill mode ── */
 function renderPrefill() {
   document.getElementById('prefillStrip').style.display = '';
@@ -744,16 +867,13 @@ function renderPrefill() {
     google.script.run
       .withSuccessHandler(function(items){
         if (!items || !items.length) {
-          // Fallback: single-item synthesis from prefill payload
-          currentItems = [{
-            materialCode: prefill.itemCode || '',
-            materialDesc: prefill.itemName || prefill.itemCode || 'Item',
-            batchNo:      prefill.batchNo  || '',
-            qtyReceived:  '', unit: ''
-          }];
-        } else {
-          currentItems = items;
+          // Server answered but the GRN has no items. Synthesising one from the
+          // prefill payload is a GUESS, so it must be labelled as such — an
+          // inspector must never mistake a fabricated row for the real GRN.
+          _usePrefillFallback('GRN #' + (prefill.grnId || '') + ' returned no items — showing the scanned item only. Verify against the physical GRN.');
+          return;
         }
+        currentItems = items;
         itemData   = currentItems.map(function(){ return makeBlankItemData(); });
         currentIdx = 0;
         document.getElementById('pfMeta').textContent =
@@ -763,15 +883,10 @@ function renderPrefill() {
         renderMaterialChips();
         renderCurrentItem();
       })
-      .withFailureHandler(function(){
-        currentItems = [{
-          materialCode: prefill.itemCode || '',
-          materialDesc: prefill.itemName || prefill.itemCode || 'Item',
-          batchNo:      prefill.batchNo  || '', qtyReceived: '', unit: ''
-        }];
-        itemData = [makeBlankItemData()];
-        currentIdx = 0;
-        renderCurrentItem();
+      .withFailureHandler(function(e){
+        // Load FAILED — the real item list is unknown. Never present the
+        // fabricated single item as if it were the GRN's true contents.
+        _usePrefillFallback('Could not load GRN items (' + ((e && e.message) || 'connection error') + '). Showing the scanned item only — other items on this GRN are NOT listed.');
       })
       .getGRNItems(prefill.grnId);
     return;
@@ -792,17 +907,37 @@ function renderMaterialChips() {
   var chips = document.getElementById('materialChips');
   if (!chips) return;
   chips.innerHTML = '';
+  // A GRN can hold many lines of the SAME material differing only by batch —
+  // e.g. PM/GRN/2026-062 has ten rows of 3092040. The chip must lead with what
+  // DISTINGUISHES them (item number + batch + qty), not the material code that
+  // they all share, or the inspector cannot tell which lot they are inspecting.
   currentItems.forEach(function(it, idx) {
-    var c = document.createElement('span');
-    c.className = 'inline-flex items-center px-3 py-1.5 rounded-md bg-slate-100 text-text-field text-[13px] font-medium cursor-pointer';
-    c.style.cssText = 'gap:6px;border:1px solid #cbd5e1;';
-    c.title = 'Click to inspect this item';
+    var c = document.createElement('button');
+    c.type = 'button';
+    c.className = 'iqc-chip' + (idx === currentIdx ? ' is-active' : '');
+    c.title = (it.materialCode || '') + ' · ' + (it.materialDesc || '') +
+              ' · Batch ' + (it.batchNo || '—');
+    // renderCurrentItem syncs the active class itself, so no full rebuild here
+    // (rebuilding would drop keyboard focus mid-interaction).
     c.onclick = function(){ currentIdx = idx; renderCurrentItem(); };
-    var qty = (it.qtyReceived || 0) + ' ' + (it.unit || '');
-    c.innerHTML =
-      '<span class="material-symbols-outlined" style="font-size:16px;color:#64748b;">category</span>' +
-      '<span><b>' + (it.materialCode || '') + '</b> ' + (it.materialDesc || '') +
-      ' &nbsp;<span style="color:#64748b;">· ' + (it.batchNo || '—') + ' · ' + qty + '</span></span>';
+
+    var qty  = (it.qtyReceived || it.qtyReceived === 0) ? String(it.qtyReceived) : '';
+    var unit = it.unit ? ' ' + it.unit : '';
+
+    // Built as DOM nodes — batch/desc are sheet-sourced strings.
+    var num = document.createElement('span');
+    num.className = 'iqc-chip-num';
+    num.textContent = (idx + 1) + '/' + currentItems.length;
+
+    var main = document.createElement('span');
+    main.className = 'iqc-chip-main';
+    main.textContent = it.batchNo || (it.materialCode || 'Item');
+
+    var sub = document.createElement('span');
+    sub.className = 'iqc-chip-sub';
+    sub.textContent = (it.materialCode || '') + (qty ? ' · ' + qty + unit : '');
+
+    c.appendChild(num); c.appendChild(main); c.appendChild(sub);
     chips.appendChild(c);
   });
 }
@@ -846,6 +981,15 @@ function makeBlankItemData() {
 function renderCurrentItem() {
   var item  = currentItems[currentIdx];
   var total = currentItems.length;
+
+  // Keep the active chip in step with currentIdx. Several paths move between
+  // items (next, back-from-summary, goToItem) and none of them refreshed the
+  // chip row, so the highlight pointed at the wrong lot after navigating.
+  // Doing it here covers every caller instead of patching each one.
+  var _chips = document.querySelectorAll('#materialChips .iqc-chip');
+  for (var _c = 0; _c < _chips.length; _c++) {
+    _chips[_c].classList.toggle('is-active', _c === currentIdx);
+  }
 
   // Progress bar
   var wrap = document.getElementById('itemProgressWrap');
@@ -1337,6 +1481,13 @@ function saveIQC() {
 }
 
 function doSaveIQC() {
+  // Real in-flight latch. btn.disabled alone is not a state machine: Enter-key
+  // submit, a double-tap on slow hardware, or the async operator-prompt path
+  // can all re-enter this before the first save returns. A duplicate IQC writes
+  // duplicate ledger rows, so this must be guarded by state, not by the DOM.
+  if (_iqcSaveInFlight) return;
+  _iqcSaveInFlight = true;
+
   var btn = document.getElementById('saveBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
@@ -1445,6 +1596,7 @@ function doSaveIQC() {
         var errMsg = (res && res.error) || 'Unknown error';
         showToast('Save failed: ' + errMsg, 'error');
         setTimeout(function(){ alert('IQC save failed: ' + errMsg); }, 100);
+        _iqcSaveInFlight = false;   // save rejected — allow retry
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined">save</span>Save IQC Result';
       }
@@ -1453,6 +1605,7 @@ function doSaveIQC() {
       var errMsg = (e && e.message) || 'Save failed — check connection and retry.';
       showToast(errMsg, 'error');
       setTimeout(function(){ alert('IQC save failed: ' + errMsg); }, 100);
+      _iqcSaveInFlight = false;   // transport failure — allow retry
       btn.disabled = false;
       btn.innerHTML = '<span class="material-symbols-outlined">save</span>Save IQC Result';
     })
@@ -1621,7 +1774,11 @@ function renderImagePreviews() {
 function goHome() {
   google.script.run
     .withSuccessHandler(function(html){ document.open(); document.write(html); document.close(); })
-    .withFailureHandler(function(){})
+    .withFailureHandler(function(e){
+      // Without this the Home button just does nothing and the operator is
+      // stranded with no explanation.
+      showToast((e && e.message) || 'Could not return to Home — check connection.', 'error');
+    })
     .getFormHtml('Landing');
 }
 

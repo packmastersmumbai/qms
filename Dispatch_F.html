@@ -162,6 +162,25 @@
     }
     .dsp-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     .dsp-toast.error { background: #b32a2a; }
+    /* ── Desktop density ──────────────────────────────────────────────────
+       At the end of the stylesheet so it outranks the base .dsp-* rules on
+       source order. Dispatch shipped 698px inputs for values like a vehicle
+       number or a date; the page is now 960px like every other QMS screen. */
+    @media (min-width: 900px) and (pointer: fine) {
+      .dsp-wrap { max-width: 960px; }
+      .dsp-field { margin-bottom: 10px; }
+      .dsp-field input, .dsp-field select { height: 36px; font-size: 14px; }
+      .dsp-field textarea { font-size: 14px; }
+      /* Content-sized: these are codes, dates and names, not paragraphs. */
+      #fDocNo, #fDate                          { max-width: 220px; }
+      #fVehicle                                { max-width: 200px; }
+      #fCustomer, #fTransporter, #fDriver,
+      #fOperator, #fGuard, #fAuthorizedBy      { max-width: 420px; }
+      /* No grid override here: .dsp-form already wraps its fields in
+         .dsp-grid3 containers, and imposing a second grid on top of them
+         would fight the existing structure. The width caps above are what
+         actually reclaim the space. */
+    }
   </style>
 </head>
 <body>

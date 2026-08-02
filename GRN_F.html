@@ -9,13 +9,57 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <style>
     body { min-height: max(884px, 100dvh); }
-    /* Compact responsive form layout (bundle lacks md: grid utils, so use plain CSS).
-       Single column on mobile; 2-column grid >=768px with wide sections spanning both. */
-    #formWrap { max-width: 512px; }
-    @media (min-width: 768px) {
-      #formWrap { max-width: 64rem; display: grid; grid-template-columns: 1fr 1fr; align-content: start; }
-      #formWrap > .span-2 { grid-column: 1 / -1; }
+    /* Form layout — cards are FULL WIDTH by default, in one centred column.
+       The previous rule made this a 2-col grid where full width was opt-in via
+       .span-2: any card missing the class sat at half width beside a full-width
+       neighbour, so card edges never aligned and half the viewport was empty.
+       Fields now pair INSIDE a card (.fk-row) rather than cards pairing beside
+       each other, which is what actually saves space. */
+    #formWrap {
+      max-width: 880px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 16px;
+      /* Clear the fixed 56px header and the sticky save bar + nav below.
+         These were previously mt-[56px]/pb-[88px] utilities, but this project
+         ships a STATIC Tailwind bundle with no JIT, so arbitrary-value classes
+         never compile — the form rendered underneath the header. Real CSS. */
+      /* Top clears the fixed 56px header. Bottom is left to FormKit's nav
+         injector, which measures the real nav + save-bar stack. */
+      padding: calc(56px + 16px) 16px 16px;
     }
+    /* This project ships a STATIC pre-compiled Tailwind block (TailwindBundle.html)
+       with no JIT, so an arbitrary-value class only works if it happened to be in
+       the markup when that bundle was built. These five are used here but absent
+       from it, so they silently collapse to content height. Verified in-browser:
+       a probe div with h-[52px] computes to 0px. Declared as real CSS instead. */
+    header.fixed { height: 56px; }
+    #btnSubmit { height: 56px; }
+    /* Desktop: a full-width 56px primary button is a phone affordance. Size it
+       to its label and right-align, matching the rest of the density layer. */
+    @media (min-width: 900px) and (pointer: fine) {
+      /* 960px matches FormKit's .fk-form so GRN and IQC share one page width.
+         Bottom padding MUST live here, not on <body>: #formWrap is flex:1 and
+         stretches to the full content height, so body padding lands below the
+         stretched element and never separates the last card from the footer.
+         Verified: with 111px on body the last card still ended 99px under the
+         footer. The FormKit injector now applies the measured clearance to this
+         container too, so the value here is only a floor for first paint. */
+      #formWrap { max-width: 960px; padding: calc(56px + 12px) 16px 111px; gap: 10px; }
+      /* The button is stickyFooter's DIRECT child, so it must carry the 960px
+         column itself. An earlier `#stickyFooter > * { margin: 0 auto }` rule
+         centred it by overriding margin-left:auto — hence right-align via
+         calc() padding on the footer instead of a wrapper. */
+      /* max(16px, …) keeps the gutter sane between 900px and 960px, where the
+         centring calc would otherwise go negative. */
+      #stickyFooter { padding: 8px max(16px, calc((100% - 960px) / 2 + 16px)); }
+      #btnSubmit {
+        height: 38px; width: auto; min-width: 200px; max-width: none;
+        margin-left: auto; margin-right: 0; font-size: 14px;
+      }
+    }
+    #doc-img-btn, #prod-img-btn { height: 42px; }
+    #btnIqc, #btnHome { height: 52px; }
+    /* .span-2 is now a no-op — kept so existing markup stays valid. */
+    #formWrap > .span-2 { width: 100%; }
     input, select, textarea { font-size: 16px !important; }
     button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     button:active { transform: scale(0.97); transition: transform 0.08s ease; }
@@ -45,7 +89,71 @@
     .disp-btn.sel-awd { background: #EA580C; border-color: #EA580C; color: #fff; }
 
     /* Field error */
-    .field-error-msg { font-size: 11px; font-weight: 500; color: #dc2626; margin-top: 3px; display: none; }
+    /* ── Focus visibility (WCAG 2.4.7) ──────────────────────────────────
+       :focus-visible only, so a mouse/touch tap never paints a ring but
+       keyboard and switch-access users always see position. DESIGN.md link
+       token #0070F3. */
+    :focus-visible {
+      outline: 2px solid #0070F3;
+      outline-offset: 2px;
+      border-radius: 3px;
+    }
+
+    /* ── Reduced motion (WCAG 2.3.3) ─────────────────────────────────────
+       Transitions collapse to near-zero rather than 0, so state changes still
+       commit; the confirm screen keeps its opacity change without the fade. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* ── Over-receipt gate (replaces confirm()) ──────────────────────────
+       DESIGN.md tokens: hold #D97706 / hold-soft #FEF3C7 / hold-deep #B45309,
+       fail #DC2626, ink #0F172A, body #374151. 48px min touch (gloved use). */
+    #overRcptPanel {
+      max-width: 32rem; margin: 0 auto 12px; padding: 14px;
+      background: #FEF3C7; border: 1px solid #D97706; border-left: 4px solid #D97706;
+      border-radius: 10px;
+    }
+    #overRcptPanel .or-title {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      font-size: 15px; font-weight: 700; color: #B45309;
+    }
+    #overRcptPanel .or-title .material-symbols-outlined { font-size: 20px; }
+    #overRcptPanel .or-list { margin: 8px 0 0; padding-left: 18px; }
+    #overRcptPanel .or-list li {
+      font-size: 13px; line-height: 1.5; color: #374151; margin-bottom: 3px;
+    }
+    /* fail-deep #B91C1C, not fail #DC2626: on the #FEF3C7 panel DC2626 measures
+       4.34:1 and misses WCAG AA (4.5:1) for this size. B91C1C gives 5.90:1. */
+    #overRcptPanel .or-list .over-by {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 12px; font-weight: 600; color: #B91C1C; margin-left: 4px;
+    }
+    #overRcptPanel .or-note {
+      font-size: 11px; font-weight: 500; color: #B45309; margin-top: 8px;
+    }
+    #overRcptPanel .or-actions { display: flex; gap: 8px; margin-top: 12px; }
+    #overRcptPanel .or-btn {
+      flex: 1; min-height: 48px; border-radius: 8px; cursor: pointer;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px; font-weight: 700; letter-spacing: .2px;
+      touch-action: manipulation;
+    }
+    #overRcptPanel .or-cancel { background: #fff; color: #374151; border: 1.5px solid #CBD5E1; }
+    #overRcptPanel .or-accept { background: #D97706; color: #fff; border: 1.5px solid #D97706; }
+    /* Offending PO rows stay marked after the panel closes. */
+    #po-multi-body tr.row-over { background: #FEF3C7; box-shadow: inset 3px 0 0 #D97706; }
+
+    /* Error styling keeps the existing .field-err hook (wired in validate()),
+       but takes its values from the FormKit tokens. fail-deep, not fail: the
+       message sits on white where B91C1C reads more clearly at 11px. */
+    .field-error-msg { font-size: 11px; font-weight: 600; color: var(--fk-fail-deep, #B91C1C); margin-top: 2px; display: none; }
     .field-err input, .field-err select, .field-err textarea { border-color: #dc2626 !important; }
     .field-err .field-error-msg { display: block; }
 
@@ -65,19 +173,23 @@
 
     /* PO multi table */
     #po-multi-section { border: 1px solid #e0c080; background: #fffbeb; border-radius: 0.75rem; padding: 12px; margin-top: 8px; }
-    #po-multi-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    /* Fixed columns (60+60+80+90) plus padding total ~350px before the flexible
+       Material column, which overflows a 360px phone. The TABLE scrolls inside
+       its own container so the page body never scrolls sideways.
+       -webkit-overflow-scrolling keeps momentum scroll usable in the GAS iframe. */
+    #po-multi-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #po-multi-table { width: 100%; min-width: 460px; border-collapse: collapse; font-size: 11px; }
     #po-multi-table th { padding: 4px 6px; background: #fef3c7; text-align: left; }
     #po-multi-table td { padding: 4px 6px; }
     .po-multi-qty, .po-multi-batch { padding: 3px 5px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px; }
     .po-multi-qty { width: 70px; text-align: right; }
     .po-multi-batch { width: 85px; }
-    /* Per-row disposition toggle (Accept / Hold / Reject) */
-    .row-disp { display: inline-flex; border: 1px solid #d1d5db; border-radius: 5px; overflow: hidden; }
-    .row-disp .rd { width: 26px; height: 26px; font-size: 11px; font-weight: 700; border: none; background: #fff; color: #64748b; cursor: pointer; border-right: 1px solid #e5e7eb; }
-    .row-disp .rd:last-child { border-right: none; }
-    .row-disp .rd-a.on { background: #16A34A; color: #fff; }
-    .row-disp .rd-h.on { background: #D97706; color: #fff; }
-    .row-disp .rd-r.on { background: #DC2626; color: #fff; }
+    /* NOTE: the per-row disposition toggle (.row-disp/.rd) was removed with the
+       "GRN records receipt only, IQC owns accept/reject" change — the PO row
+       renderer (tbody.innerHTML = lines.map(...))
+       emits five cells and setRowDisp() is a no-op. Its CSS is deleted here
+       rather than resized: styling a control that never renders is dead weight,
+       and it made the rules look like a live 26px touch-target defect. */
 
     /* Confirm screen */
     #confirmScreen { display: none; opacity: 0; transition: opacity 0.3s ease; text-align: center; padding: 40px 20px 120px; }
@@ -110,64 +222,60 @@
 <!-- ── Main ── -->
 <!-- Compact responsive layout: single column on mobile, 2-column grid on desktop.
      Wide sections (Material Items, Additional Items) span both columns via md:col-span-2. -->
-<main id="formWrap" class="flex-1 mt-[56px] pb-[88px] p-4 grid grid-cols-1 gap-4 mx-auto w-full max-w-3xl content-start">
+<!-- Width, gap and column behaviour come from the #formWrap CSS rule, not from
+     utilities: max-w-3xl (768px) and grid-cols-1 previously fought it. -->
+<main id="formWrap" class="flex-1 w-full">
 
   <!-- Section 1: Header / Supplier -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
+  <section class="fk-card">
 
-    <!-- Supplier -->
-    <div id="f-supplier" class="flex flex-col gap-[6px]">
-      <label class="font-label text-[14px] font-medium text-[#374151]" for="supplier">Supplier <span class="text-status-danger">*</span></label>
-      <div class="relative">
-        <select id="supplier" onchange="onSupplierChange()" class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+    <!-- Supplier + PO share a row: supplier is the wider, primary choice.
+         Collapses to one column below 640px. -->
+    <div class="fk-row wide-first">
+      <div id="f-supplier" class="fk-field">
+        <label class="fk-label" for="supplier">Supplier <span class="req">*</span></label>
+        <select id="supplier" onchange="onSupplierChange()" class="fk-select">
           <option value="">Select Supplier</option>
         </select>
-        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+        <div class="field-error-msg" id="err-supplier">Supplier is required</div>
       </div>
-      <div class="field-error-msg" id="err-supplier">Supplier is required</div>
-    </div>
 
-    <!-- PO Reference (optional) -->
-    <div class="flex flex-col gap-[6px]">
-      <label class="font-label text-[14px] font-medium text-[#374151]">Purchase Order <span class="text-[12px] font-normal text-[#64748b]">(Optional)</span></label>
-      <div class="relative">
-        <select id="poRefSelect" onchange="onPORefChange()" class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
-          <option value="">— no PO — (free GRN)</option>
+      <div class="fk-field">
+        <label class="fk-label" for="poRefSelect">Purchase Order <span class="opt">Optional</span></label>
+        <select id="poRefSelect" onchange="onPORefChange()" class="fk-select">
+          <option value="">— no PO —</option>
         </select>
-        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
+        <div id="clearPOLink" class="fk-hint" onclick="clearPORef()"
+             style="display:none;cursor:pointer;text-decoration:underline">✕ Clear PO reference</div>
       </div>
-      <div id="clearPOLink" style="display:none" class="text-[11px] text-primary cursor-pointer underline" onclick="clearPORef()">✕ Clear PO reference (unlock fields)</div>
     </div>
 
     <!-- Invoice Number -->
-    <div class="flex flex-col gap-[6px]">
-      <label class="font-label text-[14px] font-medium text-[#374151]" for="invoiceNo">Invoice Number</label>
-      <input id="invoiceNo" type="text" placeholder="e.g. INV-2026-001" autocomplete="off"
-        class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+    <div class="fk-field">
+      <label class="fk-label" for="invoiceNo">Invoice Number <span class="opt">Optional</span></label>
+      <input id="invoiceNo" type="text" placeholder="e.g. INV-2026-001" autocomplete="off" class="fk-input fk-w-short">
     </div>
 
   </section>
 
   <!-- Material Items heading -->
-  <h2 class="span-2 font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase mt-1">Material Items</h2>
+  <h2 class="fk-section">Material Items</h2>
 
   <!-- Section 1b: Material card (wide — holds the PO multi-line table) -->
-  <section class="span-2 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4 relative">
+  <section class="fk-card">
     <!-- Item -->
-    <div id="f-item" class="flex flex-col gap-[6px] mt-1">
-      <label class="font-label text-[14px] font-medium text-[#374151]" for="item">Material Code <span class="text-status-danger">*</span></label>
-      <div class="relative">
-        <select id="item" disabled onchange="onItemChange()" class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 appearance-none focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
-          <option value="">Select Material</option>
-        </select>
-        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] pointer-events-none">arrow_drop_down</span>
-      </div>
+    <div id="f-item" class="fk-field">
+      <label class="fk-label" for="item">Material Code <span class="req">*</span></label>
+      <select id="item" disabled onchange="onItemChange()" class="fk-select fk-w-mid">
+        <option value="">Select Material</option>
+      </select>
       <div class="field-error-msg" id="err-item">Item is required</div>
     </div>
 
     <!-- PO Multi-line table -->
     <div id="po-multi-section" style="display:none">
       <div style="font-size:11px;color:#92400E;font-weight:700;margin-bottom:6px;letter-spacing:0.4px;">PO LINES — enter qty received per line</div>
+      <div id="po-multi-scroll">
       <table id="po-multi-table">
         <thead>
           <tr>
@@ -180,27 +288,30 @@
         </thead>
         <tbody id="po-multi-body"></tbody>
       </table>
+      </div>
       <div style="font-size:10px;color:#92400E;margin-top:6px">Enter received qty per line (numeric). Leave Receive blank to skip a line. All lines land pending IQC.</div>
     </div>
 
-    <!-- Batch + Expiry: single column per DESIGN.md -->
-    <div class="flex flex-col gap-3">
-      <div id="f-batchNo" class="flex flex-col gap-[6px]">
-        <label class="font-label text-[14px] font-medium text-[#374151]">Batch Number <span class="text-status-danger">*</span></label>
-        <input id="batchNo" type="text" placeholder="B-" autocomplete="off"
-          class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+    <!-- Batch + Expiry pair on one row: both are short, and they describe the
+         same physical lot, so they read as one fact. (The old "single column
+         per DESIGN.md" note referred to the superseded 430px-mobile-only spec;
+         the Stitch authority states DESKTOP IS SUPPORTED.) Stacks below 640px. -->
+    <div class="fk-row">
+      <div id="f-batchNo" class="fk-field">
+        <label class="fk-label" for="batchNo">Batch Number <span class="req">*</span></label>
+        <input id="batchNo" type="text" placeholder="B-" autocomplete="off" class="fk-input fk-w-code">
         <div class="field-error-msg" id="err-batchNo">Batch / Lot No is required</div>
       </div>
-      <div class="flex flex-col gap-[6px]">
-        <label class="font-label text-[14px] font-medium text-[#374151]">Expiry</label>
-        <input id="expiryDate" type="month" placeholder="MM/YYYY"
-          class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+      <div class="fk-field">
+        <label class="fk-label" for="expiryDate">Expiry <span class="opt">Optional</span></label>
+        <input id="expiryDate" type="month" placeholder="MM/YYYY" class="fk-input fk-w-date">
       </div>
     </div>
 
-    <!-- COA Received toggle (iOS style) -->
-    <div class="flex items-center justify-between py-2">
-      <span class="font-label text-[14px] font-medium text-[#374151]">COA Received</span>
+    <!-- COA Received toggle (iOS style). justify-start + gap keeps the switch
+         beside its label; justify-between stranded it ~700px away on desktop. -->
+    <div class="flex items-center gap-3 py-1">
+      <span class="fk-label">COA Received</span>
       <label class="relative inline-flex items-center cursor-pointer">
         <input type="checkbox" id="coaReceived" class="sr-only peer">
         <div class="w-12 h-7 bg-slate-300 rounded-full peer peer-checked:bg-[#0ea5e9] transition-colors"></div>
@@ -209,25 +320,25 @@
     </div>
 
     <!-- Storage Location -->
-    <div id="f-storage-loc" class="flex flex-col gap-[6px]">
-      <label class="font-label text-[14px] font-medium text-[#374151]">Storage Location</label>
+    <div id="f-storage-loc" class="fk-field">
+      <label class="fk-label" for="storageLocation">Storage Location</label>
       <input id="storageLocation" type="text" disabled placeholder="Pick a material…"
-        class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 bg-surface outline-none">
-      <span id="hint-storage-loc" class="text-[11px] text-[#64748b]">Auto-assigned from the material's default location.</span>
+        class="fk-input fk-w-mid">
+      <span id="hint-storage-loc" class="fk-hint">Auto-assigned from the material's default location.</span>
     </div>
 
   </section>
 
   <!-- Section 3: Quantity -->
-  <section id="qty-section" class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-4">
-    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Quantity</h2>
+  <section id="qty-section" class="fk-card">
+    <h2 class="fk-section">Quantity</h2>
     <!-- Single column per DESIGN.md -->
     <div class="flex flex-col gap-3">
 
-      <div id="f-qtyReceived" class="flex flex-col gap-[6px]">
-        <label class="font-label text-[14px] font-medium text-[#374151]">Qty Received <span class="text-status-danger">*</span></label>
-        <input id="qtyReceived" type="number" min="0" step="1" placeholder="0"
-          class="w-full h-[44px] border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all">
+      <div id="f-qtyReceived" class="fk-field">
+        <label class="fk-label" for="qtyReceived">Qty Received <span class="req">*</span></label>
+        <input id="qtyReceived" type="number" inputmode="decimal" min="0" step="1" placeholder="0"
+          class="fk-input mono fk-w-num">
         <div class="field-error-msg" id="err-qtyReceived">Must be &gt; 0</div>
       </div>
 
@@ -235,8 +346,8 @@
   </section>
 
   <!-- Section 3b: Additional Items (manual mode only) -->
-  <section id="extra-items-section" class="span-2 bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
-    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase" style="margin:0;">Additional Items</h2>
+  <section id="extra-items-section" class="fk-card">
+    <h2 class="fk-section" style="margin:0 0 2px;">Additional Items</h2>
     <button type="button" id="btnAddItem" onclick="addExtraItem()"
       style="font-size:14px;font-weight:700;color:#fff;background:#0B2A4A;padding:12px;border:none;border-radius:8px;cursor:pointer;width:100%;">
       + Add Item
@@ -247,14 +358,14 @@
   </section>
 
   <!-- Section 5: Images -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
-    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Images <span class="text-[10px] font-normal normal-case tracking-normal text-[#94a3b8]">(optional · max 5 per type)</span></h2>
+  <section class="fk-card">
+    <h2 class="fk-section">Images <span class="text-[10px] font-normal normal-case tracking-normal text-[#94a3b8]">(optional · max 5 per type)</span></h2>
 
     <!-- Document Images -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-[#1e3a5f] text-[18px]" style="font-variation-settings:'FILL' 1">description</span>
-        <span class="font-label text-[13px] font-semibold text-[#374151]">Document Images</span>
+        <span class="fk-label">Document Images</span>
         <span class="text-[10px] text-[#94a3b8]">Invoice / COA / Challan</span>
       </div>
       <div id="doc-img-preview" class="flex flex-wrap gap-2"></div>
@@ -268,7 +379,7 @@
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-[#16a34a] text-[18px]" style="font-variation-settings:'FILL' 1">inventory_2</span>
-        <span class="font-label text-[13px] font-semibold text-[#374151]">Product Images</span>
+        <span class="fk-label">Product Images</span>
         <span class="text-[10px] text-[#94a3b8]">Material / Packaging photos</span>
       </div>
       <div id="prod-img-preview" class="flex flex-wrap gap-2"></div>
@@ -285,17 +396,17 @@
   </section>
 
   <!-- Section 6: Remarks -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex flex-col gap-3">
-    <h2 class="font-headline text-[11px] font-semibold text-[#64748b] tracking-widest uppercase">Remarks</h2>
+  <section class="fk-card">
+    <h2 class="fk-section">Remarks</h2>
     <textarea id="remarks" rows="3" placeholder="Deviations, observations, or notes"
       class="w-full border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 py-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all resize-none"></textarea>
   </section>
 
   <!-- WhatsApp notification toggle -->
-  <section class="bg-card rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-4 border border-border flex items-center justify-between">
+  <section class="fk-card fk-card-inline">
     <div class="flex items-center gap-2">
       <span class="material-symbols-outlined text-[#16a34a]" style="font-variation-settings:'FILL' 1">chat</span>
-      <span class="font-label text-[14px] font-medium text-[#374151]">Notify supplier on WhatsApp</span>
+      <span class="fk-label">Notify supplier on WhatsApp</span>
     </div>
     <label class="relative inline-flex items-center cursor-pointer">
       <input type="checkbox" id="notifyWhatsapp" class="sr-only peer">
@@ -328,6 +439,23 @@
   </button>
 </div>
 
+<!-- ── Over-receipt gate ──────────────────────────────────────────────────
+     Replaces confirm(), which is unreliable inside the GAS double-iframe.
+     Receiving more than the PO has pending is a stock-affecting decision, so
+     it is disclosed inline and needs an explicit tap to proceed. -->
+<div id="overRcptPanel" role="alertdialog" aria-labelledby="overRcptTitle" style="display:none">
+  <div id="overRcptTitle" class="or-title">
+    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+    Over-receipt detected
+  </div>
+  <ul id="overRcptList" class="or-list"></ul>
+  <div id="overRcptNote" class="or-note"></div>
+  <div class="or-actions">
+    <button type="button" class="or-btn or-cancel" onclick="cancelOverReceipt()">Go back &amp; fix</button>
+    <button type="button" class="or-btn or-accept" onclick="acceptOverReceipt()">Receive anyway</button>
+  </div>
+</div>
+
 <!-- ── Sticky footer ── -->
 <div id="stickyFooter" class="fixed bottom-0 left-0 w-full bg-white border-t border-border p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40">
   <button id="btnSubmit" disabled
@@ -346,6 +474,8 @@ var LOCATIONS        = [];
 
 var _inspectorNames  = [];
 var formSaved    = false;
+var _grnSaveInFlight = false;  // true between save dispatch and its response
+var _overRcptReturnFocus = null;  // element focused before the over-receipt gate opened
 // Disposition is no longer chosen at receipt — GRN only records what arrived.
 // All received stock lands PENDING IQC; IQC owns accept/reject. Kept as a constant
 // so downstream save/status logic (which reads `disposition`) resolves to PENDING.
@@ -797,28 +927,12 @@ function doSave() {
         btn0.innerHTML = origLabel;
         var linesSrc = (freshPO && freshPO.lines && freshPO.lines.length) ? freshPO.lines : ((_activePO && _activePO.lines) || []);
         if (freshPO && freshPO.lines) _activePO.lines = freshPO.lines;
-        var overRcpt = [];
-        document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
-          var qq = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
-          var matCC = tr.getAttribute('data-mat');
-          var ln = linesSrc.filter(function(l){ return l.materialCode === matCC; })[0] || {};
-          if (qq > (Number(ln.qtyPending) || 0)) overRcpt.push(matCC + ': receiving ' + qq + ' but only ' + ln.qtyPending + ' pending');
-        });
-        if (overRcpt.length && !confirm('Over-receipt detected:\n\n' + overRcpt.join('\n') + '\n\nProceed anyway?')) return;
-        _doSaveProceed();
+        _gateOverReceipt(_collectOverReceipt(linesSrc), false);
       })
       .withFailureHandler(function() {
         btn0.disabled = false;
         btn0.innerHTML = origLabel;
-        var overRcpt = [];
-        document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
-          var qq = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
-          var matCC = tr.getAttribute('data-mat');
-          var ln = ((_activePO && _activePO.lines) || []).filter(function(l){ return l.materialCode === matCC; })[0] || {};
-          if (qq > (Number(ln.qtyPending) || 0)) overRcpt.push(matCC + ': receiving ' + qq + ' but only ' + ln.qtyPending + ' pending');
-        });
-        if (overRcpt.length && !confirm('Over-receipt (cached):\n\n' + overRcpt.join('\n') + '\n\nProceed anyway?')) return;
-        _doSaveProceed();
+        _gateOverReceipt(_collectOverReceipt((_activePO && _activePO.lines) || []), true);
       })
       .getPOById(_activePO ? _activePO.poNo : '');
     return;
@@ -826,7 +940,115 @@ function doSave() {
   _doSaveProceed();
 }
 
+/* Collect over-receipt lines and mark the offending rows inline.
+   Returns [{mat, qty, pending, over}]. */
+function _collectOverReceipt(linesSrc) {
+  var over = [];
+  document.querySelectorAll('#po-multi-body tr').forEach(function(tr) {
+    var qq    = parseFloat(tr.querySelector('.po-multi-qty').value) || 0;
+    var matCC = tr.getAttribute('data-mat');
+    var ln    = linesSrc.filter(function(l){ return l.materialCode === matCC; })[0] || {};
+    var pend  = Number(ln.qtyPending) || 0;
+    tr.classList.toggle('row-over', qq > pend);
+    if (qq > pend) over.push({ mat: matCC, qty: qq, pending: pend, over: +(qq - pend).toFixed(3) });
+  });
+  return over;
+}
+
+/* Over-receipt gate — inline, NOT confirm().
+   confirm() is unreliable inside the GAS double-iframe: if the dialog is
+   suppressed it returns false, which the old code read as "cancel" and the
+   save died silently with the button already re-enabled. Receiving more than
+   the PO has pending is a stock-affecting decision, so it now requires a
+   visible, deliberate acknowledgement that cannot be swallowed by the sandbox. */
+function _gateOverReceipt(over, cached) {
+  var panel = document.getElementById('overRcptPanel');
+  if (!over.length) {
+    if (panel) panel.style.display = 'none';
+    _doSaveProceed();
+    return;
+  }
+  // Built as DOM nodes, not an HTML string: o.mat is sheet-sourced data and
+  // this form uses textContent everywhere else for exactly that reason.
+  var list = document.getElementById('overRcptList');
+  list.innerHTML = '';
+  over.forEach(function(o) {
+    var li  = document.createElement('li');
+    var mat = document.createElement('strong');
+    mat.textContent = o.mat;
+    var pend = document.createElement('strong');
+    pend.textContent = o.pending;
+    var badge = document.createElement('span');
+    badge.className = 'over-by';
+    badge.textContent = '+' + o.over + ' over';
+    li.appendChild(mat);
+    li.appendChild(document.createTextNode(' — receiving ' + o.qty + ', only '));
+    li.appendChild(pend);
+    li.appendChild(document.createTextNode(' pending '));
+    li.appendChild(badge);
+    list.appendChild(li);
+  });
+  document.getElementById('overRcptNote').textContent = cached
+    ? 'PO could not be re-checked just now — this is based on cached PO data.'
+    : 'Checked against the current PO.';
+  panel.style.display = 'block';
+
+  // Respect prefers-reduced-motion for the scroll (WCAG 2.3.3).
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  panel.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+
+  // role="alertdialog" is a promise: move focus to it, or screen-reader and
+  // keyboard users never learn the gate appeared (WCAG 4.1.2). Focus the safe
+  // choice ("Go back & fix"), never the destructive one.
+  _overRcptReturnFocus = document.activeElement;
+  var cancelBtn = panel.querySelector('.or-cancel');
+  if (cancelBtn) cancelBtn.focus();
+  document.addEventListener('keydown', _overRcptKeydown, true);
+
+  showToast('Over-receipt detected — review and confirm below.', 'warning');
+}
+
+/* Escape cancels; Tab is trapped inside the gate while it is open. */
+function _overRcptKeydown(e) {
+  var panel = document.getElementById('overRcptPanel');
+  if (!panel || panel.style.display === 'none') return;
+  if (e.key === 'Escape') { e.preventDefault(); cancelOverReceipt(); return; }
+  if (e.key !== 'Tab') return;
+  var f = panel.querySelectorAll('button');
+  if (!f.length) return;
+  var first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
+/* Shared teardown: unbind the trap and hand focus back where it came from. */
+function _closeOverReceipt() {
+  document.getElementById('overRcptPanel').style.display = 'none';
+  document.removeEventListener('keydown', _overRcptKeydown, true);
+  if (_overRcptReturnFocus && _overRcptReturnFocus.focus) _overRcptReturnFocus.focus();
+  _overRcptReturnFocus = null;
+}
+
+/* Operator explicitly accepted the over-receipt. */
+function acceptOverReceipt() {
+  _closeOverReceipt();
+  _doSaveProceed();
+}
+
+/* Operator backed out — return to the form to correct quantities. */
+function cancelOverReceipt() {
+  _closeOverReceipt();
+  showToast('Save cancelled — adjust the highlighted quantities.', 'error');
+}
+
 function _doSaveProceed() {
+  // Real in-flight latch. btn.disabled is not sufficient here: the over-receipt
+  // path deliberately re-enables the button before this runs, so a double-tap
+  // during the PO re-check could otherwise reach this twice and write a
+  // duplicate GRN — i.e. duplicate stock ledger rows.
+  if (_grnSaveInFlight) return;
+  _grnSaveInFlight = true;
+
   var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display !== 'none');
   var btn = document.getElementById('btnSubmit');
   btn.disabled = true;
@@ -931,6 +1153,7 @@ function _doSaveProceed() {
 
   if (window.__grnAbortSave) {
     window.__grnAbortSave = false;
+    _grnSaveInFlight = false;   // aborted before dispatch — release the latch
     var b = document.getElementById('btnSubmit');
     if (b) { b.disabled = false; b.innerHTML = 'Save GRN'; }
     return;
@@ -938,6 +1161,7 @@ function _doSaveProceed() {
   // Also bail if items array is empty after extras collection (no rows = blank save).
   if (!Array.isArray(data.items) || !data.items.length) {
     showErr('Add at least one received item before saving.');
+    _grnSaveInFlight = false;   // never dispatched — release the latch
     var bb = document.getElementById('btnSubmit');
     if (bb) { bb.disabled = false; bb.innerHTML = 'Save GRN'; }
     return;
@@ -983,12 +1207,14 @@ function _doSaveProceed() {
           }
         } else {
           showErr('Save failed: ' + ((res && res.error) ? res.error : 'Unknown error'));
+          _grnSaveInFlight = false;   // save rejected — allow retry
           btn.disabled = false;
           btn.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
         }
       })
       .withFailureHandler(function(e) {
         showErr('Save failed: ' + (e.message || String(e)));
+        _grnSaveInFlight = false;   // transport failure — allow retry
         btn.disabled = false;
         btn.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
       })

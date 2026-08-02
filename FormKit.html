@@ -4,31 +4,69 @@
      classes are prefixed `fk-` so they never clash with a form's existing `.prd-*`/`.param-*`. -->
 <style>
   :root {
-    /* Stitch / M3 palette (verbatim from QMSV2 tailwind.config) */
-    --fk-primary:            #000747;
-    --fk-primary-container:  #0d1b6e;
-    --fk-navy:               #1e3a5f;  /* shared header anchor already used across forms */
-    --fk-surface:            #f9f9ff;
-    --fk-surface-container:  #e7eefe;
-    --fk-surface-low:        #f0f3ff;
-    --fk-card:               #ffffff;
-    --fk-on-surface:         #151c27;
-    --fk-on-surface-variant: #454651;
-    --fk-outline:            #767682;
-    --fk-outline-variant:    #c6c5d3;
-    --fk-pass:               #16a34a;
-    --fk-fail:               #dc2626;
-    --fk-warn:               #d97706;
-    --fk-na:                 #64748b;
-    --fk-accent:             #0ea5e9;
-    /* radii + rhythm */
-    --fk-r-sm: .25rem; --fk-r: .5rem; --fk-r-md: .75rem; --fk-r-lg: 1rem;
-    --fk-space: 8px;
-    --fk-shadow: 0 2px 8px rgba(15,23,42,.08);
+    /* ── Palette ───────────────────────────────────────────────────────────
+       DESIGN.md is the authority (primary #0D1B6E). The earlier Stitch values
+       (#000747 etc.) are NOT used: no shipped form ever adopted them, while
+       GRN/IQC already use the DESIGN.md ink/body/faint ramp as literals. These
+       variables now name the values the forms are really built from. */
+    --fk-primary:            #0D1B6E;
+    --fk-primary-hover:      #1A2D9E;
+    --fk-primary-pressed:    #0A1450;
+    --fk-primary-soft:       #EEF1FA;
+    --fk-navy:               #1e3a5f;  /* shared header anchor across forms */
+    --fk-link:               #0070F3;
+    --fk-card:               #FFFFFF;
+    --fk-canvas:             #F5F7FA;
+    --fk-canvas-soft:        #FAFBFC;
+    /* text ramp — one family, no competing greys */
+    --fk-ink:                #0F172A;
+    --fk-body:               #374151;
+    --fk-muted:              #6B7280;
+    --fk-faint:              #94A3B8;
+    /* lines */
+    --fk-hairline:           #E5E7EB;
+    --fk-hairline-strong:    #CBD5E1;
+    /* signal states — colour is reserved for these, never decoration */
+    --fk-pass:  #16A34A;  --fk-pass-soft: #DCFCE7;  --fk-pass-deep: #15803D;
+    --fk-fail:  #DC2626;  --fk-fail-soft: #FEE2E2;  --fk-fail-deep: #B91C1C;
+    --fk-hold:  #D97706;  --fk-hold-soft: #FEF3C7;  --fk-hold-deep: #B45309;
+    --fk-na:    #64748b;
+    --fk-accent:#0ea5e9;
+
+    /* ── Spacing scale ────────────────────────────────────────────────────
+       Every gap in a form comes from this scale. Field internals use 1-2,
+       field separation 4, card padding 5, card separation 5. */
+    --fk-s1: 4px;  --fk-s2: 6px;  --fk-s3: 8px;
+    --fk-s4: 12px; --fk-s5: 16px; --fk-s6: 20px; --fk-s7: 28px;
+
+    /* radii */
+    --fk-r-sm: 4px; --fk-r: 8px; --fk-r-md: 10px; --fk-r-lg: 14px;
+
+    --fk-shadow: 0 1px 2px rgba(15,23,42,.04), 0 2px 8px rgba(15,23,42,.06);
     --fk-shadow-up: 0 -4px 12px rgba(15,23,42,.06);
-    --fk-tap: 44px;
+
+    /* ── Control sizing ───────────────────────────────────────────────────
+       48px on touch (gloved use). Desktop drops to 40px: a seated operator
+       with a mouse does not need a thumb-sized target, and 48px rows waste
+       vertical space on a form with 12+ fields. */
+    --fk-tap: 48px;
+    --fk-control-h: 48px;
+
     --fk-font: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --fk-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
     --fk-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+    /* Compatibility aliases for the superseded Stitch token names, so older
+       component CSS keeps resolving instead of silently falling back to
+       initial values. Prefer the names above in new work. */
+    --fk-on-surface:         var(--fk-ink);
+    --fk-on-surface-variant: var(--fk-muted);
+    --fk-outline:            var(--fk-hairline-strong);
+    --fk-outline-variant:    var(--fk-hairline);
+    --fk-surface:            var(--fk-canvas);
+    --fk-surface-container:  var(--fk-primary-soft);
+    --fk-surface-low:        var(--fk-canvas-soft);
+    --fk-warn:               var(--fk-hold);
   }
 
   /* Icon FOUT: hide Material Symbols ligature text until the font is ready.
@@ -36,57 +74,148 @@
   .material-symbols-outlined { visibility: hidden; }
   html.fonts-ready .material-symbols-outlined { visibility: visible; }
 
-  /* ── Page shell ─────────────────────────────────────────────────────────── */
-  .fk-page {
-    max-width: 768px; margin: 0 auto; width: 100%;
-    padding: 16px 16px 96px;      /* bottom clearance for the sticky footer */
-    display: flex; flex-direction: column; gap: 16px;
-    color: var(--fk-on-surface); font-family: var(--fk-font);
+  /* Reduced motion (WCAG 2.3.3) — inherited by every form that includes
+     FormKit. Durations collapse to near-zero rather than 0 so state changes
+     still commit and transitionend listeners still fire. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
-  @media (min-width: 900px) { .fk-page { max-width: 820px; } }
 
-  /* ── Card ───────────────────────────────────────────────────────────────── */
+  /* ── Form layout system ────────────────────────────────────────────────
+     Fixes the defect these forms all shared: a 2-column desktop grid where
+     full-width was opt-in per card (.span-2). Cards that forgot the class sat
+     at half width beside a full-width neighbour, so nothing aligned and the
+     right half of the viewport was empty.
+
+     Here the DEFAULT is full width. A card opts IN to sharing a row, so the
+     failure mode is a consistent single column, never a ragged edge. */
+  .fk-form {
+    width: 100%; max-width: 880px; margin: 0 auto;
+    padding: var(--fk-s5) var(--fk-s5) 96px;
+    display: flex; flex-direction: column; gap: var(--fk-s5);
+    color: var(--fk-body); font-family: var(--fk-font);
+  }
+  /* Legacy alias so existing .fk-page markup keeps working. */
+  .fk-page { width: 100%; max-width: 880px; margin: 0 auto;
+    padding: var(--fk-s5) var(--fk-s5) 96px;
+    display: flex; flex-direction: column; gap: var(--fk-s5);
+    color: var(--fk-body); font-family: var(--fk-font); }
+
+  /* ── Card ──────────────────────────────────────────────────────────────
+     One elevation, one radius, one padding. Cards never nest. */
   .fk-card {
     background: var(--fk-card);
-    border: 1px solid var(--fk-outline-variant);
-    border-radius: var(--fk-r-md);
+    border: 1px solid var(--fk-hairline);
+    border-radius: var(--fk-r-lg);
     box-shadow: var(--fk-shadow);
-    overflow: hidden;                /* keeps the header strip's corners aligned */
-  }
-  .fk-card-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-  .fk-card-head {
-    background: var(--fk-navy); color: #fff;
-    padding: 10px 16px;
-    font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
-    display: flex; align-items: center; gap: 8px;
-  }
-  /* Standalone light section label (no navy bar) */
-  .fk-sec {
-    font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
-    color: var(--fk-on-surface-variant); margin: 2px 0 6px;
+    padding: var(--fk-s5);
+    display: flex; flex-direction: column; gap: var(--fk-s4);
   }
 
-  /* ── Fields ─────────────────────────────────────────────────────────────── */
-  .fk-field { display: flex; flex-direction: column; gap: 6px; }
-  .fk-label { font-size: 13px; font-weight: 600; color: var(--fk-on-surface); }
-  .fk-label .req { color: var(--fk-fail); }
-  .fk-label .opt { color: var(--fk-on-surface-variant); font-weight: 500; }
-  .fk-input, .fk-select {
-    height: var(--fk-tap); width: 100%;
-    border: 1.5px solid var(--fk-outline-variant);
-    border-radius: var(--fk-r); padding: 0 12px;
-    font-size: 15px; color: var(--fk-on-surface); background: var(--fk-card);
+  /* Row-shaped card: label left, control right (toggles, single actions). */
+  .fk-card.fk-card-inline {
+    flex-direction: row; align-items: center; justify-content: space-between;
+    gap: var(--fk-s4);
+  }
+
+  /* ── Section label ─────────────────────────────────────────────────────
+       Belongs to the card BELOW it, so it carries more space above than below
+       and aligns to the same edge — it must not float between two cards. */
+  .fk-section {
+    font-family: var(--fk-display);
+    font-size: 11px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--fk-muted);
+    margin: var(--fk-s3) 0 calc(-1 * var(--fk-s2)); padding: 0 var(--fk-s1);
+  }
+  .fk-form > .fk-section:first-child { margin-top: 0; }
+
+  /* ── Field ─────────────────────────────────────────────────────────────
+     The atomic unit: label + control + optional hint/error, 6px internal. */
+  .fk-field { display: flex; flex-direction: column; gap: var(--fk-s2); min-width: 0; }
+  .fk-label {
+    font-size: 13px; font-weight: 600; color: var(--fk-body);
+    display: flex; align-items: baseline; gap: var(--fk-s1);
+  }
+  .fk-label .req { color: var(--fk-fail); font-weight: 700; }
+  .fk-label .opt { color: var(--fk-faint); font-weight: 500; font-size: 12px; }
+  .fk-hint  { font-size: 11px; color: var(--fk-muted); }
+  .fk-error { font-size: 11px; font-weight: 600; color: var(--fk-fail-deep); }
+
+  /* ── Row: side-by-side fields ──────────────────────────────────────────
+     Collapses to one column below 640px. `auto-fit` means a row that holds a
+     single field still fills the width instead of leaving a hole. */
+  .fk-row { display: grid; gap: var(--fk-s4); grid-template-columns: 1fr; }
+  @media (min-width: 640px) {
+    .fk-row       { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fk-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .fk-row.wide-first { grid-template-columns: 2fr 1fr; }
+    .fk-row > .fk-span-all { grid-column: 1 / -1; }
+  }
+
+  /* Card header strip (optional) — for cards that need a titled band. */
+  .fk-card-head {
+    background: var(--fk-navy); color: #fff;
+    margin: calc(-1 * var(--fk-s5)) calc(-1 * var(--fk-s5)) 0;
+    padding: 10px var(--fk-s5);
+    border-radius: var(--fk-r-lg) var(--fk-r-lg) 0 0;
+    font-family: var(--fk-display);
+    font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+    display: flex; align-items: center; gap: var(--fk-s3);
+  }
+  .fk-card-body { display: flex; flex-direction: column; gap: var(--fk-s4); }
+  .fk-sec { /* legacy alias for .fk-section */
+    font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--fk-muted); margin: 2px 0 6px;
+  }
+
+  /* ── Controls ──────────────────────────────────────────────────────────
+     16px font is deliberate and must not be lowered: below 16px iOS/Android
+     zoom the page on focus inside the GAS iframe, and the user cannot zoom
+     back out. Height comes from --fk-control-h (48px touch / 40px desktop). */
+  .fk-input, .fk-select, .fk-textarea {
+    height: var(--fk-control-h); width: 100%; max-width: 100%;
+    border: 1px solid var(--fk-hairline-strong);
+    border-radius: var(--fk-r); padding: 0 var(--fk-s4);
+    font-size: 16px; color: var(--fk-ink); background: var(--fk-card);
     font-family: var(--fk-font); outline: none;
     transition: border-color .15s, box-shadow .15s;
   }
-  .fk-input.mono, .fk-select.mono { font-family: var(--fk-mono); }
-  .fk-input:focus, .fk-select:focus {
-    border-color: var(--fk-accent);
-    box-shadow: 0 0 0 4px rgba(14,165,233,.15);
+  .fk-textarea { height: auto; min-height: 80px; padding: var(--fk-s3) var(--fk-s4); resize: vertical; }
+  .fk-select {
+    appearance: none; -webkit-appearance: none;
+    padding-right: var(--fk-s7);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right var(--fk-s4) center;
+    background-size: 16px;
   }
-  .fk-input::placeholder { color: #94a3b8; }
-  .fk-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .fk-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .fk-input.mono, .fk-select.mono { font-family: var(--fk-mono); }
+  .fk-input:hover, .fk-select:hover, .fk-textarea:hover { border-color: var(--fk-muted); }
+  .fk-input:focus, .fk-select:focus, .fk-textarea:focus {
+    border-color: var(--fk-link);
+    box-shadow: 0 0 0 3px rgba(0,112,243,.15);
+  }
+  .fk-input::placeholder, .fk-textarea::placeholder { color: var(--fk-faint); }
+  .fk-input:disabled, .fk-select:disabled {
+    background: var(--fk-canvas); color: var(--fk-muted); cursor: not-allowed;
+  }
+  /* Error state — border alone is not enough, it must survive colour-blindness,
+     so pair it with the .fk-error message below the control. */
+  .fk-field.is-error .fk-input,
+  .fk-field.is-error .fk-select { border-color: var(--fk-fail); border-width: 1.5px; }
+
+  /* Keyboard focus (WCAG 2.4.7) — :focus-visible only, so a touch tap never
+     paints a ring but keyboard/switch users always see position. */
+  .fk-form :focus-visible, .fk-page :focus-visible {
+    outline: 2px solid var(--fk-link); outline-offset: 2px; border-radius: var(--fk-r-sm);
+  }
+
+  .fk-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--fk-s4); }
+  .fk-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--fk-s4); }
 
   /* ── PASS / FAIL / NA segmented group ───────────────────────────────────── */
   .fk-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -159,6 +288,79 @@
   }
   .fk-nav-btn:hover, .fk-nav-btn:active { color: var(--fk-primary); }
   .fk-nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── Desktop density ───────────────────────────────────────────────────
+     A phone layout scaled down is not a desktop layout. Seated operators with
+     a mouse get shorter controls, tighter rhythm, and — most importantly —
+     fields sized to their CONTENT rather than stretched to the container.
+     Measured before this change: a 23-character Invoice field rendered 702px
+     wide, and a 1-character Lot size rendered 229px. */
+  @media (min-width: 900px) and (pointer: fine) {
+    :root {
+      --fk-control-h: 36px;
+      --fk-s4: 10px; --fk-s5: 12px; --fk-s6: 16px;
+    }
+    .fk-card    { padding: var(--fk-s5) var(--fk-s6); gap: var(--fk-s4); }
+    .fk-form, .fk-page { gap: var(--fk-s4); max-width: 960px; }
+    .fk-label   { font-size: 12px; }
+    .fk-input, .fk-select, .fk-textarea { font-size: 14px; padding: 0 10px; }
+    .fk-section { font-size: 10px; margin: var(--fk-s4) 0 0; }
+
+    /* Content-sized fields. Inputs stop stretching to the container and take a
+       width proportional to what they actually hold. `max-width` (not `width`)
+       so they still shrink inside a narrow grid column.
+       Selectors are doubled (.fk-input.fk-w-num) so they outrank the base
+       .fk-input rule's `max-width:100%`, which otherwise wins on source order
+       at equal specificity and silently negates every width class. */
+    .fk-input.fk-w-num,   .fk-select.fk-w-num   { max-width: 110px; }  /* counts, lot size */
+    .fk-input.fk-w-code,  .fk-select.fk-w-code  { max-width: 190px; }  /* batch / doc codes */
+    .fk-input.fk-w-date,  .fk-select.fk-w-date  { max-width: 170px; }
+    .fk-input.fk-w-short, .fk-select.fk-w-short { max-width: 260px; }  /* invoice, PO ref */
+    .fk-input.fk-w-mid,   .fk-select.fk-w-mid   { max-width: 380px; }  /* names, suppliers */
+
+    /* Rows pack their fields from the left instead of splitting the card into
+       equal cells. A 2-col 1fr grid gave two 406px columns holding a 190px and
+       a 170px field — ~440px of dead space between them. `auto` columns size to
+       the field, and the row stops rather than stretching to the card edge. */
+    .fk-row       { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .fk-row.three { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    /* Rows of width-capped fields pack left. `.fk-row-pack` is the explicit,
+       always-supported form; the :has() rule below applies it automatically
+       where the browser supports it (older WebViews just keep the grid). */
+    .fk-row.fk-row-pack,
+    .fk-row:not(.wide-first):has(> .fk-field > [class*="fk-w-"]) {
+      display: flex; flex-wrap: wrap; align-items: flex-start;
+      gap: var(--fk-s4) var(--fk-s6);
+    }
+    .fk-row.fk-row-pack > .fk-field,
+    .fk-row:not(.wide-first):has(> .fk-field > [class*="fk-w-"]) > .fk-field { flex: 0 1 auto; }
+    /* .wide-first keeps its 2fr/1fr grid — the proportion is deliberate there
+       (a primary choice beside a secondary one), and packing would collapse
+       both selects to their intrinsic width. */
+    /* `max-content` sized a column to its LABEL ("Lot size *" → 249px), not its
+       control. Cap it so a long label wraps instead of inflating the column. */
+    .fk-row.tight { grid-template-columns: repeat(auto-fit, minmax(120px, 200px)); }
+
+    /* The one field that opens a form stays prominent, but capped — it is a
+       primary choice, not a banner. */
+    .fk-select-hero { max-width: 420px; height: 44px; font-size: 15px; }
+
+    /* Actions size to their label instead of spanning the form. A full-width
+       56px primary button is a phone affordance; on desktop it reads as a
+       banner and pushes everything else off-screen. */
+    .fk-btn { min-height: 36px; font-size: 14px; padding: 0 20px; }
+    .fk-btn-primary, .fk-btn-pass { flex: 0 0 auto; min-width: 160px; }
+    .fk-footer       { padding: 8px var(--fk-s6); }
+    .fk-footer-inner { max-width: 960px; justify-content: flex-end; }
+
+    /* Nav: a utility strip, not a thumb-reach target bar. */
+    .fk-nav     { height: 44px; }
+    .fk-nav-btn { flex: 0 1 120px; font-size: 11px; flex-direction: row; gap: 6px; }
+    .fk-nav-btn svg { width: 16px; height: 16px; }
+    .fk-nav-inner   { max-width: 960px; justify-content: center; }
+  }
+
+
 </style>
 <script>
 (function () {
@@ -201,7 +403,10 @@
     // Lift any save footer/button to sit ABOVE the 56px nav so it isn't cut off.
     // Handles both fixed footers and sticky-per-pane save buttons (Production's .prd-save,
     // which sticks 8px from the bottom and would otherwise overlap the nav).
-    var NAV_H = 56;
+    // Read the rendered height rather than assuming 56: the desktop density
+    // rule drops the nav to 44px, and a hardcoded value would over-reserve
+    // bottom padding and leave a dead strip under the form.
+    var NAV_H = Math.round(nav.getBoundingClientRect().height) || 56;
     ['.fk-footer', '#stickyBar', '#stickyFooter', '#ipqcActionBar', '#dispStickyFooter', '.prd-save', '.fk-save-sticky']
       .forEach(function (sel) {
         document.querySelectorAll(sel).forEach(function (el) {
@@ -210,10 +415,28 @@
           else if (cs.position === 'sticky') { el.style.bottom = (NAV_H + 8) + 'px'; }
         });
       });
-    // Reserve bottom space on the body so form content clears the nav (+footer if any).
-    var hasFooter = !!document.querySelector('.fk-footer, #stickyBar, #stickyFooter, #ipqcActionBar, #dispStickyFooter');
-    var pad = NAV_H + (hasFooter ? 76 : 8);
+    // Reserve bottom space so content clears the nav AND the save bar stacked
+    // on top of it. The footer height is MEASURED, not assumed: the previous
+    // hardcoded 76 over-reserved on some forms and under-reserved on others —
+    // on GRN the last card overlapped the footer by 23px because the real
+    // stack is nav(44) + footer(55) = 99, not 76.
+    var footerEl = document.querySelector('.fk-footer, #stickyBar, #stickyFooter, #ipqcActionBar, #dispStickyFooter');
+    var footH = footerEl ? Math.ceil(footerEl.getBoundingClientRect().height) : 0;
+    var pad = NAV_H + (footH ? footH + 12 : 8);
     document.body.style.paddingBottom = pad + 'px';
+
+    // Body padding alone is not enough when the form's container is a flex
+    // child that stretches (flex:1) — the padding then sits BELOW the stretched
+    // element and the last card still runs under the footer. Apply the same
+    // clearance to that container so the content itself ends above the bars.
+    var scroller = document.querySelector('#formWrap, main, .fk-form, .fk-page');
+    if (scroller) {
+      var scs = getComputedStyle(scroller);
+      var stretches = scs.flexGrow !== '0' || scroller.scrollHeight <= scroller.clientHeight + 2;
+      if (stretches && parseInt(scs.paddingBottom, 10) < pad) {
+        scroller.style.paddingBottom = pad + 'px';
+      }
+    }
     // If the form has its OWN bottom nav (IPQC's #ipqcBottomNav, NCR's tab-bar, etc.),
     // hide it in favour of this single unified bar to avoid two stacked nav rows.
     document.querySelectorAll('nav').forEach(function (n) {

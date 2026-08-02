@@ -107,6 +107,35 @@
     }
     .prd-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    /* Read-only fields need more than a grey fill to read as non-editable:
+       a dashed border and default cursor make the state unambiguous. */
+    .prd-field input:disabled, .prd-field select:disabled {
+      background: #F3F4F6; color: #6B7280;
+      border-style: dashed; cursor: default;
+    }
+
+    /* ── Desktop density ──────────────────────────────────────────────────
+       Production shipped 702px inputs for 10-17 character values inside a
+       736px column — every field ~4x wider than its content, on a viewport
+       that was 40% empty. Matches the 960px page width used by GRN/IQC/OQC. */
+    @media (min-width: 900px) and (pointer: fine) {
+      .prd-wrap { max-width: 960px; }
+      .prd-field input, .prd-field select { height: 36px; font-size: 14px; }
+      /* Content-sized. Widening the container without capping the fields made
+         them WORSE (702px -> 894px), so every short field is capped here. */
+      #fDocNo, #fDate                    { max-width: 220px; }
+      #fProdOrder, #fgProdOrder, #bkJob  { max-width: 260px; }
+      #fQty, #fgQty                      { max-width: 160px; }
+      #fMaterial, #fIssuedBy, #fgItem,
+      #fgClient, #fgIssuedBy, #bkFgProduced,
+      #bkIpqc, #bkBookedBy               { max-width: 420px; }
+      /* .prd-save is position:sticky — it must stay full-width in flow. An
+         earlier `width:auto; margin-left:auto` shrank it while it stayed
+         pinned, so form fields slid underneath it. Keep the width; reduce
+         only its height for desktop. */
+      .prd-save { min-height: 38px; padding: 8px 12px; font-size: 14px; }
+    }
+
     .prd-rec {
       background: var(--white);
       border: 1px solid #e0e0e0; border-radius: 8px;

@@ -10,6 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <style>
+    /* Arbitrary-value SPACING utilities do not exist in this project's static
+       Tailwind block (no JIT), so they silently resolve to 0 and content slid
+       under the fixed header / sticky footer. Declared as real CSS here.
+       Verified in-browser: a probe div with pt-[96px] computes to 0px. */
+    body      { padding-bottom: 100px; }
+    #oqcForm  { padding-top: 68px; }
+
     body {
       background-color: #f8fafc;
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -17,9 +24,14 @@
       min-height: max(884px, 100dvh);
     }
     /* Compact responsive layout (bundle lacks md: grid utils, so plain CSS). */
-    #oqcForm { max-width: 28rem; }
+    /* 960px matches GRN/IQC so the three forms share one page width.
+       The 2-col split (entry left, verdict right) is deliberate and KEPT —
+       it is the right structure for an inspection form. */
+    /* Mobile is a single column, so the removed space-y-[20px] utility (which
+       never compiled anyway) is replaced by a real flex gap here. */
+    #oqcForm { max-width: 28rem; display: flex; flex-direction: column; gap: 16px; }
     @media (min-width: 768px) {
-      #oqcForm { max-width: 64rem; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-content: start; }
+      #oqcForm { max-width: 960px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-content: start; }
       #oqcForm > .span-2 { grid-column: 1 / -1; }
     }
 
@@ -271,7 +283,19 @@
       font-style: italic;
       min-height: 16px;
     }
-  </style>
+  
+    /* ── Desktop density ───────────────────────────────────────────────
+       Placed at the END of the stylesheet deliberately: these rules share
+       specificity with the base .input-base/#btnSave rules above, so source
+       order decides. Declared earlier they silently lose. */
+    @media (min-width: 900px) and (pointer: fine) {
+      #oqcForm { gap: 12px; }
+      .input-base { height: 36px; font-size: 14px; }
+      /* Save is an action, not a banner: sized to its label and right-aligned
+         instead of a full-width grey slab that reads as disabled. */
+      #btnSave { height: 38px; width: auto; min-width: 200px; margin-left: auto; display: block; font-size: 14px; }
+    }
+</style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('FormKit') ?>
 <?!= include('HtmlCache') ?>
@@ -294,7 +318,9 @@
      SCREEN 1: CAPTURE FORM
 ══════════════════════════════════════ -->
 <div id="screen1">
-  <main id="oqcForm" class="pt-[68px] px-4 space-y-[20px] mx-auto max-w-3xl w-full">
+  <!-- Width/columns come from the #oqcForm CSS rule; max-w-3xl (768px) fought
+       the 960px rule and space-y-[20px] never compiled (static Tailwind). -->
+  <main id="oqcForm" class="px-4 mx-auto w-full">
 
     <!-- DOC ID CARD -->
     <div class="span-2 bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] px-4 py-3 flex justify-between items-center">

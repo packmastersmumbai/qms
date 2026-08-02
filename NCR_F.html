@@ -13,6 +13,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <!-- Tailwind CSS -->
   <style>
+    /* Arbitrary-value SPACING utilities do not exist in this project's static
+       Tailwind block (no JIT), so they silently resolve to 0 and content slid
+       under the fixed header / sticky footer. Declared as real CSS here.
+       Verified in-browser: a probe div with pt-[96px] computes to 0px. */
+    body      { padding-bottom: 80px; }
+    #ncrMain  { margin-top: 56px; padding-top: 60px; }
+
     body {
       background-color: #f8fafc;
       font-family: 'Inter', sans-serif;
@@ -22,7 +29,9 @@
        NCR is a list view — flow the cards in a multi-column grid on desktop. */
     #ncrMain { max-width: 32rem; }
     @media (min-width: 768px) {
-      #ncrMain { max-width: 72rem; }
+      /* 960px matches the filter tab bar above and every other QMS screen.
+         The 2-col card grid is KEPT — NCR is a triage list, not a form. */
+      #ncrMain { max-width: 960px; }
       #ncrBody { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
     }
     @media (min-width: 1100px) {
@@ -59,6 +68,30 @@
     }
     #toast.show     { opacity: 1; }
     #toast.err      { background: #c1334b; }
+    /* ── Touch targets ────────────────────────────────────────────────────
+       DESIGN.md mandates 48px minimum for gloved shop-floor use. Measured at
+       390px: the status filter tabs were 32px, the back button 40px, and the
+       NCR disposition buttons 44px. Disposition is an irreversible decision
+       (scrap / supplier-return), so it gets the full 48px.
+       h-[32px]/h-[44px] are inline utilities, so these need the same
+       specificity or higher — hence the id/class scoping. */
+    #ncrFilterTabs .ncr-tab { min-height: 48px; }
+    header button.w-10 { width: 48px; height: 48px; }
+    /* Disposition actions: 48px tall. These are IRREVERSIBLE decisions
+       (scrap / supplier-return sit beside use-as-is), so they get the full
+       gloved minimum rather than 44px. */
+    .ncr-disp-btn { min-height: 48px; }
+    /* "Verified — Close NCR" is the terminal action on a nonconformance and
+       measured 44px (its h-[44px] utility is not in the static bundle). It is
+       JS-built with no id, so it is targeted by its onclick handler. */
+    button[onclick^="showCloseModal"] { min-height: 48px; }
+
+    /* Desktop pointer: shrink back to a compact toolbar. */
+    @media (min-width: 900px) and (pointer: fine) {
+      #ncrFilterTabs .ncr-tab { min-height: 32px; }
+      header button.w-10 { width: 40px; height: 40px; }
+      .ncr-disp-btn { min-height: 38px; }
+    }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('FormKit') ?>
@@ -80,7 +113,9 @@
   </header>
 
   <!-- ── STATUS FILTER TABS ── -->
-  <div class="fixed top-[56px] w-full z-40 bg-white border-b border-[#e2e8f0] shadow-sm" style="max-width:42rem;left:50%;transform:translateX(-50%);">
+  <!-- 960px matches #ncrMain. At 42rem the tab bar was centred over a body
+       480px wider, so the tabs sat inset from the content they filter. -->
+  <div class="fixed top-[56px] w-full z-40 bg-white border-b border-[#e2e8f0] shadow-sm" style="max-width:960px;left:50%;transform:translateX(-50%);">
     <div class="flex px-4 py-2 gap-2 overflow-x-auto hide-scrollbar" id="ncrFilterTabs">
       <button onclick="setFilter('ALL')" data-filter="ALL"
         class="ncr-tab flex-shrink-0 h-[32px] px-4 text-[12px] font-semibold rounded-full bg-[#1e3a5f] text-white transition-all">ALL</button>
@@ -388,7 +423,10 @@
         actionsHtml += DISPOSITIONS.map(function(d, i) {
           /* If 5 dispositions, last one spans full row (matching original logic) */
           var extraCls = (btnCount === 5 && i === 4) ? ' col-span-3' : '';
-          return '<button class="h-[44px] rounded-lg border-2 border-[#d1d5db] text-[#374151] ' +
+          /* ncr-disp-btn carries the 48px touch minimum in CSS. h-[44px] is an
+             arbitrary utility absent from the static Tailwind bundle, so it
+             never applied — the observed height came from padding alone. */
+          return '<button class="ncr-disp-btn h-[44px] rounded-lg border-2 border-[#d1d5db] text-[#374151] ' +
                           'font-medium text-[13px] transition-colors hover:border-[#0ea5e9] ' +
                           'hover:text-[#0ea5e9] active:scale-[0.97]' + extraCls + '" ' +
                           'onclick="pick(\'' + esc(r.docNo) + '\',\'' + esc(d) + '\')">' +

@@ -15,6 +15,13 @@
 
   <!-- Tailwind CSS with Forms plugin -->
   <style>
+    /* Arbitrary-value SPACING utilities do not exist in this project's static
+       Tailwind block (no JIT), so they silently resolve to 0 and content slid
+       under the fixed header / sticky footer. Declared as real CSS here.
+       Verified in-browser: a probe div with pt-[96px] computes to 0px. */
+    #ipqcContent { padding-bottom: 80px; }
+    #checkBody   { padding-bottom: 140px; }
+
     * { box-sizing: border-box; }
 
     body {
@@ -254,8 +261,16 @@
     }
     /* Compact responsive: widen content + sticky action bar to match on desktop. */
     @media (min-width: 768px) {
-      #ipqcContent { max-width: 768px; margin-left: auto; margin-right: auto; }
-      #ipqcActionBar { max-width: 768px !important; }
+      #ipqcContent { max-width: 960px; margin-left: auto; margin-right: auto; }
+      #ipqcActionBar { max-width: 960px !important; }
+    }
+    /* Desktop density — 960px page width and 36px controls, matching GRN/IQC/OQC.
+       IPQC previously shipped four different control heights (40/48/52/56). */
+    @media (min-width: 900px) and (pointer: fine) {
+      body { max-width: 960px; }
+      #ipqcContent input:not([type=checkbox]):not([type=radio]),
+      #ipqcContent select,
+      #ipqcContent .input-base { height: 36px; font-size: 14px; }
     }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
