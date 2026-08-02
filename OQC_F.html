@@ -295,6 +295,16 @@
          instead of a full-width grey slab that reads as disabled. */
       #btnSave { height: 38px; width: auto; min-width: 200px; margin-left: auto; display: block; font-size: 14px; }
     }
+
+    /* DESIGN.md: navy dot, not a red asterisk — red is reserved for FAIL, and on an
+       inspection form a red glyph beside every required label competes directly with
+       the PASS/FAIL signal. The "*" stays in the markup for screen readers.
+       !important because TailwindBundle loads after this block. */
+    .req-dot {
+      display: inline-block !important; width: 5px; height: 5px; border-radius: 50%;
+      background: #0D1B6E !important; font-size: 0 !important; line-height: 0;
+      vertical-align: middle; margin-left: 2px;
+    }
 </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('FormKit') ?>
@@ -412,7 +422,7 @@
     <div id="fieldFGLocation" class="bg-card rounded-lg shadow-card border border-border p-4" style="display:none;">
       <label class="label-base flex items-center gap-1" for="selFGLocation">
         <span class="material-symbols-outlined text-[16px] text-accent">location_on</span>
-        FG Storage Location <span class="text-red-600 ml-0.5">*</span>
+        FG Storage Location <span class="req-dot">*</span>
       </label>
       <select id="selFGLocation" class="input-base border-accent" style="border-color:#0ea5e9;">
         <option value="">— Select FG location —</option>

@@ -30,7 +30,7 @@ Stitch authority above overrides it.
 ---
 version: alpha
 name: PackMasters-QMS
-description: A factory-floor Quality Management System used on Android phones by operators, inspectors, and managers. The surface is white-and-near-black with a single Pack Masters navy anchor (#0D1B6E) and an electric blue link/CTA (#0070F3) inspired by Vercel's developer-platform aesthetic. Type is Inter for body / Plus Jakarta Sans for display / JetBrains Mono for tabular numbers and document IDs. Density is intentionally high — operators scan a dozen pending records per shift on a 6-inch screen. Color is reserved for signal states (pass-green, fail-red, hold-amber); decorative color is forbidden. Touch targets are 44px minimum. Forms are vertical, one-column, no nested cards.
+description: A factory-floor Quality Management System used on Android phones by operators, inspectors, and managers. The surface is white-and-near-black with a single Pack Masters navy anchor (#0D1B6E) and an electric blue link/CTA (#0070F3) inspired by Vercel's developer-platform aesthetic. Type is Inter for body / Plus Jakarta Sans for display / JetBrains Mono for tabular numbers and document IDs. Density is intentionally high — operators scan a dozen pending records per shift on a 6-inch screen. Color is reserved for signal states (pass-green, fail-red, hold-amber); decorative color is forbidden. Touch targets are 48px minimum (gloved operation). Forms are vertical and one-column on phones, two-column above 768px, with no nested cards.
 
 colors:
   primary: "#0D1B6E"
@@ -265,6 +265,18 @@ Pack Masters QMS is a phone-first application used on the factory floor in Mumba
 2. **By inspectors auditing pending records** — they open Records, filter by module, and need to scan a dense list of doc-IDs and statuses without ambiguity. Tabular numbers (JetBrains Mono) make this possible.
 3. **By the plant manager on a desktop** — opening the same URL, viewing KPIs. The layout is the same 430px column, centered. We do not redesign for desktop; the operator experience is canonical.
 
+> **Which navy, where** (clarified 2026-08-02 — a brand-consistency audit found four
+> navies in the tree and it was not obvious which were legitimate):
+> `#0D1B6E` is the anchor on the **operator forms** — GRN, IQC, IPQC, OQC, Records,
+> Trace, Gatepass. `#000747` is the Stitch `primary` and is scoped to the **QMS v2
+> cockpit** (`QMSV2_F`) only; it is correct there and must not spread into the forms.
+> `#1e3a5f` is a legacy header navy still on several forms — it is *drift*, not a
+> decision, and should converge on `#0D1B6E`. `#0B2A4A` is used for master-sheet
+> header fills, not UI.
+> **Bundle warning:** `#0D1B6E` and `#0070F3` are NOT in the static `TailwindBundle`.
+> They work in real CSS but a `bg-[#0D1B6E]` / `ring-[#0070F3]` utility resolves to
+> nothing. This is exactly how the Records and Trace headers shipped transparent.
+
 The brand anchor is **Pack Masters Navy `#0D1B6E`**. It appears on the top bar, the brand logo box, primary buttons, and printed documents (GRN, PO, Gatepass). It is *not* used decoratively elsewhere. The interactive accent for links and informational CTAs is **`#0070F3`** (Vercel-blue) — chosen because operators recognise underlined blue as "tap me" without training.
 
 Color outside these two anchors is **reserved for signal**: green for PASS / accepted / released, red for FAIL / rejected, amber for HOLD / pending disposition, orange for warnings, blue for in-progress. There is no decorative gradient, no glass effect, no shadow art. The page reads like a clipboard, not a marketing site.
@@ -290,11 +302,24 @@ Mobile base size is **13px** — denser than a marketing site, looser than a Blo
 
 ## Layout
 
-The app is a **430px-wide centered column**, fixed on every screen. The top bar (48px) and bottom nav (52px) are fixed; content scrolls between them. Inner content uses **10–12px gutter**, never more.
+> **Amended 2026-08-02.** The 430px-only rule below described the original
+> phone-only app. Desktop is now explicitly supported (see *Responsive Behavior*),
+> and the shipped forms use a **960px** page width with a responsive multi-column
+> grid above 768px. The mobile column remains canonical — desktop is an
+> enhancement of it, not a redesign. Treat 430px as the *minimum* target, not the
+> maximum. This section is kept for the density reasoning, which still holds.
+
+The app is a **430px-wide centered column** on phones — the canonical operator
+experience. The top bar (48px) and bottom nav (52px) are fixed; content scrolls
+between them. Inner content uses **10–12px gutter**, never more.
 
 Density rules:
 
-- Form fields stack vertically, never side-by-side. Side-by-side fields fail on a 360px screen and force horizontal scrolling, which operators with gloves cannot do reliably.
+- Form fields stack vertically on phones. **On desktop (≥768px, `pointer:fine`)
+  they may sit two-up**: the density layer caps each control to its content width,
+  so a 2-column grid does not reintroduce the horizontal-scroll failure. Below
+  768px the single column is still mandatory — side-by-side fields fail on a 360px
+  screen and force horizontal scrolling, which gloved operators cannot do reliably.
 - Cards have **no internal cards**. A pending record is a row, not a card-in-a-card.
 - The landing page uses a **3-column tile grid** for module entry. Tiles are 76px tall — large enough for a thumb, small enough that all modules fit above the fold.
 - Lists use a **left-edge color bar** (3px) for status, not a full-card background tint. Tinted backgrounds make a long list look like an alert wall.
@@ -337,16 +362,27 @@ Full-width, 48px tall, navy fill, white text, no shadow. Hover lightens to navy-
 ## Do's and Don'ts
 
 ✅ **Do** use mono font for any number a human will compare to another number (counts, IDs, timestamps, KPI values).
-✅ **Do** keep the 430px column on every form, even on desktop. Operators view this on phones; managers tolerate the column on desktop because it matches what they see when standing next to an operator.
+✅ **Do** keep the mobile column canonical. Operators view this on phones; the desktop layout (960px, 2-col above 768px) must be recognisably the *same screen* they see when standing next to an operator — same order, same labels, same grammar. Widen the layout, never reorder it.
 ✅ **Do** reserve color for signal — pass/fail/hold/warn/prog. Decorative color erodes signal value.
 ✅ **Do** use the left-edge color bar pattern for status in long lists.
 
 ❌ **Don't** introduce a third font family. Three is already two too many for some readers; do not add a fourth.
 ❌ **Don't** use shadows beyond `shadow-1`. No glow, no inner shadow, no glassmorphism.
-❌ **Don't** put two form fields side-by-side. One column, always.
+❌ **Don't** put two form fields side-by-side **below 768px**. One column on phones, always. Above 768px a 2-column grid is permitted (and used) because the desktop density layer caps field widths to their content.
 ❌ **Don't** use red for anything except FAIL or REJECTED. Required-field indicators, error helper text, and destructive button confirmations all use navy or muted gray, not red.
 ❌ **Don't** use the amber `#E8A020` color from older mockups — it has been retired. The brand is navy + electric blue only.
 
 ## Responsive Behavior
 
-The app is mobile-first and capped at 430px. On screens wider than 640px the column centers and the rest of the viewport is canvas gray. There is no tablet or desktop variant. Touch targets are 44px minimum (Apple HIG); the disposition grid uses 52px because operators wear cotton gloves during the monsoon.
+The app is mobile-first. On phones it is a single column; the page width caps at
+**960px** on larger screens and centers, with canvas gray either side.
+
+**Desktop is supported.** Above 768px forms use a 2-column grid; above 900px with
+`pointer:fine` a density layer drops control height 48px → 36px and caps each field
+to its content width, so a mouse user is not scanning 700px-wide inputs. This layer
+is gated on `pointer:fine` so it never fires on a touch device, whatever the width.
+
+Touch targets are **48px minimum** — not the 44px Apple HIG figure — because
+operators wear cotton gloves during the monsoon. The disposition grid uses 52px.
+The desktop density layer is the only place targets shrink below 48px, and only
+when a fine pointer is confirmed present.

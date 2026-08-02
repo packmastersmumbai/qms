@@ -34,7 +34,15 @@
     --fk-fail:  #DC2626;  --fk-fail-soft: #FEE2E2;  --fk-fail-deep: #B91C1C;
     --fk-hold:  #D97706;  --fk-hold-soft: #FEF3C7;  --fk-hold-deep: #B45309;
     --fk-na:    #64748b;
-    --fk-accent:#0ea5e9;
+    /* DESIGN.md: "The brand is navy + electric blue only." --fk-accent was #0ea5e9,
+       an undeclared fourth brand colour that had spread into focus rings and one
+       submit button. Aliased to the sanctioned link blue so anything consuming the
+       token converges on spec. #0ea5e9 also failed contrast at 2.77:1 as text.
+       NOTE: #0070F3 is NOT in the static TailwindBundle, so it works in real CSS
+       (like this) but a `ring-[#0070F3]` utility would resolve to nothing. Inline
+       Tailwind focus rings therefore still carry #0ea5e9 — decorative only, never
+       text, so they do not affect contrast. */
+    --fk-accent: var(--fk-link);
 
     /* ── Spacing scale ────────────────────────────────────────────────────
        Every gap in a form comes from this scale. Field internals use 1-2,
@@ -144,7 +152,17 @@
     font-size: 13px; font-weight: 600; color: var(--fk-body);
     display: flex; align-items: baseline; gap: var(--fk-s1);
   }
-  .fk-label .req { color: var(--fk-fail); font-weight: 700; }
+  /* DESIGN.md: "Required indicator is a navy dot, not a red asterisk — red is
+     reserved for FAIL." A red asterisk on every required field competed with the
+     PASS/FAIL signal the whole inspection UI depends on. The markup keeps its "*"
+     so screen readers still announce it; the glyph is hidden visually and replaced
+     with a 5px navy dot. */
+  .fk-label .req {
+    font-size: 0; line-height: 0;            /* hide the "*" glyph, keep it in the a11y tree */
+    display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--fk-primary); vertical-align: middle; margin-left: 2px;
+    flex: none;
+  }
   .fk-label .opt { color: var(--fk-faint); font-weight: 500; font-size: 12px; }
   .fk-hint  { font-size: 11px; color: var(--fk-muted); }
   .fk-error { font-size: 11px; font-weight: 600; color: var(--fk-fail-deep); }

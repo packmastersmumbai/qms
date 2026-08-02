@@ -102,6 +102,15 @@
          warn icon   #f59e0b -> #b45309  (2.15:1 -> 5.02:1) */
     .ncr-link-ink { color: #0369a1 !important; }
     .ncr-warn-ink { color: #b45309 !important; }
+
+    /* DESIGN.md: navy dot, not a red asterisk — red is reserved for FAIL.
+       The "*" stays in the markup for screen readers; only the glyph is replaced.
+       !important because TailwindBundle loads after this block. */
+    .req-dot {
+      display: inline-block !important; width: 5px; height: 5px; border-radius: 50%;
+      background: #0D1B6E !important; font-size: 0 !important; line-height: 0;
+      vertical-align: middle; margin-left: 2px;
+    }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('FormKit') ?>
@@ -244,7 +253,7 @@
       <!-- Effectiveness -->
       <div class="mb-4">
         <label class="block text-[12px] font-semibold text-[#374151] mb-1.5 uppercase tracking-wide">
-          Effectiveness Check <span class="text-red-500">*</span>
+          Effectiveness Check <span class="req-dot">*</span>
         </label>
         <select id="closeEffective"
                 class="w-full border border-[#d1d5db] rounded-lg px-3 py-2.5 text-[14px] text-[#0f172a]
