@@ -72,6 +72,30 @@
     }
     main#iqcForm { padding-top: 72px; padding-bottom: 100px; }
 
+    /* ── Action bar vs bottom nav ──────────────────────────────────────────
+       BUG: IQC has two fixed bottom bars (screen 1 "Next Item", screen 2 Save)
+       and FormKit's .fk-nav is ALSO position:fixed; bottom:0. All three sat at
+       z-index:50, and FormKit is included after this markup, so the nav painted
+       ON TOP of the action bar — elementFromPoint over the Save button returned
+       BUTTON.fk-nav-btn. The button rendered at full size and was simply not
+       clickable. Measured: nav 788-844, IQC footer 759-844 on a 390x844 phone.
+
+       Fix: lift the action bars above the nav (z-index 60 > 50) and sit them on
+       top of it rather than under it, so the primary action is never obscured.
+       Body padding is raised to clear BOTH bars stacked. */
+    footer.fixed.bottom-0,
+    div.fixed.bottom-0.left-0.w-full.bg-white {
+      z-index: 60;
+      bottom: 56px;                 /* clear .fk-nav's 56px */
+    }
+    body { padding-bottom: 152px; } /* 56 nav + ~96 action bar */
+    @media (min-width: 900px) and (pointer: fine) {
+      /* the density layer shrinks .fk-nav to 44px */
+      footer.fixed.bottom-0,
+      div.fixed.bottom-0.left-0.w-full.bg-white { bottom: 44px; }
+      body { padding-bottom: 132px; }
+    }
+
     /* Focus visibility (WCAG 2.4.7) — :focus-visible only, so a touch tap never
        paints a ring but keyboard/switch users always see position.
        DESIGN.md link token #0070F3. */

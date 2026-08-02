@@ -70,9 +70,53 @@ function getFGOverrideSheet_() {
 
 // ---------- Helpers ----------
 
-function _generateFGLotId_() {
-  return 'FGL-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMddHHmmss')
-       + '-' + Math.floor(Math.random() * 1000);
+/**
+ * FG dispatch lot ID.
+ *
+ * Was: 'FGL-' + yyyyMMddHHmmss + '-' + random  ->  FGL-20260803141530-742 (22 chars,
+ * two separators, and nothing in it says WHICH product the lot holds.
+ *
+ * Now: <first 5 alphanumerics of the product code><YYMMDD><HHMM>, e.g.
+ *   2967583 on 3 Aug 14:15  ->  29675260803  + 1415  ->  296752608031415 (15)
+ * Uppercase A-Z0-9 only, no separators, exactly <=15 chars, so it is safe for
+ * barcodes, labels, filenames and sheet keys.
+ *
+ * UNIQUENESS: this is a FIFO key, so a collision would merge two lots. HHMM alone
+ * is not enough if two lots of the same product are released in the same minute,
+ * so the caller passes the row count and we fall back to seconds when needed.
+ */
+function _generateFGLotId_(productCode) {
+  var raw = String(productCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var code = raw.slice(0, 5) || 'FGLOT';
+  var now = new Date();
+  var stamp = Utilities.formatDate(now, 'Asia/Kolkata', 'yyMMdd');
+  var time  = Utilities.formatDate(now, 'Asia/Kolkata', 'HHmm');
+  var id = (code + stamp + time).slice(0, 15);
+
+  // Same product, same minute -> same id. Swap the last 2 chars for seconds, then
+  // fall back to the legacy random tail rather than ever returning a duplicate.
+  if (_fgLotIdExists_(id)) {
+    var ss = Utilities.formatDate(now, 'Asia/Kolkata', 'ss');
+    id = (code + stamp + time + ss).slice(0, 15);
+    if (_fgLotIdExists_(id)) {
+      id = (code + stamp + time + Math.floor(Math.random() * 100)).slice(0, 15);
+    }
+  }
+  return id;
+}
+
+// Does a lot ID already exist? Column 0 of FG_DISPATCH_LOTS is the Lot ID.
+function _fgLotIdExists_(id) {
+  try {
+    var ws = getFGDispatchSheet_();
+    var last = ws.getLastRow();
+    if (last < 2) return false;
+    var col = ws.getRange(2, 1, last - 1, 1).getValues();
+    for (var i = 0; i < col.length; i++) {
+      if (String(col[i][0]).trim() === id) return true;
+    }
+    return false;
+  } catch (e) { return false; }
 }
 
 // Canonical comparator for FIFO plan vs chosen plan (architect correction #5).
@@ -98,7 +142,7 @@ function canonicalizePlan_(plan) {
 function _createFGDispatchLotRow_(d) {
   try {
     var ws = getFGDispatchSheet_();
-    var lotId = _generateFGLotId_();
+    var lotId = _generateFGLotId_(d.productCode);
     var qtyReleased = Number(d.qtyReleased) || 0;
     var qtyDispatched = Number(d.qtyDispatched) || 0;
     var status = String(d.status || 'AVAILABLE').toUpperCase();

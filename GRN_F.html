@@ -1160,7 +1160,7 @@ function _doSaveProceed() {
       var hasTop = topCode && qtyR > 0;     // batch optional — auto-generate
       var rows = [];
       if (hasTop) {
-        if (!topBatch) topBatch = 'B-AUTO-' + Date.now() + '-1';
+        if (!topBatch) topBatch = autoBatchNo_(topCode, 1);
         rows.push({
           materialCode: topCode,
           materialDesc: topDesc,
@@ -1280,6 +1280,34 @@ function _doSaveProceed() {
         releaseSaveLatch_();   // transport failure — allow retry
       })
       .saveGRN(data);
+  }
+
+  /**
+   * Batch number for a GRN line the operator left blank.
+   *
+   * Was: 'B-AUTO-' + Date.now() + '-1'  ->  B-AUTO-1754236800000-1 (22 chars).
+   * A raw epoch carries no meaning to anyone reading a label or a sheet, and the
+   * earlier audit found 9 of 10 lines on one GRN were B-AUTO-..., so these end up
+   * on real stock and in traceability queries.
+   *
+   * Now: <first 6 alphanumerics of the material code><YYMMDD><line seq if > 1>
+   *   1308119        -> 130811260803    (12)
+   *   201106-000000  -> 201106260803    (12)
+   *   3110343 line 12-> 31103426080312  (14)
+   * Uppercase A-Z0-9 only, no separators, capped at 15 chars, so it is safe for
+   * barcodes, filenames and sheet keys. Takes the FIRST 6 characters, not the last:
+   * hyphenated codes such as 201106-000000 and 552000-005015 share a trailing run
+   * of zeros, so the tail is the least distinguishing part.
+   */
+  function autoBatchNo_(materialCode, seq) {
+    var raw = String(materialCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    var code = raw.slice(0, 6) || 'ITEM';
+    var d = new Date();
+    var stamp = String(d.getFullYear()).slice(2) +
+                ('0' + (d.getMonth() + 1)).slice(-2) +
+                ('0' + d.getDate()).slice(-2);
+    var tail = (seq && seq > 1) ? String(seq) : '';
+    return (code + stamp + tail).slice(0, 15);
   }
 
   // Single owner of "the save is no longer in flight" so the two handlers and the
@@ -1505,7 +1533,7 @@ function collectExtraItems(disposition) {
     if (!mat)    { skipped.push('Item #' + (i+2) + ': missing material'); return; }
     if (qtyR <= 0) { skipped.push('Item #' + (i+2) + ': qty must be > 0'); return; }
     var opt    = matSel.options[matSel.selectedIndex];
-    if (!batch) batch = 'B-AUTO-' + Date.now() + '-' + (i+2);   // auto-batch if blank
+    if (!batch) batch = autoBatchNo_(mat, i + 2);   // auto-batch if blank
     var qtyA   = parseFloat(card.querySelector('.xi-acc').value);
     if (isNaN(qtyA) || qtyA > qtyR) qtyA = qtyR;
     if (qtyA < 0) qtyA = 0;
