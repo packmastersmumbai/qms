@@ -369,6 +369,12 @@ function doGet(e) {
     catch (erpc) { pcs = 'ERROR: ' + erpc.message; }
     return ContentService.createTextOutput(String(pcs)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'inspcatproposal') {
+    var icp;
+    try { icp = (typeof proposeInspectionCategories === 'function') ? proposeInspectionCategories() : 'proposeInspectionCategories missing'; }
+    catch (ericp) { icp = 'ERROR: ' + ericp.message + '\n' + (ericp.stack || ''); }
+    return ContentService.createTextOutput(String(icp)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'dummyaudit') {
     var dda;
     try { dda = (typeof auditDummyData === 'function') ? auditDummyData() : 'auditDummyData missing (is _DummyDataAudit.js pushed?)'; }
