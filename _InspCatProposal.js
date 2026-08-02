@@ -11,15 +11,54 @@
 // The five categories that actually have parameters defined in MASTERS_Parameters.
 var INSP_CATS_ = ['HDPE_BOTTLE', 'LABEL', 'PAPER', 'CARTON', 'BULK'];
 
+// Existing Category-column values that map onto an inspection category. Confirmed
+// with the user 2026-08-02: "CANs are Bottles, RIBBON are thermal ribbons".
+//   CANS/CAN/BOTTLES  -> HDPE_BOTTLE  (rigid containers: jerry cans, tin cans, bottles)
+//   CARTONS           -> CARTON       (plural of an existing category)
+//   RIBBON            -> LABEL        (thermal transfer ribbon is printed flexible film;
+//                                      LABEL is the closest defined set — see note below)
+//   PLUG              -> HDPE_BOTTLE  (closure component, same as CAP)
+// FG is deliberately ABSENT — see INSP_CAT_EXCLUDE_ below.
+var INSP_CAT_ALIASES_ = {
+  'CANS': 'HDPE_BOTTLE', 'CAN': 'HDPE_BOTTLE', 'BOTTLES': 'HDPE_BOTTLE',
+  'PLUG': 'HDPE_BOTTLE', 'CAPS': 'HDPE_BOTTLE', 'CAP': 'HDPE_BOTTLE',
+  'CARTONS': 'CARTON', 'MONO CARTON': 'CARTON', 'OUTER': 'CARTON', 'INNER': 'CARTON',
+  'LABELS': 'LABEL', 'RIBBON': 'LABEL', 'TAPE': 'LABEL', 'SLEVE': 'LABEL', 'SLEEVES': 'LABEL'
+};
+
+// Categories that must NOT receive an inspectionCategory.
+// FG (finished goods) is inspected per-product via CONTROL_FG, and IPQC MERGES the
+// category layer under those overrides (IPQC.js:36). The five defined categories are
+// all PACKAGING sets — BULK carries MFI and Granule Size, which are raw-resin checks
+// and meaningless for a finished adhesive. Assigning one would put wrong parameters
+// in front of inspectors on 33 products. Leave blank until an FG param set exists.
+var INSP_CAT_EXCLUDE_ = { 'FG': 1 };
+
 // Description keywords -> inspection category. Ordered: first match wins, so the
 // most specific patterns must come first.
 var INSP_RULES_ = [
-  ['HDPE_BOTTLE', /\b(hdpe|bottle|jar|container|canister|drum|pet\b|preform|closure|cap\b|lid\b)/i],
+  ['HDPE_BOTTLE', /\b(hdpe|bottle|jar|container|canister|drum|pet\b|preform|closure|cap\b|lid\b|jerry\s*can|tin\s*can|\bcan\b)/i],
   ['LABEL',       /\b(label|sticker|sleeve|shrink|wrap[- ]?around|bopp|decal)/i],
   ['CARTON',      /\b(carton|corrugat|box|shipper|master case|rsc\b|fluted)/i],
   ['PAPER',       /\b(paper|kraft|liner|board|duplex|insert|leaflet|manual|booklet)/i],
   ['BULK',        /\b(powder|granule|resin|adhesive|glue|ink|solvent|chemical|compound|masterbatch|kg\b|litre|liter)/i],
 ];
+
+// Single resolver used by BOTH the proposal and the applier so they can never
+// disagree about what a material would get.
+// Order matters: exclusions first, then the sheet's own value, then the alias
+// table, then description keywords. Returns '' when nothing is confident.
+function resolveInspCat_(categoryValue, description) {
+  var cat = String(categoryValue || '').trim().toUpperCase();
+  var desc = String(description || '').trim();
+  if (INSP_CAT_EXCLUDE_[cat]) return '';
+  if (INSP_CATS_.indexOf(cat) >= 0) return cat;
+  if (INSP_CAT_ALIASES_[cat]) return INSP_CAT_ALIASES_[cat];
+  for (var k = 0; k < INSP_RULES_.length; k++) {
+    if (INSP_RULES_[k][1].test(desc)) return INSP_RULES_[k][0];
+  }
+  return '';
+}
 
 function proposeInspectionCategories() {
   var ss = getSpreadsheet();
@@ -53,7 +92,7 @@ function proposeInspectionCategories() {
     });
 
   // Build the proposal.
-  var bySource = { direct: 0, keyword: 0, unresolved: 0 };
+  var bySource = { direct: 0, alias: 0, keyword: 0, unresolved: 0 };
   var byCat = {};
   var unresolved = [];
   var samples = {};
@@ -65,14 +104,10 @@ function proposeInspectionCategories() {
     var desc = String(r[DESC] || '').trim();
     var cat = String(r[CATEGORY] || '').trim().toUpperCase();
 
-    var proposed = '', how = '';
-    if (INSP_CATS_.indexOf(cat) >= 0) {          // the existing column already holds a valid category
-      proposed = cat; how = 'direct';
-    } else {
-      for (var k = 0; k < INSP_RULES_.length; k++) {
-        if (INSP_RULES_[k][1].test(desc)) { proposed = INSP_RULES_[k][0]; how = 'keyword'; break; }
-      }
-    }
+    var proposed = resolveInspCat_(cat, desc);
+    var how = !proposed ? '' :
+      (INSP_CATS_.indexOf(cat) >= 0 ? 'direct' :
+      (INSP_CAT_ALIASES_[cat] ? 'alias' : 'keyword'));
     if (!proposed) {
       bySource.unresolved++;
       if (unresolved.length < 25) unresolved.push('    row ' + (i + 2) + '  ' + code + '  cat="' + cat + '"  ' + desc.slice(0, 52));
@@ -88,8 +123,9 @@ function proposeInspectionCategories() {
   L.push('--- PROPOSED ---');
   L.push('  already set : ' + alreadySet);
   L.push('  from existing Category column : ' + bySource.direct);
+  L.push('  from alias table (CANS->HDPE_BOTTLE etc) : ' + bySource.alias);
   L.push('  from description keywords     : ' + bySource.keyword);
-  L.push('  UNRESOLVED (need your call)   : ' + bySource.unresolved);
+  L.push('  UNRESOLVED / excluded         : ' + bySource.unresolved);
   L.push('');
   Object.keys(byCat).sort().forEach(function (c) {
     L.push('  ' + c + '  ->  ' + byCat[c] + ' materials');
@@ -177,14 +213,7 @@ function applyInspectionCategories(apply) {
 
     var cat = String(r[CATEGORY] || '').trim().toUpperCase();
     var desc = String(r[DESC] || '').trim();
-    var proposed = '';
-    if (INSP_CATS_.indexOf(cat) >= 0) {
-      proposed = cat;
-    } else {
-      for (var k = 0; k < INSP_RULES_.length; k++) {
-        if (INSP_RULES_[k][1].test(desc)) { proposed = INSP_RULES_[k][0]; break; }
-      }
-    }
+    var proposed = resolveInspCat_(cat, desc);
     if (proposed) { counts[proposed] = (counts[proposed] || 0) + 1; skipped++; }
     else { unresolved++; }
     col.push([proposed]);
