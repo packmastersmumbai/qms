@@ -9,7 +9,8 @@
  */
 
 // The five categories that actually have parameters defined in MASTERS_Parameters.
-var INSP_CATS_ = ['HDPE_BOTTLE', 'LABEL', 'PAPER', 'CARTON', 'BULK'];
+var INSP_CATS_ = ['HDPE_BOTTLE', 'LABEL', 'PAPER', 'CARTON', 'BULK',
+                  'POUCH', 'SACHET', 'FILM', 'RUBBER'];
 
 // Existing Category-column values that map onto an inspection category. Confirmed
 // with the user 2026-08-02: "CANs are Bottles, RIBBON are thermal ribbons".
@@ -23,7 +24,14 @@ var INSP_CAT_ALIASES_ = {
   'CANS': 'HDPE_BOTTLE', 'CAN': 'HDPE_BOTTLE', 'BOTTLES': 'HDPE_BOTTLE',
   'PLUG': 'HDPE_BOTTLE', 'CAPS': 'HDPE_BOTTLE', 'CAP': 'HDPE_BOTTLE',
   'CARTONS': 'CARTON', 'MONO CARTON': 'CARTON', 'OUTER': 'CARTON', 'INNER': 'CARTON',
-  'LABELS': 'LABEL', 'RIBBON': 'LABEL', 'TAPE': 'LABEL', 'SLEVE': 'LABEL', 'SLEEVES': 'LABEL'
+  'LABELS': 'LABEL', 'TAPE': 'LABEL', 'SLEVE': 'LABEL', 'SLEEVES': 'LABEL',
+  // RIBBON was mapped to LABEL as the closest available fit; FILM now exists and is
+  // correct — a thermal transfer ribbon is a printing consumable, not an applied label,
+  // so LABEL's adhesion/peel and barcode-scan checks never applied to it.
+  'RIBBON': 'FILM', 'FILM': 'FILM', 'LAMINATE': 'FILM', 'ROLL': 'FILM',
+  'POUCH': 'POUCH', 'POUCHES': 'POUCH',
+  'SACHET': 'SACHET', 'SACHETS': 'SACHET',
+  'RUBBER': 'RUBBER', 'ELASTIC': 'RUBBER'
 };
 
 // Categories that must NOT receive an inspectionCategory.
@@ -207,9 +215,21 @@ function applyInspectionCategories(apply) {
   var data = ws.getRange(2, 1, lr - 1, lc).getValues();
   var col = [], counts = {}, skipped = 0, unresolved = 0, kept = 0;
 
+  // RIBBON was seeded as LABEL before the FILM category existed. Those two rows are
+  // the ONLY case where an already-set value is corrected — everything else is
+  // strictly append-only. Guarded to the exact wrong pairing so it cannot generalise
+  // into "overwrite whatever disagrees with the current rules".
+  var REMAP_ = [{ from: 'LABEL', to: 'FILM', whenCategory: 'RIBBON' }];
+  var remapped = 0;
+
   data.forEach(function (r) {
     var current = String(r[INSP] || '').trim();
-    if (current) { col.push([current]); kept++; return; }   // never overwrite
+    if (current) {
+      var srcCat = String(r[CATEGORY] || '').trim().toUpperCase();
+      var fix = REMAP_.filter(function (m) { return m.from === current && m.whenCategory === srcCat; })[0];
+      if (fix) { col.push([fix.to]); remapped++; return; }
+      col.push([current]); kept++; return;                  // otherwise never overwrite
+    }
 
     var cat = String(r[CATEGORY] || '').trim().toUpperCase();
     var desc = String(r[DESC] || '').trim();
@@ -220,6 +240,7 @@ function applyInspectionCategories(apply) {
   });
 
   L.push('  already set (left alone) : ' + kept);
+  if (remapped) L.push('  REMAPPED (RIBBON: LABEL -> FILM) : ' + remapped);
   L.push('  to write                 : ' + skipped);
   L.push('  left blank (unresolved)  : ' + unresolved);
   Object.keys(counts).sort().forEach(function (c) { L.push('    ' + c + ' -> ' + counts[c]); });

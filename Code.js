@@ -369,6 +369,15 @@ function doGet(e) {
     catch (erpc) { pcs = 'ERROR: ' + erpc.message; }
     return ContentService.createTextOutput(String(pcs)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'flexparams') {
+    var fxp;
+    try {
+      fxp = (typeof seedFlexibleParams === 'function')
+        ? seedFlexibleParams(e.parameter.confirm === 'YES')
+        : 'seedFlexibleParams missing (is _FlexibleParams.js pushed?)';
+    } catch (erfx) { fxp = 'ERROR: ' + erfx.message + '\n' + (erfx.stack || ''); }
+    return ContentService.createTextOutput(String(fxp)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'matschemafix') {
     var msf;
     try {
