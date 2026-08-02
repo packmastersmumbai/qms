@@ -43,12 +43,18 @@
   .tr-issue-pill { display:inline-flex; align-items:center; gap:3px; font-size:10px; padding:2px 7px; border-radius:99px; background:#fee2e2; color:#b91c1c; font-weight:700; margin-left:6px; cursor:pointer; }
   .tr-orphan     { background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px 12px; font-size:12px; color:#9a3412; margin-bottom:8px; }
   .pm-narrow main, .pm-wide main { padding-top:0; } /* override theme rules */
+
+  /* TailwindBundle is statically pre-compiled with no JIT, and #0D1B6E was adopted
+     after that build, so `bg-[#0D1B6E]` resolved to nothing: the fixed header painted
+     transparent and its white title sat on the #f8fafc page at 1.05 contrast.
+     Real CSS instead. Verify against the bundle before using an arbitrary value. */
+  .pm-navy-bg { background-color: #0D1B6E !important; }
 </style>
 </head>
 <body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px] pm-wide">
 
 <!-- ── Top App Bar (full-bleed; inner cage centers content) ── -->
-<header class="fixed top-0 left-0 right-0 w-full z-50 h-[56px] bg-[#0D1B6E] shadow-md">
+<header class="fixed top-0 left-0 right-0 w-full z-50 h-[56px] pm-navy-bg shadow-md">
   <div class="h-full max-w-[1280px] mx-auto flex items-center justify-between px-4 relative">
     <div class="flex items-center gap-2">
       <span id="logoBtn"
@@ -69,7 +75,7 @@
       <input type="search" id="qInput" placeholder="Paste any ID — PO, GRN, IQC, IPQC, FG Job, OQC, GP, Dispatch, NCR…"
              class="w-full h-[36px] border border-[#e2e8f0] rounded-[6px] pl-8 pr-3 text-[13px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#0D1B6E]">
     </div>
-    <button id="goBtn" class="h-[36px] px-4 rounded-[6px] bg-[#0D1B6E] text-white text-[12px] font-bold active:scale-95">Trace</button>
+    <button id="goBtn" class="h-[36px] px-4 rounded-[6px] pm-navy-bg text-white text-[12px] font-bold active:scale-95">Trace</button>
   </div>
 </div>
 

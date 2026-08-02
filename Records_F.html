@@ -198,6 +198,20 @@
       #customDateBtn { min-width: 32px; min-height: 32px; }
       #fromDate, #toDate { min-height: 36px; }
     }
+
+    /* TailwindBundle is a STATIC pre-compiled stylesheet with no JIT: an arbitrary
+       value only exists if it was in the markup when the bundle was built. #0D1B6E
+       is the FormKit/DESIGN.md navy adopted after that build, so `bg-[#0D1B6E]`
+       resolved to NOTHING — the fixed header painted transparent and its white text
+       sat on the #f8fafc page (contrast 1.05), and the active tab/time pills were
+       white-on-white. Declared here as real CSS. Do not convert back to a Tailwind
+       arbitrary value without verifying it is in the bundle. */
+    .pm-navy-bg { background-color: #0D1B6E !important; }
+    .pm-navy-border { border-color: #0D1B6E !important; }
+    .pm-navy-text { color: #0D1B6E !important; }
+    /* hover: prefixes only work on bundled Tailwind utilities, so the hover state
+       is a real rule too. */
+    .pm-navy-hover:hover { border-color: #0D1B6E !important; color: #0D1B6E !important; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('HtmlCache') ?>
@@ -205,7 +219,7 @@
 <body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px]  pm-wide">
 
 <!-- ── Top App Bar (full-bleed; inner cage centers content) ── -->
-<header class="fixed top-0 left-0 right-0 w-full z-50 h-[56px] bg-[#0D1B6E] shadow-md">
+<header class="fixed top-0 left-0 right-0 w-full z-50 h-[56px] pm-navy-bg shadow-md">
   <div class="h-full max-w-[1280px] mx-auto flex items-center justify-between px-4 relative">
     <div class="flex items-center gap-2">
       <span id="logoBtn"
@@ -215,7 +229,7 @@
     </div>
     <h1 class="font-headline text-[18px] font-bold text-white tracking-tight absolute left-1/2 -translate-x-1/2">Records</h1>
     <div class="flex items-center gap-1">
-      <div id="roleChip" class="hidden text-[11px] font-bold text-[#0D1B6E] bg-white rounded-full px-3 py-0.5"></div>
+      <div id="roleChip" class="hidden text-[11px] font-bold pm-navy-text bg-white rounded-full px-3 py-0.5"></div>
     </div>
   </div>
 </header>
@@ -283,7 +297,7 @@
     <button onclick="setTimePeriod('MONTH')" data-period="MONTH"
       class="time-pill h-[30px] px-2.5 rounded-[6px] text-[11px] font-semibold border border-[#e2e8f0] bg-white text-[#6B7280] transition-all whitespace-nowrap active:scale-95">MONTH</button>
     <button onclick="setTimePeriod('ALL')" data-period="ALL"
-      class="time-pill h-[30px] px-2.5 rounded-[6px] text-[11px] font-semibold border border-[#0D1B6E] bg-[#0D1B6E] text-white transition-all whitespace-nowrap active:scale-95">ALL</button>
+      class="time-pill h-[30px] px-2.5 rounded-[6px] text-[11px] font-semibold border pm-navy-border pm-navy-bg text-white transition-all whitespace-nowrap active:scale-95">ALL</button>
 
     <!-- Search grows to fill -->
     <div class="relative flex-1 min-w-0">
@@ -355,7 +369,7 @@
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">home</span>
     <span class="font-label text-[11px] font-semibold">Home</span>
   </button>
-  <button class="flex flex-col items-center justify-center text-[#0D1B6E] font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+  <button class="flex flex-col items-center justify-center pm-navy-text font-bold hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 1;">inventory</span>
     <span class="font-label text-[11px] font-semibold">Records</span>
   </button>
@@ -509,7 +523,7 @@
 
   function clearTimePill() {
     document.querySelectorAll('.time-pill').forEach(function(b) {
-      b.className = 'time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#0D1B6E] hover:text-[#0D1B6E] transition-all whitespace-nowrap active:scale-95';
+      b.className = 'time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border border-[#e2e8f0] bg-white text-[#64748b] pm-navy-hover  transition-all whitespace-nowrap active:scale-95';
     });
   }
 
@@ -534,7 +548,7 @@
     document.querySelectorAll('.time-pill').forEach(function(b) {
       var isActive = b.dataset.period === period;
       b.className = 'time-pill h-[28px] px-4 rounded-full text-[12px] font-semibold border transition-all whitespace-nowrap active:scale-95 ' +
-        (isActive ? 'border-[#0D1B6E] bg-[#0D1B6E] text-white' : 'border-[#e2e8f0] bg-white text-[#64748b] hover:border-[#0D1B6E] hover:text-[#0D1B6E]');
+        (isActive ? 'pm-navy-border pm-navy-bg text-white' : 'border-[#e2e8f0] bg-white text-[#64748b] pm-navy-hover ');
     });
     load();
   }
@@ -881,7 +895,7 @@
       if (hasAnyFilter) {
         headline = 'No ' + moduleLabel + ' match the current filter.';
         hint     = 'Try TODAY/WEEK/MONTH/ALL, widen the date range, or clear search.';
-        action   = '<button onclick="clearAllFilters()" class="mt-3 h-[36px] px-4 rounded-[8px] bg-[#0D1B6E] text-white text-[12px] font-semibold active:scale-95">Clear filters</button>';
+        action   = '<button onclick="clearAllFilters()" class="mt-3 h-[36px] px-4 rounded-[8px] pm-navy-bg text-white text-[12px] font-semibold active:scale-95">Clear filters</button>';
       } else {
         headline = 'No ' + moduleLabel + ' yet.';
         hint     = (state.module === 'ALL')
@@ -924,7 +938,7 @@
         +   (next
               ? '<button type="button" data-nextform="' + esc(next.form) + '" data-ref="' + esc(rec.docNo) + '"'
               +   ' onclick="event.stopPropagation(); window.__runNextAction(this);"'
-              +   ' class="h-[30px] px-3 rounded-[6px] bg-[#0D1B6E] text-white text-[11px] font-bold tracking-wide active:scale-95 transition-transform inline-flex items-center gap-1">'
+              +   ' class="h-[30px] px-3 rounded-[6px] pm-navy-bg text-white text-[11px] font-bold tracking-wide active:scale-95 transition-transform inline-flex items-center gap-1">'
               +   '<span>' + esc(next.label) + '</span>'
               +   '<span class="material-symbols-outlined text-[14px]" style="font-variation-settings:\'FILL\' 0;">arrow_forward</span>'
               + '</button>'
@@ -936,7 +950,7 @@
             + '<div class="p-[16px] cursor-pointer active:bg-gray-50 transition-colors data-row" '
             +      'data-docno="' + esc(rec.docNo) + '" data-rectype="' + esc(recType) + '">'
             +   '<div class="flex justify-between items-start mb-1.5">'
-            +     '<h2 class="font-headline text-[14px] font-bold text-[#0D1B6E]">' + esc(rec.docNo) + '</h2>'
+            +     '<h2 class="font-headline text-[14px] font-bold pm-navy-text">' + esc(rec.docNo) + '</h2>'
             +     '<div class="flex gap-2 items-center">'
             +       '<span style="background:' + moduleColor(recType) + ';color:#fff;" class="px-2 py-0.5 rounded-[4px] font-label text-[10px] font-bold tracking-wider">' + esc(recType) + '</span>'
             +       chipHtml(rec.status)
@@ -1067,7 +1081,7 @@
       var borderCls = cardExtraClass(po.status);
       html += '<div class="rec-card bg-white rounded-[12px] border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] p-[16px] cursor-pointer active:bg-gray-50 transition-colors po-row fade-in ' + borderCls + '" data-pono="' + esc(po.poNo) + '">'
             +   '<div class="flex justify-between items-start mb-2">'
-            +     '<h2 class="font-headline text-[14px] font-bold text-[#0D1B6E]">' + esc(po.poNo) + '</h2>'
+            +     '<h2 class="font-headline text-[14px] font-bold pm-navy-text">' + esc(po.poNo) + '</h2>'
             +     '<div class="flex gap-2 items-center">'
             +       '<span style="background:#0D1B6E;color:#fff;" class="px-2 py-0.5 rounded-[4px] font-label text-[10px] font-bold tracking-wider">PO</span>'
             +       poStatusChip(po.status)
@@ -1261,9 +1275,9 @@
     var sc = document.getElementById('searchClear');if (sc) sc.style.display = 'none';
     document.querySelectorAll('.time-pill').forEach(function(b){
       var on = b.getAttribute('data-period') === 'ALL';
-      b.classList.toggle('bg-[#0D1B6E]', on);
+      b.classList.toggle('pm-navy-bg', on);
       b.classList.toggle('text-white', on);
-      b.classList.toggle('border-[#0D1B6E]', on);
+      b.classList.toggle('pm-navy-border', on);
       b.classList.toggle('bg-white', !on);
       b.classList.toggle('text-[#6B7280]', !on);
       b.classList.toggle('border-[#e2e8f0]', !on);
