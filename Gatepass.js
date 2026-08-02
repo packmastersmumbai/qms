@@ -113,6 +113,62 @@ function getGatewayRowForWA(row) {
   };
 }
 
+// Released OQCs available to reference on an outbound gatepass.
+// RESTORED: this was dropped in 49732de while three call sites survived —
+// Gatepass_F.html:452, Initialize.js:1093, and the schema comment below — so
+// the form threw "getReleasedOQCsForGatepass is not a function" on load and
+// its OQC dropdown sat on "— Loading released OQCs… —" permanently.
+// Recovered verbatim from 6f1cb51; schema still matches the gate below.
+function getReleasedOQCsForGatepass() {
+  try {
+    var ss = getSpreadsheet();
+    var oqcWs = ss.getSheetByName('OQC_LOG');
+    if (!oqcWs || oqcWs.getLastRow() < 2) return [];
+
+    // OQC refs already consumed by a gatepass (GATEPASS_LOG col D) are excluded.
+    var usedRefs = {};
+    var gpWs = ss.getSheetByName('GATEPASS_LOG');
+    if (gpWs && gpWs.getLastRow() > 1) {
+      var gpData = gpWs.getRange(2, 4, gpWs.getLastRow() - 1, 1).getValues();
+      gpData.forEach(function(r) { if (r[0]) usedRefs[String(r[0]).trim()] = true; });
+    }
+
+    var oqcData = oqcWs.getDataRange().getValues();
+    var cutoff  = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    var results = [];
+
+    for (var i = 1; i < oqcData.length; i++) {
+      var row      = oqcData[i];
+      var docNo    = String(row[0] || '').trim();
+      var date     = row[1];
+      var custName = String(row[3] || '');
+      var batchPO  = String(row[4] || '');
+      var material = String(row[5] || '');
+      var decision = String(row[14] || '').toUpperCase();
+
+      if (!docNo) continue;
+      if (decision !== 'RELEASED' && decision !== 'ACCEPTED') continue;
+      if (usedRefs[docNo]) continue;
+      if (date && new Date(date) < cutoff) continue;
+
+      var dateStr = date ? Utilities.formatDate(new Date(date), 'Asia/Kolkata', 'dd-MMM') : '';
+      results.push({
+        docNo:    docNo,
+        label:    docNo + ' · ' + material + (batchPO ? ' · ' + batchPO : '') + (dateStr ? ' · ' + dateStr : ''),
+        customer: custName,
+        material: material,
+        batchPO:  batchPO,
+        date:     dateStr
+      });
+    }
+    return results;
+  } catch (e) {
+    Logger.log(e);
+    return [];
+  }
+}
+
 // Backend OQC pass-gate. Throws if oqcRef is missing, not RELEASED/ACCEPTED, or already consumed.
 // Schema matches getReleasedOQCsForGatepass(): OQC_LOG col A (0) = docNo, col O (14) = decision.
 // GATEPASS_LOG col D (3) = OQC_REF.
