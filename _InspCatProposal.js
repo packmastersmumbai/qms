@@ -143,3 +143,67 @@ function proposeInspectionCategories() {
   Logger.log(out);
   return out;
 }
+
+/**
+ * Write the proposed inspectionCategory for every material that resolves.
+ *   ?diag=inspcatapply               DRY RUN
+ *   ?diag=inspcatapply&confirm=YES   apply
+ *
+ * Only writes col 12. Never overwrites a value that is already set, and leaves
+ * unresolved materials blank rather than guessing — a wrong category means
+ * inspecting against the wrong parameter set, which is worse than none.
+ */
+function applyInspectionCategories(apply) {
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('MASTERS_Materials');
+  if (!ws) return 'MASTERS_Materials missing';
+
+  var lr = ws.getLastRow(), lc = ws.getLastColumn();
+  var CODE = 0, DESC = 1, CATEGORY = 3, INSP = 12;
+
+  var L = ['inspectionCategory apply — ' + (apply ? 'LIVE' : 'DRY RUN')];
+  if (lc <= INSP) {
+    L.push('BLOCKED: sheet has ' + lc + ' columns; col ' + INSP + ' does not exist.');
+    L.push('Run ?diag=matschemafix&confirm=YES first.');
+    return L.join('\n');
+  }
+
+  var data = ws.getRange(2, 1, lr - 1, lc).getValues();
+  var col = [], counts = {}, skipped = 0, unresolved = 0, kept = 0;
+
+  data.forEach(function (r) {
+    var current = String(r[INSP] || '').trim();
+    if (current) { col.push([current]); kept++; return; }   // never overwrite
+
+    var cat = String(r[CATEGORY] || '').trim().toUpperCase();
+    var desc = String(r[DESC] || '').trim();
+    var proposed = '';
+    if (INSP_CATS_.indexOf(cat) >= 0) {
+      proposed = cat;
+    } else {
+      for (var k = 0; k < INSP_RULES_.length; k++) {
+        if (INSP_RULES_[k][1].test(desc)) { proposed = INSP_RULES_[k][0]; break; }
+      }
+    }
+    if (proposed) { counts[proposed] = (counts[proposed] || 0) + 1; skipped++; }
+    else { unresolved++; }
+    col.push([proposed]);
+  });
+
+  L.push('  already set (left alone) : ' + kept);
+  L.push('  to write                 : ' + skipped);
+  L.push('  left blank (unresolved)  : ' + unresolved);
+  Object.keys(counts).sort().forEach(function (c) { L.push('    ' + c + ' -> ' + counts[c]); });
+
+  if (!apply) {
+    L.push('');
+    L.push('DRY RUN — nothing written. Re-run with &confirm=YES to apply.');
+    return L.join('\n');
+  }
+
+  ws.getRange(2, INSP + 1, col.length, 1).setValues(col);
+  SpreadsheetApp.flush();
+  L.push('');
+  L.push('APPLIED: ' + skipped + ' categories written to col ' + INSP + '.');
+  return L.join('\n');
+}

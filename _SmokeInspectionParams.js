@@ -9,7 +9,19 @@ function smokeInspectionParams() {
   try {
     // ---- Task 1: material field + param cols + resolver + IQC_PARAM_LOG ----
     assert('MAT_COL.INSP_CATEGORY=12', MAT_COL.INSP_CATEGORY===12, 'got '+MAT_COL.INSP_CATEGORY);
-    assert('MAT_WIDTH=13', MAT_WIDTH===13, 'got '+MAT_WIDTH);
+    assert('MAT_WIDTH=15', MAT_WIDTH===15, 'got '+MAT_WIDTH);
+    // Asserting the CONSTANTS alone is what let this bug hide: the live sheet had only
+    // 12 columns, so MAT_COL.INSP_CATEGORY=12 pointed past its end and no category could
+    // ever be stored — yet this file still passed 18/18. Check the SHEET, not just the
+    // contract, and check the header actually says what the contract believes.
+    var matWs = ss.getSheetByName('MASTERS_Materials');
+    assert('MASTERS_Materials is >= MAT_WIDTH cols',
+           matWs && matWs.getLastColumn() >= MAT_WIDTH,
+           'sheet has ' + (matWs ? matWs.getLastColumn() : 'no sheet') + ' cols, need ' + MAT_WIDTH);
+    var matHdr = matWs.getRange(1, 1, 1, matWs.getLastColumn()).getValues()[0];
+    assert('col 12 header is Inspection Category',
+           String(matHdr[MAT_COL.INSP_CATEGORY] || '').trim().toLowerCase() === 'inspection category',
+           'got "' + matHdr[MAT_COL.INSP_CATEGORY] + '"');
     ensureIqcParamLogSheet_();
     assert('IQC_PARAM_LOG exists', !!ss.getSheetByName('IQC_PARAM_LOG'));
     var pc='TIP-WT-'+stamp;

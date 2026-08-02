@@ -22,7 +22,12 @@ var MAT_COL = {
   EACH_L: 6, EACH_W: 7, EACH_H: 8, EACH_WEIGHT: 9, PER_PALLET: 10, FIT_CLASS: 11,
   INSP_CATEGORY: 12   // product inspection category (HDPE_BOTTLE|LABEL|PAPER|CARTON|BULK) — drives IQC/IPQC params
 };
-var MAT_WIDTH = 13;
+// 15, not 13: MastersCrud stamps LastModified/ModifiedBy on every master sheet, so
+// they sit at 13/14 AFTER Inspection Category. A width of 13 made the row writers
+// clip both audit cells on every edit. The live sheet was repaired to match this
+// contract by _MaterialsSchemaFix.js (?diag=matschemafix) — it previously had only
+// 12 columns, so MAT_COL.INSP_CATEGORY=12 pointed past the end of the sheet.
+var MAT_WIDTH = 15;
 
 // MASTERS_Parameters column contract — the inspection-parameter DICTIONARY.
 // Named for the same reason MAT_COL is: this sheet had NO contract, and two
@@ -683,7 +688,7 @@ function _testSaveMaterialWidth() {
     _upsertMaterialRow_(ws, 'M1', patch);
 
     var afterEdit = ws.getRange(2, 1, 1, MAT_WIDTH).getValues()[0];
-    assert(afterEdit.length === MAT_WIDTH, 'edited row is exactly 12 cols wide (was ' + afterEdit.length + ')');
+    assert(afterEdit.length === MAT_WIDTH, 'edited row is exactly MAT_WIDTH cols wide (was ' + afterEdit.length + ')');
     assert(afterEdit[MAT_COL.DESC] === 'New Desc', 'unrelated edit applied (desc)');
     assert(afterEdit[MAT_COL.CATEGORY] === 'RM', 'col D (category) preserved');
     assert(afterEdit[MAT_COL.DEFAULT_LOCATION] === 'B001', 'col E (defaultLocation) preserved');

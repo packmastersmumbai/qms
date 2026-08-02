@@ -369,6 +369,24 @@ function doGet(e) {
     catch (erpc) { pcs = 'ERROR: ' + erpc.message; }
     return ContentService.createTextOutput(String(pcs)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'matschemafix') {
+    var msf;
+    try {
+      msf = (typeof fixMaterialsSchema === 'function')
+        ? fixMaterialsSchema(e.parameter.confirm === 'YES')
+        : 'fixMaterialsSchema missing (is _MaterialsSchemaFix.js pushed?)';
+    } catch (ermsf) { msf = 'ERROR: ' + ermsf.message + '\n' + (ermsf.stack || ''); }
+    return ContentService.createTextOutput(String(msf)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'inspcatapply') {
+    var ica;
+    try {
+      ica = (typeof applyInspectionCategories === 'function')
+        ? applyInspectionCategories(e.parameter.confirm === 'YES')
+        : 'applyInspectionCategories missing';
+    } catch (erica) { ica = 'ERROR: ' + erica.message + '\n' + (erica.stack || ''); }
+    return ContentService.createTextOutput(String(ica)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'inspcatproposal') {
     var icp;
     try { icp = (typeof proposeInspectionCategories === 'function') ? proposeInspectionCategories() : 'proposeInspectionCategories missing'; }
