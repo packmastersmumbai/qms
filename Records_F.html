@@ -32,7 +32,7 @@
       top: 50%;
       transform: translateY(-50%);
       font-size: 18px;
-      color: #94a3b8;
+      color: #64748b;
       cursor: pointer;
       display: none;
       line-height: 1;
@@ -50,7 +50,7 @@
     }
     .chip-pass, .chip-accepted    { background: #16a34a; color: #fff; }
     .chip-fail, .chip-rejected    { background: #dc2626; color: #fff; }
-    .chip-pending, .chip-open     { background: #d97706; color: #fff; }
+    .chip-pending, .chip-open     { background: #b45309; color: #fff; }
     .chip-issued                  { background: #2563eb; color: #fff; }
     .chip-default                 { background: #0D1B6E; color: #fff; }
 
@@ -301,7 +301,7 @@
 
     <!-- Search grows to fill -->
     <div class="relative flex-1 min-w-0">
-      <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#94a3b8] text-[16px]" style="font-variation-settings:'FILL' 0;">search</span>
+      <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#64748b] text-[16px]" style="font-variation-settings:'FILL' 0;">search</span>
       <input type="search" id="searchInput" placeholder="ID, item, supplier…"
              class="w-full h-[30px] border border-[#e2e8f0] rounded-[6px] pl-7 pr-7 text-[12px] text-[#0f172a] bg-white focus:outline-none focus:ring-1 focus:ring-[#0D1B6E]">
       <span class="search-clear" id="searchClear" style="right:8px;">&times;</span>
@@ -365,7 +365,7 @@
 <!-- ── Bottom nav (full-bleed bar; inner cage centers buttons) ── -->
 <nav class="fixed bottom-0 left-0 right-0 w-full pb-safe z-50 h-[64px] bg-white border-t border-[#e2e8f0]">
  <div class="h-full max-w-[1280px] mx-auto flex justify-around items-center px-2">
-  <button id="navHome" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+  <button id="navHome" class="flex flex-col items-center justify-center text-[#64748b] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">home</span>
     <span class="font-label text-[11px] font-semibold">Home</span>
   </button>
@@ -373,15 +373,15 @@
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 1;">inventory</span>
     <span class="font-label text-[11px] font-semibold">Records</span>
   </button>
-  <button id="navKPI" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+  <button id="navKPI" class="flex flex-col items-center justify-center text-[#64748b] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">analytics</span>
     <span class="font-label text-[11px] font-semibold">KPIs</span>
   </button>
-  <button id="navMasters" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+  <button id="navMasters" class="flex flex-col items-center justify-center text-[#64748b] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">database</span>
     <span class="font-label text-[11px] font-semibold">Masters</span>
   </button>
-  <button id="navMore" class="flex flex-col items-center justify-center text-[#94a3b8] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
+  <button id="navMore" class="flex flex-col items-center justify-center text-[#64748b] hover:bg-[#f8fafc] transition-colors active:opacity-80 duration-150 w-full h-full rounded-lg">
     <span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings:'FILL' 0;">more_horiz</span>
     <span class="font-label text-[11px] font-semibold">More</span>
   </button>
@@ -659,7 +659,7 @@
   // ── Module label badge color per module (fix #72) ──
   function moduleColor(module) {
     var m = (module || '').toUpperCase();
-    if (m === 'GRN') return '#0d9488';
+    if (m === 'GRN') return '#0f766e';
     if (m === 'IQC') return '#2563eb';
     if (m === 'IPQC') return '#7c3aed';
     if (m === 'PRODUCTION') return '#0B7285';
@@ -960,9 +960,9 @@
             +     '<p class="font-body text-[13px] font-medium text-[#374151] truncate pr-4">' + esc(rec.name) + '</p>'
             +     '<div class="flex items-center gap-1 shrink-0">'
             +       (rec.videoUrl ? '<a href="' + esc(rec.videoUrl) + '" target="_blank" onclick="event.stopPropagation();" title="View defect video" class="inline-flex items-center justify-center w-[22px] h-[22px] rounded-[4px] bg-[#f1f5f9] text-[#2563eb]"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings:\'FILL\' 1;">videocam</span></a>' : '')
-            +       (rec.imageUrls && rec.imageUrls.length ? '<span title="' + rec.imageUrls.length + ' defect photo' + (rec.imageUrls.length > 1 ? 's' : '') + '" class="inline-flex items-center justify-center w-[22px] h-[22px] rounded-[4px] bg-[#f1f5f9] text-[#16a34a]"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings:\'FILL\' 1;">photo_camera</span></span>' : '')
+            +       (rec.imageUrls && rec.imageUrls.length ? '<span title="' + rec.imageUrls.length + ' defect photo' + (rec.imageUrls.length > 1 ? 's' : '') + '" class="inline-flex items-center justify-center w-[22px] h-[22px] rounded-[4px] bg-[#f1f5f9] text-[#15803d]"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings:\'FILL\' 1;">photo_camera</span></span>' : '')
             +       '<span class="font-body text-[11px] text-[#64748b]">' + esc(rec.date || '—') + '</span>'
-            +       '<span class="material-symbols-outlined text-[16px] text-[#94a3b8]">chevron_right</span>'
+            +       '<span class="material-symbols-outlined text-[16px] text-[#64748b]">chevron_right</span>'
             +     '</div>'
             +   '</div>'
             + '</div>'
@@ -1068,7 +1068,7 @@
       cardList.innerHTML =
         '<div class="bg-white rounded-[12px] p-8 border border-[#e2e8f0] shadow-[0_2px_8px_rgba(0,0,0,0.07)] text-center">'
         + '<p class="font-body text-[14px] text-[#64748b]">No PO records match.</p>'
-        + '<p class="font-body text-[12px] text-[#94a3b8] mt-1">Adjust filters or create a new PO.</p>'
+        + '<p class="font-body text-[12px] text-[#64748b] mt-1">Adjust filters or create a new PO.</p>'
         + '</div>';
       countLbl.textContent = '';
       return;
@@ -1114,7 +1114,7 @@
     var content = document.getElementById('poDetailContent');
     var title   = document.getElementById('poModalTitle');
     title.textContent = 'Loading ' + poNo + '…';
-    content.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:24px 0;">Loading…</p>';
+    content.innerHTML = '<p style="color:#64748b;text-align:center;padding:24px 0;">Loading…</p>';
     modal.style.display = 'block';
 
     google.script.run
@@ -1168,13 +1168,13 @@
     (result.lines || []).forEach(function(l) {
       html += '<tr style="border-bottom:1px solid #f0f0f0;">'
         + '<td style="padding:4px 7px;">' + l.lineNo + '</td>'
-        + '<td style="padding:4px 7px;">' + esc(l.materialCode) + '<br><span style="color:#94a3b8;font-size:10px;">' + esc(l.materialDesc) + '</span></td>'
+        + '<td style="padding:4px 7px;">' + esc(l.materialCode) + '<br><span style="color:#64748b;font-size:10px;">' + esc(l.materialDesc) + '</span></td>'
         + '<td style="padding:4px 7px;">' + l.qtyOrdered + ' ' + esc(l.unit) + '</td>'
         + '<td style="padding:4px 7px;">' + l.qtyReceived + '</td>'
         + '<td style="padding:4px 7px;font-weight:' + (l.qtyPending > 0 ? '700' : '400') + ';color:' + (l.qtyPending > 0 ? '#d97706' : '#64748b') + ';">' + l.qtyPending + '</td>'
         + '<td style="padding:4px 7px;">INR ' + Number(l.unitPrice).toFixed(2) + '</td>'
         + '<td style="padding:4px 7px;">' + poStatusChip(l.lineStatus) + '</td>'
-        + '<td style="padding:4px 7px;color:#94a3b8;">' + esc(l.promisedDate || '—') + '</td>'
+        + '<td style="padding:4px 7px;color:#64748b;">' + esc(l.promisedDate || '—') + '</td>'
         + '</tr>';
     });
     html += '</tbody></table></div>';

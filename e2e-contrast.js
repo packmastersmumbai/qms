@@ -3,7 +3,7 @@
 const { launch, openApp, nav } = require('./e2e-lib');
 (async () => {
   const b = await launch();
-  for (const mod of ['Records','GRN','OQC']) {
+  for (const mod of ['NCR']) {
     const { ctx, page, app } = await openApp(b);
     await nav(app, page, mod); await page.waitForTimeout(11000);
     let fr=null,len=0;

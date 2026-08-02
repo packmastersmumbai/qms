@@ -170,7 +170,7 @@
 
     /* Section heading all-done state */
     .section-heading-done {
-      color: #16a34a !important;
+      color: #15803d !important;
     }
 
     /* Field error highlight */
@@ -182,7 +182,7 @@
     /* Disposition collapse/expand */
     .disp-collapsed-hint {
       font-size: 14px;
-      color: #94a3b8;
+      color: #64748b;
       font-style: italic;
       padding: 12px 0;
       text-align: center;
@@ -278,7 +278,7 @@
     /* Item name hint */
     .item-name-hint {
       font-size: 12px;
-      color: #94a3b8;
+      color: #64748b;
       margin-top: 4px;
       font-style: italic;
       min-height: 16px;
@@ -326,7 +326,7 @@
     <div class="span-2 bg-white rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] px-4 py-3 flex justify-between items-center">
       <div>
         <p id="oqcDocNo" class="font-headline text-[16px] font-bold text-[#1e3a5f]">PM/OQC/—</p>
-        <p class="text-[12px] text-[#94a3b8]">Auto-generated</p>
+        <p class="text-[12px] text-[#64748b]">Auto-generated</p>
       </div>
       <span id="oqcDateLabel" class="text-[13px] text-[#64748b] font-medium"></span>
     </div>
@@ -417,7 +417,7 @@
       <select id="selFGLocation" class="input-base border-accent" style="border-color:#0ea5e9;">
         <option value="">— Select FG location —</option>
       </select>
-      <p class="text-[11px] text-[#94a3b8] mt-2">Where this FG batch is being stored. Used for FIFO dispatch traceability.</p>
+      <p class="text-[11px] text-[#64748b] mt-2">Where this FG batch is being stored. Used for FIFO dispatch traceability.</p>
     </div>
 
     <!-- SAMPLING (ISO 2859-1) — lot/AQL/level/severity drive a computed plan -->
@@ -461,7 +461,7 @@
       <div id="oqcSamplingPanel" class="mt-3 rounded-lg border p-3 hidden" style="border-color:#bbf7d0;background:#f0fdf4;">
         <div class="grid grid-cols-3 gap-2 text-center">
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Sample</div><div class="font-mono text-[21px] font-bold" id="oqcPlanSample">—</div></div>
-          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Accept ≤</div><div class="font-mono text-[21px] font-bold" style="color:#16a34a" id="oqcPlanAc">—</div></div>
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Accept ≤</div><div class="font-mono text-[21px] font-bold" style="color:#15803d" id="oqcPlanAc">—</div></div>
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Reject ≥</div><div class="font-mono text-[21px] font-bold" style="color:#dc2626" id="oqcPlanRe">—</div></div>
         </div>
         <div class="mt-1 text-[10px] font-mono text-text-helper text-center" id="oqcPlanStd">ISO 2859-1</div>
@@ -473,7 +473,7 @@
     <div class="bg-card rounded-lg shadow-card border border-border p-4">
       <label class="label-base" for="inpRemarks">Remarks</label>
       <textarea id="inpRemarks" class="textarea-base" rows="3" placeholder="Deviations, observations, or dispatch notes…"></textarea>
-      <p class="text-[11px] text-[#94a3b8] mt-1">Optional</p>
+      <p class="text-[11px] text-[#64748b] mt-1">Optional</p>
     </div>
 
   </main>
@@ -508,9 +508,9 @@
       Record Video
     </button>
     <div id="oqcVideoPreview" class="hidden flex-1 items-center gap-2">
-      <span class="material-symbols-outlined text-[14px] text-[#16a34a]" style="font-variation-settings:'FILL' 1;">check_circle</span>
+      <span class="material-symbols-outlined text-[14px] text-[#15803d]" style="font-variation-settings:'FILL' 1;">check_circle</span>
       <span id="oqcVideoName" class="text-[12px] text-[#374151] truncate flex-1"></span>
-      <button type="button" onclick="clearOQCVideo()" class="text-[#94a3b8] text-[18px] leading-none">&times;</button>
+      <button type="button" onclick="clearOQCVideo()" class="text-[#64748b] text-[18px] leading-none">&times;</button>
     </div>
   </div>
   <button id="btnSave" disabled

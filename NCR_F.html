@@ -92,6 +92,16 @@
       header button.w-10 { width: 40px; height: 40px; }
       .ncr-disp-btn { min-height: 38px; }
     }
+
+    /* Contrast fixes. These two values are NOT in the static TailwindBundle, so
+       `text-[#0369a1]` / `text-[#b45309]` would resolve to nothing and the text
+       would silently inherit — the same dead-arbitrary-value trap that left the
+       Records header transparent. Declared as real CSS, !important because the
+       bundle loads after this block.
+         doc links   #0ea5e9 -> #0369a1  (2.77:1 -> 5.93:1)
+         warn icon   #f59e0b -> #b45309  (2.15:1 -> 5.02:1) */
+    .ncr-link-ink { color: #0369a1 !important; }
+    .ncr-warn-ink { color: #b45309 !important; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('FormKit') ?>
@@ -133,7 +143,7 @@
     <!-- NCR List rendered by JS -->
     <div id="ncrBody" class="flex flex-col gap-3 pt-2">
       <!-- Loading placeholder -->
-      <div class="flex flex-col items-center justify-center py-16 text-[#94a3b8]">
+      <div class="flex flex-col items-center justify-center py-16 text-[#64748b]">
         <span class="material-symbols-outlined text-[48px] mb-3 opacity-40">hourglass_top</span>
         <p class="text-[14px] font-medium">Loading…</p>
       </div>
@@ -181,7 +191,7 @@
             <div id="dtlPhotos" class="flex gap-2 flex-wrap"></div>
             <label class="w-[72px] h-[72px] border-2 border-dashed border-[#cbd5e1] rounded-lg flex items-center justify-center cursor-pointer hover:border-[#0ea5e9] hover:bg-[#f0f9ff] transition-colors">
               <input type="file" accept="image/*" multiple class="hidden" id="dtlPhotoUpload">
-              <span class="material-symbols-outlined text-[#94a3b8] text-[28px]">photo_camera</span>
+              <span class="material-symbols-outlined text-[#64748b] text-[28px]">photo_camera</span>
             </label>
           </div>
         </section>
@@ -223,7 +233,7 @@
       <!-- CAPA Ref -->
       <div class="mb-4">
         <label class="block text-[12px] font-semibold text-[#374151] mb-1.5 uppercase tracking-wide">
-          CAPA Reference <span class="text-[#94a3b8] font-normal normal-case">(recommended)</span>
+          CAPA Reference <span class="text-[#64748b] font-normal normal-case">(recommended)</span>
         </label>
         <input id="closeCapaRef" type="text"
                placeholder="e.g. CAPA-2026-007 or 'N/A — trivial'"
@@ -250,7 +260,7 @@
       <div class="mb-5">
         <label class="block text-[12px] font-semibold text-[#374151] mb-1.5 uppercase tracking-wide">
           Closure Notes
-          <span class="text-[#94a3b8] font-normal normal-case">(evidence, comms ref)</span>
+          <span class="text-[#64748b] font-normal normal-case">(evidence, comms ref)</span>
         </label>
         <textarea id="closeNotes" rows="3"
                   placeholder="e.g. Next 3 batches inspected clean. Customer notified via email 2026-05-17."
@@ -279,7 +289,7 @@
   <!-- ── BOTTOM NAV ── -->
   <nav class="bg-white fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2
               border-t border-[#e2e8f0] shadow-[0_-2px_8px_rgba(0,0,0,0.08)] h-[64px]">
-    <button onclick="ncrGoto('Landing')" class="flex flex-col items-center justify-center text-[#94a3b8]
+    <button onclick="ncrGoto('Landing')" class="flex flex-col items-center justify-center text-[#64748b]
                    hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
       <span class="material-symbols-outlined mb-1">home</span>
       <span class="font-label text-[12px] font-semibold">Home</span>
@@ -291,17 +301,17 @@
             style="font-variation-settings:'FILL' 1;">assignment</span>
       <span class="font-label text-[12px] font-bold">Records</span>
     </button>
-    <button onclick="ncrGoto('KPI')" class="flex flex-col items-center justify-center text-[#94a3b8]
+    <button onclick="ncrGoto('KPI')" class="flex flex-col items-center justify-center text-[#64748b]
                    hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
       <span class="material-symbols-outlined mb-1">leaderboard</span>
       <span class="font-label text-[12px] font-semibold">KPIs</span>
     </button>
-    <button onclick="ncrGoto('Masters')" class="flex flex-col items-center justify-center text-[#94a3b8]
+    <button onclick="ncrGoto('Masters')" class="flex flex-col items-center justify-center text-[#64748b]
                    hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
       <span class="material-symbols-outlined mb-1">settings_applications</span>
       <span class="font-label text-[12px] font-semibold">Masters</span>
     </button>
-    <button onclick="ncrShowMore()" class="flex flex-col items-center justify-center text-[#94a3b8]
+    <button onclick="ncrShowMore()" class="flex flex-col items-center justify-center text-[#64748b]
                    hover:bg-slate-50 active:scale-90 transition-all w-16 h-full">
       <span class="material-symbols-outlined mb-1">more_horiz</span>
       <span class="font-label text-[12px] font-semibold">More</span>
@@ -386,7 +396,7 @@
 
     if (!rows || rows.length === 0) {
       body.innerHTML =
-        '<div class="flex flex-col items-center justify-center py-20 text-[#94a3b8]">' +
+        '<div class="flex flex-col items-center justify-center py-20 text-[#64748b]">' +
           '<span class="material-symbols-outlined text-[56px] mb-3 opacity-40" ' +
                 'style="font-variation-settings:\'FILL\' 1;">check_circle</span>' +
           '<p class="text-[14px] font-semibold">No NCRs found</p>' +
@@ -438,7 +448,7 @@
 
       /* Defect icon: in-progress = warning, open = error */
       var defectIcon     = isInProgress ? 'warning'      : 'error';
-      var defectIconColor= isInProgress ? 'text-[#f59e0b]': 'text-[#ef4444]';
+      var defectIconColor= isInProgress ? 'ncr-warn-ink': 'text-[#dc2626]';
 
       /* Disposition info row (only for in-progress) */
       var dispoRow = '';
@@ -493,7 +503,7 @@
             (r.sourceRef
               ? '<div class="flex items-center gap-1.5 text-[12px] text-[#64748b]">' +
                   '<span class="material-symbols-outlined text-[14px]">link</span>' +
-                  '<span class="font-medium text-[#0ea5e9]">' + esc(r.sourceRef) + '</span>' +
+                  '<span class="font-medium ncr-link-ink">' + esc(r.sourceRef) + '</span>' +
                 '</div>'
               : '') +
           '</div>' +
@@ -680,7 +690,7 @@
                '<img src="' + esc(url) + '" alt="evidence" class="w-full h-full object-cover"/></a>';
       }).join('');
     } else {
-      photosEl.innerHTML = '<span class="text-[12px] text-[#94a3b8] italic">No photos uploaded yet.</span>';
+      photosEl.innerHTML = '<span class="text-[12px] text-[#64748b] italic">No photos uploaded yet.</span>';
     }
 
     /* Timeline */
@@ -698,7 +708,7 @@
         '</li>';
       }).join('');
     } else {
-      timelineEl.innerHTML = '<li class="text-[12px] text-[#94a3b8] italic">No events.</li>';
+      timelineEl.innerHTML = '<li class="text-[12px] text-[#64748b] italic">No events.</li>';
     }
 
     /* Footer: show "Close NCR" only when IN_PROGRESS */

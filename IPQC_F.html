@@ -246,7 +246,7 @@
     .rpt-tbl td { padding:5px 8px; border:1px solid #e2e8f0; text-align:center; vertical-align:middle; }
     .rpt-tbl td.lbl { text-align:left; font-weight:600; color:#0f172a; background:#f8fafc; white-space:nowrap; }
     .rpt-empty { padding:24px; text-align:center; color:#64748b; font-size:13px; }
-    .rpt-footer { margin-top:18px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:10px; color:#94a3b8; display:flex; justify-content:space-between; }
+    .rpt-footer { margin-top:18px; padding-top:10px; border-top:1px solid #e2e8f0; font-size:10px; color:#64748b; display:flex; justify-content:space-between; }
     .res-pass { background:#dcfce7; color:#15803d; }
     .res-fail { background:#fee2e2; color:#b91c1c; }
     .res-na   { background:#f1f5f9; color:#64748b; }
@@ -301,11 +301,11 @@
 
 <!-- ════════════ BOTTOM NAV (shown on Screen A) ════════════ -->
 <nav id="ipqcBottomNav" class="fixed bottom-0 left-0 w-full h-[56px] bg-white border-t border-[#e2e8f0] z-40 flex items-stretch" style="max-width:768px;left:50%;transform:translateX(-50%);">
-  <button onclick="ipqcGoto('Landing')" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
+  <button onclick="ipqcGoto('Landing')" class="flex-1 flex flex-col items-center justify-center text-[#64748b] active:bg-slate-50">
     <span class="material-symbols-outlined text-[20px]">home</span>
     <span class="text-[10px] font-semibold mt-0.5">Home</span>
   </button>
-  <button onclick="ipqcGoto('Records')" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
+  <button onclick="ipqcGoto('Records')" class="flex-1 flex flex-col items-center justify-center text-[#64748b] active:bg-slate-50">
     <span class="material-symbols-outlined text-[20px]">description</span>
     <span class="text-[10px] font-semibold mt-0.5">Records</span>
   </button>
@@ -313,11 +313,11 @@
     <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;">settings</span>
     <span class="text-[10px] font-bold mt-0.5">IPQC</span>
   </button>
-  <button onclick="ipqcGoto('KPI')" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
+  <button onclick="ipqcGoto('KPI')" class="flex-1 flex flex-col items-center justify-center text-[#64748b] active:bg-slate-50">
     <span class="material-symbols-outlined text-[20px]">leaderboard</span>
     <span class="text-[10px] font-semibold mt-0.5">KPIs</span>
   </button>
-  <button onclick="ipqcShowMore()" class="flex-1 flex flex-col items-center justify-center text-[#94a3b8] active:bg-slate-50">
+  <button onclick="ipqcShowMore()" class="flex-1 flex flex-col items-center justify-center text-[#64748b] active:bg-slate-50">
     <span class="material-symbols-outlined text-[20px]">more_horiz</span>
     <span class="text-[10px] font-semibold mt-0.5">More</span>
   </button>
@@ -472,7 +472,7 @@
       <div id="ipqcVideoPreview" class="hidden flex-1 items-center gap-2">
         <span class="material-symbols-outlined text-[14px] text-[#16a34a]" style="font-variation-settings:'FILL' 1;">check_circle</span>
         <span id="ipqcVideoName" class="text-[12px] text-[#374151] truncate flex-1"></span>
-        <button type="button" onclick="clearIPQCVideo()" class="text-[#94a3b8] text-[18px] leading-none">&times;</button>
+        <button type="button" onclick="clearIPQCVideo()" class="text-[#64748b] text-[18px] leading-none">&times;</button>
       </div>
     </div>
     <div class="flex gap-2">
@@ -1982,12 +1982,12 @@ function clearIPQCVideo() {
 <!-- Inline video recorder modal -->
 <div id="ipqcRecorderModal" style="display:none;position:fixed;inset:0;z-index:999;background:#0f172a;flex-direction:column;">
   <div style="padding:12px;display:flex;align-items:center;gap:10px;background:#1e293b;">
-    <button onclick="closeIPQCRecorder()" style="background:none;border:none;color:#94a3b8;font-size:22px;line-height:1;cursor:pointer;">✕</button>
+    <button onclick="closeIPQCRecorder()" style="background:none;border:none;color:#64748b;font-size:22px;line-height:1;cursor:pointer;">✕</button>
     <span style="color:#fff;font-size:14px;font-weight:600;">Record Session Video</span>
   </div>
   <video id="ipqcViewfinder" style="flex:1;width:100%;object-fit:cover;background:#000;" autoplay muted playsinline></video>
   <div style="padding:16px;display:flex;flex-direction:column;gap:10px;background:#0f172a;">
-    <div id="ipqcRecStatus" style="text-align:center;color:#94a3b8;font-size:13px;">Starting camera…</div>
+    <div id="ipqcRecStatus" style="text-align:center;color:#64748b;font-size:13px;">Starting camera…</div>
     <button id="ipqcRecStartBtn" onclick="ipqcRecStart()" style="height:52px;border-radius:12px;border:none;background:#2563eb;color:#fff;font-size:16px;font-weight:600;cursor:pointer;">● Start Recording</button>
     <button id="ipqcRecStopBtn"  onclick="ipqcRecStop()"  style="height:52px;border-radius:12px;border:none;background:#dc2626;color:#fff;font-size:16px;font-weight:600;cursor:pointer;display:none;">■ Stop</button>
     <div style="display:flex;gap:8px;">

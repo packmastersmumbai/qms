@@ -22,7 +22,10 @@
     --fk-ink:                #0F172A;
     --fk-body:               #374151;
     --fk-muted:              #6B7280;
-    --fk-faint:              #94A3B8;
+    /* #94A3B8 was 2.56:1 on white — below the 4.5:1 WCAG AA minimum, and this token
+       paints the "Optional" field hints on every form. #64748B is 4.76:1: same slate
+       hue, one step darker. Do not lighten past #6B7280 (4.83:1) without re-checking. */
+    --fk-faint:              #64748B;
     /* lines */
     --fk-hairline:           #E5E7EB;
     --fk-hairline-strong:    #CBD5E1;

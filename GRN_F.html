@@ -359,14 +359,14 @@
 
   <!-- Section 5: Images -->
   <section class="fk-card">
-    <h2 class="fk-section">Images <span class="text-[10px] font-normal normal-case tracking-normal text-[#94a3b8]">(optional · max 5 per type)</span></h2>
+    <h2 class="fk-section">Images <span class="text-[10px] font-normal normal-case tracking-normal text-[#64748b]">(optional · max 5 per type)</span></h2>
 
     <!-- Document Images -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-[#1e3a5f] text-[18px]" style="font-variation-settings:'FILL' 1">description</span>
         <span class="fk-label">Document Images</span>
-        <span class="text-[10px] text-[#94a3b8]">Invoice / COA / Challan</span>
+        <span class="text-[10px] text-[#64748b]">Invoice / COA / Challan</span>
       </div>
       <div id="doc-img-preview" class="flex flex-wrap gap-2"></div>
       <label id="doc-img-btn" class="flex items-center justify-center gap-2 h-[42px] border-[1.5px] border-dashed border-[#94a3b8] rounded-lg cursor-pointer text-[13px] font-semibold text-[#64748b] hover:border-accent hover:text-accent transition-all">
@@ -378,9 +378,9 @@
     <!-- Product Images -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-[#16a34a] text-[18px]" style="font-variation-settings:'FILL' 1">inventory_2</span>
+        <span class="material-symbols-outlined text-[#15803d] text-[18px]" style="font-variation-settings:'FILL' 1">inventory_2</span>
         <span class="fk-label">Product Images</span>
-        <span class="text-[10px] text-[#94a3b8]">Material / Packaging photos</span>
+        <span class="text-[10px] text-[#64748b]">Material / Packaging photos</span>
       </div>
       <div id="prod-img-preview" class="flex flex-wrap gap-2"></div>
       <label id="prod-img-btn" class="flex items-center justify-center gap-2 h-[42px] border-[1.5px] border-dashed border-[#94a3b8] rounded-lg cursor-pointer text-[13px] font-semibold text-[#64748b] hover:border-accent hover:text-accent transition-all">
@@ -405,7 +405,7 @@
   <!-- WhatsApp notification toggle -->
   <section class="fk-card fk-card-inline">
     <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-[#16a34a]" style="font-variation-settings:'FILL' 1">chat</span>
+      <span class="material-symbols-outlined text-[#15803d]" style="font-variation-settings:'FILL' 1">chat</span>
       <span class="fk-label">Notify supplier on WhatsApp</span>
     </div>
     <label class="relative inline-flex items-center cursor-pointer">
@@ -1179,8 +1179,36 @@ function _doSaveProceed() {
   }
 
   function doActualSave_(data) {
+    // Offline gate: google.script.run gives no transport error for a dropped
+    // connection until it eventually times out, so on patchy shop-floor wifi the
+    // button would sit disabled with no explanation. Fail fast and keep the data.
+    if (navigator && navigator.onLine === false) {
+      showErr('You appear to be offline. Your entry is still here — reconnect and press Save again.');
+      releaseSaveLatch_();
+      return;
+    }
+
+    // Watchdog: neither handler fires if the call never returns (the same failure
+    // HtmlCache already guards on form open). Without this the latch stays true
+    // and the form is permanently unsubmittable until reload.
+    var settled = false;
+    var watchdog = setTimeout(function() {
+      if (settled) return;
+      settled = true;
+      showErr('Save timed out after 30s. It may or may not have gone through — check Records for '
+              + 'this GRN before saving again.');
+      releaseSaveLatch_();
+    }, 30000);
+    function settle_() {
+      if (settled) return false;
+      settled = true;
+      clearTimeout(watchdog);
+      return true;
+    }
+
     google.script.run
       .withSuccessHandler(function(res) {
+        if (!settle_()) return;   // watchdog already reported; ignore the late reply
         if (res && res.success) {
           formSaved = true;
           var nItems = (data.items || []).length;
@@ -1207,18 +1235,25 @@ function _doSaveProceed() {
           }
         } else {
           showErr('Save failed: ' + ((res && res.error) ? res.error : 'Unknown error'));
-          _grnSaveInFlight = false;   // save rejected — allow retry
-          btn.disabled = false;
-          btn.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
+          releaseSaveLatch_();   // save rejected — allow retry
         }
       })
       .withFailureHandler(function(e) {
+        if (!settle_()) return;   // watchdog already reported; ignore the late failure
         showErr('Save failed: ' + (e.message || String(e)));
-        _grnSaveInFlight = false;   // transport failure — allow retry
-        btn.disabled = false;
-        btn.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
+        releaseSaveLatch_();   // transport failure — allow retry
       })
       .saveGRN(data);
+  }
+
+  // Single owner of "the save is no longer in flight" so the two handlers and the
+  // watchdog cannot drift out of sync and strand the button in a disabled state.
+  function releaseSaveLatch_() {
+    _grnSaveInFlight = false;
+    var b = document.getElementById('btnSubmit');
+    if (!b) return;
+    b.disabled = false;
+    b.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
   }
 
   function onCancel() {
