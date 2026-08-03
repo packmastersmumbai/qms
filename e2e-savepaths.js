@@ -43,16 +43,26 @@ function installHelpers() {
     var calls = [];
     var captured = null;
     try {
+      // Replace ONLY the write function; leave every read call working.
+      //
+      // The previous version swapped the whole google.script.run object and
+      // stubbed every method. Filling happened first, so selects populated — but
+      // any read the SAVE PATH itself makes was then dead-ended. GRN is the clear
+      // case: doSave() calls getPOById and uploadImagesAndSave_ before saveGRN,
+      // and with those stubbed their callbacks never fire, so saveGRN is never
+      // reached and the probe reports "button reachable but write never
+      // dispatched" — an artefact of the harness, not a product defect.
+      //
+      // Mutating the real object in place keeps the callback chain intact right
+      // up to the write, which is the only thing that must not happen.
       var real = google.script.run;
-      var shim = {
-        withSuccessHandler: function (fn) { this._s = fn; return this; },
-        withFailureHandler: function (fn) { this._f = fn; return this; },
+      var originalWrite = real[writeFnName];
+      real[writeFnName] = function (payload) {
+        captured = payload;
+        calls.push(writeFnName);
+        return real;   // keep the chain alive for any trailing .withXHandler()
       };
-      shim[writeFnName] = function (payload) { captured = payload; calls.push(writeFnName); return shim; };
-      Object.keys(real).forEach(function (k) {
-        if (!(k in shim)) shim[k] = function () { calls.push(k); return shim; };
-      });
-      google.script.run = shim;
+      void originalWrite;   // deliberately not restored: the page is torn down per form
     } catch (e) { /* leave real run in place; caller sees 0 calls */ }
     return { calls: calls, get captured() { return captured; } };
   };
@@ -90,12 +100,48 @@ async function runGRN(s) {
     const btn = document.getElementById('btnSubmit');
     const btnExists = !!btn;
     const beforeDisabled = btn ? btn.disabled : null;
+
+    // GRN gates the save behind an operator-identity modal ("Who are you?"), so
+    // doSave() does NOT reach saveGRN on its own — it waits for a human. The old
+    // probe pressed Save, waited 300ms and reported "write never dispatched",
+    // which measured the modal, not the save path.
+    //
+    // Answer the modal the way an operator would, then let the real chain run.
+    const answerOperatorModal = () => {
+      const modal = Array.from(document.querySelectorAll('div,dialog')).find(d => {
+        const cs = getComputedStyle(d);
+        if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+        if (!/fixed|absolute/.test(cs.position)) return false;
+        return (parseInt(cs.zIndex, 10) || 0) > 100 && /who are you/i.test(d.textContent || '');
+      });
+      if (!modal) return false;
+      // OperatorPicker renders each name as <button class="op-name-btn" data-name>.
+      // Target that explicitly — a text-shape regex also matched the Confirm
+      // button and other chrome, so the operator was never actually selected and
+      // Confirm stayed inert.
+      const name = document.querySelector('.op-name-btn');
+      if (name) name.click();
+      const confirm = Array.from(modal.querySelectorAll('button'))
+        .find(b => /confirm/i.test(b.textContent || ''));
+      if (confirm) confirm.click();
+      return !!(name && confirm);
+    };
+
     if (btn && !btn.disabled) { try { doSave(); } catch (e) {} }
     return new Promise(resolve => setTimeout(() => {
-      const afterFirst = { disabled: btn ? btn.disabled : null, html: btn ? (btn.innerHTML||'').replace(/<[^>]*>/g,'').trim().slice(0,30) : '' };
-      if (btn && !btn.disabled) { try { doSave(); } catch (e) {} }
-      setTimeout(() => resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured }), 500);
-    }, 300));
+      const modalAnswered = answerOperatorModal();
+      setTimeout(() => {
+        const afterFirst = { disabled: btn ? btn.disabled : null,
+          html: btn ? (btn.innerHTML||'').replace(/<[^>]*>/g,'').trim().slice(0,30) : '' };
+        // Second tap — the double-dispatch check.
+        if (btn && !btn.disabled) { try { doSave(); } catch (e) {} }
+        setTimeout(() => {
+          answerOperatorModal();
+          setTimeout(() => resolve({ btnExists, beforeDisabled, modalAnswered,
+            afterFirst, calls: shim.calls, captured: shim.captured }), 1200);
+        }, 600);
+      }, 1500);
+    }, 800));
   });
   return finish(r, 'saveGRN');
 }
