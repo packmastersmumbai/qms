@@ -6,7 +6,7 @@ const { launch, openApp, call } = require('./e2e-lib');
   const mats = await call(rpc, 'getMaterials', []);
   const withCat = (mats||[]).filter(m => (m.inspectionCategory||'').trim());
   console.log('materials: '+(mats||[]).length+'  withInspectionCategory: '+withCat.length);
-  const seen = {}; const probe=["200509-000000","200521-000000","2986292","200158-000000"];
+  const seen = {}; const probe=["2967583","3050437","2963401"];
   withCat.forEach(m => { const c=m.inspectionCategory; if(!seen[c]) seen[c]=m; });
   for (const [cat, m] of Object.entries(seen)) {
     const p = await call(rpc, 'getIqcParamsForProduct', [m.code||m.itemCode]);

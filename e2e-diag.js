@@ -12,7 +12,7 @@ const EXEC = 'https://script.google.com/macros/s/AKfycbxMFpeJOqF5_iARRCo7aHLg0Pw
   const ctx = await b.newContext({ storageState: fs.existsSync(STATE) ? STATE : undefined });
   const page = await ctx.newPage();
   const url = EXEC + '?diag=' + q;
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 180000 });
   await page.waitForTimeout(3000);
   // GAS text output renders inside a nested frame; grab the largest body text.
   let best = '';

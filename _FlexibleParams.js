@@ -59,6 +59,23 @@ var FLEX_PARAM_ROWS_ = [
   ['FM_PRINT',  'Print / Ribbon Density','',       'Visual',      'Print a test swatch; check density, smudge and edge sharpness.',     'Loupe / test print',    'PM/FRM/IQC-02', 'FILM', 'N', 6],
   ['FM_CORE',   'Core ID & Winding',    'mm',      'Dimensional', 'Measure core inner diameter; check for telescoping or loose winds.', 'Vernier caliper',       'PM/FRM/IQC-02', 'FILM', 'N', 7],
 
+  // ── FG — finished goods (filled, capped, labelled, cartoned) ────────
+  // Derived from what CONTROL_FG ALREADY enables in practice for real products
+  // (QP014 fill weight with 440/450/460 overrides, QP015 appearance, QP018 leak),
+  // extended with the packing-line CCPs the legacy set already defines: label
+  // presence, MRP/batch/MFD legibility, cap fitment and induction seal.
+  // These are IPQC-time checks on the packed unit, NOT incoming-material checks —
+  // which is why FG could not simply borrow BULK (MFI and Granule Size are raw-resin
+  // measurements and meaningless on a finished adhesive).
+  ['FG_FILLWT',  'Fill Weight / Net Weight', 'g',  'Gravimetric', 'Weigh a filled unit; compare against declared fill weight.',        'Balance 0.01 g',      'PM/FRM/IQC-02', 'FG', 'Y', 1],
+  ['FG_APPEAR',  'Appearance / Surface',     '',   'Visual',      'Inspect for dents, scuffs, contamination and fill level.',          'Light box',           'PM/FRM/IQC-02', 'FG', 'N', 2],
+  ['FG_LEAK',    'Leak Test',                '',   'Functional',  'Invert or pressurise a filled unit; no seepage at cap or seam.',    'Leak tester',         'PM/FRM/IQC-02', 'FG', 'Y', 3],
+  ['FG_CAPFIT',  'Cap Fitment',              '',   'Functional',  'Check cap seats fully and torques to spec; no cross-threading.',    'Torque meter',        'PM/FRM/IQC-02', 'FG', 'Y', 4],
+  ['FG_SEAL',    'Induction Seal',           '',   'Functional',  'Peel the liner; seal must be continuous with no channels.',         '-',                   'PM/FRM/IQC-02', 'FG', 'Y', 5],
+  ['FG_LABEL',   'Label Presence & Position','mm', 'Visual',      'Verify correct label, squareness and placement vs artwork spec.',   'Steel rule / proof',  'PM/FRM/IQC-02', 'FG', 'Y', 6],
+  ['FG_CODING',  'MRP / Batch / MFD Coding', '',   'Visual',      'Verify MRP, batch number and MFD are present, correct and legible.','Loupe',               'PM/FRM/IQC-02', 'FG', 'Y', 7],
+  ['FG_CARTON',  'Carton Pack & Count',      'pcs','Count',       'Count units per carton; check carton print and sealing.',           '-',                   'PM/FRM/IQC-02', 'FG', 'N', 8],
+
   // ── RUBBER — elastic bands / rubber components ──────────────────────
   ['RB_DIM',    'Dimensions (L x W)',   'mm',      'Dimensional', 'Measure relaxed length and cut width vs spec.',                      'Steel rule / vernier',  'PM/FRM/IQC-02', 'RUBBER', 'N', 1],
   ['RB_THICK',  'Thickness',            'mm',      'Dimensional', 'Measure band thickness at 3 points.',                                'Dial thickness gauge',  'PM/FRM/IQC-02', 'RUBBER', 'N', 2],

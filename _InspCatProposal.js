@@ -10,7 +10,7 @@
 
 // The five categories that actually have parameters defined in MASTERS_Parameters.
 var INSP_CATS_ = ['HDPE_BOTTLE', 'LABEL', 'PAPER', 'CARTON', 'BULK',
-                  'POUCH', 'SACHET', 'FILM', 'RUBBER'];
+                  'POUCH', 'SACHET', 'FILM', 'RUBBER', 'FG'];
 
 // Existing Category-column values that map onto an inspection category. Confirmed
 // with the user 2026-08-02: "CANs are Bottles, RIBBON are thermal ribbons".
@@ -40,7 +40,14 @@ var INSP_CAT_ALIASES_ = {
 // all PACKAGING sets — BULK carries MFI and Granule Size, which are raw-resin checks
 // and meaningless for a finished adhesive. Assigning one would put wrong parameters
 // in front of inspectors on 33 products. Leave blank until an FG param set exists.
-var INSP_CAT_EXCLUDE_ = { 'FG': 1 };
+// FG was excluded until 2026-08-03 because the five defined categories were all
+// PACKAGING sets — BULK carries MFI and Granule Size, raw-resin measurements that are
+// meaningless on a finished adhesive, so categorising FG would have put wrong checks
+// in front of inspectors on 33 products. An FG category now exists (_FlexibleParams.js),
+// built from what CONTROL_FG already enables in practice, so the exclusion is lifted.
+// IPQC merges the category layer UNDER CONTROL_FG's per-product overrides
+// (IPQC.js:36), so a product with its own plan keeps winning on std/tol.
+var INSP_CAT_EXCLUDE_ = {};
 
 // Description keywords -> inspection category. Ordered: first match wins, so the
 // most specific patterns must come first.
