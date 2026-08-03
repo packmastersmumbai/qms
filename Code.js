@@ -363,6 +363,17 @@ function doGet(e) {
     } catch (erph) { phf = 'ERROR: ' + erph.message; }
     return ContentService.createTextOutput(String(phf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=paramdatafix              → dry run
+  //   ?diag=paramdatafix&confirm=YES  → apply
+  if (diag === 'paramdatafix') {
+    var pdf;
+    try {
+      pdf = (typeof fixParamData === 'function')
+        ? fixParamData(String(e.parameter.confirm || '') === 'YES')
+        : 'fixParamData missing (is _ParamDataFix.js pushed?)';
+    } catch (erpd) { pdf = 'ERROR: ' + erpd.message; }
+    return ContentService.createTextOutput(String(pdf)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'paramcolscan') {
     var pcs;
     try { pcs = (typeof scanParamColumns === 'function') ? scanParamColumns() : 'scanParamColumns missing'; }
@@ -526,7 +537,9 @@ function doGet(e) {
 
   if (diag === 'backupsheets') {
     var bk;
-    try { bk = (typeof backupStockSheets === 'function') ? backupStockSheets() : { error: 'missing' }; }
+    var bkList = String(e.parameter.sheets || '').split(',')
+      .map(function(s){ return s.trim(); }).filter(function(s){ return s; });
+    try { bk = (typeof backupStockSheets === 'function') ? backupStockSheets(bkList) : { error: 'missing' }; }
     catch (er20) { bk = { error: er20.message }; }
     return ContentService.createTextOutput(JSON.stringify(bk, null, 2)).setMimeType(ContentService.MimeType.TEXT);
   }

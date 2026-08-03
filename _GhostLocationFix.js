@@ -205,13 +205,15 @@ function ghostLocationMerge(confirm) {
 // widening OAuth scopes on a production script to take a backup is a worse trade
 // than backing up the DATA. So: duplicate STOCK_LEDGER + LOCATIONS inside the same
 // spreadsheet, named with a timestamp. That is what a rollback would read from.
-// ?diag=backupsheets
-function backupStockSheets() {
+// ?diag=backupsheets                      → STOCK_LEDGER + LOCATIONS (default)
+// ?diag=backupsheets&sheets=A,B           → back up an explicit list instead
+function backupStockSheets(sheetNames) {
   var out = { copies: [], error: null };
   try {
     var ss = getSpreadsheet();
     var stamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd-HHmm');
-    ['STOCK_LEDGER', 'LOCATIONS'].forEach(function (name) {
+    var targets = (sheetNames && sheetNames.length) ? sheetNames : ['STOCK_LEDGER', 'LOCATIONS'];
+    targets.forEach(function (name) {
       var src = ss.getSheetByName(name);
       if (!src) { out.copies.push({ sheet: name, status: 'NOT FOUND' }); return; }
       var copyName = 'BAK_' + name + '_' + stamp;
