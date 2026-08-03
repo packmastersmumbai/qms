@@ -278,6 +278,10 @@
         <div id="planVerdict" class="mt-2 py-1.5 rounded text-center text-[12px] font-bold text-white" style="background:#15803d">ACCEPT</div>
       </div>
       <div id="samplingErr" class="mt-2 text-[12px] text-status-danger hidden"></div>
+      <!-- Raised when the chosen disposition contradicts the computed sampling
+           verdict. Advisory, not blocking — see renderSamplingConflict(). -->
+      <div id="samplingConflict" class="mt-2 text-[12px] font-semibold hidden"
+           style="color:#b45309;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:8px 10px;"></div>
     </div>
 
     <!-- PO Reference + Invoice No — both short codes, so they pair on one row
@@ -719,15 +723,23 @@ function recomputeSampling(){
 function renderVerdict(){
   if(!SAMPLING_PLAN) return;
   var d = parseInt((document.getElementById('defectsFound')||{}).value,10); if(isNaN(d)||d<0) d=0;
-  var v = (d <= SAMPLING_PLAN.ac) ? 'ACCEPT' : (d >= SAMPLING_PLAN.re ? 'REJECT' : 'ACCEPT');
+  // Ac < d < Re is unreachable while the engine is normal-single (Re is always
+  // Ac+1), but the old fallback for that gap was ACCEPT — fail-OPEN on a case it
+  // cannot classify. Z1.4 reduced-severity plans DO have gaps (e.g. Ac1/Re3),
+  // and AqlSampling.js documents II-B/II-C as pending, so this would start
+  // silently passing lots the moment those tables land. Fail closed instead.
+  var v = (d <= SAMPLING_PLAN.ac) ? 'ACCEPT' : 'REJECT';
   SAMPLING_PLAN.verdict = v;
+  try { renderSamplingConflict(); } catch (e) {}
   var el = document.getElementById('planVerdict');
   var panel = document.getElementById('samplingPanel');
   if(v==='ACCEPT'){
     el.style.background='#15803d'; el.textContent='ACCEPT · '+d+' defects ≤ Ac '+SAMPLING_PLAN.ac;
     if(panel){ panel.style.borderColor='#bbf7d0'; panel.style.background='#f0fdf4'; }
   } else {
-    el.style.background='#dc2626'; el.textContent='REJECT · '+d+' defects ≥ Re '+SAMPLING_PLAN.re;
+    // Phrase against Ac, not Re: with a gap plan (Ac1/Re3) a count of 2 rejects
+    // while being < Re, so "≥ Re" would be a false statement on the record.
+    el.style.background='#dc2626'; el.textContent='REJECT · '+d+' defects > Ac '+SAMPLING_PLAN.ac;
     if(panel){ panel.style.borderColor='#fecaca'; panel.style.background='#fef2f2'; }
   }
 }
@@ -807,14 +819,25 @@ function onInitLoaded(d) {
 
   // AQL options are the fixed numeric set (0.65..6.5) hardcoded in the markup so they feed
   // getSamplingPlan directly. Just honour a server default if one is provided.
-  var aqlSel = document.getElementById('aqlLevel');
-  if (aqlSel && d.defaultAql) {
-    var want = String(d.defaultAql).replace(/aql/i, '').trim();
-    for (var ai = 0; ai < aqlSel.options.length; ai++) {
-      if (aqlSel.options[ai].value === want) { aqlSel.selectedIndex = ai; break; }
+  // Apply server defaults to ALL THREE sampling axes.
+  //
+  // BUG (found 2026-08-04 by reading the live DOM, not the source): only AQL was
+  // applied here. Level and Severity were left to whichever <option> happened to
+  // be listed first, so IQC_DEFAULT_LEVEL was inert — the server said 'I', the
+  // form loaded 'II', and every IQC sampled at Level II (n=200 vs 80 on a 5000
+  // lot). The `|| 'I'` fallbacks elsewhere never fire because the element exists.
+  function applyDefault(selId, want, strip) {
+    var sel = document.getElementById(selId);
+    if (!sel || want == null || want === '') return;
+    var w = String(want);
+    if (strip) w = w.replace(/aql/i, '').trim();
+    for (var i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === w) { sel.selectedIndex = i; return; }
     }
   }
-  // Sampling method / severity is fixed to Normal single sampling — no dropdown.
+  applyDefault('aqlLevel',         d.defaultAql,      true);
+  applyDefault('inspLevel',        d.defaultLevel,    false);
+  applyDefault('samplingSeverity', d.defaultSeverity, false);
 
   var gSel = document.getElementById('grnNo');
   var grnList = d.recentGRNs || [];
@@ -1277,6 +1300,38 @@ function setItemDisp(val) {
     document.getElementById('holdQty').value     = d.holdQty     || '';
     updateQtyMismatch();
   }
+  renderSamplingConflict();
+}
+
+// The ISO 2859-1 panel computes ACCEPT/REJECT from the defect count, but the
+// disposition was entirely independent of it: an inspector could read REJECT on
+// the sampling plan and still pick ACCEPTED, and acceptedQty would auto-fill to
+// the FULL received quantity with nothing flagging the contradiction.
+//
+// This does NOT block or override the inspector — a deliberate accept over a
+// failing sample is a legitimate (and recorded) quality decision. It only makes
+// the conflict visible so it is a decision rather than an oversight.
+function renderSamplingConflict() {
+  var el = document.getElementById('samplingConflict');
+  if (!el) return;
+  var d = itemData[currentIdx];
+  var verdict = SAMPLING_PLAN && SAMPLING_PLAN.verdict;
+  if (!verdict || !d || !d.disp) { el.classList.add('hidden'); return; }
+
+  var disp = String(d.disp).toUpperCase();
+  var conflict = '';
+  if (verdict === 'REJECT' && disp === 'ACCEPTED') {
+    conflict = 'Sampling says REJECT (' +
+      (document.getElementById('defectsFound') || {}).value + ' defects > Ac ' +
+      SAMPLING_PLAN.ac + ') but disposition is ACCEPTED.';
+  } else if (verdict === 'ACCEPT' && disp === 'REJECTED') {
+    conflict = 'Sampling says ACCEPT (within Ac ' + SAMPLING_PLAN.ac +
+      ') but disposition is REJECTED.';
+  }
+
+  if (!conflict) { el.classList.add('hidden'); return; }
+  el.textContent = '⚠ ' + conflict + ' Confirm this is intentional — it is recorded either way.';
+  el.classList.remove('hidden');
 }
 
 function renderItemDispButtons(val) {
