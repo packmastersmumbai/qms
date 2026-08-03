@@ -208,11 +208,81 @@ function getUnInspectedGRNs() {
   });
 }
 
+// Idempotency tag for IQC, mirroring _grnTxnTag_/_gpTxnTag_. Stored as a
+// "[txn:...]" suffix in Remarks (col 26) rather than a new column: IQC_HEADERS is
+// 30 wide and every reader maps schema[i] to cell[i] positionally, so widening it
+// is the exact shape of the MASTERS_Materials break.
+function _iqcTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+
+// Returns EVERY IQC doc number carrying this txn tag, not just the first.
+// saveIQC writes one row PER ITEM, so a retried multi-item session must report
+// all of its doc numbers back or the client shows a partial result and the
+// operator saves again — the very duplicate this guard exists to stop.
+function _iqcFindByTxn_(ws, txnId) {
+  var found = [];
+  try {
+    if (!ws || ws.getLastRow() < 2) return found;
+    var tag = _iqcTxnTag_(txnId);
+    var n = ws.getLastRow() - 1;
+    var docs = ws.getRange(2, 1, n, 1).getValues();          // col A  = IQC No.
+    var rems = ws.getRange(2, _iqcRemarksCol_() + 1, n, 1).getValues();
+    for (var i = 0; i < n; i++) {
+      if (String(rems[i][0] || '').indexOf(tag) >= 0) {
+        var d = String(docs[i][0] || '');
+        if (d && found.indexOf(d) === -1) found.push(d);
+      }
+    }
+  } catch (e) { Logger.log('_iqcFindByTxn_: ' + e.message); }
+  return found;
+}
+// 0-based index of 'Remarks' in IQC_HEADERS (Initialize.js:188). Derived, not
+// hardcoded, so a schema edit cannot silently point this at the wrong column.
+//
+// Resolved LAZILY, not at load time: IQC_HEADERS lives in Initialize.js and GAS
+// gives no guaranteed cross-file evaluation order, so a top-level indexOf() here
+// can run against an undefined global and yield -1 — which would read/write the
+// column BEFORE col A. Falls back to the known position only if the lookup fails.
+function _iqcRemarksCol_() {
+  try {
+    if (typeof IQC_HEADERS !== 'undefined') {
+      var i = IQC_HEADERS.indexOf('Remarks');
+      if (i >= 0) return i;
+    }
+  } catch (e) {}
+  return 25;   // 'Remarks' is col 26 (1-based) in the shipped schema
+}
+
+// Append the txn tag to whatever the operator typed. Kept as a suffix so the
+// human remark still reads first, and getIQCRecord's remarks reader (IQC.js:824)
+// keeps working — it returns the raw cell, tag included, which is intentional:
+// the tag is audit evidence of which save attempt produced the row.
+function _iqcStampTxn_(remarks, txnId) {
+  var base = String(remarks || '');
+  if (!txnId) return base;
+  return base + (base ? ' ' : '') + _iqcTxnTag_(txnId);
+}
+
 function saveIQC(data) {
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('IQC_LOG');
     if (!ws) throw new Error('IQC_LOG sheet not found. Run Setup first.');
+
+    // Idempotency guard. The client's in-flight latch stops a double-tap, but not
+    // a retry after a DROPPED RESPONSE: the rows may already be written and the
+    // reply lost, so pressing Save again writes a second inspection — duplicate
+    // IQC records AND duplicate stock-ledger moves. Proven missing by
+    // e2e-savepaths (IQC reported txn-key NO while GRN/Gatepass reported YES).
+    var iqcTxnId = String(data.clientTxnId || '').trim();
+    if (iqcTxnId) {
+      var priorDocs = _iqcFindByTxn_(ws, iqcTxnId);
+      if (priorDocs.length) {
+        return { success: true, docNos: priorDocs, duplicate: true,
+                 warnings: ['This inspection was already saved as ' + priorDocs.join(', ') + '.'] };
+      }
+    }
 
     var now  = new Date();
     var disp = data.disposition || '';
@@ -285,7 +355,7 @@ function saveIQC(data) {
         disp,                           // col 23
         ncrNo,                          // col 24
         data.deviationRef  || '',       // col 25
-        data.remarks       || '',       // col 26
+        _iqcStampTxn_(data.remarks, iqcTxnId),  // col 26 (+ [txn:...] idempotency tag)
         item.acceptedQty != null ? item.acceptedQty : 0,  // col 27
         item.rejectedQty != null ? item.rejectedQty : 0,  // col 28
         now,                            // col 29

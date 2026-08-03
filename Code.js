@@ -374,6 +374,16 @@ function doGet(e) {
     } catch (ermd) { mdf = 'ERROR: ' + ermd.message; }
     return ContentService.createTextOutput(String(mdf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=iqcidem[&confirm=YES] → prove the IQC idempotency guard blocks a retry
+  if (diag === 'iqcidem') {
+    var iqi;
+    try {
+      iqi = (typeof checkIqcIdempotency === 'function')
+        ? checkIqcIdempotency(String(e.parameter.confirm || '') === 'YES')
+        : 'checkIqcIdempotency missing (is _IqcIdemCheck.js pushed?)';
+    } catch (erii) { iqi = 'ERROR: ' + erii.message; }
+    return ContentService.createTextOutput(String(iqi)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=mataudit   → READ-ONLY data-quality audit of MASTERS_Materials
   if (diag === 'mataudit') {
     var mta;
@@ -792,7 +802,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v154_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v155_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

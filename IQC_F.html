@@ -1875,6 +1875,18 @@ function doSaveIQC() {
     storeInCharge: document.getElementById('storeInCharge') ? document.getElementById('storeInCharge').value : '',
     qaManager:     document.getElementById('qaManager') ? document.getElementById('qaManager').value : '',
     operatorName:  window.QMS ? window.QMS.getOperatorName() : '',
+    // Idempotency key for THIS save attempt. The in-flight latch stops a
+    // double-tap, but not a retry after a DROPPED RESPONSE — the rows may already
+    // be written and the reply lost, so pressing Save again writes a SECOND
+    // inspection plus duplicate stock-ledger moves. Generated once per attempt,
+    // reused across retries of that attempt, cleared on success so the next
+    // inspection is genuinely new. Same discipline GRN and Gatepass already use.
+    clientTxnId:   (function(){
+                     if (!window._iqcTxnId) {
+                       window._iqcTxnId = 'IQC-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+                     }
+                     return window._iqcTxnId;
+                   })(),
     items:         items,
     videoBase64:   safeVideoBase64,
     videoMime:     videoMime   || '',
@@ -1917,7 +1929,16 @@ function doSaveIQC() {
       if (!settle_()) return;   // watchdog already reported; ignore the late reply
       if (res && res.success) {
         formSaved = true;
+        window._iqcTxnId = '';   // attempt closed — the next save is a new inspection
         lastSavedDocNo = (res.docNos && res.docNos[0]) || '';
+        // A duplicate reply means the server recognised this attempt's txn key and
+        // returned the ORIGINAL doc numbers instead of writing again. Say so, or
+        // the operator sees a normal success and never learns the retry was a
+        // no-op — which is exactly when people save a third time.
+        if (res.duplicate) {
+          showToast('Already saved as ' + ((res.docNos || []).join(', ') || lastSavedDocNo) +
+                    ' — no duplicate was created.', 'warning');
+        }
         // Show persistent confirmation banner
         var banner = document.getElementById('saveConfirmBanner');
         var docNoEl = document.getElementById('saveConfirmDocNo');
