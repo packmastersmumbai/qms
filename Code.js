@@ -498,6 +498,57 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(sd, null, 2)).setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Ledger locations missing from LOCATIONS (_GhostLocations.js). READ-ONLY.
+  //   ?diag=ghostloc   → per-ghost balance, age, txn types, typo suggestion
+  if (diag === 'ghostloc') {
+    var gl;
+    try { gl = (typeof ghostLocations === 'function') ? ghostLocations() : { error: 'ghostLocations missing' }; }
+    catch (er14) { gl = { error: er14.message, stack: er14.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(gl, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // Define ghost locations (_GhostLocationFix.js). Dry run unless confirm=YES.
+  if (diag === 'ghostfix') {
+    var gf2;
+    try { gf2 = (typeof ghostLocationFix === 'function')
+      ? ghostLocationFix(String(e.parameter.confirm || '').toUpperCase() === 'YES')
+      : { error: 'ghostLocationFix missing' }; }
+    catch (er17) { gf2 = { error: er17.message, stack: er17.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(gf2, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  // Merge the -AA mis-keys. WRITES STOCK MOVEMENTS when confirm=YES.
+  if (diag === 'ghostmerge') {
+    var gm;
+    try { gm = (typeof ghostLocationMerge === 'function')
+      ? ghostLocationMerge(String(e.parameter.confirm || '').toUpperCase() === 'YES')
+      : { error: 'ghostLocationMerge missing' }; }
+    catch (er18) { gm = { error: er18.message, stack: er18.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(gm, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  if (diag === 'ghostgrade') {
+    var gg;
+    try { gg = (typeof ghostGradeProfile === 'function') ? ghostGradeProfile() : { error: 'missing' }; }
+    catch (er16) { gg = { error: er16.message }; }
+    return ContentService.createTextOutput(JSON.stringify(gg, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  if (diag === 'ghostdefaults') {
+    var gd;
+    try { gd = (typeof ghostDefaultLocations === 'function') ? ghostDefaultLocations() : { error: 'missing' }; }
+    catch (er15) { gd = { error: er15.message }; }
+    return ContentService.createTextOutput(JSON.stringify(gd, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  // LOCATIONS sheet vs the hardcoded floorplan (_LocationAudit.js). READ-ONLY.
+  //   ?diag=locaudit   → floors/sections/types + locations the map cannot draw
+  if (diag === 'locaudit') {
+    var la;
+    try { la = (typeof locationAudit === 'function') ? locationAudit() : { error: 'locationAudit missing' }; }
+    catch (er13) { la = { error: er13.message, stack: er13.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(la, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // What happens to pulled samples (_SampleFate.js). READ-ONLY.
   //   ?diag=samplefate   → SAMPLE-CABINET in/out/net + SAMPLE_LOG disposition
   if (diag === 'samplefate') {

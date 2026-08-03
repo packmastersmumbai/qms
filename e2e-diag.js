@@ -3,7 +3,7 @@
 const path = require('path'), fs = require('fs');
 const { chromium } = require('playwright');
 const STATE = path.join(__dirname, 'e2e-storageState.json');
-const EXEC = 'https://script.google.com/macros/s/AKfycbxMFpeJOqF5_iARRCo7aHLg0Pw_XlqKdAzmDVck8DUdDfgr1nIIjbvTgrlyc0XtYRuaVQ/exec';
+const EXEC = process.env.PM_EXEC || 'https://script.google.com/macros/s/AKfycbxMFpeJOqF5_iARRCo7aHLg0Pw_XlqKdAzmDVck8DUdDfgr1nIIjbvTgrlyc0XtYRuaVQ/exec';
 
 (async () => {
   const q = process.argv.slice(2).join('&');
