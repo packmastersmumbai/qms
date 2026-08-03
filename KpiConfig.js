@@ -4,7 +4,7 @@
 // ============================================================
 
 var PM_PERSONAS_ = ['Operator', 'Manager'];
-var PM_KPI_CACHED_PRESETS_ = ['THIS_MONTH', 'LAST_30', 'LAST_90', 'THIS_FY'];
+var PM_KPI_CACHED_PRESETS_ = ['TODAY', 'LAST_7', 'THIS_MONTH', 'LAST_30', 'LAST_90', 'THIS_FY'];
 
 /** Shared helper — returns every script-cache key that getQmsKpis writes for a given persona.
  *  Key format: 'pmqms_kpis_' + persona + '_' + preset  (matches getQmsKpis line ~194).
@@ -21,24 +21,41 @@ function _kpiFnMap_() {
     IQC_PASS:_kpi_iqcPass_, FPY:_kpi_fpy_, OTD:_kpi_otd_, NCR_MTTR:_kpi_ncrMttr_,
     SUPPLIER_OTIF:_kpi_supplierOtif_, TOP_DEFECT:_kpi_topDefect_, FIFO_COMPL:_kpi_fifoCompl_,
     AGED_STOCK:_kpi_agedStock_, DWELL:_kpi_dwell_, IPQC_REJECT:_kpi_ipqcReject_,
-    CR_RATE:_kpi_crRate_, COST_OF_QUAL:_kpi_coq_
+    CR_RATE:_kpi_crRate_, COST_OF_QUAL:_kpi_coq_,
+    // new
+    OPEN_NCR:_kpi_openNcr_, REJECT_RATE:_kpi_rejectRate_, ON_HOLD:_kpi_onHold_,
+    OQC_RELEASE:_kpi_oqcRelease_, THROUGHPUT:_kpi_throughput_, WIP_AGEING:_kpi_wipAgeing_
   };
 }
 
+// Registry. category groups cards into sections; tier 'hero' = emphasised big cards.
 var KPI_REGISTRY = [
-  { key:'IQC_PASS',      label:'IQC Pass %',       target:97, format:'pct',  unit:'%',    sparkline:true,  group:'hero' },
-  { key:'FPY',           label:'First-Pass Yield', target:92, format:'pct',  unit:'%',    sparkline:true,  group:'hero' },
-  { key:'OTD',           label:'Dispatch TAT',     target:2,  format:'num',  unit:'d',    sparkline:true,  group:'hero' },
-  { key:'NCR_MTTR',      label:'NCR Resolve Days', target:3,  format:'num',  unit:'d',    sparkline:true,  group:'hero' },
-  { key:'SUPPLIER_OTIF', label:'Supplier OTIF',    target:90, format:'pct',  unit:'%',    sparkline:false, group:'drill' },
-  { key:'TOP_DEFECT',    label:'Top Defect',       target:null,format:'text',unit:'',     sparkline:false, group:'drill' },
-  { key:'FIFO_COMPL',    label:'FIFO Compliance',  target:95, format:'pct',  unit:'%',    sparkline:false, group:'drill' },
-  { key:'AGED_STOCK',    label:'Aged Stock >30d',  target:0,  format:'num',  unit:' lots',sparkline:false, group:'drill' },
-  { key:'DWELL',         label:'Module Dwell',     target:null,format:'text',unit:'',     sparkline:false, group:'drill' },
-  { key:'IPQC_REJECT',   label:'IPQC Reject %',    target:3,  format:'pct',  unit:'%',    sparkline:false, group:'drill' },
-  { key:'CR_RATE',       label:'Customer Return %',target:1,  format:'pct',  unit:'%',    sparkline:false, group:'drill' },
-  { key:'COST_OF_QUAL',  label:'NCR Qty Affected', target:null,format:'num',  unit:' u',  sparkline:false, group:'drill' }
+  // ── Quality ──
+  { key:'IQC_PASS',      label:'IQC Pass %',        target:97, format:'pct',  unit:'%',     sparkline:true,  group:'hero',  category:'Quality',     tier:'hero' },
+  { key:'OQC_RELEASE',   label:'OQC Release %',     target:97, format:'pct',  unit:'%',     sparkline:true,  group:'hero',  category:'Quality',     tier:'hero' },
+  { key:'REJECT_RATE',   label:'IQC Reject %',      target:3,  format:'pct',  unit:'%',     sparkline:true,  group:'hero',  category:'Quality',     tier:'hero' },
+  { key:'FPY',           label:'First-Pass Yield',  target:92, format:'pct',  unit:'%',     sparkline:true,  group:'hero',  category:'Quality',     tier:'hero' },
+  { key:'IPQC_REJECT',   label:'IPQC Reject %',     target:3,  format:'pct',  unit:'%',     sparkline:false, group:'drill', category:'Quality',     tier:'drill' },
+  { key:'TOP_DEFECT',    label:'Top Defect',        target:null,format:'text',unit:'',      sparkline:false, group:'drill', category:'Quality',     tier:'drill' },
+  // ── Throughput ──
+  { key:'OTD',           label:'Dispatch TAT',      target:2,  format:'num',  unit:'d',     sparkline:true,  group:'hero',  category:'Throughput',  tier:'hero' },
+  { key:'WIP_AGEING',    label:'Pending Ageing',    target:3,  format:'num',  unit:'d',     sparkline:false, group:'drill', category:'Throughput',  tier:'drill' },
+  { key:'THROUGHPUT',    label:'Records / Day',     target:null,format:'num',  unit:'/d',   sparkline:false, group:'drill', category:'Throughput',  tier:'drill' },
+  { key:'DWELL',         label:'Module Dwell',      target:null,format:'text',unit:'',      sparkline:false, group:'drill', category:'Throughput',  tier:'drill' },
+  // ── Issues / NCR ──
+  { key:'OPEN_NCR',      label:'Open NCRs',         target:0,  format:'num',  unit:'',      sparkline:false, group:'hero',  category:'Issues',      tier:'hero' },
+  { key:'NCR_MTTR',      label:'NCR Resolve Days',  target:3,  format:'num',  unit:'d',     sparkline:true,  group:'drill', category:'Issues',      tier:'drill' },
+  { key:'ON_HOLD',       label:'On Hold',           target:0,  format:'num',  unit:'',      sparkline:false, group:'drill', category:'Issues',      tier:'drill' },
+  { key:'COST_OF_QUAL',  label:'NCR Qty Affected',  target:null,format:'num',  unit:' u',   sparkline:false, group:'drill', category:'Issues',      tier:'drill' },
+  { key:'CR_RATE',       label:'Customer Return %', target:1,  format:'pct',  unit:'%',     sparkline:false, group:'drill', category:'Issues',      tier:'drill' },
+  // ── Stock / Supply ──
+  { key:'SUPPLIER_OTIF', label:'Supplier OTIF',     target:90, format:'pct',  unit:'%',     sparkline:false, group:'drill', category:'Stock',       tier:'drill' },
+  { key:'FIFO_COMPL',    label:'FIFO Compliance',   target:95, format:'pct',  unit:'%',     sparkline:false, group:'drill', category:'Stock',       tier:'drill' },
+  { key:'AGED_STOCK',    label:'Aged Stock >30d',   target:0,  format:'num',  unit:' lots', sparkline:false, group:'drill', category:'Stock',       tier:'drill' }
 ];
+
+// Category display order for the dashboard sections.
+var KPI_CATEGORIES = ['Quality', 'Throughput', 'Issues', 'Stock'];
 
 // ── Persona persona helpers ─────────────────────────────────────
 function _pmNormPersona_(p) {
@@ -169,6 +186,13 @@ function getQmsKpis(persona, periodOpts) {
       now  = new Date(periodOpts.toISO);
       now.setHours(23, 59, 59, 999);
       periodLabel = periodOpts.fromISO + ' to ' + periodOpts.toISO;
+    } else if (periodOpts.preset === 'TODAY') {
+      var dStr = Utilities.formatDate(now, tz, 'yyyy-MM-dd');
+      from = new Date(dStr + 'T00:00:00');
+      periodLabel = 'Today';
+    } else if (periodOpts.preset === 'LAST_7') {
+      from = new Date(now.getTime() - 7*24*60*60*1000);
+      periodLabel = 'Last 7 Days';
     } else if (periodOpts.preset === 'LAST_90') {
       from = new Date(now.getTime() - 90*24*60*60*1000);
       periodLabel = 'Last 90 Days';
@@ -223,6 +247,7 @@ function getQmsKpis(persona, periodOpts) {
     if (!settings.kpis.show[r.key]) return;
     var entry = {
       key: r.key, label: r.label, group: r.group,
+      category: r.category || 'Other', tier: r.tier || 'drill',
       format: r.format, unit: r.unit,
       target: settings.kpis.targets[r.key],
       value: null, status: 'ok', message: '', sparkline: null
@@ -232,6 +257,7 @@ function getQmsKpis(persona, periodOpts) {
       if (typeof fn !== 'function') throw new Error('KPI fn missing: ' + r.key);
       var res = fn(ss, from, now);
       entry.value = (res && typeof res === 'object') ? res.value : res;
+      if (res && typeof res === 'object' && res.message) entry.message = res.message;
       if (r.sparkline) {
         entry.sparkline = _kpiSparkline_(r.key, ss, now, 7);
       }
@@ -254,7 +280,7 @@ function getQmsKpis(persona, periodOpts) {
     try {
       CacheService.getScriptCache().put(cacheKey, JSON.stringify({
         fp: _pmSheetFingerprint_(), data: results, ts: results._computedAtISO
-      }), 60);
+      }), PMQMS_CACHE_TTL_S_);   // 6h, fingerprint-invalidated (was 60s → recomputed every minute)
     } catch (e) {}
   }
 
@@ -279,7 +305,13 @@ function _kpiSparkline_(key, ss, now, days) {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────
+// Routed through KpiReadCache.js. One dashboard load runs 60 KPI evaluations
+// (18 KPIs + 6 sparklines x 7 days) and each used to do its own full-sheet
+// getDataRange() here — measured at 51.7s cold. The cache is request-scoped, so
+// each sheet is now read once per load. Falls back to a direct read if the cache
+// file is ever absent, so this function is never the thing that breaks the page.
 function _pmGetRows_(ss, sheetName) {
+  if (typeof kpiRowsCached_ === 'function') return kpiRowsCached_(ss, sheetName);
   var sh = ss.getSheetByName(sheetName);
   if (!sh || sh.getLastRow() < 2) return { hdr:[], rows:[], idx:{} };
   var data = sh.getDataRange().getValues();
@@ -623,6 +655,136 @@ function _kpi_coq_(ss, from, to) {
     sum += q;
   });
   return { value: sum > 0 ? Math.round(sum*100)/100 : null };
+}
+
+// ── New KPIs (added 2026-06; grounded against live sheet headers) ──
+
+// Open NCRs — count NCR_LOG rows whose Status is not closed/resolved. Message carries
+// the oldest open NCR's age in days. Window: counts NCRs OPENED within [from,to].
+function _kpi_openNcr_(ss, from, to) {
+  var t = _pmGetRows_(ss, 'NCR_LOG');
+  if (!t.rows.length) return { value:0 };
+  var ciStatus = _pmCol_(t.idx, ['status']);
+  var ciOpen = _pmCol_(t.idx, ['date','timestamp','created']);
+  if (ciStatus < 0) return { value:null };
+  var open = 0, oldestAge = 0, nowMs = to.getTime();
+  t.rows.forEach(function(r){
+    var s = String(r[ciStatus] || '').toUpperCase();
+    if (!s) return;
+    if (s.indexOf('CLOSED') >= 0 || s.indexOf('RESOLVED') >= 0) return;
+    if (ciOpen >= 0 && !_pmInRange_(r[ciOpen], from, to)) return;
+    open++;
+    if (ciOpen >= 0) {
+      var od = new Date(r[ciOpen]);
+      if (!isNaN(od.getTime())) { var age = (nowMs - od.getTime())/(24*60*60*1000); if (age > oldestAge) oldestAge = age; }
+    }
+  });
+  return { value: open, message: open && oldestAge ? ('oldest ' + Math.round(oldestAge) + 'd') : '' };
+}
+
+// IQC Reject % — rejected / (accepted+rejected) by Disposition, window by Date.
+function _kpi_rejectRate_(ss, from, to) {
+  var t = _pmGetRows_(ss, 'IQC_LOG');
+  if (!t.rows.length) return { value:null };
+  var ciDisp = _pmCol_(t.idx, ['disposition','status']);
+  var ciDate = _pmCol_(t.idx, ['date','timestamp']);
+  if (ciDisp < 0) return { value:null };
+  var rej = 0, total = 0;
+  t.rows.forEach(function(r){
+    if (ciDate >= 0 && !_pmInRange_(r[ciDate], from, to)) return;
+    var d = String(r[ciDisp] || '').trim().toUpperCase();
+    if (!d) return;
+    if (/ACCEPT|PASS|REJECT|FAIL|HOLD/.test(d)) {
+      total++;
+      if (/REJECT|FAIL/.test(d)) rej++;
+    }
+  });
+  return { value: total ? Math.round((rej/total)*1000)/10 : null };
+}
+
+// On Hold — count of records currently in a HOLD disposition across IQC + GRN, window by Date.
+function _kpi_onHold_(ss, from, to) {
+  var held = 0, sawAny = false;
+  [{ sheet:'IQC_LOG', disp:['disposition','status'], date:['date','timestamp'] },
+   { sheet:'GRN_LOG', disp:['iqc status','status'],   date:['date','timestamp'] }].forEach(function(m){
+    var t = _pmGetRows_(ss, m.sheet);
+    if (!t.rows.length) return;
+    var ciDisp = _pmCol_(t.idx, m.disp);
+    var ciDate = _pmCol_(t.idx, m.date);
+    if (ciDisp < 0) return;
+    sawAny = true;
+    t.rows.forEach(function(r){
+      if (ciDate >= 0 && !_pmInRange_(r[ciDate], from, to)) return;
+      if (/HOLD/.test(String(r[ciDisp] || '').toUpperCase())) held++;
+    });
+  });
+  return { value: sawAny ? held : null };
+}
+
+// OQC Release % — OQC_LOG Release Decision ACCEPT/RELEASE over total decided, window by Date.
+function _kpi_oqcRelease_(ss, from, to) {
+  var t = _pmGetRows_(ss, 'OQC_LOG');
+  if (!t.rows.length) return { value:null };
+  var ciDec = _pmCol_(t.idx, ['release decision','disposition','status']);
+  var ciDate = _pmCol_(t.idx, ['date','timestamp']);
+  if (ciDec < 0) return { value:null };
+  var rel = 0, total = 0;
+  t.rows.forEach(function(r){
+    if (ciDate >= 0 && !_pmInRange_(r[ciDate], from, to)) return;
+    var d = String(r[ciDec] || '').trim().toUpperCase();
+    if (!d || /^HTTPS?:/.test(d)) return;
+    total++;
+    if (/ACCEPT|RELEAS|PASS/.test(d)) rel++;
+  });
+  return { value: total ? Math.round((rel/total)*1000)/10 : null };
+}
+
+// Records / Day — average count of records created per day across primary logs in window.
+function _kpi_throughput_(ss, from, to) {
+  var sheets = ['GRN_LOG','IQC_LOG','OQC_LOG','NCR_LOG'];
+  var total = 0, sawAny = false;
+  sheets.forEach(function(name){
+    var t = _pmGetRows_(ss, name);
+    if (!t.rows.length) return;
+    var ciDate = _pmCol_(t.idx, ['date','timestamp']);
+    if (ciDate < 0) return;
+    sawAny = true;
+    t.rows.forEach(function(r){ if (_pmInRange_(r[ciDate], from, to)) total++; });
+  });
+  if (!sawAny) return { value:null };
+  var days = Math.max(1, Math.round((to.getTime() - from.getTime())/(24*60*60*1000)));
+  return { value: Math.round((total/days)*10)/10 };
+}
+
+// Pending Ageing — median age (days) of still-pending records across GRN/IQC/OQC.
+// "Pending" = disposition not yet a terminal accept/reject/release.
+function _kpi_wipAgeing_(ss, from, to) {
+  var defs = [
+    { sheet:'GRN_LOG', disp:['iqc status','status'], date:['date','timestamp'] },
+    { sheet:'IQC_LOG', disp:['disposition','status'], date:['date','timestamp'] },
+    { sheet:'OQC_LOG', disp:['release decision','status'], date:['date','timestamp'] }
+  ];
+  var ages = [], nowMs = to.getTime(), sawAny = false;
+  defs.forEach(function(m){
+    var t = _pmGetRows_(ss, m.sheet);
+    if (!t.rows.length) return;
+    var ciDisp = _pmCol_(t.idx, m.disp);
+    var ciDate = _pmCol_(t.idx, m.date);
+    if (ciDate < 0) return;
+    sawAny = true;
+    t.rows.forEach(function(r){
+      var d = String(ciDisp >= 0 ? r[ciDisp] : '').toUpperCase();
+      // skip terminal (decided) records — only pending ones age in queue
+      if (/ACCEPT|PASS|REJECT|RELEAS|CLOSED|DISPATCH|COMPLETE|DONE/.test(d)) return;
+      var od = new Date(r[ciDate]);
+      if (isNaN(od.getTime())) return;
+      var age = (nowMs - od.getTime())/(24*60*60*1000);
+      if (age >= 0) ages.push(age);
+    });
+  });
+  if (!sawAny || !ages.length) return { value: sawAny ? 0 : null };
+  ages.sort(function(a,b){ return a-b; });
+  return { value: Math.round(ages[Math.floor(ages.length/2)]*10)/10 };
 }
 
 // ── Bundle for Landing v2 — one round-trip ─────────────────────
