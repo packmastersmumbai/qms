@@ -268,7 +268,8 @@
           <span class="ml-auto text-[10px] font-mono text-text-helper" id="samplingStd">ISO 2859-1</span>
         </div>
         <div class="grid grid-cols-4 gap-2 text-center">
-          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Sample</div><div class="font-mono text-[21px] font-bold" id="planSample">—</div></div>
+          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Sample</div><div class="font-mono text-[21px] font-bold" id="planSample">—</div>
+            <div class="text-[9px] text-text-helper leading-tight">→ cabinet</div></div>
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Accept ≤</div><div class="font-mono text-[21px] font-bold" style="color:#15803d" id="planAc">—</div></div>
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Reject ≥</div><div class="font-mono text-[21px] font-bold" style="color:#dc2626" id="planRe">—</div></div>
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Defects</div>
@@ -1287,13 +1288,27 @@ function setItemDisp(val) {
   // Auto-fill qty only if all three are still empty
   var item   = currentItems[currentIdx];
   var grnQty = Number(item && item.qtyReceived) || 0;
+
+  // The inspection sample is PHYSICALLY REMOVED: saveIQC -> recordSample writes a
+  // paired SAMPLE_OUT (receiving location) / SAMPLE_IN (SAMPLE-CABINET) to the
+  // stock ledger, and SAMPLE locations are excluded from FIFO. Those units are
+  // gone from available stock.
+  //
+  // The auto-fill used the raw received qty, so accepting a 1000-unit lot with a
+  // 32-unit sample claimed 1000 accepted when only 968 remained — a 32-unit
+  // overstatement on every accepted receipt. saveIQC already subtracts the
+  // sample when defaulting the REJECTED/HOLD remainder (IQC.js pendingSample);
+  // the accepted path was the one place that did not.
+  var sampleQty  = (SAMPLING_PLAN && Number(SAMPLING_PLAN.sampleSize)) || 0;
+  var disposable = Math.max(0, grnQty - sampleQty);
+
   if (grnQty > 0 && !d.acceptedQty && !d.rejectedQty && !d.holdQty) {
     if (val === 'ACCEPTED') {
-      d.acceptedQty = grnQty; d.rejectedQty = 0; d.holdQty = 0;
+      d.acceptedQty = disposable; d.rejectedQty = 0; d.holdQty = 0;
     } else if (val === 'REJECTED') {
-      d.acceptedQty = 0; d.rejectedQty = grnQty; d.holdQty = 0;
+      d.acceptedQty = 0; d.rejectedQty = disposable; d.holdQty = 0;
     } else if (val === 'HOLD') {
-      d.acceptedQty = 0; d.rejectedQty = 0; d.holdQty = grnQty;
+      d.acceptedQty = 0; d.rejectedQty = 0; d.holdQty = disposable;
     }
     document.getElementById('acceptedQty').value = d.acceptedQty || '';
     document.getElementById('rejectedQty').value = d.rejectedQty || '';
@@ -1398,9 +1413,22 @@ function updateQtyMismatch() {
   var rej = parseFloat(document.getElementById('rejectedQty').value) || 0;
   var hld = parseFloat(document.getElementById('holdQty').value)     || 0;
   var sum = acc + rej + hld;
-  if (Math.abs(sum - grnQty) > 0.001) {
-    var unit = item.unit ? ' ' + item.unit : '';
-    warn.textContent = 'Accepted + Rejected + Hold = ' + sum + unit + ', but GRN qty is ' + grnQty + unit + '. Please verify.';
+
+  // Reconcile against RECEIVED MINUS SAMPLE, not received. The sample is moved
+  // to SAMPLE-CABINET by recordSample and is no longer available to disposition,
+  // so requiring acc+rej+hld == grnQty would flag every correct entry as a
+  // mismatch (and previously rewarded the incorrect one that double-counted the
+  // sample). Shows the full equation so the missing units are explained, not
+  // just missing.
+  var samp  = (SAMPLING_PLAN && Number(SAMPLING_PLAN.sampleSize)) || 0;
+  var avail = Math.max(0, grnQty - samp);
+  var unit  = item.unit ? ' ' + item.unit : '';
+
+  if (Math.abs(sum - avail) > 0.001) {
+    warn.textContent = 'Accepted + Rejected + Hold = ' + sum + unit + ', but ' +
+      (samp > 0
+        ? grnQty + unit + ' received − ' + samp + unit + ' sample = ' + avail + unit + ' to disposition.'
+        : 'GRN qty is ' + grnQty + unit + '.') + ' Please verify.';
     warn.classList.remove('hidden');
   } else {
     warn.classList.add('hidden');
