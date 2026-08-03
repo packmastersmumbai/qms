@@ -363,6 +363,34 @@ function doGet(e) {
     } catch (erph) { phf = 'ERROR: ' + erph.message; }
     return ContentService.createTextOutput(String(phf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  // e2e fixtures (Phase 3A) — _Fixtures.js
+  //   ?diag=fixtures                  → state report
+  //   ?diag=fixtureseed[&confirm=YES] → create/refresh the fixture set
+  //   ?diag=fixtureclear[&confirm=YES]→ archive fixture rows, free the GRN again
+  if (diag === 'fixtures') {
+    var fxs;
+    try { fxs = (typeof fixtureState === 'function') ? fixtureState() : 'fixtureState missing (is _Fixtures.js pushed?)'; }
+    catch (erfs) { fxs = 'ERROR: ' + erfs.message; }
+    return ContentService.createTextOutput(String(fxs)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'fixtureseed') {
+    var fxd;
+    try {
+      fxd = (typeof seedFixtures === 'function')
+        ? seedFixtures(String(e.parameter.confirm || '') === 'YES')
+        : 'seedFixtures missing (is _Fixtures.js pushed?)';
+    } catch (erfd) { fxd = 'ERROR: ' + erfd.message; }
+    return ContentService.createTextOutput(String(fxd)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'fixtureclear') {
+    var fxc;
+    try {
+      fxc = (typeof clearFixtures === 'function')
+        ? clearFixtures(String(e.parameter.confirm || '') === 'YES')
+        : 'clearFixtures missing (is _Fixtures.js pushed?)';
+    } catch (erfc) { fxc = 'ERROR: ' + erfc.message; }
+    return ContentService.createTextOutput(String(fxc)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=paramspecsheet[&confirm=YES]  → build the QA fill-in sheet
   if (diag === 'paramspecsheet') {
     var pss;

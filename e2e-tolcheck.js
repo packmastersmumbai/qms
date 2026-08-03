@@ -7,6 +7,8 @@
 // open, and the units under test are the pure functions plus the row renderer.
 const { launch, openApp, nav, frameWith } = require('./e2e-lib');
 
+const FIX_GRN_PREFIX = 'TEST-FIX/GRN';
+
 (async () => {
   const b = await launch();
   const s = await openApp(b);
@@ -14,6 +16,24 @@ const { launch, openApp, nav, frameWith } = require('./e2e-lib');
   await s.page.waitForTimeout(13000);
   const fr = await frameWith(s.page, 'inspLevel', 20000);
   if (!fr) { console.log('IQC did not load'); await b.close(); return; }
+
+  // Select the seeded fixture GRN (?diag=fixtureseed) so the param rows actually
+  // render. Without it the DOM half of this probe can only skip — which is
+  // exactly how the tolerance work shipped DOM-unverified.
+  const picked = await fr.evaluate((prefix) => {
+    const sel = document.getElementById('grnNo');
+    if (!sel) return { ok: false, why: 'no grnNo select' };
+    const opt = [...sel.options].find(o => (o.value || '').indexOf(prefix) === 0);
+    if (!opt) {
+      return { ok: false, why: 'fixture GRN not in dropdown',
+               sample: [...sel.options].slice(0, 4).map(o => o.value) };
+    }
+    sel.value = opt.value;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return { ok: true, grn: opt.value };
+  }, FIX_GRN_PREFIX);
+  console.log('fixture GRN:', JSON.stringify(picked));
+  if (picked.ok) await s.page.waitForTimeout(6000);
 
   const r = await fr.evaluate(() => {
     const out = { present: {}, cases: [], render: {}, err: null };
