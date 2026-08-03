@@ -631,9 +631,86 @@ function applyIqcParams(list, fallback){
   IQC_PARAMS = (list||[]).map(function(p, idx){
     return { id: p.paramCode || p.id, label: p.label, ccp: !!p.ccp,
       hint: p.checkBrief || p.hint || '', tools: p.tools || '', docRef: p.docRef || '',
-      std: (p.std!=null && p.std!=='') ? String(p.std) : (p.specText||''), unit: p.unit||'' };
+      std: (p.std!=null && p.std!=='') ? String(p.std) : (p.specText||''), unit: p.unit||'',
+      // Carried through so the row can offer a reading input and an advisory
+      // tolerance check. Previously dropped here, which made the tol_min/tol_max
+      // columns unreachable from the browser no matter what the sheet held.
+      method: p.method || '', tolMin: p.tolMin, tolMax: p.tolMax };
   });
   IQC_PARAMS_FALLBACK = !!fallback;
+}
+
+/* ── Measured-value capture (advisory) ───────────────────────────────────────
+   A reading input appears only for params that CAN carry a number: a measuring
+   method plus a real unit. Qualitative params ("No leak", colour match) keep the
+   PASS/FAIL/NA buttons alone — a number field there would be noise.
+
+   The check is ADVISORY by deliberate choice, mirroring renderSamplingConflict:
+   it colours the row and states the breach, but the operator still sets the
+   verdict. A hard gate would halt receiving, because 40 measured params still
+   carry the 'As per spec' placeholder with no numeric limits until QA fills
+   PARAM_SPEC_TODO. Promote to auto-FAIL only once those limits are real. */
+var MEASURED_METHODS = ['Dimensional','Gravimetric','Mechanical','Instrumental','Measurement'];
+
+function isMeasuredParam(p) {
+  if (!p || !p.unit || !String(p.unit).trim() || String(p.unit).trim() === '-') return false;
+  return MEASURED_METHODS.indexOf(String(p.method || '').trim()) !== -1;
+}
+
+// A limit is usable only if it is genuinely numeric. The sheet still holds text
+// like 'Min as per spec' in places, and Number('') is 0 — which would make every
+// reading fail against a phantom zero.
+function numericLimit(v) {
+  if (v === null || v === undefined) return null;
+  var s = String(v).trim();
+  if (s === '' || s === '-') return null;
+  var n = Number(s);
+  return isFinite(n) ? n : null;
+}
+
+// → {state:'ok'|'low'|'high'|'none', msg}. 'none' = nothing to judge against.
+function checkTolerance(p, raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (s === '') return { state:'none', msg:'' };
+  var val = Number(s);
+  if (!isFinite(val)) return { state:'none', msg:'' };
+  var lo = numericLimit(p.tolMin), hi = numericLimit(p.tolMax);
+  if (lo === null && hi === null) return { state:'none', msg:'' };
+  var u = p.unit ? ' ' + p.unit : '';
+  if (lo !== null && val < lo) return { state:'low',  msg:'Below min ' + lo + u };
+  if (hi !== null && val > hi) return { state:'high', msg:'Above max ' + hi + u };
+  return { state:'ok', msg:'Within ' + (lo !== null ? lo : '–') + ' … ' + (hi !== null ? hi : '–') + u };
+}
+
+// Store the reading and refresh only this row's advisory line — a full
+// buildParamSection() rebuild on every keystroke would drop focus mid-typing.
+function setParamValue(paramId, raw) {
+  var d = itemData[currentIdx];
+  if (!d) return;
+  d.paramValues = d.paramValues || {};
+  if (String(raw).trim() === '') delete d.paramValues[paramId];
+  else d.paramValues[paramId] = raw;
+  renderToleranceHint(paramId);
+}
+
+function renderToleranceHint(paramId) {
+  var el = document.getElementById('tolHint_' + paramId);
+  if (!el) return;
+  var d = itemData[currentIdx];
+  var p = null;
+  for (var i = 0; i < IQC_PARAMS.length; i++) { if (IQC_PARAMS[i].id === paramId) { p = IQC_PARAMS[i]; break; } }
+  if (!p) return;
+  var r = checkTolerance(p, d && d.paramValues ? d.paramValues[paramId] : '');
+  var row = document.getElementById('paramRow_' + paramId);
+  if (r.state === 'none' || r.state === 'ok') {
+    el.textContent = r.msg || '';
+    el.style.color = '#64748b';
+    if (row) row.style.background = '';
+  } else {
+    el.textContent = '⚠ ' + r.msg + ' — verify before passing';
+    el.style.color = '#b45309';
+    if (row) row.style.background = '#fffbeb';
+  }
 }
 var IQC_PARAMS_FALLBACK = true;
 function loadParamsForProduct(materialCode){
@@ -1170,6 +1247,38 @@ function buildParamSection() {
       lblWrap.appendChild(hint);
     }
 
+    // Reading input + advisory tolerance line, measured params only.
+    if (isMeasuredParam(p)) {
+      var mRow = document.createElement('div');
+      mRow.setAttribute('style', 'display:flex;align-items:center;gap:6px;margin-top:4px;');
+
+      var mIn = document.createElement('input');
+      mIn.type = 'number';
+      mIn.step = 'any';
+      mIn.id = 'paramVal_' + p.id;
+      mIn.value = (d.paramValues && d.paramValues[p.id] != null) ? d.paramValues[p.id] : '';
+      mIn.placeholder = 'Reading';
+      mIn.setAttribute('aria-label', 'Measured value for ' + p.label + (p.unit ? ' in ' + p.unit : ''));
+      mIn.setAttribute('style', 'width:96px;min-height:40px;padding:6px 8px;border:1px solid #cbd5e1;' +
+                                'border-radius:6px;font-size:14px;');
+      mIn.oninput = makeValueHandler(p.id);
+      mRow.appendChild(mIn);
+
+      if (p.unit) {
+        var uSpan = document.createElement('span');
+        uSpan.className = 'text-[12px] text-text-helper shrink-0';
+        uSpan.textContent = p.unit;
+        mRow.appendChild(uSpan);
+      }
+
+      var tHint = document.createElement('span');
+      tHint.id = 'tolHint_' + p.id;
+      tHint.setAttribute('style', 'font-size:11px;color:#64748b;min-width:0;');
+      mRow.appendChild(tHint);
+
+      lblWrap.appendChild(mRow);
+    }
+
     row.style.height = 'auto';
     row.style.minHeight = '48px';
     row.style.paddingTop = '8px';
@@ -1198,10 +1307,18 @@ function buildParamSection() {
   wrap.appendChild(card);
   document.getElementById('dispCard').style.display = '';
   updateParamSectionTitle();
+
+  // Repaint advisory hints for readings already entered — the rows were just
+  // rebuilt, so any prior warning styling is gone.
+  IQC_PARAMS.forEach(function(p) { if (isMeasuredParam(p)) renderToleranceHint(p.id); });
 }
 
 function makeParamHandler(paramId, val) {
   return function() { setParam(paramId, val); };
+}
+
+function makeValueHandler(paramId) {
+  return function(e) { setParamValue(paramId, e.target.value); };
 }
 
 // ⓘ tooltip — tap-to-toggle popover (GAS runs in a touch iframe where hover is
@@ -1707,9 +1824,17 @@ function doSaveIQC() {
         shelf:  pmap.shelf  ||'NA', coa:    pmap.coa    ||'NA'
       },
       // EAV param results from the LIVE param set (legacy or category) → IQC_PARAM_LOG.
+      // actualValue was hardcoded '' here, so IQC_PARAM_LOG's column has been
+      // blank on every inspection to date. It now carries the operator's reading
+      // for measured params, and the advisory tolerance breach (if any) lands in
+      // remark so the record shows WHY a passed reading was out of limits.
       paramResults: IQC_PARAMS.map(function(p){
+        var vmap = (d.paramValues || {});
+        var raw  = (vmap[p.id] != null) ? String(vmap[p.id]) : '';
+        var tol  = raw ? checkTolerance(p, raw) : { state:'none', msg:'' };
         return { paramCode:p.id, paramName:p.label, unit:p.unit||'', stdValue:p.std||'',
-          actualValue:'', result:(pmap[p.id]||'NA'), remark:'' };
+          actualValue:raw, result:(pmap[p.id]||'NA'),
+          remark:(tol.state === 'low' || tol.state === 'high') ? ('OUT OF TOLERANCE: ' + tol.msg) : '' };
       })
     };
   });
