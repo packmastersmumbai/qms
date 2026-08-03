@@ -93,11 +93,37 @@ function saveGRN(data) {
       poNo = ''; // treat as unattached if not PO-format
     }
 
+    // Known location IDs, for the WARN-ONLY undefined-location check below.
+    // Built once outside the item loop — a per-item sheet read would be N scans.
+    var knownLocIds = {};
+    try {
+      var allLocs = (typeof getLocations === 'function') ? getLocations() : [];
+      allLocs.forEach(function (l) {
+        if (l && l.id) knownLocIds[String(l.id).trim().toUpperCase()] = true;
+      });
+    } catch (e) {}
+    var undefinedLocs = {};
+
     items.forEach(function(item) {
       // Per-item location: explicit item.locationId → material's defaultLocation → fallback
       var itemLocation = item.locationId
         || matLocByCode[item.materialCode]
         || fallbackLocation;
+
+      // WARN, DO NOT REJECT. STOCK_LEDGER accepts any string as a location and
+      // nothing validated it, so 128 of 180 materials point at a Default Location
+      // that does not exist in LOCATIONS — every receipt of those silently created
+      // a "ghost" location (?diag=ghostloc found 8 holding stock, incl. RM-STORE-E
+      // on 78 materials).
+      //
+      // A hard reject here would HALT PHYSICAL RECEIVING for all of them, which is
+      // far worse than the data problem it fixes. So the receipt proceeds and the
+      // caller gets a warning. Promote to a hard reject only once ?diag=ghostloc
+      // has read 0 for a full week of receiving — see REMEDIATION-PLAN.md Phase 1B.
+      var locKey = String(itemLocation || '').trim().toUpperCase();
+      if (locKey && Object.keys(knownLocIds).length && !knownLocIds[locKey]) {
+        undefinedLocs[String(itemLocation).trim()] = true;
+      }
       // GRN records receipt only — no disposition at the door. Everything received is
       // PENDING until IQC inspects and decides. (A HOLD/REJECT from a stale cached client
       // is still honoured defensively, but the current form never sends one.)
@@ -230,6 +256,17 @@ function saveGRN(data) {
         if (rec) qmsAnnounce_(rec);
       }
     } catch (annErr) { Logger.log('GRN announce skipped: ' + annErr.message); }
+
+    // Undefined-location warning (see the WARN-ONLY note in the item loop). Raised
+    // once per distinct location rather than per item, so a 10-line GRN into one
+    // undefined location produces one warning, not ten.
+    var undefKeys = Object.keys(undefinedLocs);
+    if (undefKeys.length) {
+      warnings.push('Received into ' + (undefKeys.length === 1 ? 'a location' : 'locations') +
+        ' not defined in LOCATIONS: ' + undefKeys.join(', ') +
+        '. Stock is recorded and correct, but this location will not appear on the ' +
+        'warehouse map until an admin defines it.');
+    }
 
     return { success: true, docNo: docNo, warnings: warnings };
   } catch(e) {

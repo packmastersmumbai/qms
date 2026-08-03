@@ -100,6 +100,47 @@ var GHOST_MERGE_PAIRS_ = [
   { from: 'FG-STORE-AA', to: 'FG-STORE'   }
 ];
 
+// Has this exact correction already been written? Guards a double-fire of the
+// SAME lot within one request — google.script.run retries after a dropped
+// response are a documented risk in this codebase, and Phase 2D adds idempotency
+// keys to GRN/Rework for the same reason. This endpoint writes real stock
+// movements, so it gets the same discipline.
+//
+// recordLocationTransfer's balance check would ALSO reject a duplicate (the source
+// is empty after the first move), but that is an accident of ordering, not a
+// guarantee — and it would report "Insufficient stock", which reads like a data
+// problem rather than "already done".
+function _ghostMergeAlreadyDone_(materialCode, batch, fromLoc, toLoc) {
+  try {
+    var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+    if (!ws || ws.getLastRow() < 2) return false;
+    var d = ws.getDataRange().getValues();
+    var h = d[0].map(function (x) { return String(x || '').trim().toLowerCase(); });
+    function idx(names) {
+      for (var i = 0; i < names.length; i++) { var k = h.indexOf(names[i]); if (k >= 0) return k; }
+      for (var j = 0; j < h.length; j++) {
+        for (var m = 0; m < names.length; m++) if (h[j].indexOf(names[m]) >= 0) return j;
+      }
+      return -1;
+    }
+    var cMat = idx(['material code']), cBat = idx(['batch', 'lot']);
+    var cLoc = idx(['location id', 'location']), cRem = idx(['remarks', 'remark']);
+    if (cMat < 0 || cLoc < 0) return false;
+
+    var tag = GHOST_MERGE_TAG_;
+    for (var r = d.length - 1; r >= 1; r--) {          // newest first
+      var row = d[r];
+      if (String(row[cMat] || '').trim() !== String(materialCode).trim()) continue;
+      if (cBat >= 0 && String(row[cBat] || '').trim() !== String(batch).trim()) continue;
+      if (String(row[cLoc] || '').trim().toUpperCase() !== String(toLoc).toUpperCase()) continue;
+      if (cRem >= 0 && String(row[cRem] || '').indexOf(tag) >= 0) return true;
+    }
+  } catch (e) { Logger.log('_ghostMergeAlreadyDone_: ' + e.message); }
+  return false;
+}
+
+var GHOST_MERGE_TAG_ = '[ghostmerge]';
+
 function ghostLocationMerge(confirm) {
   var out = { dryRun: !confirm, moves: [], error: null };
   try {
@@ -115,6 +156,12 @@ function ghostLocationMerge(confirm) {
           materialCode: s.materialCode, batch: s.batchOrLotNo,
           from: pair.from, to: pair.to, qty: qty, status: ''
         };
+
+        if (_ghostMergeAlreadyDone_(s.materialCode, s.batchOrLotNo, pair.from, pair.to)) {
+          move.status = 'ALREADY DONE — skipped';
+          out.moves.push(move);
+          return;
+        }
         if (!confirm) { move.status = 'WOULD MOVE'; out.moves.push(move); return; }
 
         try {
@@ -124,7 +171,10 @@ function ghostLocationMerge(confirm) {
             fromLocationId: pair.from,
             toLocationId:   pair.to,
             qty:            qty,
-            reason:         'CORRECTION — mis-keyed location ' + pair.from + ' (confirmed typo of ' + pair.to + ')',
+            // The tag is what makes this detectably idempotent — see
+            // _ghostMergeAlreadyDone_. Keep it in the remarks text.
+            reason:         GHOST_MERGE_TAG_ + ' CORRECTION — mis-keyed location ' + pair.from +
+                            ' (confirmed typo of ' + pair.to + ')',
             transferredBy:  'ghostLocationMerge'
           });
           move.status = (res && res.success !== false) ? 'MOVED' : ('FAILED: ' + ((res && res.error) || '?'));

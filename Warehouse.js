@@ -826,10 +826,17 @@ function recordLocationTransfer(data) {
       if (bal < qty) return { success: false, error: 'Insufficient stock at source (' + bal + ').' };
 
       var id = 'TRF-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd-HHmmss');
+      // data.reason was accepted in the signature but DISCARDED — remarks were
+      // hardcoded, so callers passing a reason (corrections, putaway, scrap moves)
+      // had it silently dropped and the ledger could not say WHY stock moved.
+      // Appended, not substituted, so the existing "OUT → X" / "IN ← Y" text every
+      // current reader relies on is preserved.
+      var why = String(data.reason || '').trim();
+      var sfx = why ? ' · ' + why : '';
       writeStockLedger_('LOCATION_TRANSFER', data.materialCode, data.batchOrLotNo,
-        data.fromLocationId, 0, qty, 'TRANSFER', id, data.transferredBy, 'OUT → ' + data.toLocationId);
+        data.fromLocationId, 0, qty, 'TRANSFER', id, data.transferredBy, 'OUT → ' + data.toLocationId + sfx);
       writeStockLedger_('LOCATION_TRANSFER', data.materialCode, data.batchOrLotNo,
-        data.toLocationId, qty, 0, 'TRANSFER', id, data.transferredBy, 'IN ← ' + data.fromLocationId);
+        data.toLocationId, qty, 0, 'TRANSFER', id, data.transferredBy, 'IN ← ' + data.fromLocationId + sfx);
       return { success: true, transferId: id };
     });
   } catch(e) {
