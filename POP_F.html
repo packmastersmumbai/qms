@@ -406,16 +406,25 @@ function buildPayload() {
 
 /* ── Save draft ── */
 window.saveDraft = function() {
+  // Offline gate + 30s watchdog + double-tap block (Phase 2E). This form drives a
+  // setBusy() overlay rather than a button, so the guard gets no button element —
+  // it still gates on connectivity and still fires the watchdog, and setBusy(false)
+  // in the wrapped handlers restores the UI.
+  var _g = (window.QMS && QMS.attachSaveGuard)
+    ? QMS.attachSaveGuard(null, '', { onMessage: function (m) { setBusy(false); showToast(m, true); } })
+    : { proceed: function () { return true; }, wrap: function (f) { return f; }, wrapFail: function (f) { return f; } };
+  if (!_g.proceed()) return;
+
   setBusy(true);
   var payload = buildPayload();
   payload.submit = false;
   var runner = google.script.run
-    .withSuccessHandler(function(r) {
+    .withSuccessHandler(_g.wrap(function(r) {
       setBusy(false);
       if (r.success) { _dirty = false; showToast('Draft saved: ' + r.poNo); setTimeout(goHome, 1200); }
       else showToast('Error: ' + r.error, true);
-    })
-    .withFailureHandler(function(e) { setBusy(false); showToast(e.message, true); });
+    }))
+    .withFailureHandler(_g.wrapFail(function(e) { setBusy(false); showToast(e.message, true); }));
   if (_editPoNo) runner.updateDraftPO(_editPoNo, payload);
   else           runner.savePO(payload);
 };
@@ -458,18 +467,26 @@ window.closeModal = function() {
 
 window.confirmSubmit = function() {
   document.getElementById('btnConfirm').disabled = true;
+  // Offline gate + watchdog (Phase 2E) — the submit path writes a real PO, so it
+  // gets the same guard as the draft path above.
+  var _gs = (window.QMS && QMS.attachSaveGuard)
+    ? QMS.attachSaveGuard(document.getElementById('btnConfirm'), 'Confirm',
+        { onMessage: function (m) { closeModal(); showToast(m, true); } })
+    : { proceed: function () { return true; }, wrap: function (f) { return f; }, wrapFail: function (f) { return f; } };
+  if (!_gs.proceed()) return;
+
   var payload = buildPayload();
   payload.submit = true;
   var runner = google.script.run
-    .withSuccessHandler(function(r) {
+    .withSuccessHandler(_gs.wrap(function(r) {
       closeModal();
       if (r.success) { _dirty = false; showToast('PO submitted: ' + r.poNo); setTimeout(goHome, 1400); }
       else { showToast('Error: ' + r.error, true); document.getElementById('btnConfirm').disabled = false; }
-    })
-    .withFailureHandler(function(e) {
+    }))
+    .withFailureHandler(_gs.wrapFail(function(e) {
       closeModal(); showToast(e.message, true);
       document.getElementById('btnConfirm').disabled = false;
-    });
+    }));
   if (_editPoNo) runner.updateDraftPO(_editPoNo, payload);
   else           runner.savePO(payload);
 };

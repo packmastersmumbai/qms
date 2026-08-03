@@ -1153,6 +1153,14 @@ function saveRound() {
   if (!valid) { showToast('Add remarks for all failed checks.', 'error'); return; }
 
   var btn = document.getElementById('btnSaveRound');
+  // Offline gate + 30s watchdog + double-tap block (Phase 2E) — this form had
+  // none, so a dropped connection left Save disabled with no message.
+  var _g = (window.QMS && QMS.attachSaveGuard)
+    ? QMS.attachSaveGuard(btn, '<span class="material-symbols-outlined text-[18px]">save</span> Save Round',
+        { onMessage: function (m) { showToast(m, 'error'); } })
+    : { proceed: function () { return true; }, wrap: function (f) { return f; }, wrapFail: function (f) { return f; } };
+  if (!_g.proceed()) return;
+
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
@@ -1192,7 +1200,7 @@ function saveRound() {
   var roundElapsedHms = secsToHms(roundElapsedSec);
 
   google.script.run
-    .withSuccessHandler(function(res) {
+    .withSuccessHandler(_g.wrap(function(res) {
       btn.disabled = false;
       btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">save</span> Save Round';
       if (!res.ok) { showToast(res.error || 'Save failed.', 'error'); return; }
@@ -1226,12 +1234,12 @@ function saveRound() {
       }
       // Wait for explicit "Start Next Round" — don't auto-advance
       enterAwaitingNextRound(saved, roundElapsedHms);
-    })
-    .withFailureHandler(function(e) {
+    }))
+    .withFailureHandler(_g.wrapFail(function(e) {
       btn.disabled = false;
       btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">save</span> Save Round';
       showToast('Error: ' + e.message, 'error');
-    })
+    }))
     .saveRound(SESSION_ID, {
       productCode: SESSION_CODE,
       batch:       SESSION_BATCH,
