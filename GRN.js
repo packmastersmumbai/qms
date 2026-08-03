@@ -21,6 +21,23 @@ function getGRNFormInit() {
 function _grnTxnTag_(txnId) {
   return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
 }
+
+// SHARED: remove the idempotency tag from any value a human will read.
+//
+// GRN, IQC and Gatepass all stamp "[txn:...]" into their Remarks column — that
+// is deliberate audit evidence of which save attempt produced the row, and it
+// must STAY in the sheet. But the same cell is rendered onto printed documents
+// (PrintGRN_F.html:271, PrintIQC_F.html:260), so an operator remark would reach
+// a customer or auditor as "Short delivery [txn:GRN-1785786271180]".
+//
+// Global, not suffix-anchored: text can be appended AFTER the tag (IQC's
+// HOLD-close does exactly this at IQC.js:983), leaving it mid-string.
+//
+// Lives here rather than in three modules so a future writer inherits one
+// definition instead of copying a fourth near-identical regex.
+function stripTxnTag_(value) {
+  return String(value || '').replace(/\s*\[txn:[^\]]*\]\s*/g, ' ').trim();
+}
 function _grnFindByTxn_(ws, txnId) {
   try {
     if (!ws || ws.getLastRow() < 2) return '';
@@ -416,7 +433,9 @@ function getGRNPrintData(docNo) {
     poRef:        String(r[4]  || ''),
     invoiceNo:    String(r[5]  || ''),
     coaReceived:  String(r[12] || ''),
-    remarks:      String(r[14] || ''),
+    // Tag stripped for DISPLAY only — it stays in the sheet. PrintGRN_F.html:271
+    // renders this straight onto the printed GRN document.
+    remarks:      stripTxnTag_(r[14]),
     status:       String(r[15] || ''),
     inspector:    String(r[16] || ''),
     storageZone:  String(r[18] || ''),

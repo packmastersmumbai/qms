@@ -374,6 +374,13 @@ function doGet(e) {
     } catch (ermd) { mdf = 'ERROR: ' + ermd.message; }
     return ContentService.createTextOutput(String(mdf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=txnleak → READ-ONLY: is any [txn:] tag reaching a human-facing surface?
+  if (diag === 'txnleak') {
+    var tlk;
+    try { tlk = (typeof auditTxnTagLeak === 'function') ? auditTxnTagLeak() : 'auditTxnTagLeak missing (is _TxnLeakAudit.js pushed?)'; }
+    catch (ertl) { tlk = 'ERROR: ' + ertl.message; }
+    return ContentService.createTextOutput(String(tlk)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=iqcidem[&confirm=YES] → prove the IQC idempotency guard blocks a retry
   if (diag === 'iqcidem') {
     var iqi;

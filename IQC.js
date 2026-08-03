@@ -264,11 +264,12 @@ function _iqcStampTxn_(remarks, txnId) {
   return base + (base ? ' ' : '') + _iqcTxnTag_(txnId);
 }
 
-// Inverse of _iqcStampTxn_, for any surface a human reads. Handles the tag
-// appearing anywhere in the string, not only as a suffix, because HOLD-close
-// appends further text after it (IQC.js:947 does
-// remarks + ' | HOLD CLOSED: ...'), which would strand a suffix-only strip.
+// Inverse of _iqcStampTxn_, for any surface a human reads. Delegates to the
+// shared stripTxnTag_ (GRN.js) so GRN/IQC/Gatepass cannot drift apart; the
+// local wrapper stays because it is the documented name at the IQC call site
+// and it keeps this module working if GRN.js has not evaluated yet.
 function _iqcStripTxn_(remarks) {
+  if (typeof stripTxnTag_ === 'function') return stripTxnTag_(remarks);
   return String(remarks || '').replace(/\s*\[txn:[^\]]*\]\s*/g, ' ').trim();
 }
 
