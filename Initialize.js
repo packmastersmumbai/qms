@@ -308,8 +308,16 @@ function initializeProject() {
 
   try {
     createConfigSheet_(ss);
-    createMasterSheet_(ss, 'MASTERS_Suppliers',  ['Supplier Code','Supplier Name','Contact Person','Phone / WhatsApp','Email','Material Supplied','City / Location','Approved (Y/N)','State Code'], SUPPLIERS);
-    createMasterSheet_(ss, 'MASTERS_Materials',  ['Item Code','Item Description','Unit','Category'], MATERIALS);
+    // NO 'Email' column. The live sheet has none, the repair header at ~line 688 has
+    // none, and MastersCrud maps schema[i] -> cell[i] POSITIONALLY — so a 9th column
+    // here made a fresh install render LastModified under an 'Email' label and would
+    // have written edits back over the audit column. The sheet is the contract.
+    createMasterSheet_(ss, 'MASTERS_Suppliers',  ['Supplier Code','Supplier Name','Contact Person','Phone / WhatsApp','Material Supplied','City / Location','Approved (Y/N)','State Code'], SUPPLIERS);
+    // Full MAT_COL contract (Masters.js), not just the 4 seeded business columns: a
+    // fresh install must produce the same 15-wide sheet the app reads, or
+    // MAT_COL.INSP_CATEGORY=12 points past the end — the exact defect repaired on
+    // the live sheet by _MaterialsSchemaFix.js. Seed rows are padded above.
+    createMasterSheet_(ss, 'MASTERS_Materials',  ['Item Code','Item Description','Unit','Category','Default Location','Reorder Level','Each L (mm)','Each W (mm)','Each H (mm)','Each Weight (kg)','Per Pallet (TIxHI)','Fit Class','Inspection Category','LastModified','ModifiedBy'], MATERIALS);
     createMasterSheet_(ss, 'MASTERS_Customers',  ['Customer Code','Customer Name','Contact Person','Phone / WhatsApp','Email','Products Supplied','City'], CUSTOMERS);
     createMasterSheet_(ss, 'MASTERS_Personnel',  ['Name','Role / Designation','Department','WhatsApp No.','Send Notifications (Y/N)'], PERSONNEL);
     createMasterSheet_(ss, 'LOCATIONS',          LOCATIONS_HEADERS, LOCATIONS_SEED);
@@ -406,7 +414,17 @@ function createMasterSheet_(ss, name, headers, data) {
     .setHorizontalAlignment('center');
 
   if (data && data.length) {
-    ws.getRange(2, 1, data.length, headers.length).setValues(data)
+    // Pad each seed row to the header width. Seed arrays are authored with only the
+    // business columns filled (MATERIALS is 4 wide), but headers now carry the full
+    // contract (MAT_WIDTH is 15, incl. geometry + Inspection Category + audit pair).
+    // setValues() throws if the row width does not match the range, so a widened
+    // header without this padding would break a fresh install outright.
+    var padded = data.map(function (row) {
+      var r = row.slice(0, headers.length);
+      while (r.length < headers.length) r.push('');
+      return r;
+    });
+    ws.getRange(2, 1, padded.length, headers.length).setValues(padded)
       .setFontFamily('Arial')
       .setFontSize(10);
   }
