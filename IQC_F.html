@@ -272,7 +272,7 @@
             <div class="text-[9px] text-text-helper leading-tight">→ cabinet</div></div>
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Accept ≤</div><div class="font-mono text-[21px] font-bold" style="color:#15803d" id="planAc">—</div></div>
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Reject ≥</div><div class="font-mono text-[21px] font-bold" style="color:#dc2626" id="planRe">—</div></div>
-          <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Defects</div>
+          <div><label class="text-[10px] uppercase tracking-wide text-text-helper" for="defectsFound">Defects</label>
             <input id="defectsFound" type="number" inputmode="numeric" min="0" value="0"
               class="w-full h-[36px] border-[1.5px] border-gray-300 rounded text-center font-mono text-[18px] px-1 focus:border-accent focus:outline-none"></div>
         </div>
@@ -840,6 +840,9 @@ function onInitLoaded(d) {
   applyDefault('inspLevel',        d.defaultLevel,    false);
   applyDefault('samplingSeverity', d.defaultSeverity, false);
 
+  // Attach ISO 2859-1 guidance ⓘ to the sampling controls.
+  try { attachSamplingGuides(); } catch (e) {}
+
   var gSel = document.getElementById('grnNo');
   var grnList = d.recentGRNs || [];
   grnList.forEach(function(g) {
@@ -1225,6 +1228,78 @@ function makeInfoHandler(p) {
 }
 function closeInfoPopover() { var e = document.getElementById('infoPop'); if (e) e.remove(); }
 document.addEventListener('click', closeInfoPopover);
+
+// ── Sampling guidance tooltips ────────────────────────────────────────────────
+// The sampling controls carry real standards meaning that inspectors were
+// expected to know from memory. Text is quoted/paraphrased from ISO 2859-1:1999
+// so the form itself states the rule instead of assuming training.
+//
+// Reuses the parameter ⓘ popover (tap-to-toggle; hover is unreliable inside the
+// GAS double-iframe) rather than adding a second tooltip style.
+var SAMPLING_GUIDE = {
+  lotSize: {
+    label: 'Lot size',
+    body: 'The number of items in the batch being judged — normally the full quantity received on this GRN line.' +
+          '<div><u>Why</u>: lot size selects the code letter, which sets how many pieces you must inspect.</div>' +
+          '<div><u>Note</u>: inspect one lot at a time. Do not merge two receipts into one lot to shrink the sample.</div>'
+  },
+  aqlLevel: {
+    label: 'AQL — Acceptance Quality Limit',
+    body: 'The worst average defect rate still considered acceptable, in % defective.' +
+          '<div><u>Effect</u>: AQL does NOT change how many pieces you check. It only moves the Accept/Reject numbers.</div>' +
+          '<div><u>Lower AQL</u> (0.65) = stricter. <u>Higher</u> (6.5) = more tolerant.</div>' +
+          '<div><u>Ref</u>: ISO 2859-1 · 2.5 is the common default for general packaging attributes.</div>'
+  },
+  inspLevel: {
+    label: 'Inspection level',
+    body: 'Sets the sample size for a given lot — this is the control that changes your workload.' +
+          '<div><u>ISO 2859-1 §10.1</u>: "Unless otherwise specified, level II shall be used. Level I may be used when less discrimination is needed, or level III when greater discrimination is required."</div>' +
+          '<div><u>Here</u>: Level I is our documented default — about 60% fewer pieces than II, with the same AQL.</div>' +
+          '<div><u>Raise to II/III</u> for a new supplier, a suspect lot, or after a recent rejection.</div>'
+  },
+  samplingSeverity: {
+    label: 'Severity (switching rules)',
+    body: 'ISO 2859-1 switching: start at <u>Normal</u>. Move to <u>Tightened</u> when 2 of 5 consecutive lots are rejected. Return to Normal after 5 consecutive accepted lots. <u>Reduced</u> is allowed only when production is steady and the responsible authority agrees.' +
+          '<div style="color:#b45309;margin-top:4px;"><b>Limitation:</b> the Ac/Re shown are still the NORMAL-plan values. The Tightened/Reduced tables (II-B/II-C) are not yet implemented, so your selection is recorded but does not change the numbers.</div>'
+  },
+  defectsFound: {
+    label: 'Defects found',
+    body: 'Count of non-conforming pieces in the SAMPLE you inspected — not in the whole lot.' +
+          '<div><u>Accept</u> if defects ≤ Ac. <u>Reject</u> if above it.</div>' +
+          '<div><u>Note</u>: one defective piece can carry several defects; count pieces, and stay consistent.</div>'
+  }
+};
+
+function attachSamplingGuides() {
+  Object.keys(SAMPLING_GUIDE).forEach(function (id) {
+    var field = document.getElementById(id);
+    if (!field) return;
+    var lab = document.querySelector('label[for="' + id + '"]');
+    if (!lab || lab.querySelector('.info-btn')) return; // already attached
+    var g = SAMPLING_GUIDE[id];
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'info-btn';
+    btn.textContent = 'ⓘ';
+    btn.setAttribute('aria-label', g.label + ' — guidance');
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = document.getElementById('infoPop');
+      closeInfoPopover();
+      if (open && open.getAttribute('data-pc') === 'guide-' + id) return;
+      var pop = document.createElement('div');
+      pop.className = 'info-pop';
+      pop.id = 'infoPop';
+      pop.setAttribute('data-pc', 'guide-' + id);
+      pop.innerHTML = '<b>' + g.label + '</b><div>' + g.body + '</div>';
+      document.body.appendChild(pop);
+      var r = btn.getBoundingClientRect();
+      pop.style.top  = (window.scrollY + r.bottom + 4) + 'px';
+      pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 258)) + 'px';
+    });
+    lab.appendChild(btn);
+  });
+}
 
 function setParam(paramId, val) {
   itemData[currentIdx].params[paramId] = val;
