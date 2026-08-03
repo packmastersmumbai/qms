@@ -80,15 +80,32 @@
 
     if (confirmBtn) confirmBtn.addEventListener('click', function () {
       if (!selected) return;
+      dismissed = true;                                   // stop dismiss() firing onCancel
       setOperatorName(selected);
       modal.remove();
+      document.removeEventListener('keydown', onKey, true); // don't leak onto later modals
       if (typeof onConfirm === 'function') onConfirm(selected);
     });
 
-    if (cancelBtn) cancelBtn.addEventListener('click', function () {
+    // Single dismissal path, so EVERY way of closing this modal notifies the
+    // caller. Previously only the Cancel button did: Escape and a backdrop tap
+    // removed the modal while the caller still believed it was open. In GRN that
+    // left _grnSaveInFlight true and the Save button permanently dead until a
+    // reload — the form looked like "saving is broken".
+    var dismissed = false;
+    function dismiss() {
+      if (dismissed) return;          // Esc + backdrop can both fire
+      dismissed = true;
       modal.remove();
+      document.removeEventListener('keydown', onKey, true);
       if (typeof onCancel === 'function') onCancel();
-    });
+    }
+    function onKey(e) { if (e.key === 'Escape' || e.keyCode === 27) dismiss(); }
+
+    if (cancelBtn) cancelBtn.addEventListener('click', dismiss);
+    document.addEventListener('keydown', onKey, true);
+    // Backdrop tap = the modal element itself, not a click inside the card.
+    modal.addEventListener('click', function (e) { if (e.target === modal) dismiss(); });
   }
 
   function requireOperator(list, onConfirm, onCancel) {

@@ -1114,8 +1114,15 @@ function _doSaveProceed() {
 
   var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display !== 'none');
   var btn = document.getElementById('btnSubmit');
+  // Disable to stop a double-tap, but do NOT say "Saving…" yet.
+  //
+  // This function ends by opening the "Who are you?" operator modal, and the
+  // actual saveGRN call only happens in its callback. Showing the spinner here
+  // told the operator a save was in progress while the form was really waiting
+  // for input — so a missed or dismissed modal looked exactly like a hung save.
+  // (Measured with e2e-grnsave.js: the only server calls were
+  // getOpenPOsForSupplier; saveGRN was never reached.)
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Saving&hellip;';
 
   var qtyR = parseFloat(document.getElementById('qtyReceived').value) || 0;
   // No accepted-qty at receipt — everything received is pending IQC. Carry qtyReceived
@@ -1232,6 +1239,10 @@ function _doSaveProceed() {
 
   function afterStop(operatorName) {
     data.operatorName = operatorName || '';
+    // NOW the save is genuinely starting — the operator has been confirmed and
+    // the next steps (image upload, then saveGRN) are real work.
+    var bSave = document.getElementById('btnSubmit');
+    if (bSave) { bSave.disabled = true; bSave.innerHTML = '<span class="spinner"></span>Saving&hellip;'; }
 
     // Upload images first, then save
     uploadImagesAndSave_(function(uploadedImages) {
@@ -1345,14 +1356,27 @@ function _doSaveProceed() {
     if (!b) return;
     b.disabled = false;
     b.innerHTML = '<span class="material-symbols-outlined">save</span> SAVE GRN RECORD';
+    // Re-derive the "what's missing" hint from the live fields. Without this the
+    // hint keeps whatever text it had when Save was first blocked — it was still
+    // reading "Add a batch number to save." with a batch number present, which
+    // sends the operator hunting for a field that is already filled.
+    if (typeof refreshSaveBtn === 'function') { try { refreshSaveBtn(); } catch (e) {} }
+    else if (typeof syncSubmitHint_ === 'function') { try { syncSubmitHint_(); } catch (e) {} }
   }
 
   function onCancel() {
-    var btnCancel = document.getElementById('btnSubmit');
-    if (btnCancel) {
-      btnCancel.disabled = false;
-      btnCancel.innerHTML = 'Save GRN';
-    }
+    // MUST clear _grnSaveInFlight, not just re-enable the button.
+    //
+    // It previously only restored the label, leaving the latch true. Every later
+    // press then hit `if (_grnSaveInFlight) return;` and did nothing, silently —
+    // the form was unsubmittable until a full reload. Dismissing the operator
+    // modal once permanently killed saving, which is the most likely cause of
+    // "GRN issue in saving".
+    //
+    // releaseSaveLatch_ is the single owner of that reset, so cancel, timeout,
+    // offline and server-rejection all restore the SAME label instead of the
+    // three different ones this file used to produce.
+    releaseSaveLatch_();
   }
 
   if (window.QMS && window.QMS.requireOperator) {

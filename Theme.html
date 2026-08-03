@@ -841,7 +841,16 @@
   function setOperatorName(name) {
     try { sessionStorage.setItem('pmOperatorName', name); } catch(e) {}
   }
-  function showOperatorPicker(inspectorsList, onConfirm) {
+  // NOTE: this is the LIVE operator picker. OperatorPicker.html defines another
+  // one, but Theme.html loads into every form and overwrites window.QMS.*, so
+  // THIS implementation is what actually runs. Fix here, not there.
+  //
+  // It previously had NO dismissal path at all — no cancel button, no Escape, no
+  // backdrop — and ignored a third onCancel argument that GRN_F was already
+  // passing. Callers that latch before opening it (GRN sets _grnSaveInFlight)
+  // could therefore never be told the user backed out, leaving the Save button
+  // permanently dead until reload. That is the "GRN issue in saving" report.
+  function showOperatorPicker(inspectorsList, onConfirm, onCancel) {
     var existing = document.getElementById('opModal');
     if (existing) existing.remove();
     var modal = document.createElement('div');
@@ -868,17 +877,30 @@
       selected = btn.dataset.name;
       modal.querySelector('#opConfirmBtn').disabled = false;
     });
+    // One dismissal path so EVERY exit notifies the caller.
+    var done = false;
+    function close_(cb, arg) {
+      if (done) return;
+      done = true;
+      modal.remove();
+      document.removeEventListener('keydown', onKey_, true);
+      if (typeof cb === 'function') cb(arg);
+    }
+    function onKey_(e) { if (e.key === 'Escape' || e.keyCode === 27) close_(onCancel); }
+
     modal.querySelector('#opConfirmBtn').addEventListener('click', function() {
       if (!selected) return;
       setOperatorName(selected);
-      modal.remove();
-      if (typeof onConfirm === 'function') onConfirm(selected);
+      close_(onConfirm, selected);
     });
+    // Escape and a backdrop tap both count as "backed out".
+    document.addEventListener('keydown', onKey_, true);
+    modal.addEventListener('click', function(e) { if (e.target === modal) close_(onCancel); });
   }
-  function requireOperator(inspectorsList, callback) {
+  function requireOperator(inspectorsList, callback, onCancel) {
     var name = getOperatorName();
     if (name) { callback(name); return; }
-    showOperatorPicker(inspectorsList, callback);
+    showOperatorPicker(inspectorsList, callback, onCancel);
   }
   window.QMS = window.QMS || {};
   window.QMS.getOperatorName    = getOperatorName;
