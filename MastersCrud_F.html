@@ -3,7 +3,7 @@
 <head>
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Masters CRUD — Pack Masters QMS</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <style>
@@ -52,7 +52,12 @@
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   #toast.error{background:var(--pm-fail)}
   #toast.ok{background:var(--pm-pass)}
-</style>
+
+    /* iOS zooms the page when a focused input renders below 16px. That — not a
+       viewport lock — is the correct fix, so `user-scalable=no` could be removed
+       from the meta tag without reintroducing zoom-jump (WCAG 1.4.4). */
+    input, select, textarea { font-size: 16px !important; }
+  </style>
 <?!= include('HtmlCache') ?>
 </head>
 <body class="pm-narrow">

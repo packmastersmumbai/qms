@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Traceability — Pack Masters QMS</title>
 <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
 <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
@@ -59,7 +59,12 @@
     outline: 3px solid #0070F3;
     outline-offset: 2px;
   }
-</style>
+
+    /* iOS zooms the page when a focused input renders below 16px. That — not a
+       viewport lock — is the correct fix, so `user-scalable=no` could be removed
+       from the meta tag without reintroducing zoom-jump (WCAG 1.4.4). */
+    input, select, textarea { font-size: 16px !important; }
+  </style>
 </head>
 <body class="bg-[#f8fafc] text-[#0f172a] min-h-screen pb-[80px] pm-wide">
 

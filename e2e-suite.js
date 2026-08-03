@@ -36,7 +36,10 @@ const MODULES = [
   { name: 'Warehouse',      wait: 11000 },
   { name: 'ControlPlan',    wait: 11000 },
   { name: 'PO',             wait: 11000 },
-  { name: 'KPI',            wait: 11000 },
+    // KPI is the slowest surface: getQmsKpis runs 60 evaluations and takes ~13.5s cold
+  // (was 51.7s before the request cache). An 11s probe caught it mid-load and reported
+  // a false 'stuck loading'.
+  { name: 'KPI',            wait: 20000 },
   { name: 'Masters',        wait: 11000 },
   // Scan opens on an operator-identity gate ("Who are you?" + Continue) before any
   // scanning UI exists. ~39 chars of visible text is the whole correct screen.

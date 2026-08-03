@@ -3,7 +3,7 @@
 <head>
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scan — Pack Masters QMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,6 +50,11 @@
     .wifi-dot.warn { background:#f59e0b; }
     .wifi-dot.bad  { background:#dc2626; }
     .hidden { display:none !important; }
+  
+    /* iOS zooms the page when a focused input renders below 16px. That — not a
+       viewport lock — is the correct fix, so `user-scalable=no` could be removed
+       from the meta tag without reintroducing zoom-jump (WCAG 1.4.4). */
+    input, select, textarea { font-size: 16px !important; }
   </style>
 </head>
 <body>

@@ -3,7 +3,7 @@
 <head>
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KPI Dashboard — Pack Masters</title>
 
   <!-- Tailwind CDN -->
@@ -113,6 +113,11 @@
     /* ── Period chip active ── */
     .period-chip.active { background: #1e3a5f; color: #fff; }
     .period-chip { cursor: pointer; }
+  
+    /* iOS zooms the page when a focused input renders below 16px. That — not a
+       viewport lock — is the correct fix, so `user-scalable=no` could be removed
+       from the meta tag without reintroducing zoom-jump (WCAG 1.4.4). */
+    input, select, textarea { font-size: 16px !important; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('HtmlCache') ?>

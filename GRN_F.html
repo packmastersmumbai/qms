@@ -3,7 +3,7 @@
 <head>
   <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GRN Receipt — Pack Masters QMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -485,7 +485,7 @@
        quantity are what actually gate it (see updateSubmitState). Hidden once
        enabled so it does not become permanent chrome. -->
   <p id="submitHint" class="max-w-lg mx-auto text-center text-[11px] text-[#64748b] mt-1.5">
-    Choose a supplier, a disposition, and enter a quantity to save.
+    Add a supplier, a material, a batch number and a quantity to save.
   </p>
 </div>
 
@@ -563,13 +563,40 @@ function refreshSaveBtn() {
   syncSubmitHint_();
 }
 
-// The "what's missing" hint is only useful while Save is blocked. Driven off the
-// button's own disabled state so BOTH enable paths (multi-PO above and the single
-// item path here) stay in sync without duplicating the validation rules.
+// The "what's missing" hint is only useful while Save is blocked.
+//
+// It used to be a fixed sentence: "Choose a supplier, a disposition, and enter a
+// quantity to save." That was wrong in both directions — disposition was removed
+// from this form (it is hardcoded 'PENDING'; selectDisp() is a no-op stub, because
+// GRN records RECEIPT and IQC owns accept/reject), so it sent operators hunting for
+// a control that does not exist, while omitting Batch Number, which really does gate
+// Save. Now it names the actual missing fields, read from the same elements
+// refreshSaveBtn() validates, so the two cannot drift apart again.
 function syncSubmitHint_() {
   var b = document.getElementById('btnSubmit');
   var h = document.getElementById('submitHint');
-  if (b && h) h.style.display = b.disabled ? '' : 'none';
+  if (!b || !h) return;
+  if (!b.disabled) { h.style.display = 'none'; return; }
+
+  var missing = [];
+  var val = function (id) {
+    var e = document.getElementById(id);
+    return e ? String(e.value || '').trim() : '';
+  };
+  if (!val('supplier')) missing.push('a supplier');
+  // The extra-items path can satisfy Save on its own, so only nag about the top
+  // item's fields when no valid extra item exists.
+  if (!hasValidExtraItem()) {
+    if (!val('item'))                        missing.push('a material');
+    if (!val('batchNo'))                     missing.push('a batch number');
+    if (!(parseFloat(val('qtyReceived')) > 0)) missing.push('a quantity');
+  }
+
+  h.style.display = '';
+  h.textContent = missing.length
+    ? 'Add ' + (missing.length === 1 ? missing[0]
+        : missing.slice(0, -1).join(', ') + ' and ' + missing[missing.length - 1]) + ' to save.'
+    : 'Complete the highlighted fields to save.';
 }
 
 function hasValidExtraItem() {
