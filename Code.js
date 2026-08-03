@@ -498,6 +498,15 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(sd, null, 2)).setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // getRecentGRNs old-vs-new equivalence proof (_GrnEquivCheck.js). READ-ONLY.
+  //   ?diag=grnequiv   → deep-compares both algorithms on the live sheet
+  if (diag === 'grnequiv') {
+    var gec;
+    try { gec = (typeof grnEquivCheck === 'function') ? grnEquivCheck() : { error: 'grnEquivCheck missing' }; }
+    catch (er10) { gec = { error: er10.message, stack: er10.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(gec, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // IQC form-init timing attribution (_IqcInitTiming.js). READ-ONLY.
   //   ?diag=iqcinittiming   → per-step ms for getIQCFormInit + cache proof
   if (diag === 'iqcinittiming') {
