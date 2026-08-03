@@ -264,6 +264,14 @@ function _iqcStampTxn_(remarks, txnId) {
   return base + (base ? ' ' : '') + _iqcTxnTag_(txnId);
 }
 
+// Inverse of _iqcStampTxn_, for any surface a human reads. Handles the tag
+// appearing anywhere in the string, not only as a suffix, because HOLD-close
+// appends further text after it (IQC.js:947 does
+// remarks + ' | HOLD CLOSED: ...'), which would strand a suffix-only strip.
+function _iqcStripTxn_(remarks) {
+  return String(remarks || '').replace(/\s*\[txn:[^\]]*\]\s*/g, ' ').trim();
+}
+
 function saveIQC(data) {
   try {
     var ss  = getSpreadsheet();
@@ -844,7 +852,12 @@ function getIQCPrintData(docNo) {
     disposition:   String(r[22] || ''),
     ncrRef:        String(r[23] || ''),
     deviationRef:  String(r[24] || ''),
-    remarks:       String(r[25] || ''),
+    // Tag stripped for DISPLAY only. It stays in the sheet as audit evidence of
+    // which save attempt produced the row, but PrintIQC_F.html:260 renders this
+    // straight into the printed QA certificate — an operator remark reading
+    // "Minor scuffing [txn:IQC-1785786271180]" on a controlled document is a
+    // defect, not an audit trail.
+    remarks:       _iqcStripTxn_(r[25]),
     acceptedQty:   r[26] != null ? String(r[26]) : '',
     rejectedQty:   r[27] != null ? String(r[27]) : '',
     holdQty:       r[31] != null ? String(r[31]) : '',

@@ -52,11 +52,19 @@ function checkIqcIdempotency(apply) {
     remarks: 'idempotency self-test',
     operatorName: 'idem-test',
     clientTxnId: txn,
+    // TWO items deliberately. saveIQC writes one row PER ITEM, and the whole
+    // reason _iqcFindByTxn_ collects every docNo is the multi-item retry — a
+    // single-item payload leaves that branch unexercised.
     items: [{
       materialCode: String(fixRow[6] || ''),
       materialDesc: String(fixRow[7] || ''),
-      batchNo:      String(fixRow[8] || ''),
-      qtyReceived:  100, qtyAccepted: 100, rejectedQty: 0, acceptedQty: 100
+      batchNo:      String(fixRow[8] || '') + '-A',
+      qtyReceived:  60, qtyAccepted: 60, rejectedQty: 0, acceptedQty: 60
+    }, {
+      materialCode: String(fixRow[6] || ''),
+      materialDesc: String(fixRow[7] || ''),
+      batchNo:      String(fixRow[8] || '') + '-B',
+      qtyReceived:  40, qtyAccepted: 40, rejectedQty: 0, acceptedQty: 40
     }]
   };
 
@@ -82,10 +90,32 @@ function checkIqcIdempotency(apply) {
     var sameDocs = JSON.stringify((r1 && r1.docNos) || []) === JSON.stringify((r2 && r2.docNos) || []);
     var noNewRows = (after - mid) === 0;
     var flagged   = !!(r2 && r2.duplicate);
-    out.push('VERDICT: ' + ((sameDocs && noNewRows && flagged) ? 'PASS — guard holds' : 'FAIL'));
-    out.push('  same docNos returned: ' + sameDocs);
+    var multiRow  = (mid - before) === 2;   // 2 items -> 2 rows
+
+    // The tag must be IN the sheet (audit evidence) but OUT of anything a human
+    // reads — PrintIQC_F.html:260 renders getIQCPrintData().remarks straight onto
+    // the printed QA certificate.
+    var rawCell = String(ws.getRange(mid, _iqcRemarksCol_() + 1).getValue() || '');
+    var tagInSheet = rawCell.indexOf('[txn:') >= 0;
+    var displayClean = true, shown = '';
+    try {
+      var pd = (typeof getIQCPrintData === 'function' && r1 && r1.docNos && r1.docNos[0])
+        ? getIQCPrintData(r1.docNos[0]) : null;
+      shown = pd ? String(pd.remarks || '') : '(print data unavailable)';
+      displayClean = pd ? (shown.indexOf('[txn:') < 0) : false;
+    } catch (eP) { displayClean = false; shown = 'THREW: ' + eP.message; }
+
+    out.push('sheet remarks cell: "' + rawCell + '"');
+    out.push('printed remarks:    "' + shown + '"');
+    out.push('');
+    out.push('VERDICT: ' + ((sameDocs && noNewRows && flagged && multiRow && tagInSheet && displayClean)
+                            ? 'PASS — guard holds' : 'FAIL'));
+    out.push('  same docNos returned:     ' + sameDocs);
     out.push('  no rows written by retry: ' + noNewRows);
-    out.push('  retry flagged duplicate: ' + flagged);
+    out.push('  retry flagged duplicate:  ' + flagged);
+    out.push('  multi-item wrote 2 rows:  ' + multiRow);
+    out.push('  tag present in sheet:     ' + tagInSheet);
+    out.push('  tag ABSENT from print:    ' + displayClean);
   } catch (e) {
     err = e.message;
     out.push('THREW: ' + e.message);
