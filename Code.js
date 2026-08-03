@@ -498,6 +498,15 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(sd, null, 2)).setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Actual lot-size distribution vs sampling cost (_LotSizeProfile.js). READ-ONLY.
+  //   ?diag=lotprofile   → Level II vs Level I units inspected, on real data
+  if (diag === 'lotprofile') {
+    var lsp;
+    try { lsp = (typeof lotSizeProfile === 'function') ? lotSizeProfile() : { error: 'lotSizeProfile missing' }; }
+    catch (er11) { lsp = { error: er11.message, stack: er11.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(lsp, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // getRecentGRNs old-vs-new equivalence proof (_GrnEquivCheck.js). READ-ONLY.
   //   ?diag=grnequiv   → deep-compares both algorithms on the live sheet
   if (diag === 'grnequiv') {
@@ -623,7 +632,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v138_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v139_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

@@ -143,7 +143,21 @@ var IQC_AQL_VALUES   = ['0.65', '1.0', '1.5', '2.5', '4.0', '6.5'];
 var IQC_SEVERITIES   = ['Normal', 'Tightened', 'Reduced'];
 var IQC_LEVELS       = ['I', 'II', 'III'];
 var IQC_DEFAULT_AQL  = '2.5';
-var IQC_DEFAULT_LEVEL = 'II';
+// Level I (was II) — general inspection level S-4 equivalent.
+//
+// MEASURED (?diag=lotprofile, 306 GRN receipts): median lot 660, p90 7500.
+// At Level II these lots require 32,582 units inspected in total; at Level I,
+// 13,190 — a 59.5% reduction in units handled, at every lot size.
+//
+// AQL DELIBERATELY UNCHANGED at 2.5. Sample size is driven by LEVEL, not AQL:
+// at a given level every AQL yields the same n and only the Ac/Re threshold
+// moves. Loosening AQL would therefore reduce zero counting work while
+// genuinely weakening acceptance, so it was rejected. Level I keeps the same
+// defect-rate bar and only reduces how many pieces are counted to judge it.
+//
+// This is the DEFAULT only — the IQC form exposes Level, AQL and Severity, so
+// an inspector can still raise it per lot for a suspect supplier or a new part.
+var IQC_DEFAULT_LEVEL = 'I';
 var IQC_DEFAULT_SEVERITY = 'Normal';
 var IQC_SAMPLING_METHOD = 'Single';   // engine is single-sampling only
 

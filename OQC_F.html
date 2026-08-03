@@ -463,7 +463,10 @@
           <label class="label-base" for="oqcLevel">Level</label>
           <div class="relative">
             <select id="oqcLevel" class="w-full h-[44px] border-[1.5px] border-gray-300 rounded-lg text-[16px] text-text-value px-3 appearance-none focus:border-accent focus:outline-none bg-white">
-              <option value="II">II</option><option value="I">I</option><option value="III">III</option>
+              <!-- Level I listed FIRST = the default: this form never applies the
+                   server's defaultLevel, so option order is what actually selects.
+                   See IQC.js for the measured basis (59.5% fewer units inspected). -->
+              <option value="I">I</option><option value="II">II</option><option value="III">III</option>
             </select>
             <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-helper pointer-events-none">arrow_drop_down</span>
           </div>
@@ -599,7 +602,7 @@ function oqcPlan(lot,aql,lvl){
 function oqcRecomputeSampling(){
   var lot=(document.getElementById('oqcLotSize')||{}).value;
   var aql=(document.getElementById('oqcAql')||{}).value;
-  var lvl=(document.getElementById('oqcLevel')||{}).value||'II';
+  var lvl=(document.getElementById('oqcLevel')||{}).value||'I';
   var sev=(document.getElementById('oqcSamplingSeverity')||{}).value||'Normal';
   var panel=document.getElementById('oqcSamplingPanel');
   if(!lot){ if(panel)panel.classList.add('hidden'); return; }
@@ -1075,7 +1078,7 @@ function doSave() {
     // ISO 2859-1 sampling axes — server re-computes the plan from these.
     severity:        (document.getElementById('oqcSamplingSeverity')||{}).value || 'Normal',
     aql:             (document.getElementById('oqcAql')||{}).value || '2.5',
-    level:           (document.getElementById('oqcLevel')||{}).value || 'II',
+    level:           (document.getElementById('oqcLevel')||{}).value || 'I',
     lotSize:         parseInt((document.getElementById('oqcLotSize')||{}).value, 10) || 0,
     remarks:         document.getElementById('inpRemarks').value,
     fgLocation:    (document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : ''),

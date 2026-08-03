@@ -27,7 +27,15 @@ function getOQCFormInit() {
     aqlValues:       ['0.65', '1.0', '1.5', '2.5', '4.0', '6.5'],
     defaultAql:      '2.5',
     levels:          ['I', 'II', 'III'],
-    defaultLevel:    'II',
+    // Level I (was II) — matches the IQC default; see IQC.js for the measured
+    // basis (59.5% fewer units inspected across 306 real receipts, AQL held at
+    // 2.5 so the acceptance bar is unchanged).
+    //
+    // NOTE: OQC_F.html does not render Level/AQL/Severity selectors, so unlike
+    // IQC this default cannot be overridden per lot from the form. Changing it
+    // here changes every OQC inspection. Building those controls was explicitly
+    // deferred (user decision, 2026-08-04).
+    defaultLevel:    'I',
     severities:      ['Normal', 'Tightened', 'Reduced'],
     defaultSeverity: 'Normal',
     samplingMethod:  'Single',
@@ -193,8 +201,12 @@ function saveOQC(data) {
     // mislabeled as "method"; it now holds "<Severity> Single". Ac/Re for tightened/
     // reduced use the normal plan until II-B/II-C tables land (flagged in samplingBasis).
     var oqcAql = String(data.aql || data.aqlLevel || '2.5').replace(/aql/i, '').trim() || '2.5';
-    var oqcLevel = String(data.level || data.inspLevel || 'II').toUpperCase();
-    if (['I','II','III'].indexOf(oqcLevel) < 0) oqcLevel = 'II';
+    // Default 'I' (was 'II') — must match getOQCFormInit's defaultLevel, since
+    // OQC_F.html sends no level field at all: this fallback IS the effective
+    // level for every OQC save. Leaving it at 'II' would have silently negated
+    // the default change.
+    var oqcLevel = String(data.level || data.inspLevel || 'I').toUpperCase();
+    if (['I','II','III'].indexOf(oqcLevel) < 0) oqcLevel = 'I';
     var oqcSeverity = String(data.severity || data.samplingMethod || 'Normal').trim();
     if (['NORMAL','TIGHTENED','REDUCED'].indexOf(oqcSeverity.toUpperCase()) < 0) oqcSeverity = 'Normal';
     var oqcMethodCell = oqcSeverity + ' Single';

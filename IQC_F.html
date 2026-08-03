@@ -695,7 +695,7 @@ function aqlPlan(lot, aql, lvl){
 function recomputeSampling(){
   var lot = (document.getElementById('lotSize')||{}).value;
   var aql = (document.getElementById('aqlLevel')||{}).value;
-  var lvl = (document.getElementById('inspLevel')||{}).value || 'II';
+  var lvl = (document.getElementById('inspLevel')||{}).value || 'I';
   var panel = document.getElementById('samplingPanel');
   var err   = document.getElementById('samplingErr');
   if(!lot){ SAMPLING_PLAN=null; if(panel)panel.classList.add('hidden'); if(err)err.classList.add('hidden'); return; }
@@ -1570,7 +1570,7 @@ function doSaveIQC() {
     // method (single — engine only), level (I/II/III). Server re-validates Ac/Re.
     severity:       (document.getElementById('samplingSeverity')||{}).value || 'Normal',
     lotSize:        parseInt((document.getElementById('lotSize')||{}).value, 10) || 0,
-    inspLevel:      (document.getElementById('inspLevel')||{}).value || 'II',
+    inspLevel:      (document.getElementById('inspLevel')||{}).value || 'I',
     planSampleSize: (SAMPLING_PLAN && SAMPLING_PLAN.sampleSize) || 0,
     planAc:         (SAMPLING_PLAN && SAMPLING_PLAN.ac != null) ? SAMPLING_PLAN.ac : '',
     planRe:         (SAMPLING_PLAN && SAMPLING_PLAN.re != null) ? SAMPLING_PLAN.re : '',
