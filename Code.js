@@ -363,6 +363,26 @@ function doGet(e) {
     } catch (erph) { phf = 'ERROR: ' + erph.message; }
     return ContentService.createTextOutput(String(phf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=paramspecsheet[&confirm=YES]  → build the QA fill-in sheet
+  if (diag === 'paramspecsheet') {
+    var pss;
+    try {
+      pss = (typeof buildParamSpecSheet === 'function')
+        ? buildParamSpecSheet(String(e.parameter.confirm || '') === 'YES')
+        : 'buildParamSpecSheet missing (is _ParamSpecSheet.js pushed?)';
+    } catch (erps) { pss = 'ERROR: ' + erps.message; }
+    return ContentService.createTextOutput(String(pss)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=paramspecapply[&confirm=YES]  → load QA's values back
+  if (diag === 'paramspecapply') {
+    var psa;
+    try {
+      psa = (typeof applyParamSpecSheet === 'function')
+        ? applyParamSpecSheet(String(e.parameter.confirm || '') === 'YES')
+        : 'applyParamSpecSheet missing (is _ParamSpecSheet.js pushed?)';
+    } catch (erpa) { psa = 'ERROR: ' + erpa.message; }
+    return ContentService.createTextOutput(String(psa)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=paramdatafix              → dry run
   //   ?diag=paramdatafix&confirm=YES  → apply
   if (diag === 'paramdatafix') {
