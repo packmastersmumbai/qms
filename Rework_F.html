@@ -202,23 +202,30 @@ function submitCompletion() {
   }
 
   var btn = document.getElementById('submitBtn');
+  // Offline gate + 30s watchdog + double-tap block (Phase 2E) — this form had
+  // none, so a dropped connection left Save disabled with no message.
+  var _g = (window.QMS && QMS.attachSaveGuard)
+    ? QMS.attachSaveGuard(btn, 'Submit Completion', { onMessage: function (m) { showToast(m, 'error'); } })
+    : { proceed: function () { return true; }, wrap: function (f) { return f; }, wrapFail: function (f) { return f; } };
+  if (!_g.proceed()) return;
+
   btn.disabled = true;
   btn.textContent = 'Saving…';
 
   google.script.run
-    .withSuccessHandler(function(res) {
+    .withSuccessHandler(_g.wrap(function(res) {
       btn.disabled = false;
       btn.textContent = 'Submit Completion';
       if (!res.success) { showToast(res.error || 'Save failed.', 'error'); return; }
       showToast('Rework ' + SELECTED.reworkId + ' completed. ' + res.qtyReworked + ' → ' + res.destination, 'success');
       closeForm();
       loadItems();
-    })
-    .withFailureHandler(function(e) {
+    }))
+    .withFailureHandler(_g.wrapFail(function(e) {
       btn.disabled = false;
       btn.textContent = 'Submit Completion';
       showToast('Error: ' + e.message, 'error');
-    })
+    }))
     .submitReworkCompletion({
       reworkId:    SELECTED.reworkId,
       qtyReworked: qtyReworked,

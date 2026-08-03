@@ -532,10 +532,17 @@
       if (!data.receivedBy)          { showToast('Received By required', 'error'); return; }
 
       var btn = document.getElementById('btnSave');
+      // Offline gate + 30s watchdog + double-tap block (Phase 2E) — this form had
+      // none, so a dropped connection left Save disabled with no message.
+      var _g = (window.QMS && QMS.attachSaveGuard)
+        ? QMS.attachSaveGuard(btn, 'Save Return', { onMessage: function (m) { showToast(m, 'error'); } })
+        : { proceed: function () { return true; }, wrap: function (f) { return f; }, wrapFail: function (f) { return f; } };
+      if (!_g.proceed()) return;
+
       btn.disabled = true;
       btn.textContent = 'Saving…';
       google.script.run
-        .withSuccessHandler(function(res){
+        .withSuccessHandler(_g.wrap(function(res){
           btn.disabled = false;
           btn.textContent = 'Save Return';
           if (!res || !res.success) {
@@ -579,12 +586,12 @@
           _selectedDefect = '';
           loadInit();
           switchTab('triage');
-        })
-        .withFailureHandler(function(e){
+        }))
+        .withFailureHandler(_g.wrapFail(function(e){
           btn.disabled = false;
           btn.textContent = 'Save Return';
           showToast('Save error: ' + (e.message || e), 'error');
-        })
+        }))
         .saveCustomerReturnMulti(data);
     }
 

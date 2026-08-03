@@ -1101,6 +1101,38 @@ function doSave() {
     }]
   };
 
+  // Wrapped in QMS.guardedSave (Theme.html) for the offline gate + 30s watchdog
+  // this form never had: google.script.run reports nothing for a dropped
+  // connection, so the button previously sat disabled forever with no message.
+  // The guard also blocks a double-tap while a save is in flight.
+  if (window.QMS && QMS.guardedSave) {
+    QMS.guardedSave({
+      button: btn,
+      idleLabel: 'Save OQC →',
+      savingLabel: '<span class="spinner"></span>Saving…',
+      onMessage: function (m) { showToast(m, 'error'); },
+      run: function (onDone, onFail) {
+        google.script.run.withSuccessHandler(onDone).withFailureHandler(onFail).saveOQC(data);
+      },
+      onSuccess: function (res) {
+        if (res && res.success) {
+          gSaved = true;
+          var docNo = (res.docNos && res.docNos[0]) ? res.docNos[0] : '';
+          showConfirm(docNo, matDesc, batchNo, custName, gDisposition);
+          var hasWarnings = (res.warnings && res.warnings.length) || res.ncrError;
+          if (hasWarnings) {
+            var msgs = (res.warnings && res.warnings.length) ? res.warnings : [res.ncrError];
+            setTimeout(function(){ showToast('⚠ ' + msgs.join(' | '), 'warning'); }, 600);
+          }
+        } else {
+          showToast((res && res.error) ? res.error : 'Save failed', 'error');
+        }
+      },
+      onFailure: function (e) { showToast((e && e.message) || 'Save failed', 'error'); }
+    });
+    return;
+  }
+
   google.script.run
     .withSuccessHandler(function(res) {
       if (res && res.success) {

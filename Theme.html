@@ -908,6 +908,169 @@
   window.QMS.requireOperator    = requireOperator;
   window.QMS.showOperatorPicker = showOperatorPicker;
 
+  // ── Save guard: offline gate + watchdog (Phase 2E) ─────────────────────────
+  //
+  // GRN and IQC each grew their own copy of this. The other seven write forms
+  // (OQC, IPQC, Dispatch, CustomerReturn, PO, NCR, Rework) had NEITHER, so on
+  // patchy shop-floor wifi their save button sat disabled forever with no
+  // message and no way to retry: google.script.run reports nothing for a dropped
+  // connection until it eventually times out, and neither handler ever fires.
+  //
+  // One implementation in Theme reaches all seven (each already includes it)
+  // rather than seven divergent copies.
+  //
+  //   QMS.guardedSave({
+  //     button, savingLabel, idleLabel,
+  //     run: function (onDone, onFail) { google.script.run
+  //             .withSuccessHandler(onDone).withFailureHandler(onFail).saveX(data); },
+  //     onSuccess: fn, onFailure: fn, timeoutMs: 30000
+  //   })
+  //
+  // Returns false if the save was refused (offline or already in flight), so the
+  // caller can bail without duplicating the reason.
+  function guardedSave(opts) {
+    var o = opts || {};
+    var btn = o.button || null;
+    var idle = o.idleLabel || (btn ? btn.innerHTML : '');
+
+    function restore() {
+      if (!btn) return;
+      btn.disabled = false;
+      btn.innerHTML = idle;
+    }
+    function say(msg) {
+      if (typeof o.onMessage === 'function') { o.onMessage(msg); return; }
+      if (typeof showToast === 'function') { showToast(msg, 'error'); return; }
+      var d = document.createElement('div');
+      d.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);' +
+        'background:#dc2626;color:#fff;padding:10px 16px;border-radius:8px;z-index:99999;' +
+        'font:600 13px Inter,system-ui,sans-serif;max-width:90vw;text-align:center;';
+      d.textContent = msg;
+      document.body.appendChild(d);
+      setTimeout(function () { d.remove(); }, 6000);
+    }
+
+    // In flight already? A double-tap must not dispatch twice.
+    if (btn && btn.dataset && btn.dataset.pmSaving === '1') return false;
+
+    // Offline gate — fail fast and KEEP the entered data.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      say('You appear to be offline. Your entry is still here — reconnect and press Save again.');
+      restore();
+      return false;
+    }
+
+    if (btn) {
+      btn.dataset.pmSaving = '1';
+      btn.disabled = true;
+      btn.innerHTML = o.savingLabel || 'Saving…';
+    }
+
+    var settled = false;
+    var timer = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      if (btn && btn.dataset) btn.dataset.pmSaving = '';
+      say('Save timed out. It may or may not have gone through — check Records before saving again.');
+      restore();
+    }, o.timeoutMs || 30000);
+
+    function settle() {
+      if (settled) return false;
+      settled = true;
+      clearTimeout(timer);
+      if (btn && btn.dataset) btn.dataset.pmSaving = '';
+      return true;
+    }
+
+    try {
+      o.run(
+        function (res) { if (!settle()) return; restore(); if (o.onSuccess) o.onSuccess(res); },
+        function (err) { if (!settle()) return; restore();
+                         if (o.onFailure) o.onFailure(err);
+                         else say('Save failed: ' + ((err && err.message) || err)); }
+      );
+    } catch (e) {
+      if (settle()) { restore(); say('Save failed: ' + e.message); }
+      return false;
+    }
+    return true;
+  }
+  window.QMS.guardedSave = guardedSave;
+
+  // Lighter-touch variant for forms whose save chain is already written inline.
+  //
+  // guardedSave() requires restructuring the call into a run(onDone,onFail)
+  // callback. Several forms build their chain across many lines with
+  // form-specific success handling; rewriting each one risks breaking working
+  // save logic to add a safety net. attachSaveGuard() instead wraps the EXISTING
+  // handlers: it adds the offline gate, the watchdog, and the in-flight block,
+  // then hands control to whatever the form already does.
+  //
+  //   var g = QMS.attachSaveGuard(btn, 'Save X →');
+  //   if (!g.proceed()) return;              // offline / already saving
+  //   google.script.run
+  //     .withSuccessHandler(g.wrap(function (res) { ...existing... }))
+  //     .withFailureHandler(g.wrapFail(function (e) { ...existing... }))
+  //     .saveX(payload);
+  function attachSaveGuard(button, idleLabel, opts) {
+    var o = opts || {};
+    var idle = idleLabel || (button ? button.innerHTML : '');
+    var settled = false, timer = null;
+
+    function say(msg) {
+      if (typeof o.onMessage === 'function') { o.onMessage(msg); return; }
+      if (typeof showToast === 'function') { showToast(msg, 'error'); return; }
+      var d = document.createElement('div');
+      d.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);' +
+        'background:#dc2626;color:#fff;padding:10px 16px;border-radius:8px;z-index:99999;' +
+        'font:600 13px Inter,system-ui,sans-serif;max-width:90vw;text-align:center;';
+      d.textContent = msg;
+      document.body.appendChild(d);
+      setTimeout(function () { d.remove(); }, 6000);
+    }
+    function restore() {
+      if (!button) return;
+      if (button.dataset) button.dataset.pmSaving = '';
+      button.disabled = false;
+      button.innerHTML = idle;
+    }
+    function settle() {
+      if (settled) return false;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      if (button && button.dataset) button.dataset.pmSaving = '';
+      return true;
+    }
+    return {
+      proceed: function () {
+        if (button && button.dataset && button.dataset.pmSaving === '1') return false;
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          say('You appear to be offline. Your entry is still here — reconnect and press Save again.');
+          restore();
+          return false;
+        }
+        if (button && button.dataset) button.dataset.pmSaving = '1';
+        timer = setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          if (button && button.dataset) button.dataset.pmSaving = '';
+          say('Save timed out. It may or may not have gone through — check Records before saving again.');
+          restore();
+        }, o.timeoutMs || 30000);
+        return true;
+      },
+      wrap: function (fn) {
+        return function (res) { if (!settle()) return; if (fn) fn(res); };
+      },
+      wrapFail: function (fn) {
+        return function (e) { if (!settle()) return; restore(); if (fn) fn(e); };
+      },
+      release: restore
+    };
+  }
+  window.QMS.attachSaveGuard = attachSaveGuard;
+
   // Suppress Google Apps Script "Report abuse / Learn more / created using
   // Google" chrome. GAS now renders this at BOTH top and bottom of the
   // iframe in some embed contexts, so we cover both edges and kill any

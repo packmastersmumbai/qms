@@ -744,20 +744,30 @@
       };
 
       var btn = document.getElementById('btnConfirm');
+      // Offline gate + 30s watchdog + double-tap block (Phase 2E). Without these
+      // a dropped connection left this button disabled forever with no message —
+      // and dispatch is the highest-consequence write in the app.
+      var _g = (window.QMS && QMS.attachSaveGuard)
+        ? QMS.attachSaveGuard(btn, 'Save Dispatch + Gatepass',
+            { onMessage: function (m) { showToast(m, 'error'); } })
+        : { proceed: function () { return true; }, wrap: function (f) { return f; },
+            wrapFail: function (f) { return f; } };
+      if (!_g.proceed()) return;
+
       btn.disabled = true; btn.textContent = 'Saving…';
       google.script.run
-        .withSuccessHandler(function(res){
+        .withSuccessHandler(_g.wrap(function(res){
           btn.disabled = false; btn.textContent = 'Save Dispatch + Gatepass';
           if (!res || !res.success) {
             showToast('Failed: ' + (res && res.error || 'unknown'), 'error');
             return;
           }
           showSuccessScreen(res);
-        })
-        .withFailureHandler(function(e){
+        }))
+        .withFailureHandler(_g.wrapFail(function(e){
           btn.disabled = false; btn.textContent = 'Save Dispatch + Gatepass';
           showToast('Error: ' + (e.message || e), 'error');
-        })
+        }))
         .saveDispatchWithFIFO(payload);
     }
 
