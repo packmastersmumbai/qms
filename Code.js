@@ -363,6 +363,24 @@ function doGet(e) {
     } catch (erph) { phf = 'ERROR: ' + erph.message; }
     return ContentService.createTextOutput(String(phf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=matdatafix[&confirm=YES][&code=YES] → repair MASTERS_Materials data
+  if (diag === 'matdatafix') {
+    var mdf;
+    try {
+      mdf = (typeof fixMaterialData === 'function')
+        ? fixMaterialData(String(e.parameter.confirm || '') === 'YES',
+                          String(e.parameter.code || '') === 'YES')
+        : 'fixMaterialData missing (is _MatDataFix.js pushed?)';
+    } catch (ermd) { mdf = 'ERROR: ' + ermd.message; }
+    return ContentService.createTextOutput(String(mdf)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=mataudit   → READ-ONLY data-quality audit of MASTERS_Materials
+  if (diag === 'mataudit') {
+    var mta;
+    try { mta = (typeof auditMaterials === 'function') ? auditMaterials() : 'auditMaterials missing (is _MatAudit.js pushed?)'; }
+    catch (ermt) { mta = 'ERROR: ' + ermt.message; }
+    return ContentService.createTextOutput(String(mta)).setMimeType(ContentService.MimeType.TEXT);
+  }
   // e2e fixtures (Phase 3A) — _Fixtures.js
   //   ?diag=fixtures                  → state report
   //   ?diag=fixtureseed[&confirm=YES] → create/refresh the fixture set

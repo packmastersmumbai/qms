@@ -158,6 +158,10 @@ function seedFixtures(apply) {
     mat[MAT_COL.DESC]          = 'E2E Fixture Carton (do not use)';
     mat[MAT_COL.UNIT]          = 'NOS';
     mat[MAT_COL.CATEGORY]      = 'RM';
+    // A blank default location is the ghost-location root cause (Phase 1 closed
+    // 128 -> 0). A fixture must not reintroduce the very defect the system now
+    // guards against, so it gets a real, existing RM location.
+    mat[MAT_COL.DEFAULT_LOCATION] = 'RM-STORE-A';
     mat[MAT_COL.INSP_CATEGORY] = FIX_CATEGORY_;
     matWs.appendRow(mat);
   } else {
