@@ -498,6 +498,15 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(sd, null, 2)).setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // What happens to pulled samples (_SampleFate.js). READ-ONLY.
+  //   ?diag=samplefate   → SAMPLE-CABINET in/out/net + SAMPLE_LOG disposition
+  if (diag === 'samplefate') {
+    var sf;
+    try { sf = (typeof sampleFate === 'function') ? sampleFate() : { error: 'sampleFate missing' }; }
+    catch (er12) { sf = { error: er12.message, stack: er12.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(sf, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Actual lot-size distribution vs sampling cost (_LotSizeProfile.js). READ-ONLY.
   //   ?diag=lotprofile   → Level II vs Level I units inspected, on real data
   if (diag === 'lotprofile') {
