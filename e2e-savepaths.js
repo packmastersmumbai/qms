@@ -20,6 +20,10 @@
 // Settle times per e2e-suite.js: most forms 11s, IQC 13s.
 const { launch, openApp, nav, frameWith } = require('./e2e-lib');
 
+// Seeded by ?diag=fixtureseed&confirm=YES (_Fixtures.js). Forms that need a
+// known-state GRN drive this one instead of whatever live data happens to exist.
+const FIX_GRN_PREFIX = 'TEST-FIX/GRN';
+
 // ---- generic DOM helpers, installed onto `window` inside the target frame ----
 function installHelpers() {
   window.__set = function (id, v) {
@@ -62,17 +66,49 @@ function installHelpers() {
         configurable: true,
         get: function () {
           var wrapped = Object.create(real);
-          // Only the write is swallowed. withSuccessHandler/withFailureHandler are
-          // NOT overridden here — the save path chains them onto REAL read calls
-          // (getPOById, image upload), and stubbing them would strand those
-          // callbacks and re-create the very stall this fix removes. The dead-end
-          // is returned from the write itself, which is the last hop.
+
+          // THE BUG THIS FIXES (measured with e2e-grnprobe.js, not reasoned):
+          // real call sites chain the handlers FIRST —
+          //   google.script.run.withSuccessHandler(f).withFailureHandler(g).saveGRN(d)
+          // (GRN_F.html:1296-1334). The inherited withSuccessHandler returns the
+          // REAL GAS proxy, so `.saveGRN` was invoked on that, never on `wrapped`.
+          // The shim overrode a method the page never reached: doSave ran, the
+          // operator modal was answered, the button showed "Saving…", and the
+          // probe still counted 0 dispatches for 12.5s. That is the whole reason
+          // GRN read INCONCLUSIVE across four earlier fix attempts.
+          //
+          // Fix: make the handler chain STAY on `wrapped` by re-declaring the
+          // chainers to return `wrapped`, while REMEMBERING the callbacks. The
+          // earlier objection — that stubbing handlers strands real read calls —
+          // is answered by actually invoking the stored success handler for any
+          // non-write function, so reads behave exactly as before.
+          var pendingSuccess = null, pendingFailure = null;
+
+          wrapped.withSuccessHandler = function (f) { pendingSuccess = f; return wrapped; };
+          wrapped.withFailureHandler = function (f) { pendingFailure = f; return wrapped; };
+
           wrapped[writeFnName] = function (payload) {
             captured = payload;
             calls.push(writeFnName);
-            return { withSuccessHandler: function () { return this; },
-                     withFailureHandler: function () { return this; } };
+            // Dead-end deliberately: the write must NOT reach the server, and no
+            // handler is fired, so the form stays mid-save. Non-destructive.
+            return wrapped;
           };
+
+          // Any OTHER server function is a genuine read the form needs. Forward it
+          // to the real proxy with the handlers the caller supplied, so cascades
+          // (getOpenPOsForSupplier, image upload) still resolve.
+          Object.keys(real).forEach(function (k) {
+            if (k === writeFnName || typeof real[k] !== 'function') return;
+            if (k === 'withSuccessHandler' || k === 'withFailureHandler') return;
+            wrapped[k] = function () {
+              var runner = real;
+              if (pendingSuccess) runner = runner.withSuccessHandler(pendingSuccess);
+              if (pendingFailure) runner = runner.withFailureHandler(pendingFailure);
+              return runner[k].apply(runner, arguments);
+            };
+          });
+
           return wrapped;
         }
       });
@@ -180,23 +216,72 @@ async function runIQC(s) {
   const fr = await frameWith(s.page, 'saveBtn', 20000);
   if (!fr) return { skip: 'form did not render (saveBtn not found)' };
   await fr.evaluate(installHelpers);
+
+  // Select the seeded fixture GRN (?diag=fixtureseed). Without it this test can
+  // only ever skip: IQC's items come from a linked GRN, and whether ANY live GRN
+  // happens to be un-inspected varies run to run — which is exactly why coverage
+  // drifted 3 -> 1 -> 2 across one session with no code change.
+  const picked = await fr.evaluate((prefix) => {
+    const sel = document.getElementById('grnNo');
+    if (!sel) return { ok: false, why: 'no grnNo select' };
+    const opt = [...sel.options].find(o => (o.value || '').indexOf(prefix) === 0);
+    if (!opt) return { ok: false, why: 'fixture GRN not in dropdown — run ?diag=fixtureseed&confirm=YES' };
+    sel.value = opt.value;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return { ok: true, grn: opt.value };
+  }, FIX_GRN_PREFIX);
+  if (!picked.ok) return { skip: picked.why };
+  await s.page.waitForTimeout(6000);
+
   // IQC's items come from the linked GRN; if none loaded there's nothing to score.
   const hasItems = await fr.evaluate(() => (typeof currentItems !== 'undefined' && currentItems && currentItems.length > 0));
-  if (!hasItems) return { skip: 'no GRN-linked items loaded — cannot fill inspection grid generically' };
+  if (!hasItems) return { skip: 'fixture GRN selected but no items loaded — check ?diag=fixtures' };
+
+  // Score every parameter so saveIQC's readiness check passes, and set the
+  // overall disposition through the real UI path rather than poking the global.
+  await fr.evaluate(() => {
+    try { if (typeof setAllParams === 'function') setAllParams('PASS'); } catch (e) {}
+    try { if (typeof setOverallDisp === 'function') setOverallDisp('ACCEPTED'); } catch (e) {}
+  });
+  await s.page.waitForTimeout(1200);
 
   const r = await fr.evaluate(() => {
-    // Best-effort: mark overall disposition if a global exists, so saveIQC's first guard passes.
-    try { if (typeof overallDisp !== 'undefined') overallDisp = overallDisp || 'ACCEPTED'; } catch (e) {}
     const shim = window.__installShim('saveIQC');
     const btn = document.getElementById('saveBtn');
     const btnExists = !!btn;
     const beforeDisabled = btn ? btn.disabled : null;
+
+    // IQC gates the save behind the same operator-identity modal as GRN
+    // (QMS.requireOperator). saveIQC() therefore does NOT reach the server on its
+    // own — it waits for a human. Confirm ships DISABLED until a name is picked,
+    // and a disabled click is a no-op the DOM silently swallows.
+    const answerOperatorModal = () => {
+      const name = document.querySelector('.op-name-btn');
+      if (name) name.click();
+      const confirm = document.getElementById('opConfirmBtn');
+      if (confirm && !confirm.disabled) { confirm.click(); return true; }
+      return false;
+    };
+
     if (btn && !btn.disabled) { try { saveIQC(); } catch (e) {} }
     return new Promise(resolve => setTimeout(() => {
-      const afterFirst = { disabled: btn ? btn.disabled : null, html: btn ? (btn.innerHTML||'').replace(/<[^>]*>/g,'').trim().slice(0,30) : '' };
-      if (btn && !btn.disabled) { try { saveIQC(); } catch (e) {} }
-      setTimeout(() => resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured }), 500);
-    }, 300));
+      answerOperatorModal();
+      setTimeout(() => {
+        const afterFirst = { disabled: btn ? btn.disabled : null,
+          html: btn ? (btn.innerHTML||'').replace(/<[^>]*>/g,'').trim().slice(0,30) : '' };
+        // Second tap — the double-dispatch check.
+        if (btn && !btn.disabled) { try { saveIQC(); } catch (e) {} }
+        setTimeout(async () => {
+          answerOperatorModal();
+          // Poll rather than guess: the save is async, and a fixed short wait is
+          // what made GRN read "write never dispatched" while it was in flight.
+          for (let i = 0; i < 20 && !shim.calls.length; i++) {
+            await new Promise(r2 => setTimeout(r2, 500));
+          }
+          resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured });
+        }, 600);
+      }, 1500);
+    }, 800));
   });
   if (!r.btnExists || r.beforeDisabled !== false) return { skip: 'saveBtn stayed disabled — could not satisfy form-specific validation generically' };
   return finish(r, 'saveIQC');
@@ -209,13 +294,25 @@ async function runGatepass(s) {
   if (!fr) return { skip: 'form did not render (btnSave not found)' };
   await fr.evaluate(installHelpers);
   await fr.evaluate(() => {
-    window.__pickFirst('materialType');
+    // Pick a NON-FG material type deliberately. refreshSaveBtn (Gatepass_F.html:411)
+    // additionally requires an oqcRef when the type is 'Finished Goods', and
+    // __pickFirst took whatever happened to be first — so the button stayed
+    // disabled and the form was wrongly reported as un-fillable.
+    const mt = document.getElementById('materialType');
+    if (mt) {
+      const nonFg = [...mt.options].map(o => o.value)
+        .filter(v => v && v !== 'Finished Goods');
+      if (nonFg.length) window.__set('materialType', nonFg[0]);
+      else window.__pickFirst('materialType');
+    }
     window.__set('description', 'TEST');
     window.__set('qty', 1);
     window.__pickFirst('unit');
     window.__set('vehicleNo', 'MH00TEST0000');
     window.__set('driverName', 'TEST DRIVER');
     window.__pickFirst('authorizedBy');
+    // Validation is event-driven; nudge it after the programmatic fill.
+    try { if (typeof refreshSaveBtn === 'function') refreshSaveBtn(); } catch (e) {}
   });
   await s.page.waitForTimeout(800);
   const dispOk = await fr.evaluate(() => {
@@ -224,19 +321,62 @@ async function runGatepass(s) {
     if (b) { b.click(); return true; }
     return false;
   });
-  await s.page.waitForTimeout(300);
+  await s.page.waitForTimeout(600);
+  // authorizedBy/unit populate from the server AFTER mount, so the first fill can
+  // land before the options exist. Re-apply the select-backed fields, then poll
+  // for readiness rather than asserting once.
+  let gpReady = false;
+  for (let i = 0; i < 10 && !gpReady; i++) {
+    gpReady = await fr.evaluate(() => {
+      window.__pickFirst('unit');
+      window.__pickFirst('authorizedBy');
+      try { if (typeof refreshSaveBtn === 'function') refreshSaveBtn(); } catch (e) {}
+      const b = document.getElementById('btnSave');
+      return b ? !b.disabled : false;
+    });
+    if (!gpReady) await s.page.waitForTimeout(700);
+  }
+  if (!gpReady) {
+    const why = await fr.evaluate(() => {
+      const g = id => { const e = document.getElementById(id); return e ? e.value : '(MISSING)'; };
+      return 'unmet fields: ' + JSON.stringify({ mt: g('materialType'), auth: g('authorizedBy'),
+        unit: g('unit'), oqcRef: g('oqcRef'),
+        disp: (typeof _disposition !== 'undefined' ? _disposition : '(undef)') });
+    });
+    return { skip: 'btnSave still disabled after fill + disposition — ' + why };
+  }
 
   const r = await fr.evaluate(() => {
     const shim = window.__installShim('saveGatepass');
     const btn = document.getElementById('btnSave');
     const btnExists = !!btn;
     const beforeDisabled = btn ? btn.disabled : null;
+
+    // Same operator-identity gate as GRN/IQC — doSave() waits for a human.
+    const answerOperatorModal = () => {
+      const name = document.querySelector('.op-name-btn');
+      if (name) name.click();
+      const confirm = document.getElementById('opConfirmBtn');
+      if (confirm && !confirm.disabled) { confirm.click(); return true; }
+      return false;
+    };
+
     if (btn) { try { doSave(); } catch (e) {} }
     return new Promise(resolve => setTimeout(() => {
-      const afterFirst = { disabled: btn ? btn.disabled : null, html: btn ? (btn.innerHTML||'').replace(/<[^>]*>/g,'').trim().slice(0,30) : '' };
-      if (btn && !btn.disabled) { try { doSave(); } catch (e) {} }
-      setTimeout(() => resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured }), 500);
-    }, 300));
+      answerOperatorModal();
+      setTimeout(() => {
+        const afterFirst = { disabled: btn ? btn.disabled : null,
+          html: btn ? (btn.innerHTML||'').replace(/<[^>]*>/g,'').trim().slice(0,30) : '' };
+        if (btn && !btn.disabled) { try { doSave(); } catch (e) {} }
+        setTimeout(async () => {
+          answerOperatorModal();
+          for (let i = 0; i < 20 && !shim.calls.length; i++) {
+            await new Promise(r2 => setTimeout(r2, 500));
+          }
+          resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured });
+        }, 600);
+      }, 1500);
+    }, 800));
   });
   return finish(r, 'saveGatepass');
 }
