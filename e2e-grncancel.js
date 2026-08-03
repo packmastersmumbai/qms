@@ -29,27 +29,31 @@ const { launch, openApp, nav, frameWith } = require('./e2e-lib');
       return e && e.options ? Array.from(e.options).map(o => o.value).filter(Boolean) : [];
     };
 
-    let saveCalls = 0;
-    try {
-      const real = google.script.run;
-      const shim = {
-        withSuccessHandler() { return this; },
-        withFailureHandler() { return this; },
-        saveGRN() { saveCalls++; return this; }
-      };
-      Object.keys(real).forEach(k => { if (!(k in shim)) shim[k] = function () { return shim; }; });
-      google.script.run = shim;
-    } catch (e) {}
-
+    // Fill the form FIRST, with the real bridge intact.
+    //
+    // An earlier version shimmed google.script.run before picking a supplier,
+    // which stubbed getOpenPOsForSupplier too — so the material list never
+    // loaded, the item select stayed empty, Save stayed disabled, and the probe
+    // reported "form is stuck" when it had simply never been filled. A test that
+    // breaks its own setup and calls it a product failure is worse than no test.
     const sup = optsOf('supplier');
     if (sup.length) set('supplier', sup[0]);
-    await sleep(3500);
+    await sleep(3500);                       // materials load per supplier
     const items = optsOf('item');
     if (items.length) set('item', items[0]);
     await sleep(1200);
     set('qtyReceived', 100);
     set('batchNo', 'TESTBATCH1');
     await sleep(1200);
+
+    // NOW block writes — only saveGRN, leaving every read call working.
+    let saveCalls = 0;
+    try {
+      const real = google.script.run;
+      const realSave = real.saveGRN;
+      real.saveGRN = function () { saveCalls++; return real; };
+      void realSave;
+    } catch (e) {}
 
     const out = {};
     const btn = document.getElementById('btnSubmit');

@@ -1239,6 +1239,19 @@ function _doSaveProceed() {
 
   function afterStop(operatorName) {
     data.operatorName = operatorName || '';
+
+    // Idempotency key for THIS save attempt (Phase 2D). The in-flight latch stops
+    // a double-tap, but it cannot stop a retry after a DROPPED RESPONSE: the
+    // server may have written the GRN and the reply never arrived, so pressing
+    // Save again writes a second one — duplicate stock ledger rows.
+    //
+    // Generated once per attempt and reused across retries of that attempt, then
+    // cleared on success so the next GRN is genuinely new. Same discipline
+    // Gatepass already uses.
+    if (!window._grnTxnId) {
+      window._grnTxnId = 'GRN-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+    }
+    data.clientTxnId = window._grnTxnId;
     // NOW the save is genuinely starting — the operator has been confirmed and
     // the next steps (image upload, then saveGRN) are real work.
     var bSave = document.getElementById('btnSubmit');
@@ -1285,6 +1298,7 @@ function _doSaveProceed() {
         if (!settle_()) return;   // watchdog already reported; ignore the late reply
         if (res && res.success) {
           formSaved = true;
+          window._grnTxnId = '';   // attempt closed — the next save is a new GRN
           var nItems = (data.items || []).length;
           var multi = nItems > 1;
           var totalRcv = (data.items || []).reduce(function(s,i){return s+(Number(i.qtyReceived)||0);},0);

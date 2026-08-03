@@ -15,6 +15,26 @@ function getGRNFormInit() {
   };
 }
 
+// Find a prior save of the SAME attempt by its client txn id. Newest-first: a
+// retry is recent, so this exits after a few rows in the common case.
+// Remarks is col 15 (1-based) per GRN_HEADERS; GRN No. is col 1.
+function _grnTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+function _grnFindByTxn_(ws, txnId) {
+  try {
+    if (!ws || ws.getLastRow() < 2) return '';
+    var tag = _grnTxnTag_(txnId);
+    var n = ws.getLastRow() - 1;
+    var gp = ws.getRange(2, 1, n, 1).getValues();
+    var rm = ws.getRange(2, 15, n, 1).getValues();
+    for (var i = n - 1; i >= 0; i--) {
+      if (String(rm[i][0] || '').indexOf(tag) >= 0) return String(gp[i][0] || '');
+    }
+  } catch (e) { Logger.log('_grnFindByTxn_: ' + e.message); }
+  return '';
+}
+
 function saveGRN(data) {
   // Lock-free: getNextDocNumber('grn') is itself lock-guarded; appendRow is atomic;
   // applyGRNReceiptsToPO_ tolerates concurrent callers (idempotent recompute).
@@ -25,6 +45,24 @@ function saveGRN(data) {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('GRN_LOG');
     if (!ws) throw new Error('GRN_LOG sheet not found. Run Setup first.');
+
+    // Idempotency guard (Phase 2D). The client's in-flight latch stops a
+    // double-tap, but not a retry after a DROPPED RESPONSE — the row may already
+    // be written and the reply lost, so pressing Save again duplicates the GRN
+    // and its stock ledger rows. clientTxnId is stable across retries of one
+    // attempt and new for a genuinely new GRN.
+    //
+    // Stored as a "[txn:...]" suffix in Remarks rather than a new column:
+    // GRN_HEADERS is 22 wide and positional readers map schema[i] to cell[i], so
+    // widening it is the exact shape of the MASTERS_Materials break.
+    var grnTxnId = String(data.clientTxnId || '').trim();
+    if (grnTxnId) {
+      var priorGrn = _grnFindByTxn_(ws, grnTxnId);
+      if (priorGrn) {
+        return { success: true, docNo: priorGrn, duplicate: true,
+                 warnings: ['This GRN was already saved as ' + priorGrn + '.'] };
+      }
+    }
 
     var docNo = getNextDocNumber('grn');
     var now   = new Date();
@@ -146,7 +184,9 @@ function saveGRN(data) {
         item.unit          || '',
         data.coaReceived   || 'N/A',
         item.expiryDate    ? new Date(item.expiryDate) : '',
-        data.remarks       || '',
+        // Txn tag appended so _grnFindByTxn_ can recognise a retry. Appended, not
+        // substituted, so operator remarks survive.
+        ((data.remarks || '') + (grnTxnId ? ' ' + _grnTxnTag_(grnTxnId) : '')).trim(),
         iqcStatus,
         user,
         now,
