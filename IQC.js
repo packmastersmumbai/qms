@@ -161,6 +161,11 @@ var IQC_DEFAULT_LEVEL = 'I';
 var IQC_DEFAULT_SEVERITY = 'Normal';
 var IQC_SAMPLING_METHOD = 'Single';   // engine is single-sampling only
 
+// Pieces retained in SAMPLE-CABINET per inspected item. The rest of the sample is
+// tested non-destructively and goes back to storage with the material, so only a
+// control piece is held. Set to 0 to retain nothing.
+var IQC_CONTROL_SAMPLE_QTY = 1;
+
 function getIQCFormInit() {
   return {
     docNumber:  peekNextDocNumber('iqc'),
@@ -357,7 +362,9 @@ function saveIQC(data) {
           // reject default claims stock the sample is about to take, over-debiting the
           // location. ponytail: subtract rather than reorder the block (smaller, no
           // scope churn); if recordSample ever moves above this, drop the subtraction.
-          var pendingSample = Number(item.sampleSize) || 0;
+          // Only the retained CONTROL PIECE is withheld — tested pieces return to
+          // stock, so the old `= sampleSize` under-stated what can be dispositioned.
+          var pendingSample = (Number(item.sampleSize) || 0) > 0 ? IQC_CONTROL_SAMPLE_QTY : 0;
           var liveMovable = Math.max(0, (liveAtGrnLoc > 0 ? liveAtGrnLoc : 0) - pendingSample);
           // Scope to THIS GRN's own receipt: balances are keyed mat|batch|loc, so two
           // receipts of the same batch share one balance. Defaulting off the shared
@@ -441,8 +448,26 @@ function saveIQC(data) {
         }
       }
 
-      // Record physical sample deduction
-      var sampQty = Number(item.sampleSize) || 0;
+      // Retain ONE control piece — not the whole sample.
+      //
+      // Inspection is non-destructive (visual/dimensional), so the tested pieces
+      // go back to storage with the material. Only a single control piece is kept
+      // for traceability if a complaint arrives later.
+      //
+      // BEFORE: the entire sample was moved to SAMPLE-CABINET and never left.
+      // Measured (?diag=samplefate): 800 units held, 0 ever returned, across 234
+      // pulls totalling 3,135 units. Physically unmanageable, and the cabinet grew
+      // with every inspection.
+      //
+      // The number of pieces TESTED is still recorded on the IQC row (Sample Size,
+      // col 9) — that is the inspection evidence. It just no longer debits stock,
+      // because those pieces came back. Cabinet growth: 32/receipt -> 1.
+      //
+      // Destructive tests are NOT handled here; when those are added they need a
+      // real write-off with a reason code, since that material genuinely ceases to
+      // exist. See SAMPLING-REDESIGN.scope.md.
+      var testedQty = Number(item.sampleSize) || 0;
+      var sampQty   = testedQty > 0 ? IQC_CONTROL_SAMPLE_QTY : 0;
       if (sampQty > 0 && item.materialCode && item.batchNo) {
         try {
           recordSample({
@@ -452,7 +477,7 @@ function saveIQC(data) {
             batchOrLotNo:  item.batchNo,
             qtySample:     sampQty,
             unit:          item.unit || '',
-            samplePurpose: 'IQC inspection',
+            samplePurpose: 'IQC control sample (' + testedQty + ' pcs tested, returned to stock)',
             takenBy:       data.inspector || operatorId,
             locationStored: 'SAMPLE-CABINET',
             // Real holding location, so the sample is a paired move (OUT here, IN cabinet)

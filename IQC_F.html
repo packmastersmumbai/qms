@@ -269,7 +269,7 @@
         </div>
         <div class="grid grid-cols-4 gap-2 text-center">
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Sample</div><div class="font-mono text-[21px] font-bold" id="planSample">—</div>
-            <div class="text-[9px] text-text-helper leading-tight">→ cabinet</div></div>
+            <div class="text-[9px] text-text-helper leading-tight">test &amp; return</div></div>
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Accept ≤</div><div class="font-mono text-[21px] font-bold" style="color:#15803d" id="planAc">—</div></div>
           <div><div class="text-[10px] uppercase tracking-wide text-text-helper">Reject ≥</div><div class="font-mono text-[21px] font-bold" style="color:#dc2626" id="planRe">—</div></div>
           <div><label class="text-[10px] uppercase tracking-wide text-text-helper" for="defectsFound">Defects</label>
@@ -1262,6 +1262,13 @@ var SAMPLING_GUIDE = {
     body: 'ISO 2859-1 switching: start at <u>Normal</u>. Move to <u>Tightened</u> when 2 of 5 consecutive lots are rejected. Return to Normal after 5 consecutive accepted lots. <u>Reduced</u> is allowed only when production is steady and the responsible authority agrees.' +
           '<div style="color:#b45309;margin-top:4px;"><b>Limitation:</b> the Ac/Re shown are still the NORMAL-plan values. The Tightened/Reduced tables (II-B/II-C) are not yet implemented, so your selection is recorded but does not change the numbers.</div>'
   },
+  sampleSize: {
+    label: 'Sample — what happens to the pieces',
+    body: 'Inspection is non-destructive, so the tested pieces go BACK to storage with the material.' +
+          '<div><u>Retained</u>: 1 control piece per item, held in SAMPLE-CABINET for traceability if a complaint arrives later.</div>' +
+          '<div><u>Stock</u>: accepted qty = received − 1, not received − sample. The pieces you counted are still stock.</div>' +
+          '<div><u>Destructive tests</u> (burst, seal, tear) are not covered here — those consume the material and need a separate write-off.</div>'
+  },
   defectsFound: {
     label: 'Defects found',
     body: 'Count of non-conforming pieces in the SAMPLE you inspected — not in the whole lot.' +
@@ -1364,18 +1371,18 @@ function setItemDisp(val) {
   var item   = currentItems[currentIdx];
   var grnQty = Number(item && item.qtyReceived) || 0;
 
-  // The inspection sample is PHYSICALLY REMOVED: saveIQC -> recordSample writes a
-  // paired SAMPLE_OUT (receiving location) / SAMPLE_IN (SAMPLE-CABINET) to the
-  // stock ledger, and SAMPLE locations are excluded from FIFO. Those units are
-  // gone from available stock.
+  // Only the CONTROL PIECE leaves stock, not the whole sample.
   //
-  // The auto-fill used the raw received qty, so accepting a 1000-unit lot with a
-  // 32-unit sample claimed 1000 accepted when only 968 remained — a 32-unit
-  // overstatement on every accepted receipt. saveIQC already subtracts the
-  // sample when defaulting the REJECTED/HOLD remainder (IQC.js pendingSample);
-  // the accepted path was the one place that did not.
-  var sampleQty  = (SAMPLING_PLAN && Number(SAMPLING_PLAN.sampleSize)) || 0;
-  var disposable = Math.max(0, grnQty - sampleQty);
+  // Inspection is non-destructive, so the tested pieces go back to storage with
+  // the material; saveIQC retains a single control piece in SAMPLE-CABINET
+  // (IQC_CONTROL_SAMPLE_QTY). So a 1000-unit receipt tested with 32 pieces
+  // disposes 999, not 968 — the 31 returned pieces are still stock.
+  //
+  // Keep this in step with IQC_CONTROL_SAMPLE_QTY on the server: this is the
+  // client's mirror of the same rule, and if the two disagree the reconciliation
+  // warning below fires on every correct entry.
+  var controlQty = 1;
+  var disposable = Math.max(0, grnQty - controlQty);
 
   if (grnQty > 0 && !d.acceptedQty && !d.rejectedQty && !d.holdQty) {
     if (val === 'ACCEPTED') {
@@ -1489,20 +1496,19 @@ function updateQtyMismatch() {
   var hld = parseFloat(document.getElementById('holdQty').value)     || 0;
   var sum = acc + rej + hld;
 
-  // Reconcile against RECEIVED MINUS SAMPLE, not received. The sample is moved
-  // to SAMPLE-CABINET by recordSample and is no longer available to disposition,
-  // so requiring acc+rej+hld == grnQty would flag every correct entry as a
-  // mismatch (and previously rewarded the incorrect one that double-counted the
-  // sample). Shows the full equation so the missing units are explained, not
-  // just missing.
-  var samp  = (SAMPLING_PLAN && Number(SAMPLING_PLAN.sampleSize)) || 0;
+  // Reconcile against RECEIVED MINUS THE CONTROL PIECE. Inspection is
+  // non-destructive, so tested pieces go back to storage; only the single
+  // retained control piece is unavailable to disposition. Mirrors
+  // IQC_CONTROL_SAMPLE_QTY on the server — if the two disagree this warning
+  // fires on every correct entry.
+  var samp  = 1;
   var avail = Math.max(0, grnQty - samp);
   var unit  = item.unit ? ' ' + item.unit : '';
 
   if (Math.abs(sum - avail) > 0.001) {
     warn.textContent = 'Accepted + Rejected + Hold = ' + sum + unit + ', but ' +
       (samp > 0
-        ? grnQty + unit + ' received − ' + samp + unit + ' sample = ' + avail + unit + ' to disposition.'
+        ? grnQty + unit + ' received − ' + samp + unit + ' control sample = ' + avail + unit + ' to disposition.'
         : 'GRN qty is ' + grnQty + unit + '.') + ' Please verify.';
     warn.classList.remove('hidden');
   } else {
