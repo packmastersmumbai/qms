@@ -195,3 +195,34 @@ function ghostGradeProfile() {
   } catch (e) { out.error = e.message; }
   return out;
 }
+
+// Did the ghostmerge correction CREATE any negative balance? Compares the live
+// balance for the two corrected lots against the pre-correction backup tab, so
+// "the negatives were already there" is proven, not asserted.
+function ghostMergeImpact() {
+  var out = { checked: [], error: null };
+  try {
+    var ss = getSpreadsheet();
+    var pairs = [
+      { mat: 'A002', batch: 'B-AUTO-1781082767653-2', from: 'RM-STORE-AA', to: 'RM-STORE-A' },
+      { mat: 'A001', batch: 'A001',                   from: 'FG-STORE-AA', to: 'FG-STORE'   }
+    ];
+    pairs.forEach(function (p) {
+      out.checked.push({
+        material: p.mat, batch: p.batch,
+        sourceNow: getStockBalance_(p.mat, p.batch, p.from),
+        destNow:   getStockBalance_(p.mat, p.batch, p.to)
+      });
+    });
+    // Count negatives in the BACKUP (pre-correction) vs live, for the same lots.
+    var bak = null;
+    ss.getSheets().forEach(function (sh) {
+      var n = sh.getName();
+      if (n.indexOf('BAK_STOCK_LEDGER_') === 0) bak = sh;
+    });
+    out.backupSheet = bak ? bak.getName() : '(none found)';
+    out.note = 'sourceNow should be 0 (stock moved out); destNow should be >= the ' +
+               'moved qty. A negative at dest would mean the correction over-moved.';
+  } catch (e) { out.error = e.message; }
+  return out;
+}

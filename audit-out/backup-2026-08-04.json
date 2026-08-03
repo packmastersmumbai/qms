@@ -1,0 +1,18 @@
+{
+  "copies": [
+    {
+      "sheet": "STOCK_LEDGER",
+      "copy": "BAK_STOCK_LEDGER_20260803-2200",
+      "rows": 1222,
+      "status": "OK"
+    },
+    {
+      "sheet": "LOCATIONS",
+      "copy": "BAK_LOCATIONS_20260803-2200",
+      "rows": 168,
+      "status": "OK"
+    }
+  ],
+  "error": null,
+  "note": "Hidden backup tabs inside the same spreadsheet. To roll back a bad correction, read the BAK_ tab and replay the difference — do not delete live rows."
+}

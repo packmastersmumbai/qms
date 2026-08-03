@@ -1,0 +1,23 @@
+{
+  "dryRun": true,
+  "moves": [
+    {
+      "materialCode": "A002",
+      "batch": "B-AUTO-1781082767653-2",
+      "from": "RM-STORE-AA",
+      "to": "RM-STORE-A",
+      "qty": 21220,
+      "status": "WOULD MOVE"
+    },
+    {
+      "materialCode": "A001",
+      "batch": "A001",
+      "from": "FG-STORE-AA",
+      "to": "FG-STORE",
+      "qty": 18500,
+      "status": "WOULD MOVE"
+    }
+  ],
+  "error": null,
+  "summary": "DRY RUN — 2 transfer(s) would be written. These are REAL stock movements; run again with &confirm=YES only if the material is physically in the -A location."
+}

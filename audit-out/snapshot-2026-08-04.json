@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "error": "You do not have permission to call DriveApp.getFileById. Required permissions: (https://www.googleapis.com/auth/drive.readonly || https://www.googleapis.com/auth/drive). For more information, see https://developers.google.com/apps-script/guides/support/troubleshooting#authorization-is"
+}

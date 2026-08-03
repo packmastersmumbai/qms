@@ -1,0 +1,52 @@
+{
+  "dryRun": true,
+  "wouldAdd": [
+    {
+      "id": "RM-STORE-C",
+      "floor": "GF",
+      "type": "RM",
+      "label": "RM Store — Bay C"
+    },
+    {
+      "id": "RM-STORE-E",
+      "floor": "GF",
+      "type": "RM",
+      "label": "RM Store — Bay E"
+    },
+    {
+      "id": "FG-STORE-A",
+      "floor": "GF",
+      "type": "FG",
+      "label": "FG Store — Bay A"
+    },
+    {
+      "id": "FG-STORE-B",
+      "floor": "GF",
+      "type": "FG",
+      "label": "FG Store — Bay B"
+    },
+    {
+      "id": "FG-STORE-C",
+      "floor": "GF",
+      "type": "FG",
+      "label": "FG Store — Bay C"
+    },
+    {
+      "id": "FG-STORE-F",
+      "floor": "GF",
+      "type": "FG",
+      "label": "FG Store — Bay F"
+    },
+    {
+      "id": "BUFFER",
+      "floor": "GF",
+      "type": "RM",
+      "label": "Staging Buffer"
+    }
+  ],
+  "added": [],
+  "skipped": [],
+  "error": null,
+  "sheetWidth": 12,
+  "summary": "DRY RUN — would define 7, skip 0. No STOCK_LEDGER row is touched: these IDs are already in the ledger, so defining them changes no balance, only makes them legitimate and typed."
+}

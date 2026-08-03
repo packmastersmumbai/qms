@@ -1,0 +1,19 @@
+{
+  "dryRun": false,
+  "wouldAdd": [],
+  "added": [
+    "FG-STORE-D"
+  ],
+  "skipped": [
+    "RM-STORE-C (already defined)",
+    "RM-STORE-E (already defined)",
+    "FG-STORE-A (already defined)",
+    "FG-STORE-B (already defined)",
+    "FG-STORE-C (already defined)",
+    "FG-STORE-F (already defined)",
+    "BUFFER (already defined)"
+  ],
+  "error": null,
+  "sheetWidth": 12,
+  "summary": "Defined 1 location(s); skipped 7."
+}

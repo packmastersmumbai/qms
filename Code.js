@@ -517,6 +517,27 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(gf2, null, 2)).setMimeType(ContentService.MimeType.TEXT);
   }
   // Merge the -AA mis-keys. WRITES STOCK MOVEMENTS when confirm=YES.
+  if (diag === 'mergeimpact') {
+    var mi;
+    try { mi = (typeof ghostMergeImpact === 'function') ? ghostMergeImpact() : { error: 'missing' }; }
+    catch (er21) { mi = { error: er21.message }; }
+    return ContentService.createTextOutput(JSON.stringify(mi, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  if (diag === 'backupsheets') {
+    var bk;
+    try { bk = (typeof backupStockSheets === 'function') ? backupStockSheets() : { error: 'missing' }; }
+    catch (er20) { bk = { error: er20.message }; }
+    return ContentService.createTextOutput(JSON.stringify(bk, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  if (diag === 'snapshotss') {
+    var sn;
+    try { sn = (typeof snapshotSpreadsheet === 'function') ? snapshotSpreadsheet() : { error: 'missing' }; }
+    catch (er19) { sn = { error: er19.message }; }
+    return ContentService.createTextOutput(JSON.stringify(sn, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   if (diag === 'ghostmerge') {
     var gm;
     try { gm = (typeof ghostLocationMerge === 'function')

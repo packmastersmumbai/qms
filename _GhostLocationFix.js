@@ -41,6 +41,13 @@ var GHOST_LOCATION_DEFS_ = [
   ['FG-STORE-A',    'GF', 'FG',        'FG Store — Bay A',          'FG',   '', ''],
   ['FG-STORE-B',    'GF', 'FG',        'FG Store — Bay B',          'FG',   '', ''],
   ['FG-STORE-C',    'GF', 'FG',        'FG Store — Bay C',          'FG',   '', ''],
+  // FG-STORE-D was MISSED by the first pass (2026-08-04). The list was derived
+  // from material DEFAULT locations, but this one is no material's default — it is
+  // received into explicitly, so ?diag=ghostdefaults never surfaced it while
+  // ?diag=ghostloc did (13,781 units, 2 materials, GRN_RECEIPT + IQC_ACCEPT — the
+  // same legitimate pattern as its siblings). Lesson: the two diags answer
+  // different questions and BOTH gates are needed.
+  ['FG-STORE-D',    'GF', 'FG',        'FG Store — Bay D',          'FG',   '', ''],
   ['FG-STORE-F',    'GF', 'FG',        'FG Store — Bay F',          'FG',   '', ''],
   ['BUFFER',        'GF', 'Stores',    'Staging Buffer',            'RM',   '', '']
 ];
@@ -190,5 +197,35 @@ function ghostLocationMerge(confirm) {
   } catch (e) {
     out.error = e.message;
   }
+  return out;
+}
+
+// Phase 0.5 — pre-flight backup of the sheets a stock correction touches.
+// DriveApp.makeCopy needs a Drive scope the deploy token does not carry, and
+// widening OAuth scopes on a production script to take a backup is a worse trade
+// than backing up the DATA. So: duplicate STOCK_LEDGER + LOCATIONS inside the same
+// spreadsheet, named with a timestamp. That is what a rollback would read from.
+// ?diag=backupsheets
+function backupStockSheets() {
+  var out = { copies: [], error: null };
+  try {
+    var ss = getSpreadsheet();
+    var stamp = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd-HHmm');
+    ['STOCK_LEDGER', 'LOCATIONS'].forEach(function (name) {
+      var src = ss.getSheetByName(name);
+      if (!src) { out.copies.push({ sheet: name, status: 'NOT FOUND' }); return; }
+      var copyName = 'BAK_' + name + '_' + stamp;
+      if (ss.getSheetByName(copyName)) {
+        out.copies.push({ sheet: name, copy: copyName, status: 'already exists' });
+        return;
+      }
+      var c = src.copyTo(ss).setName(copyName);
+      c.hideSheet();
+      out.copies.push({ sheet: name, copy: copyName, rows: c.getLastRow(), status: 'OK' });
+    });
+    out.note = 'Hidden backup tabs inside the same spreadsheet. To roll back a bad ' +
+               'correction, read the BAK_ tab and replay the difference — do not ' +
+               'delete live rows.';
+  } catch (e) { out.error = e.message; }
   return out;
 }

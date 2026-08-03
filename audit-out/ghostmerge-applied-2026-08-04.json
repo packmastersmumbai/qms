@@ -1,0 +1,23 @@
+{
+  "dryRun": false,
+  "moves": [
+    {
+      "materialCode": "A002",
+      "batch": "B-AUTO-1781082767653-2",
+      "from": "RM-STORE-AA",
+      "to": "RM-STORE-A",
+      "qty": 21220,
+      "status": "MOVED"
+    },
+    {
+      "materialCode": "A001",
+      "batch": "A001",
+      "from": "FG-STORE-AA",
+      "to": "FG-STORE",
+      "qty": 18500,
+      "status": "MOVED"
+    }
+  ],
+  "error": null,
+  "summary": "Executed 2 transfer(s)."
+}

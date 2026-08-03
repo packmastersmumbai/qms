@@ -1,0 +1,87 @@
+{
+  "GRN": {
+    "rendered": true,
+    "selects": {
+      "supplier": 13
+    },
+    "button": {
+      "found": true,
+      "visible": true,
+      "inViewport": true,
+      "bottomVisible": true,
+      "top": 728,
+      "bottom": 784,
+      "winH": 800
+    },
+    "consoleErrors": []
+  },
+  "IQC": {
+    "rendered": true,
+    "selects": {
+      "grnNo": 3,
+      "inspector": 5
+    },
+    "button": {
+      "found": true,
+      "visible": true,
+      "inViewport": true,
+      "bottomVisible": true,
+      "top": 732,
+      "bottom": 784,
+      "winH": 800
+    },
+    "consoleErrors": []
+  },
+  "OQC": {
+    "rendered": true,
+    "selects": {},
+    "button": {
+      "found": true,
+      "visible": true,
+      "inViewport": true,
+      "bottomVisible": true,
+      "top": 736,
+      "bottom": 788,
+      "winH": 800
+    },
+    "consoleErrors": []
+  },
+  "NCR": {
+    "rendered": true,
+    "selects": {},
+    "button": {
+      "skip": "list-view (no save button)"
+    },
+    "consoleErrors": []
+  },
+  "Dispatch": {
+    "rendered": true,
+    "selects": {
+      "fCustomer": 3
+    },
+    "button": {
+      "found": true,
+      "visible": true,
+      "inViewport": true,
+      "bottomVisible": true,
+      "top": 732,
+      "bottom": 788,
+      "winH": 800
+    },
+    "consoleErrors": []
+  },
+  "Production": {
+    "rendered": true,
+    "selects": {},
+    "button": {
+      "found": true,
+      "visible": true,
+      "inViewport": true,
+      "bottomVisible": true,
+      "top": 752,
+      "bottom": 792,
+      "winH": 800
+    },
+    "consoleErrors": []
+  }
+}

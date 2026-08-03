@@ -1,0 +1,1373 @@
+{
+  "GRN": {
+    "navRes": true,
+    "foundFrame": true,
+    "title": "GRN Receipt — Pack Masters QMS",
+    "btnCount": 9,
+    "invisible": [
+      "btnIqc|PROCEED TO IQC →",
+      "btnHome|BACK TO HOME"
+    ],
+    "offscreen": [
+      "btnAddItem|+ Add Item|top1173",
+      "d-ACCEPT|ACCEPT|top1337",
+      "d-REJECT|REJECT|top1337",
+      "d-HOLD|HOLD|top1413",
+      "d-AWD|AWD|top1413"
+    ],
+    "transparentBg": 1,
+    "docHeight": 1758,
+    "winHeight": 800,
+    "selects": [
+      {
+        "id": "supplier",
+        "opts": 1
+      },
+      {
+        "id": "poRefSelect",
+        "opts": 1
+      },
+      {
+        "id": "item",
+        "opts": 1
+      }
+    ],
+    "btns": [
+      {
+        "id": "backBtn",
+        "text": "arrow_back",
+        "visible": true,
+        "w": 40,
+        "h": 40,
+        "top": 8,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "btnAddItem",
+        "text": "+ Add Item",
+        "visible": true,
+        "w": 958,
+        "h": 45,
+        "top": 1173,
+        "bg": "rgb(11, 42, 74)",
+        "offscreen": true
+      },
+      {
+        "id": "d-ACCEPT",
+        "text": "ACCEPT",
+        "visible": true,
+        "w": 221,
+        "h": 64,
+        "top": 1337,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": true
+      },
+      {
+        "id": "d-REJECT",
+        "text": "REJECT",
+        "visible": true,
+        "w": 221,
+        "h": 64,
+        "top": 1337,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": true
+      },
+      {
+        "id": "d-HOLD",
+        "text": "HOLD",
+        "visible": true,
+        "w": 221,
+        "h": 64,
+        "top": 1413,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": true
+      },
+      {
+        "id": "d-AWD",
+        "text": "AWD",
+        "visible": true,
+        "w": 221,
+        "h": 64,
+        "top": 1413,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": true
+      },
+      {
+        "id": "btnIqc",
+        "text": "PROCEED TO IQC →",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "btnHome",
+        "text": "BACK TO HOME",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(30, 58, 95)",
+        "offscreen": false
+      },
+      {
+        "id": "btnSubmit",
+        "text": "Save GRN",
+        "visible": true,
+        "w": 512,
+        "h": 56,
+        "top": 728,
+        "bg": "rgb(14, 165, 233)",
+        "offscreen": false
+      }
+    ],
+    "consoleErrors": []
+  },
+  "IQC": {
+    "navRes": true,
+    "foundFrame": true,
+    "title": "IQC Inspection — Pack Masters QMS",
+    "btnCount": 18,
+    "invisible": [
+      "dAcc|check_circleACCEPTED",
+      "dRej|cancelREJECTED",
+      "dHld|pause_circleHOLD",
+      "dAwd|WITH DEVIATION",
+      "s2BackBtn|arrow_back",
+      "odAcc|check_circleACCEPTED",
+      "odRej|cancelREJECTED",
+      "odHld|pause_circleHOLD",
+      "odAwd|WITH DEVIATION",
+      ".flex-1|videocam\n\n        Reco",
+      ".text-slate-400|close",
+      "saveBtn|saveSave IQC Result",
+      "emailReportBtn|sendSend Report to Sup",
+      "doneBtn|homeBack to Home",
+      ".text-slate-400|close",
+      ".w-full|Done"
+    ],
+    "offscreen": [],
+    "transparentBg": 1,
+    "docHeight": 800,
+    "winHeight": 800,
+    "selects": [
+      {
+        "id": "grnNo",
+        "opts": 1
+      },
+      {
+        "id": "inspector",
+        "opts": 1
+      },
+      {
+        "id": "aqlLevel",
+        "opts": 5
+      },
+      {
+        "id": "samplingMethod",
+        "opts": 5
+      }
+    ],
+    "btns": [
+      {
+        "id": "s1BackBtn",
+        "text": "arrow_back",
+        "visible": true,
+        "w": 40,
+        "h": 46,
+        "top": 5,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "dAcc",
+        "text": "check_circleACCEPTED",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": "dRej",
+        "text": "cancelREJECTED",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": "dHld",
+        "text": "pause_circleHOLD",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": "dAwd",
+        "text": "WITH DEVIATION",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": "stickyBtn",
+        "text": "Next Item arrow_forwar",
+        "visible": true,
+        "w": 144,
+        "h": 52,
+        "top": 732,
+        "bg": "rgb(30, 58, 95)",
+        "offscreen": false
+      },
+      {
+        "id": "s2BackBtn",
+        "text": "arrow_back",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "odAcc",
+        "text": "check_circleACCEPTED",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": "odRej",
+        "text": "cancelREJECTED",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": "odHld",
+        "text": "pause_circleHOLD",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": "odAwd",
+        "text": "WITH DEVIATION",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": ".flex-1",
+        "text": "videocam\n\n        Reco",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(239, 246, 255)",
+        "offscreen": false
+      },
+      {
+        "id": ".text-slate-400",
+        "text": "close",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "saveBtn",
+        "text": "saveSave IQC Result",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(30, 58, 95)",
+        "offscreen": false
+      },
+      {
+        "id": "emailReportBtn",
+        "text": "sendSend Report to Sup",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(14, 165, 233)",
+        "offscreen": false
+      },
+      {
+        "id": "doneBtn",
+        "text": "homeBack to Home",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(241, 245, 249)",
+        "offscreen": false
+      },
+      {
+        "id": ".text-slate-400",
+        "text": "close",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".w-full",
+        "text": "Done",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(241, 245, 249)",
+        "offscreen": false
+      }
+    ],
+    "consoleErrors": []
+  },
+  "OQC": {
+    "navRes": true,
+    "foundFrame": true,
+    "title": "Pack Masters QMS",
+    "btnCount": 57,
+    "invisible": [
+      ".pm-sec-toggle|Drill-down",
+      ".pm-bn-btn|Home",
+      ".pm-bn-btn|Records",
+      ".pm-bn-btn|Trace",
+      ".pm-bn-btn|KPIs",
+      ".pm-bn-btn|Masters",
+      ".pm-bn-btn|More"
+    ],
+    "offscreen": [
+      ".pm-menu-item|Customer Returns|top871",
+      ".pm-menu-item|Warehouse|top913",
+      ".pm-menu-item|Scan (QR Pilot)|top955",
+      ".pm-menu-item|Control Plan|top998",
+      ".pm-menu-item|Import CSV|top1040",
+      ".pm-menu-item|Switch role\n\n      Mgr|top1117",
+      ".pm-menu-item|Settings|top1159"
+    ],
+    "transparentBg": 39,
+    "docHeight": 851,
+    "winHeight": 800,
+    "selects": [],
+    "btns": [
+      {
+        "id": ".pm-top-btn",
+        "text": "",
+        "visible": true,
+        "w": 38,
+        "h": 38,
+        "top": 9,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-topnav-btn",
+        "text": "Home",
+        "visible": true,
+        "w": 89,
+        "h": 36,
+        "top": 10,
+        "bg": "rgba(255, 255, 255, 0.15)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-topnav-btn",
+        "text": "Records",
+        "visible": true,
+        "w": 104,
+        "h": 36,
+        "top": 10,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-topnav-btn",
+        "text": "Trace",
+        "visible": true,
+        "w": 88,
+        "h": 36,
+        "top": 10,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-topnav-btn",
+        "text": "KPIs",
+        "visible": true,
+        "w": 81,
+        "h": 36,
+        "top": 10,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-topnav-btn",
+        "text": "Masters",
+        "visible": true,
+        "w": 104,
+        "h": 36,
+        "top": 10,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-topnav-btn",
+        "text": "More",
+        "visible": true,
+        "w": 85,
+        "h": 36,
+        "top": 10,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "personaPill",
+        "text": "Manager",
+        "visible": true,
+        "w": 68,
+        "h": 25,
+        "top": 16,
+        "bg": "rgba(255, 255, 255, 0.12)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-top-btn",
+        "text": "",
+        "visible": true,
+        "w": 38,
+        "h": 38,
+        "top": 9,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 165,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-add",
+        "text": "+",
+        "visible": true,
+        "w": 20,
+        "h": 20,
+        "top": 160,
+        "bg": "rgb(0, 112, 243)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 165,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-add",
+        "text": "+",
+        "visible": true,
+        "w": 20,
+        "h": 20,
+        "top": 160,
+        "bg": "rgb(0, 112, 243)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 165,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-add",
+        "text": "+",
+        "visible": true,
+        "w": 20,
+        "h": 20,
+        "top": 160,
+        "bg": "rgb(0, 112, 243)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 273,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-add",
+        "text": "+",
+        "visible": true,
+        "w": 20,
+        "h": 20,
+        "top": 268,
+        "bg": "rgb(0, 112, 243)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 273,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-add",
+        "text": "+",
+        "visible": true,
+        "w": 20,
+        "h": 20,
+        "top": 268,
+        "bg": "rgb(0, 112, 243)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 382,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-add",
+        "text": "+",
+        "visible": true,
+        "w": 20,
+        "h": 20,
+        "top": 376,
+        "bg": "rgb(0, 112, 243)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 382,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-add",
+        "text": "+",
+        "visible": true,
+        "w": 20,
+        "h": 20,
+        "top": 376,
+        "bg": "rgb(0, 112, 243)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 490,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-count",
+        "text": "0",
+        "visible": true,
+        "w": 20,
+        "h": 19,
+        "top": 490,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-tile-add",
+        "text": "+",
+        "visible": true,
+        "w": 20,
+        "h": 20,
+        "top": 484,
+        "bg": "rgb(0, 112, 243)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-sec-toggle",
+        "text": "KPIs · 30d",
+        "visible": true,
+        "w": 101,
+        "h": 17,
+        "top": 106,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-sec-link",
+        "text": "Configure",
+        "visible": true,
+        "w": 55,
+        "h": 17,
+        "top": 106,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-sec-toggle",
+        "text": "Drill-down",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-sec-link",
+        "text": "View all",
+        "visible": true,
+        "w": 43,
+        "h": 17,
+        "top": 696,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-bn-btn",
+        "text": "Home",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-bn-btn",
+        "text": "Records",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-bn-btn",
+        "text": "Trace",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-bn-btn",
+        "text": "KPIs",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-bn-btn",
+        "text": "Masters",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-bn-btn",
+        "text": "More",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Home",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 115,
+        "bg": "rgb(238, 241, 250)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Cockpit (v2)",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 157,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Traceability",
+        "visible": true,
+        "w": 284,
+        "h": 172,
+        "top": 199,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Records",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 371,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "KPIs",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 413,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Masters",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 456,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Purchase Orders",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 533,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Goods Receipt",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 575,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Incoming QC",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 617,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "In-Process QC",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 660,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Production",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 702,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Outgoing QC",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 744,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Dispatch",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 786,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "NCR",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 829,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Customer Returns",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 871,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": true
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Warehouse",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 913,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": true
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Scan (QR Pilot)",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 955,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": true
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Control Plan",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 998,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": true
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Import CSV",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 1040,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": true
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Switch role\n\n      Mgr",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 1117,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": true
+      },
+      {
+        "id": ".pm-menu-item",
+        "text": "Settings",
+        "visible": true,
+        "w": 284,
+        "h": 42,
+        "top": 1159,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": true
+      }
+    ],
+    "consoleErrors": []
+  },
+  "NCR": {
+    "navRes": true,
+    "foundFrame": true,
+    "title": "Pack Masters QMS - Open NCRs",
+    "btnCount": 15,
+    "invisible": [
+      ".w-9|close",
+      ".flex-1|Close",
+      "dtlCloseNcrBtn|Close NCR",
+      ".flex-1|Cancel",
+      "closeSubmit|Close NCR"
+    ],
+    "offscreen": [],
+    "transparentBg": 6,
+    "docHeight": 884,
+    "winHeight": 800,
+    "selects": [
+      {
+        "id": "closeEffective",
+        "opts": 4
+      }
+    ],
+    "btns": [
+      {
+        "id": ".w-10",
+        "text": "arrow_back",
+        "visible": true,
+        "w": 40,
+        "h": 40,
+        "top": 8,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".ncr-tab",
+        "text": "ALL",
+        "visible": true,
+        "w": 54,
+        "h": 32,
+        "top": 64,
+        "bg": "rgb(30, 58, 95)",
+        "offscreen": false
+      },
+      {
+        "id": ".ncr-tab",
+        "text": "OPEN",
+        "visible": true,
+        "w": 65,
+        "h": 32,
+        "top": 64,
+        "bg": "rgb(241, 245, 249)",
+        "offscreen": false
+      },
+      {
+        "id": ".ncr-tab",
+        "text": "IN PROGRESS",
+        "visible": true,
+        "w": 112,
+        "h": 32,
+        "top": 64,
+        "bg": "rgb(241, 245, 249)",
+        "offscreen": false
+      },
+      {
+        "id": ".ncr-tab",
+        "text": "CLOSED",
+        "visible": true,
+        "w": 80,
+        "h": 32,
+        "top": 64,
+        "bg": "rgb(241, 245, 249)",
+        "offscreen": false
+      },
+      {
+        "id": ".w-9",
+        "text": "close",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".flex-1",
+        "text": "Close",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "dtlCloseNcrBtn",
+        "text": "Close NCR",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(30, 58, 95)",
+        "offscreen": false
+      },
+      {
+        "id": ".flex-1",
+        "text": "Cancel",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "closeSubmit",
+        "text": "Close NCR",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(30, 58, 95)",
+        "offscreen": false
+      },
+      {
+        "id": ".flex",
+        "text": "home\n\n      Home",
+        "visible": true,
+        "w": 64,
+        "h": 63,
+        "top": 737,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".flex",
+        "text": "assignment\n\n      Reco",
+        "visible": true,
+        "w": 64,
+        "h": 63,
+        "top": 737,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".flex",
+        "text": "leaderboard\n\n      KPI",
+        "visible": true,
+        "w": 64,
+        "h": 63,
+        "top": 737,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".flex",
+        "text": "settings_applications\n",
+        "visible": true,
+        "w": 64,
+        "h": 63,
+        "top": 737,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".flex",
+        "text": "more_horiz\n\n      More",
+        "visible": true,
+        "w": 64,
+        "h": 63,
+        "top": 737,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      }
+    ],
+    "consoleErrors": []
+  },
+  "Dispatch": {
+    "navRes": true,
+    "foundFrame": true,
+    "title": "",
+    "btnCount": 4,
+    "invisible": [],
+    "offscreen": [
+      ".dsp-add-item-btn|+ Add Item|top915"
+    ],
+    "transparentBg": 2,
+    "docHeight": 1608,
+    "winHeight": 800,
+    "selects": [
+      {
+        "id": "fCustomer",
+        "opts": 1
+      },
+      {
+        "id": "iProd-0",
+        "opts": 1
+      },
+      {
+        "id": "fAuthorizedBy",
+        "opts": 1
+      }
+    ],
+    "btns": [
+      {
+        "id": "backBtn",
+        "text": "",
+        "visible": true,
+        "w": 36,
+        "h": 36,
+        "top": 8,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "iBtnPlan-0",
+        "text": "searchPlan FIFO Alloca",
+        "visible": true,
+        "w": 672,
+        "h": 44,
+        "top": 844,
+        "bg": "rgb(14, 165, 233)",
+        "offscreen": false
+      },
+      {
+        "id": ".dsp-add-item-btn",
+        "text": "+ Add Item",
+        "visible": true,
+        "w": 698,
+        "h": 33,
+        "top": 915,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": true
+      },
+      {
+        "id": "btnConfirm",
+        "text": "Save Dispatch + Gatepa",
+        "visible": true,
+        "w": 398,
+        "h": 56,
+        "top": 732,
+        "bg": "rgb(30, 58, 95)",
+        "offscreen": false
+      }
+    ],
+    "consoleErrors": []
+  },
+  "Production": {
+    "navRes": true,
+    "foundFrame": true,
+    "title": "",
+    "btnCount": 11,
+    "invisible": [
+      "btnLoadPlan|Load Plan",
+      "btnPickList|Show Pick List (FIFO)",
+      "btnIssueFG|Issue Production Job",
+      ".|×",
+      ".|🖨 Print Final List",
+      ".|📤 Share (WhatsApp)",
+      ".|Close",
+      ".|↻ Refresh",
+      "btnSubmitBooking|Submit Production Book"
+    ],
+    "offscreen": [],
+    "transparentBg": 1,
+    "docHeight": 942,
+    "winHeight": 800,
+    "selects": [
+      {
+        "id": "fMaterial",
+        "opts": 1
+      },
+      {
+        "id": "fIssuedBy",
+        "opts": 0
+      },
+      {
+        "id": "fgClient",
+        "opts": 1
+      },
+      {
+        "id": "fgItem",
+        "opts": 1
+      },
+      {
+        "id": "fgIssuedBy",
+        "opts": 0
+      },
+      {
+        "id": "bkJob",
+        "opts": 1
+      },
+      {
+        "id": "bkIpqc",
+        "opts": 1
+      },
+      {
+        "id": "bkBookedBy",
+        "opts": 0
+      }
+    ],
+    "btns": [
+      {
+        "id": ".",
+        "text": "←",
+        "visible": true,
+        "w": 24,
+        "h": 21,
+        "top": 10,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "btnIssue",
+        "text": "Plan FIFO Allocation",
+        "visible": true,
+        "w": 942,
+        "h": 40,
+        "top": 833,
+        "bg": "rgb(13, 27, 110)",
+        "offscreen": false
+      },
+      {
+        "id": "btnLoadPlan",
+        "text": "Load Plan",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(13, 27, 110)",
+        "offscreen": false
+      },
+      {
+        "id": "btnPickList",
+        "text": "Show Pick List (FIFO)",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(13, 148, 136)",
+        "offscreen": false
+      },
+      {
+        "id": "btnIssueFG",
+        "text": "Issue Production Job",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(13, 27, 110)",
+        "offscreen": false
+      },
+      {
+        "id": ".",
+        "text": "×",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": ".",
+        "text": "🖨 Print Final List",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(11, 42, 74)",
+        "offscreen": false
+      },
+      {
+        "id": ".",
+        "text": "📤 Share (WhatsApp)",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(22, 163, 74)",
+        "offscreen": false
+      },
+      {
+        "id": ".",
+        "text": "Close",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(255, 255, 255)",
+        "offscreen": false
+      },
+      {
+        "id": ".",
+        "text": "↻ Refresh",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgba(0, 0, 0, 0)",
+        "offscreen": false
+      },
+      {
+        "id": "btnSubmitBooking",
+        "text": "Submit Production Book",
+        "visible": false,
+        "w": 0,
+        "h": 0,
+        "top": 0,
+        "bg": "rgb(13, 27, 110)",
+        "offscreen": false
+      }
+    ],
+    "consoleErrors": []
+  }
+}
