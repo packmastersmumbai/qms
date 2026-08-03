@@ -43,26 +43,39 @@ function installHelpers() {
     var calls = [];
     var captured = null;
     try {
-      // Replace ONLY the write function; leave every read call working.
+      // Intercept via a PROPERTY GETTER on google.script, not by assigning to
+      // google.script.run.
       //
-      // The previous version swapped the whole google.script.run object and
-      // stubbed every method. Filling happened first, so selects populated — but
-      // any read the SAVE PATH itself makes was then dead-ended. GRN is the clear
-      // case: doSave() calls getPOById and uploadImagesAndSave_ before saveGRN,
-      // and with those stubbed their callbacks never fire, so saveGRN is never
-      // reached and the probe reports "button reachable but write never
-      // dispatched" — an artefact of the harness, not a product defect.
+      // In GAS, `google.script.run` yields a NEW proxy object on every property
+      // access. So `run.saveGRN = fn` decorates a snapshot the page never reads
+      // again — the next `google.script.run.saveGRN(...)` gets a fresh proxy with
+      // the original function. That is why every earlier version of this probe
+      // reported "button reachable but write never dispatched": the save WAS
+      // firing, the shim just could not see it. Two prior fixes (fill-order, then
+      // mutate-in-place) both missed this and left GRN wrongly INCONCLUSIVE.
       //
-      // Mutating the real object in place keeps the callback chain intact right
-      // up to the write, which is the only thing that must not happen.
+      // Wrapping the getter returns a per-access object that inherits every real
+      // read method (so the save path's own reads still work) while overriding
+      // only the write, which is swallowed.
       var real = google.script.run;
-      var originalWrite = real[writeFnName];
-      real[writeFnName] = function (payload) {
-        captured = payload;
-        calls.push(writeFnName);
-        return real;   // keep the chain alive for any trailing .withXHandler()
-      };
-      void originalWrite;   // deliberately not restored: the page is torn down per form
+      Object.defineProperty(google.script, 'run', {
+        configurable: true,
+        get: function () {
+          var wrapped = Object.create(real);
+          // Only the write is swallowed. withSuccessHandler/withFailureHandler are
+          // NOT overridden here — the save path chains them onto REAL read calls
+          // (getPOById, image upload), and stubbing them would strand those
+          // callbacks and re-create the very stall this fix removes. The dead-end
+          // is returned from the write itself, which is the last hop.
+          wrapped[writeFnName] = function (payload) {
+            captured = payload;
+            calls.push(writeFnName);
+            return { withSuccessHandler: function () { return this; },
+                     withFailureHandler: function () { return this; } };
+          };
+          return wrapped;
+        }
+      });
     } catch (e) { /* leave real run in place; caller sees 0 calls */ }
     return { calls: calls, get captured() { return captured; } };
   };
@@ -121,24 +134,39 @@ async function runGRN(s) {
       // Confirm stayed inert.
       const name = document.querySelector('.op-name-btn');
       if (name) name.click();
-      const confirm = Array.from(modal.querySelectorAll('button'))
-        .find(b => /confirm/i.test(b.textContent || ''));
+      // Confirm ships DISABLED (OperatorPicker.html:61) and is only enabled once a
+      // name is selected. Clicking it while disabled is a no-op the DOM silently
+      // swallows, so the callback never fires and the save stalls on "Saving…".
+      const confirm = document.getElementById('opConfirmBtn') ||
+        Array.from(modal.querySelectorAll('button')).find(b => /confirm/i.test(b.textContent || ''));
+      if (confirm && confirm.disabled) return false;   // selection did not register
       if (confirm) confirm.click();
       return !!(name && confirm);
     };
 
-    if (btn && !btn.disabled) { try { doSave(); } catch (e) {} }
+    const dbg = [];
+    if (btn && !btn.disabled) { try { doSave(); dbg.push('doSave ok'); } catch (e) { dbg.push('doSave threw: '+e.message); } }
     return new Promise(resolve => setTimeout(() => {
       const modalAnswered = answerOperatorModal();
+      dbg.push('modalAnswered=' + modalAnswered);
+      dbg.push('opConfirm disabled=' + (function(){var c=document.getElementById('opConfirmBtn');return c?c.disabled:'no-btn';})());
+      dbg.push('name btns=' + document.querySelectorAll('.op-name-btn').length);
       setTimeout(() => {
         const afterFirst = { disabled: btn ? btn.disabled : null,
           html: btn ? (btn.innerHTML||'').replace(/<[^>]*>/g,'').trim().slice(0,30) : '' };
         // Second tap — the double-dispatch check.
         if (btn && !btn.disabled) { try { doSave(); } catch (e) {} }
-        setTimeout(() => {
+        setTimeout(async () => {
           answerOperatorModal();
-          setTimeout(() => resolve({ btnExists, beforeDisabled, modalAnswered,
-            afterFirst, calls: shim.calls, captured: shim.captured }), 1200);
+          // The save is async (operator -> image upload -> saveGRN). Poll rather
+          // than guess a fixed delay: a fixed 300ms wait is what made this report
+          // "write never dispatched" when the write was simply still in flight.
+          for (let i = 0; i < 20 && !shim.calls.length; i++) {
+            await new Promise(r => setTimeout(r, 500));
+          }
+          dbg.push('calls=' + shim.calls.length);
+          resolve({ btnExists, beforeDisabled, modalAnswered, dbg,
+            afterFirst, calls: shim.calls, captured: shim.captured });
         }, 600);
       }, 1500);
     }, 800));
