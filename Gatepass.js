@@ -20,6 +20,29 @@ function getGatpassFormInit() {
   };
 }
 
+// Look up a prior save of the SAME attempt. The txn id is stamped into REMARKS as
+// a "[txn:...]" suffix rather than a new column: GATEPASS_HEADERS is exactly 20
+// wide with every slot occupied, and widening a sheet whose readers map schema[i]
+// to cell[i] is precisely how the MASTERS_Materials contract broke (INSP_CATEGORY
+// pointed past the end of the sheet for weeks). A suffix costs no schema change.
+function _gatepassTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+function _gatepassFindByTxn_(ws, txnId) {
+  try {
+    if (!ws || ws.getLastRow() < 2) return '';
+    var tag = _gatepassTxnTag_(txnId);
+    // REMARKS is col 15 (1-based), GP_NO is col 1.
+    var n = ws.getLastRow() - 1;
+    var gp = ws.getRange(2, 1, n, 1).getValues();
+    var rm = ws.getRange(2, 15, n, 1).getValues();
+    for (var i = n - 1; i >= 0; i--) {          // newest first — a retry is recent
+      if (String(rm[i][0] || '').indexOf(tag) >= 0) return String(gp[i][0] || '');
+    }
+  } catch (e) { Logger.log('_gatepassFindByTxn_: ' + e.message); }
+  return '';
+}
+
 function saveGatepass(data) {
   try {
     var ss = getSpreadsheet();
@@ -33,6 +56,32 @@ function saveGatepass(data) {
     // channel that reserves/decrements the FG lot. Reject any OUTBOUND payload here.
     if (String(data.type || '').toUpperCase() === 'OUTBOUND') {
       return { success: false, error: 'Outbound dispatch must be done via the Dispatch screen (FIFO), not the legacy Gatepass. This ensures the FG lot is decremented and cannot be dispatched twice.' };
+    }
+
+    // Idempotency guard. saveGatepass had NO lock and NO duplicate check — the only
+    // writer in the app with neither — so a double-tap or a retry after a slow
+    // response wrote two GATEPASS_LOG records for one physical movement.
+    //
+    // clientTxnId is generated once per save attempt by the form, so a retry of the
+    // SAME attempt carries the same id and is recognised; a genuinely new gatepass
+    // gets a new id. Falls back to a content fingerprint for older clients that do
+    // not send one.
+    var txnId = String(data.clientTxnId || '').trim();
+    if (!txnId) {
+      txnId = [data.date, data.type, data.vehicleNo, data.driverName,
+               (data.items && data.items[0] ? data.items[0].materialDesc : ''),
+               (data.items && data.items[0] ? data.items[0].qty : '')].join('|');
+    }
+    // The dupe SCAN and the row APPEND must be atomic — checking inside a lock and
+    // then appending outside it leaves exactly the race being fixed, since two
+    // concurrent saves would both scan clean before either wrote. So the whole
+    // remainder of this function runs inside one withStockLock_ (the pattern the
+    // other writers already use; it returns a busy result rather than throwing).
+    return withStockLock_(function () {
+    var dupe = _gatepassFindByTxn_(ws, txnId);
+    if (dupe) {
+      return { success: true, docNo: dupe, duplicate: true,
+               message: 'This gatepass was already saved as ' + dupe + '.' };
     }
 
     var docNo = getNextDocNumber('gp');
@@ -65,7 +114,7 @@ function saveGatepass(data) {
         data.transporter   || '',
         data.authorizedBy  || '',
         data.securityGuard || '',
-        data.remarks       || '',
+        ((data.remarks || '') + ' ' + _gatepassTxnTag_(txnId)).trim(),
         String(data.disposition || 'ISSUED').toUpperCase(),
         user,
         now,
@@ -82,6 +131,7 @@ function saveGatepass(data) {
     }
 
     return { success: true, docNo: docNo };
+    });   // end withStockLock_
   } catch(e) {
     Logger.log(e);
     return { success: false, error: e.message };

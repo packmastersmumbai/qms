@@ -32,7 +32,10 @@
 <body>
 
 <div id="topBar" style="background:#1E88E5;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;">
-  <button onclick="history.back()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0;">&#8592;</button>
+  <!-- Explicit destination, not history.back(): navigation is document.write-based,
+       so Back used to leave the SPA entirely. This form includes Theme but not
+       HtmlCache, so it uses Theme's goHome() rather than pmGoBack_. -->
+  <button onclick="goHome()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0;">&#8592;</button>
   <span style="font-size:17px;font-weight:700;">Rework Items</span>
   <span id="spinner" style="display:none;margin-left:auto;font-size:12px;opacity:.8;">Loading…</span>
 </div>

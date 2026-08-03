@@ -6,7 +6,7 @@
 -->
 <script>
 (function(){
-  var PFX = 'pmqms_html_v78_'; // bump on breaking layout changes to force cache reset
+  var PFX = 'pmqms_html_v80_'; // bump on breaking layout changes to force cache reset
   var TTL_MS = 5 * 60 * 1000; // 5 min — HTML is largely static; CacheService handles data freshness
 
   // One-time sweep: remove any older-version cache keys lingering in sessionStorage.
@@ -50,7 +50,41 @@
     } catch(e) {}
   }
 
-  function navigate(form) {
+  // ── SPA history ────────────────────────────────────────────────────────────
+  // Navigation replaces the document via document.write(), which creates NO
+  // history entry. The browser/Android Back button therefore never stepped back a
+  // screen — it left the SPA entirely, landing on the last real page load (the
+  // old v1 landing page). Verified in the GAS sandboxed iframe: pushState and
+  // popstate both work (e2e-histtest.js), despite the double-iframe.
+  //
+  // Each navigate() pushes an entry tagged with the form name; popstate then
+  // re-navigates INTERNALLY instead of unloading the app. pushHistory is false on
+  // the popstate path so going back does not itself push a new entry.
+  function pushHistory_(form) {
+    try {
+      if (!history.state || history.state.pmForm !== form) {
+        history.pushState({ pmForm: form }, '', location.href);
+      }
+    } catch (e) { /* sandbox refused — Back simply behaves as before */ }
+  }
+
+  try {
+    // Seed an entry for the screen we start on, so the FIRST Back has somewhere
+    // to land instead of exiting immediately.
+    if (!history.state || !history.state.pmForm) {
+      history.replaceState({ pmForm: '__start__' }, '', location.href);
+    }
+    window.addEventListener('popstate', function (ev) {
+      var form = ev.state && ev.state.pmForm;
+      if (!form || form === '__start__') return;   // let the browser do its thing
+      navigate(form, { push: false });
+    });
+  } catch (e) {}
+
+  function navigate(form, opts) {
+    var push = !(opts && opts.push === false);
+    if (push) pushHistory_(form);
+
     var cached = readCache(form);
     if (cached) {
       // Render immediately, then background-refresh to keep cache warm
@@ -149,6 +183,19 @@
     var d = document.getElementById('__pmqms_loader__');
     if (d) d.remove();
   }
+
+  // Shared Back for form headers. Steps back inside the SPA when there is an
+  // internal entry to return to, otherwise goes to Landing — so a directly-opened
+  // form still has a sane Back instead of falling out of the app.
+  window.pmGoBack_ = function () {
+    try {
+      if (history.state && history.state.pmForm && history.state.pmForm !== '__start__') {
+        history.back();
+        return;
+      }
+    } catch (e) {}
+    navigate('Landing');
+  };
 
   window.PMHtmlCache = {
     navigate: navigate,

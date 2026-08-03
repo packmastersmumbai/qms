@@ -629,14 +629,75 @@ function doSave() {
   callSaveGatepass(data, matType, desc, parseFloat(qtyRaw), unit, vehicle);
 }
 
+// In-flight latch + stable attempt id.
+//
+// This form had NO double-submit protection on either side, and saveGatepass was
+// the only writer in the app with neither a lock nor a duplicate check — a
+// double-tap wrote two GATEPASS_LOG records for one physical movement.
+//
+// _gpTxnId is generated ONCE per attempt and reused for retries of that attempt,
+// so the server recognises a repeat and returns the original doc number instead
+// of writing again. A genuinely new gatepass gets a fresh id after success.
+var _gpSaveInFlight = false;
+var _gpTxnId = '';
+
+function releaseGpSaveLatch_() {
+  _gpSaveInFlight = false;
+  var b = document.getElementById('btnSave');
+  if (!b) return;
+  b.disabled = false;
+  b.innerHTML = 'Save Gatepass &#8594;';
+}
+
 function callSaveGatepass(data, matType, desc, qty, unit, vehicle) {
+  if (_gpSaveInFlight) return;
+  _gpSaveInFlight = true;
+
+  if (!_gpTxnId) {
+    _gpTxnId = 'GP-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+  }
+  data.clientTxnId = _gpTxnId;
+
+  var btn = document.getElementById('btnSave');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving&hellip;'; }
+
+  // Watchdog: google.script.run reports nothing for a dropped connection until it
+  // eventually times out, so on patchy shop-floor wifi the button would sit
+  // disabled with no explanation and no way to retry.
+  var settled = false;
+  var watchdog = setTimeout(function () {
+    if (settled) return;
+    settled = true;
+    showToast('Save timed out. Check the Gatepass list before saving again.', 'error');
+    releaseGpSaveLatch_();
+  }, 30000);
+  function settle_() {
+    if (settled) return false;
+    settled = true;
+    clearTimeout(watchdog);
+    return true;
+  }
+
+  if (navigator && navigator.onLine === false) {
+    settle_();
+    showToast('You appear to be offline. Your entry is still here — reconnect and press Save again.', 'error');
+    releaseGpSaveLatch_();
+    return;
+  }
+
   google.script.run
-    .withSuccessHandler(function(res) { onSaveSuccess(res, matType, desc, qty, unit, vehicle); })
+    .withSuccessHandler(function(res) {
+      if (!settle_()) return;
+      if (res && res.duplicate) {
+        showToast(res.message || 'Already saved.', 'warning');
+      }
+      _gpTxnId = '';                 // attempt closed — next save is a new gatepass
+      onSaveSuccess(res, matType, desc, qty, unit, vehicle);
+    })
     .withFailureHandler(function(e) {
+      if (!settle_()) return;
       showToast('Error: ' + e.message, 'error');
-      var btn = document.getElementById('btnSave');
-      btn.disabled = false;
-      btn.innerHTML = 'Save Gatepass &#8594;';
+      releaseGpSaveLatch_();         // keep _gpTxnId so a retry is recognised
     })
     .saveGatepass(data);
 }

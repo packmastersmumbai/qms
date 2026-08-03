@@ -47,7 +47,10 @@
   <!-- TopAppBar -->
   <header class="bg-[#1e3a5f] text-white font-headline sticky top-0 w-full h-14 shadow flex items-center justify-between px-4 z-40">
     <div class="flex items-center gap-2">
-      <button onclick="history.back()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10">
+      <!-- Explicit destination, not history.back(). Navigation is document.write-based,
+           so before SPA history existed Back left the app entirely; and even with it,
+           a directly-opened form has no internal entry to step back to. -->
+      <button onclick="pmGoBack_()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10">
         <span class="material-symbols-outlined text-2xl">arrow_back</span>
       </button>
       <span class="text-lg font-bold">Returns Management</span>
