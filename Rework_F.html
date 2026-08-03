@@ -18,7 +18,10 @@
   .btn-primary { background:#1E88E5; color:#fff; border:none; border-radius:8px; padding:10px 20px; font-weight:600; font-size:14px; cursor:pointer; }
   .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
   .btn-outline { background:#fff; color:#1E88E5; border:1.5px solid #1E88E5; border-radius:8px; padding:8px 16px; font-weight:600; font-size:13px; cursor:pointer; }
-  .input { width:100%; border:1.5px solid #CFD8DC; border-radius:8px; padding:9px 12px; font-size:14px; box-sizing:border-box; }
+  /* 16px floor: iOS Safari zooms the page in on focus for any input below 16px.
+     That auto-zoom is what the user-scalable=no viewport lock was compensating
+     for; the floor is the real fix, so this must stay >=16px. */
+  .input { width:100%; border:1.5px solid #CFD8DC; border-radius:8px; padding:9px 12px; font-size:16px; box-sizing:border-box; }
   .input:focus { outline:none; border-color:#1E88E5; }
   .section-title { font-size:13px; font-weight:700; color:#455A64; margin:16px 12px 4px; text-transform:uppercase; letter-spacing:.5px; }
   #completionForm { display:none; }

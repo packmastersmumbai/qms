@@ -2,7 +2,10 @@
 <html lang="en-IN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- WCAG 1.4.4: no maximum-scale / user-scalable=no. Both block pinch zoom,
+       which presbyopic inspectors on the floor rely on. The 16px input floor is
+       what actually prevents iOS zoom-on-focus, so the lock bought nothing. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pack Masters QMS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -500,24 +503,28 @@
       transition: opacity .25s ease, visibility .25s ease;
     }
     .pm-loader.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    .pm-loader-logo {
+    /* New QMS v2 loader — PM badge + clean spinner (matches cockpit/HtmlCache). */
+    .pm-loader-card { display: flex; align-items: center; gap: 10px; }
+    .pm-loader-badge {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--pm-navy); color: #fff;
+      display: grid; place-items: center;
       font-family: 'Plus Jakarta Sans', sans-serif;
-      color: var(--pm-text);
-      font-size: 14px; font-weight: 700; letter-spacing: 0.2px;
-      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 17px; letter-spacing: .5px;
     }
-    .pm-loader-logo .pm-logo-mark {
-      width: 28px; height: 28px;
-      border-radius: 8px;
-      background: var(--pm-navy);
-      display: flex; align-items: center; justify-content: center;
+    .pm-loader-titles { display: flex; flex-direction: column; line-height: 1.15; }
+    .pm-loader-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--pm-text); font-size: 17px; font-weight: 800;
     }
-    .pm-loader-logo svg { width: 14px; height: 14px; color: #fff; stroke-width: 2; }
-    .pm-loader-sub {
-      color: var(--pm-muted);
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 1.4px; text-transform: uppercase;
+    .pm-loader-sub { color: var(--pm-muted); font-size: 12px; font-weight: 500; }
+    .pm-loader-spin {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 3px solid rgba(13,27,110,0.15);
+      border-top-color: var(--pm-navy);
+      animation: pmspin .7s linear infinite;
     }
+    @keyframes pmspin { to { transform: rotate(360deg); } }
     .pm-belt {
       position: relative;
       width: 160px; height: 2px;
@@ -915,19 +922,15 @@
 
 <!-- ══════════════ LOADER ══════════════ -->
 <div id="pmLoader" class="pm-loader" role="status" aria-live="polite" aria-label="Loading dashboard">
-  <div class="pm-loader-logo">
-    <span class="pm-logo-mark"><svg><use href="#i-package"/></svg></span>
-    <span>Pack Masters QMS</span>
+  <div class="pm-loader-card">
+    <div class="pm-loader-badge">PM</div>
+    <div class="pm-loader-titles">
+      <span class="pm-loader-title">PM QMS v2</span>
+      <span class="pm-loader-sub" id="pmLoaderSub">Loading dashboard…</span>
+    </div>
   </div>
-  <div class="pm-belt" aria-hidden="true">
-    <div class="pm-belt-track"></div>
-    <div class="pm-belt-box"></div>
-    <div class="pm-belt-box"></div>
-    <div class="pm-belt-box"></div>
-    <div class="pm-belt-box"></div>
-    <div class="pm-belt-progress" id="pmLoaderProgress"></div>
-  </div>
-  <div class="pm-loader-sub" id="pmLoaderSub">Synchronising shift data</div>
+  <div class="pm-loader-spin" aria-hidden="true"></div>
+  <div class="pm-belt-progress" id="pmLoaderProgress" style="display:none"></div>
 </div>
 
 <!-- ══════════════ TOP BAR ══════════════ -->
@@ -1125,7 +1128,7 @@
   'use strict';
 
   /* ═════════════ CONFIG ═════════════ */
-  var CACHE_KEY = 'pmqms_landing_v6';
+  var CACHE_KEY = 'pmqms_landing_v7';
   var ALERTS_VISIBLE = 3;  // Collapse beyond this; user can expand
   var CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
@@ -1821,8 +1824,9 @@
   function applyBundle(bundle) {
     if (!bundle) return;
     SETTINGS = bundle.settings || null;
-    if (bundle.landing) applyData(bundle.landing);
-    renderKpis(bundle.kpis || []);
+    // Defensive: a render throw must never leave the loader stuck (the boot symptom).
+    try { if (bundle.landing) applyData(bundle.landing); } catch (e) {}
+    try { renderKpis(bundle.kpis || []); } catch (e) {}
   }
 
   function loadState() {
@@ -1857,7 +1861,7 @@
       applyData(cached);
       hideLoader();
     } else {
-      showLoader('Synchronising shift data');
+      showLoader('Loading dashboard…');
       startLoaderProgress();
     }
 

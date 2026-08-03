@@ -91,7 +91,8 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .alloc{display:flex;align-items:center;gap:8px;margin-bottom:7px}
   .alloc .arrow{font-family:var(--mono);color:var(--pm-faint);font-size:13px;flex:none}
-  .alloc input.slot{font-family:var(--mono);font-size:13px;font-weight:700;padding:7px 9px;width:88px;flex:none;
+  /* 16px floor — see Rework_F.html. Width 88->100px so a full slot code still fits. */
+  .alloc input.slot{font-family:var(--mono);font-size:16px;font-weight:700;padding:7px 9px;width:100px;flex:none;
     background:var(--pm-surface);color:var(--pm-ink);border:1px solid var(--pm-hairline-strong);
     border-radius:var(--pm-r-sm);text-transform:uppercase}
   .alloc .qbadge{font-family:var(--mono);font-size:12px;color:var(--pm-body);font-variant-numeric:tabular-nums}

@@ -34,7 +34,9 @@
   .persona-tab{padding:8px;text-align:center;border-radius:6px;font-size:12px;font-weight:700;color:var(--pm-muted);background:transparent;border:0;cursor:pointer;transition:all .12s}
   .persona-tab.active{background:#fff;color:var(--pm-navy);box-shadow:0 1px 4px rgba(15,23,42,0.08)}
   .pin-row{display:flex;gap:8px;align-items:center;margin-top:8px}
-  .pin-row input{flex:1;height:32px;border:1px solid var(--pm-border);border-radius:6px;padding:0 10px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:4px;text-align:center}
+  /* 16px floor — see Rework_F.html. Height raised 32->40px so the larger glyphs
+     are not clipped; letter-spacing trimmed so a 4-6 digit PIN still fits. */
+  .pin-row input{flex:1;height:40px;border:1px solid var(--pm-border);border-radius:6px;padding:0 10px;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:3px;text-align:center}
   .btn{height:32px;padding:0 12px;background:var(--pm-navy);color:#fff;border:0;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer}
   .btn:disabled{background:var(--pm-faint);cursor:not-allowed}
   .owner-banner{background:#fef3c7;border:1px solid #fde68a;border-left:3px solid #f59e0b;border-radius:6px;padding:6px 10px;font-size:11px;color:#78350f;font-weight:600;margin-bottom:8px}
