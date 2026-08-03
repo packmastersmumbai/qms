@@ -1,0 +1,35 @@
+{
+  "detector": {
+    "ignoreRules": [
+      "side-tab"
+    ],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "plus jakarta sans",
+        "createdAt": "2026-07-29T15:30:17.187Z"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-07-29T15:30:17.270Z"
+      },
+      {
+        "rule": "overused-font",
+        "value": "Plus Jakarta Sans",
+        "createdAt": "2026-08-04T00:00:00.000Z"
+      },
+      {
+        "rule": "overused-font",
+        "value": "Inter",
+        "createdAt": "2026-08-04T00:00:00.000Z"
+      },
+      {
+        "rule": "overused-font",
+        "value": "Plus+Jakarta+Sans",
+        "createdAt": "2026-08-04T00:00:00.000Z"
+      }
+    ]
+  }
+}

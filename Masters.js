@@ -431,34 +431,42 @@ function getRecentGRNs() {
     }
   } catch(e) {}
 
-  // Map all rows, reverse to most-recent-first, then deduplicate by grnNo
-  var mapped = data.slice(1)
-    .filter(function(r) { return r[0]; })
-    .map(function(r) {
-      return {
-        grnNo:         r[0],
-        date:          r[1] ? Utilities.formatDate(new Date(r[1]), 'Asia/Kolkata', 'dd-MMM-yyyy') : '',
-        supplierCode:  String(r[2] || '').trim(),
-        supplierName:  r[3],
-        supplierEmail: emailMap[String(r[2] || '').trim()] || '',
-        material:      r[7],
-        batch:         r[8],
-        iqcStatus:     r[15] || 'PENDING'
-      };
-    })
-    .reverse();
-
-  // Deduplicate: keep first occurrence per grnNo in reversed (most-recent-first) order
+  // Walk BACKWARDS (most-recent-first), dedupe by grnNo, and stop at 30.
+  //
+  // MEASURED (2026-08-04, ?diag=iqcinittiming): this function dominated
+  // getIQCFormInit at ~2.0s of its ~2.1s. The old shape mapped and
+  // Utilities.formatDate'd EVERY row in GRN_LOG, reversed the whole array,
+  // deduped it, and then threw all but the last 30 away. The per-row date
+  // format is the costly call, and it ran mostly on discarded rows.
+  //
+  // Deferring the object build until AFTER the dedupe/limit decision keeps the
+  // output byte-identical (same order, same 30 rows, same dedupe rule: first
+  // occurrence wins scanning most-recent-first) while formatting ~30 dates
+  // instead of all of them. A request-scoped memo was considered and rejected:
+  // the form calls this once per load, so there is no repeat read to collapse.
   var seen = {};
-  var deduped = [];
-  mapped.forEach(function(g) {
-    if (!seen[g.grnNo]) {
-      seen[g.grnNo] = true;
-      deduped.push(g);
-    }
-  });
+  var picked = [];
+  for (var i = data.length - 1; i >= 1 && picked.length < 30; i--) {
+    var r = data[i];
+    if (!r[0]) continue;
+    var key = r[0];
+    if (seen[key]) continue;
+    seen[key] = true;
+    picked.push(r);
+  }
 
-  return deduped.slice(0, 30);
+  return picked.map(function(r) {
+    return {
+      grnNo:         r[0],
+      date:          r[1] ? Utilities.formatDate(new Date(r[1]), 'Asia/Kolkata', 'dd-MMM-yyyy') : '',
+      supplierCode:  String(r[2] || '').trim(),
+      supplierName:  r[3],
+      supplierEmail: emailMap[String(r[2] || '').trim()] || '',
+      material:      r[7],
+      batch:         r[8],
+      iqcStatus:     r[15] || 'PENDING'
+    };
+  });
 }
 
 function getFormInitData() {

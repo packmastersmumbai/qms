@@ -498,6 +498,15 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(sd, null, 2)).setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // IQC form-init timing attribution (_IqcInitTiming.js). READ-ONLY.
+  //   ?diag=iqcinittiming   → per-step ms for getIQCFormInit + cache proof
+  if (diag === 'iqcinittiming') {
+    var iit;
+    try { iit = (typeof iqcInitTiming === 'function') ? iqcInitTiming() : { error: 'iqcInitTiming missing' }; }
+    catch (er9) { iit = { error: er9.message, stack: er9.stack }; }
+    return ContentService.createTextOutput(JSON.stringify(iit, null, 2)).setMimeType(ContentService.MimeType.TEXT);
+  }
+
   // Drive folder tidy-up (QmsDrive.js) — deploy-token path; avoids clasp run.
   //   ?diag=folderlist                     → raw list of Drive-root folder names
   //   ?diag=folderscan                     → dry run: what WOULD move where
@@ -605,7 +614,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v136_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v137_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

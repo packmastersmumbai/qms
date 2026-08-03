@@ -125,16 +125,22 @@
     .param-row-fail { background:#fef2f2; border-color:#fca5a5 !important; }
     .param-row-na   { background:var(--pm-chip, #f1f5f9); }
 
-    /* Param button states */
-    .btn-pass-active { background:#16a34a !important; color:#fff !important; border-color:#16a34a !important; }
+    /* Param button states
+       WCAG 1.4.3: white-on-fill needs >=4.5:1. The -600 shades failed
+       (green #16a34a 3.30, amber #ca8a04 2.94, orange #d97706 3.19), so the
+       ACTIVE fills use the -700 step: #15803d 5.02, #a16207 4.92, #b45309 5.02.
+       Red #dc2626 (4.83) and slate #64748b (4.76) already pass — left alone.
+       These are real CSS declarations, not Tailwind arbitrary values, so the
+       missing-from-bundle trap does not apply here. */
+    .btn-pass-active { background:#15803d !important; color:#fff !important; border-color:#15803d !important; }
     .btn-fail-active { background:#dc2626 !important; color:#fff !important; border-color:#dc2626 !important; }
     .btn-na-active   { background:#64748b !important; color:#fff !important; border-color:#64748b !important; }
 
     /* Disp buttons */
-    .disp-acc-active { background:#16a34a !important; color:#fff !important; border-color:#16a34a !important; }
+    .disp-acc-active { background:#15803d !important; color:#fff !important; border-color:#15803d !important; }
     .disp-rej-active { background:#dc2626 !important; color:#fff !important; border-color:#dc2626 !important; }
-    .disp-hld-active { background:#ca8a04 !important; color:#fff !important; border-color:#ca8a04 !important; }
-    .disp-awd-active { background:#d97706 !important; color:#fff !important; border-color:#d97706 !important; }
+    .disp-hld-active { background:#a16207 !important; color:#fff !important; border-color:#a16207 !important; }
+    .disp-awd-active { background:#b45309 !important; color:#fff !important; border-color:#b45309 !important; }
 
     /* Disp badges */
     .badge-acc  { background:#dcfce7; color:#15803d; }
@@ -151,8 +157,8 @@
     .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#1e3a5f; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; font-weight:600; opacity:0; transition:all 0.25s ease; z-index:9999; pointer-events:none; white-space:nowrap; max-width:90vw; }
     .toast.show    { opacity:1; transform:translateX(-50%) translateY(0); }
     .toast.error   { background:#dc2626; }
-    .toast.success { background:#16a34a; }
-    .toast.warning { background:#d97706; }
+    .toast.success { background:#15803d; }
+    .toast.warning { background:#b45309; }
 
     @keyframes pulseAmber {
       0%   { box-shadow:0 0 0 0 rgba(232,160,32,0.6); }
@@ -269,7 +275,7 @@
             <input id="defectsFound" type="number" inputmode="numeric" min="0" value="0"
               class="w-full h-[36px] border-[1.5px] border-gray-300 rounded text-center font-mono text-[18px] px-1 focus:border-accent focus:outline-none"></div>
         </div>
-        <div id="planVerdict" class="mt-2 py-1.5 rounded text-center text-[12px] font-bold text-white" style="background:#16a34a">ACCEPT</div>
+        <div id="planVerdict" class="mt-2 py-1.5 rounded text-center text-[12px] font-bold text-white" style="background:#15803d">ACCEPT</div>
       </div>
       <div id="samplingErr" class="mt-2 text-[12px] text-status-danger hidden"></div>
     </div>
@@ -718,7 +724,7 @@ function renderVerdict(){
   var el = document.getElementById('planVerdict');
   var panel = document.getElementById('samplingPanel');
   if(v==='ACCEPT'){
-    el.style.background='#16a34a'; el.textContent='ACCEPT · '+d+' defects ≤ Ac '+SAMPLING_PLAN.ac;
+    el.style.background='#15803d'; el.textContent='ACCEPT · '+d+' defects ≤ Ac '+SAMPLING_PLAN.ac;
     if(panel){ panel.style.borderColor='#bbf7d0'; panel.style.background='#f0fdf4'; }
   } else {
     el.style.background='#dc2626'; el.textContent='REJECT · '+d+' defects ≥ Re '+SAMPLING_PLAN.re;
@@ -1231,7 +1237,7 @@ function updateParamSectionTitle() {
   if (!t) return;
   var filled = IQC_PARAMS.filter(function(p) { return !!itemData[currentIdx].params[p.id]; }).length;
   t.textContent = 'Inspection Parameters (' + filled + '/' + IQC_PARAMS.length + ')';
-  t.style.color = allParamsFilled() ? '#16a34a' : '';
+  t.style.color = allParamsFilled() ? '#15803d' : '';
 }
 
 /* ── Disposition card ── */
