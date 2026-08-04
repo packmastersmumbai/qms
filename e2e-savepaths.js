@@ -504,7 +504,12 @@ async function runIPQC(s) {
   const started = await fr.evaluate(() => {
     const p = window.__pickFirst('setupProduct');
     if (!p) return { ok: false, why: 'setupProduct empty — no live product data' };
-    window.__set('setupBatch', 'E2E-FIX-BATCH');
+    // UNIQUE batch per run. startSession rejects a repeat with "A CLOSED session
+    // already exists for this product+batch" (IPQC.js:161), so a fixed batch
+    // passes exactly once and then skips forever — self-inflicted drift of
+    // precisely the kind the fixtures exist to prevent. Caught by running the
+    // suite twice rather than trusting a single green.
+    window.__set('setupBatch', 'E2E-' + Date.now());
     window.__set('setupInspector', 'e2e-probe');
     const b = document.getElementById('btnStartCheck');
     if (!b) return { ok: false, why: 'btnStartCheck missing' };
@@ -578,6 +583,88 @@ async function runIPQC(s) {
   return finish(r, 'saveRound');
 }
 
+// OQC, like IPQC, turned out to need no seeded data — the render suite already
+// shows selIPQC 3/4 and selMaterial 38/39 populated. Its readiness check
+// (OQC_F.html:970) wants material + batch + customer + qty>=1 + every param set
+// + disposition + FG location + an IPQC ref, all reachable from the DOM. The
+// STATIC_SKIPS entry called this "no generic fill path without risking a false
+// PASS"; the honest answer is that it needs a SPECIFIC fill path, which is what
+// this is.
+async function runOQC(s) {
+  await nav(s.app, s.page, 'OQC');
+  await s.page.waitForTimeout(11000);
+  const fr = await frameWith(s.page, 'selMaterial', 20000);
+  if (!fr) return { skip: 'form did not render (selMaterial not found)' };
+  await fr.evaluate(installHelpers);
+
+  const picked = await fr.evaluate(() => {
+    const mat = window.__pickFirst('selMaterial');
+    if (!mat) return { ok: false, why: 'selMaterial empty — no FG materials' };
+    return { ok: true, mat: mat };
+  });
+  if (!picked.ok) return { skip: picked.why };
+  await s.page.waitForTimeout(2500);   // material change repopulates IPQC/lot data
+
+  const filled = await fr.evaluate(() => {
+    const out = {};
+    out.ipqc = window.__pickFirst('selIPQC');
+    out.cust = window.__pickFirst('selCustomer');
+    out.fgLoc = window.__pickFirst('selFGLocation');
+    window.__set('inpBatch', 'E2E-FIX-BATCH');
+    window.__set('inpQty', 10);
+    // Params are module state set through setCheck, not form fields.
+    try {
+      (OQC_CHECKS || []).forEach(function (c) { setCheck(c.id, 'PASS'); });
+      out.params = (typeof allParamsFilled === 'function') ? allParamsFilled() : null;
+    } catch (e) { out.paramErr = e.message; }
+    try { setDisposition('ACCEPTED'); } catch (e) { out.dispErr = e.message; }
+    try { if (typeof refreshSaveState === 'function') refreshSaveState(); } catch (e) {}
+    const b = document.getElementById('btnSave');
+    out.btnDisabled = b ? b.disabled : 'MISSING';
+    return out;
+  });
+  await s.page.waitForTimeout(1200);
+
+  const ready = await fr.evaluate(() => {
+    const b = document.getElementById('btnSave');
+    return b ? !b.disabled : false;
+  });
+  if (!ready) {
+    return { skip: 'btnSave stayed disabled — unmet: ' + JSON.stringify(filled) };
+  }
+
+  const r = await fr.evaluate(() => {
+    const shim = window.__installShim('saveOQC');
+    const btn = document.getElementById('btnSave');
+    const btnExists = !!btn;
+    const beforeDisabled = btn ? btn.disabled : null;
+    const answerOperatorModal = () => {
+      const name = document.querySelector('.op-name-btn');
+      if (name) name.click();
+      const confirm = document.getElementById('opConfirmBtn');
+      if (confirm && !confirm.disabled) { confirm.click(); return true; }
+      return false;
+    };
+    if (btn && !btn.disabled) { btn.click(); }
+    return new Promise(resolve => setTimeout(() => {
+      answerOperatorModal();
+      setTimeout(() => {
+        const afterFirst = { disabled: btn ? btn.disabled : null,
+          html: btn ? (btn.innerHTML || '').replace(/<[^>]*>/g, '').trim().slice(0, 30) : '' };
+        if (btn && !btn.disabled) { btn.click(); }
+        setTimeout(async () => {
+          answerOperatorModal();
+          for (let i = 0; i < 20 && !shim.calls.length; i++) {
+            await new Promise(r2 => setTimeout(r2, 500));
+          }
+          resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured });
+        }, 600);
+      }, 1500);
+    }, 800));
+  });
+  return finish(r, 'saveOQC');
+}
+
 // Shared "make sense of the result" step for every driver above.
 function finish(r, writeFn) {
   if (!r.btnExists) return { skip: 'save button not found in DOM' };
@@ -609,19 +696,18 @@ function finish(r, writeFn) {
 // start-check + per-parameter grid, OQC's disposition+AQL+IPQC-session gate,
 // CustomerReturn's existing-gatepass item picker). Reported honestly as SKIPPED.
 const STATIC_SKIPS = {
-  OQC:            'requires live IPQC session pick + full AQL parameter grid (allParamsFilled) + disposition + FG location — no generic fill path without risking a false PASS',
 
   Dispatch:       'requires FIFO lot selection UI per item (chosenPlan/skipped state) built from live stock — no generic fill path',
   CustomerReturn: 'requires picking an existing live Gatepass and ticking specific returned items — no generic fill path',
 };
 
-const RUNNERS = { GRN: runGRN, IQC: runIQC, IPQC: runIPQC, Gatepass: runGatepass, PO: runPOP, Rework: runRework };
+const RUNNERS = { GRN: runGRN, IQC: runIQC, IPQC: runIPQC, OQC: runOQC, Gatepass: runGatepass, PO: runPOP, Rework: runRework };
 
 (async () => {
   const b = await launch();
   const rows = [];
 
-  for (const name of ['GRN', 'IQC', 'IPQC', 'Gatepass', 'PO', 'Rework']) {
+  for (const name of ['GRN', 'IQC', 'IPQC', 'OQC', 'Gatepass', 'PO', 'Rework']) {
     let s;
     try {
       s = await openApp(b);
