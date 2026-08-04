@@ -79,6 +79,19 @@ function fixtureState() {
     out.push('   ' + g + (inspected[g] ? '  — already inspected (NOT selectable)' : '  — selectable in IQC'));
   });
 
+  // Rework queue — getReworkItems only lists OPEN / IN_PROGRESS rows.
+  var rwWs = ss.getSheetByName('REWORK_LOG');
+  var rwOpen = 0;
+  if (rwWs && rwWs.getLastRow() > 1) {
+    rwWs.getDataRange().getValues().slice(1).forEach(function (r) {
+      if (String(r[0] || '').indexOf(FIX_PREFIX_) === 0 &&
+          ['OPEN', 'IN_PROGRESS'].indexOf(String(r[10] || '').toUpperCase()) >= 0) rwOpen++;
+    });
+  }
+  out.push('');
+  out.push('open fixture rework items: ' + rwOpen +
+           (rwOpen ? '  — Rework form has something to complete' : '  — Rework will SKIP'));
+
   // The 30-row visibility window is the reason fixtures silently vanish.
   if (grnWs && grnWs.getLastRow() > 1) {
     var all = grnWs.getRange(2, 1, grnWs.getLastRow() - 1, 1).getValues();
@@ -132,6 +145,8 @@ function seedFixtures(apply) {
   out.push('');
 
   if (!apply) {
+    _seedReworkFixture_(ss, out, false);
+    out.push('');
     out.push('DRY RUN — nothing written. Re-run with &confirm=YES.');
     return out.join('\n');
   }
@@ -190,10 +205,58 @@ function seedFixtures(apply) {
   grnWs.getRange(lr, 2).setNumberFormat('dd-MMM-yyyy');
   grnWs.getRange(lr, 18).setNumberFormat('dd-MMM-yyyy HH:mm');
 
+  out.push('');
+  _seedReworkFixture_(ss, out, true);
+
+  out.push('');
   out.push('SEEDED.');
   out.push('  GRN: ' + grnNo + '  material: ' + FIX_MATERIAL_ + '  category: ' + FIX_CATEGORY_);
   out.push('  This GRN is now IQC-selectable (no IQC_LOG row references it).');
   return out.join('\n');
+}
+
+// ── Rework queue fixture ─────────────────────────────────────────────────────
+// getReworkItems (Rework.js:39) lists REWORK_LOG rows whose Status (col 10) is
+// OPEN or IN_PROGRESS. With an empty queue the form renders but has nothing to
+// complete, so its save path is untestable — reported as SKIPPED, indefinitely.
+// Schema: REWORK_LOG_HEADERS (Initialize.js:271), 19 wide.
+function _seedReworkFixture_(ss, out, apply) {
+  var ws = ss.getSheetByName('REWORK_LOG');
+  if (!ws) { out.push('REWORK_LOG: MISSING — skipped'); return; }
+
+  // Already have an open fixture row? Then this is a no-op (idempotent).
+  var existing = 0;
+  if (ws.getLastRow() > 1) {
+    var d = ws.getDataRange().getValues();
+    for (var i = 1; i < d.length; i++) {
+      if (String(d[i][0] || '').indexOf(FIX_PREFIX_) === 0 &&
+          ['OPEN', 'IN_PROGRESS'].indexOf(String(d[i][10] || '').toUpperCase()) >= 0) existing++;
+    }
+  }
+  if (existing) { out.push('REWORK_LOG: ' + existing + ' open fixture row(s) — leave'); return; }
+  out.push('REWORK_LOG: CREATE 1 open rework item');
+  if (!apply) return;
+
+  var now = new Date();
+  var r = new Array(REWORK_LOG_HEADERS.length).fill('');
+  r[0]  = _testNextSeq_(FIX_PREFIX_ + '/RW');
+  r[1]  = now;
+  r[2]  = 'E2E-FIXTURE';
+  r[3]  = '';
+  r[4]  = FIX_MATERIAL_;
+  r[5]  = 'E2E Fixture Carton (do not use)';
+  r[6]  = FIX_BATCH_;
+  r[7]  = 50;
+  r[8]  = 'NOS';
+  r[9]  = 'RM-STORE-A';
+  r[10] = 'OPEN';
+  r[17] = 'E2E fixture row — safe to archive (?diag=fixtureclear)';
+  // Material Type drives which ref field the form requires (Rework.js:126):
+  // 'RM' asks for a re-IQC ref, 'FG' for a re-OQC ref. RM matches the fixture
+  // material's category, so the form's own branch stays self-consistent.
+  r[18] = 'RM';
+  ws.appendRow(r);
+  ws.getRange(ws.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy');
 }
 
 // ── Clear ────────────────────────────────────────────────────────────────────
@@ -246,9 +309,13 @@ function clearFixtures(apply) {
     for (var i = targets.length - 1; i >= 0; i--) iqcWs.deleteRow(targets[i].row);
   }
   var moved = archiveTestRows('GRN_LOG', FIX_PREFIX_, 0);
+  // Rework rows are keyed by their own docNo (col A), so archiveTestRows handles
+  // them directly. Without this, re-seeding would pile up open queue items.
+  var movedRw = archiveTestRows('REWORK_LOG', FIX_PREFIX_, 0);
 
   out.push('CLEARED.');
-  out.push('  IQC_LOG rows removed:  ' + targets.length);
-  out.push('  GRN_LOG rows archived: ' + ((moved && moved.moved) || 0));
+  out.push('  IQC_LOG rows removed:     ' + targets.length);
+  out.push('  GRN_LOG rows archived:    ' + ((moved && moved.moved) || 0));
+  out.push('  REWORK_LOG rows archived: ' + ((movedRw && movedRw.moved) || 0));
   return out.join('\n');
 }

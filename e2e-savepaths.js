@@ -392,32 +392,55 @@ async function runPOP(s) {
   if (!supPicked) return { skip: 'supplierCode select empty — no live supplier data' };
   await s.page.waitForTimeout(500);
 
-  // fill first line: pick a material, qty=1
+  // Fill the first line. collectLines (POP_F.html:378-390) reads THREE inputs per
+  // card — qty-, price- and pdate- — and canonicalizePO_ rejects the line unless
+  // BOTH qtyOrdered and unitPrice are > 0. The old fill set only qty-, so
+  // previewPO returned {ok:false, errors:['Line 1: qty must be > 0.']}, doPreview
+  // never opened the modal, and the probe reported this as "needs live master/GST
+  // data". It was a missing field in the TEST, not missing data in the product —
+  // verified by calling previewPO directly with qtyOrdered+unitPrice: ok=true.
   const lineOk = await fr.evaluate(() => {
     const card = document.getElementById('linesBody') && document.getElementById('linesBody').querySelector('.line-card');
     if (!card) return false;
     const sel = card.querySelector('select');
     if (sel) { const opt = Array.from(sel.options).find(o => o.value); if (opt) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); } }
     const id = card.id.replace('line-', '');
-    const q = document.getElementById('qty-' + id);
-    if (q) { q.value = '1'; q.dispatchEvent(new Event('change', { bubbles: true })); }
+    const setNum = (prefix, v) => {
+      const e = document.getElementById(prefix + id);
+      if (!e) return false;
+      e.value = String(v);
+      e.dispatchEvent(new Event('input', { bubbles: true }));
+      e.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    };
+    setNum('qty-', 1);
+    setNum('price-', 10);
+    try { if (typeof recomputeTotals === 'function') recomputeTotals(); } catch (e) {}
     return !!(sel && sel.value);
   });
   if (!lineOk) return { skip: 'no material options in PO line — no live master data' };
-  await s.page.waitForTimeout(500);
+  await s.page.waitForTimeout(800);
 
   // doPreview() calls server previewPO — that's a read, not a write, so it's fine to let
   // through; we only intercept the actual savePO/updateDraftPO write before confirmSubmit.
+  // Run doPreview against the REAL google.script.run. The shim must NOT be armed
+  // yet: it re-declares withSuccessHandler, so pre-arming it swallowed the
+  // previewPO callback that opens the modal (POP_F.html:459) — the probe then
+  // blamed "previewPO likely needs live master/GST data". Verified otherwise by
+  // calling previewPO directly, which returns a full preview with a poNo.
+  // The shim is installed AFTER the modal is open, before confirmSubmit.
   const previewOk = await fr.evaluate(() => new Promise(resolve => {
     try {
-      const realRun = google.script.run;
-      const origPreview = realRun.previewPO ? realRun.previewPO.bind(realRun) : null;
-      window.__installShim('savePO'); // pre-arm so confirmSubmit's later save is caught too
       doPreview();
-      setTimeout(() => resolve(!!(document.getElementById('previewModal') && !document.getElementById('previewModal').classList.contains('hidden'))), 3000);
+      const t0 = Date.now();
+      const poll = setInterval(() => {
+        const m = document.getElementById('previewModal');
+        const open = !!(m && !m.classList.contains('hidden'));
+        if (open || Date.now() - t0 > 12000) { clearInterval(poll); resolve(open); }
+      }, 400);
     } catch (e) { resolve(false); }
   }));
-  if (!previewOk) return { skip: 'preview step did not open confirm modal (previewPO likely needs live master/GST data)' };
+  if (!previewOk) return { skip: 'preview step did not open confirm modal' };
 
   const r = await fr.evaluate(() => {
     const shim = window.__installShim('savePO');
