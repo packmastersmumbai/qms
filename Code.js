@@ -391,6 +391,13 @@ function doGet(e) {
     } catch (erii) { iqi = 'ERROR: ' + erii.message; }
     return ContentService.createTextOutput(String(iqi)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
+  if (diag === 'vocabaudit') {
+    var vca;
+    try { vca = (typeof auditVocabularies === 'function') ? auditVocabularies() : 'auditVocabularies missing (is _VocabAudit.js pushed?)'; }
+    catch (ervc) { vca = 'ERROR: ' + ervc.message; }
+    return ContentService.createTextOutput(String(vca)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=mataudit   → READ-ONLY data-quality audit of MASTERS_Materials
   if (diag === 'mataudit') {
     var mta;
