@@ -489,6 +489,95 @@ async function runRework(s) {
   return finish(r, 'submitReworkCompletion');
 }
 
+// IPQC needs no fixture: its product list comes from live masters (the render
+// suite already shows setupProduct populated 38/39). What it needs is the real
+// two-stage entry — Start Check creates a SESSION, and only then does the
+// parameter matrix exist to fill. The old STATIC_SKIPS entry assumed this was
+// un-drivable; it is simply multi-step.
+async function runIPQC(s) {
+  await nav(s.app, s.page, 'IPQC');
+  await s.page.waitForTimeout(11000);
+  const fr = await frameWith(s.page, 'setupProduct', 20000);
+  if (!fr) return { skip: 'form did not render (setupProduct not found)' };
+  await fr.evaluate(installHelpers);
+
+  const started = await fr.evaluate(() => {
+    const p = window.__pickFirst('setupProduct');
+    if (!p) return { ok: false, why: 'setupProduct empty — no live product data' };
+    window.__set('setupBatch', 'E2E-FIX-BATCH');
+    window.__set('setupInspector', 'e2e-probe');
+    const b = document.getElementById('btnStartCheck');
+    if (!b) return { ok: false, why: 'btnStartCheck missing' };
+    if (b.disabled) return { ok: false, why: 'btnStartCheck disabled' };
+    b.click();
+    return { ok: true, product: p };
+  });
+  if (!started.ok) return { skip: started.why };
+
+  // Session creation is a server round-trip; poll for the matrix rather than
+  // guessing a delay.
+  let hasParams = false;
+  for (let i = 0; i < 20 && !hasParams; i++) {
+    await s.page.waitForTimeout(800);
+    hasParams = await fr.evaluate(() =>
+      typeof PARAMS !== 'undefined' && PARAMS && PARAMS.length > 0 &&
+      !!document.getElementById('badge_' + PARAMS[0].paramCode));
+  }
+  if (!hasParams) return { skip: 'Start Check did not produce a parameter matrix (session not created)' };
+
+  // Fill every parameter: visual params via their PASS button, measured ones by
+  // typing the std value (or 1) into val_<code> and firing the real handler.
+  await fr.evaluate(() => {
+    (PARAMS || []).forEach(function (p) {
+      const code = p.paramCode;
+      const vb = document.getElementById('vb_' + code + '_PASS');
+      if (vb) { vb.click(); return; }
+      const inp = document.getElementById('val_' + code);
+      if (inp) {
+        const mid = (p.tolMin != null && p.tolMax != null && !isNaN(Number(p.tolMin)) && !isNaN(Number(p.tolMax)))
+          ? (Number(p.tolMin) + Number(p.tolMax)) / 2
+          : (Number(p.std) || 1);
+        inp.value = String(mid);
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        try { if (typeof updateMeasurement === 'function') updateMeasurement(code, p.tolMin, p.tolMax); } catch (e) {}
+      }
+    });
+  });
+  await s.page.waitForTimeout(1200);
+
+  const r = await fr.evaluate(() => {
+    const shim = window.__installShim('saveRound');
+    const btn = document.getElementById('btnSaveRound');
+    const btnExists = !!btn;
+    const beforeDisabled = btn ? btn.disabled : null;
+    const answerOperatorModal = () => {
+      const name = document.querySelector('.op-name-btn');
+      if (name) name.click();
+      const confirm = document.getElementById('opConfirmBtn');
+      if (confirm && !confirm.disabled) { confirm.click(); return true; }
+      return false;
+    };
+    if (btn && !btn.disabled) { try { saveRound(); } catch (e) {} }
+    return new Promise(resolve => setTimeout(() => {
+      answerOperatorModal();
+      setTimeout(() => {
+        const afterFirst = { disabled: btn ? btn.disabled : null,
+          html: btn ? (btn.innerHTML || '').replace(/<[^>]*>/g, '').trim().slice(0, 30) : '' };
+        if (btn && !btn.disabled) { try { saveRound(); } catch (e) {} }
+        setTimeout(async () => {
+          answerOperatorModal();
+          for (let i = 0; i < 20 && !shim.calls.length; i++) {
+            await new Promise(r2 => setTimeout(r2, 500));
+          }
+          resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured });
+        }, 600);
+      }, 1500);
+    }, 800));
+  });
+  return finish(r, 'saveRound');
+}
+
 // Shared "make sense of the result" step for every driver above.
 function finish(r, writeFn) {
   if (!r.btnExists) return { skip: 'save button not found in DOM' };
@@ -521,18 +610,18 @@ function finish(r, writeFn) {
 // CustomerReturn's existing-gatepass item picker). Reported honestly as SKIPPED.
 const STATIC_SKIPS = {
   OQC:            'requires live IPQC session pick + full AQL parameter grid (allParamsFilled) + disposition + FG location — no generic fill path without risking a false PASS',
-  IPQC:           'requires "Start Check" flow then a per-parameter measurement grid seeded from live tolerances — no generic fill path',
+
   Dispatch:       'requires FIFO lot selection UI per item (chosenPlan/skipped state) built from live stock — no generic fill path',
   CustomerReturn: 'requires picking an existing live Gatepass and ticking specific returned items — no generic fill path',
 };
 
-const RUNNERS = { GRN: runGRN, IQC: runIQC, Gatepass: runGatepass, PO: runPOP, Rework: runRework };
+const RUNNERS = { GRN: runGRN, IQC: runIQC, IPQC: runIPQC, Gatepass: runGatepass, PO: runPOP, Rework: runRework };
 
 (async () => {
   const b = await launch();
   const rows = [];
 
-  for (const name of ['GRN', 'IQC', 'Gatepass', 'PO', 'Rework']) {
+  for (const name of ['GRN', 'IQC', 'IPQC', 'Gatepass', 'PO', 'Rework']) {
     let s;
     try {
       s = await openApp(b);
