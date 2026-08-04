@@ -157,5 +157,58 @@ function auditVocabularies() {
   out.push('  Category values mapping to MORE THAN ONE InspCategory: ' + ambiguous);
   out.push('  (0 would mean col M is fully derivable from col D and could be dropped)');
 
+  // ── VERDICT ────────────────────────────────────────────────────────────────
+  // Thresholds, not zero-tolerance. Some disagreements are GENUINE data (a
+  // component whose BOM unit really differs from its master unit) and need a
+  // human, not a script — failing on those would train people to ignore the
+  // gate. What must never regress is the SPELLING drift this cleaned up.
+  out.push('');
+  out.push('── VERDICT ──');
+  var fails = [];
+
+  // Item 1: BOM UoM spelling. 13 genuine disagreements remained after
+  // ?diag=bomvocabfix; anything above that is new drift.
+  var UOM_BASELINE = 13;
+  if (uomMismatch.length > UOM_BASELINE) {
+    fails.push('BOM/master UoM disagreements ' + uomMismatch.length +
+               ' > baseline ' + UOM_BASELINE + ' — new spelling drift');
+  }
+
+  // Unresolvable codes are always a hard fail: the joins silently drop rows.
+  if (badFg.length)   fails.push(badFg.length + ' BOM FG codes do not resolve to a material');
+  if (badComp.length) fails.push(badComp.length + ' BOM component codes do not resolve to a material');
+
+  // Every BOM client must resolve to a customer, or the FG list for it is empty.
+  if (unmatched.length) {
+    fails.push(unmatched.length + ' BOM.Client values match neither a customer code nor name: ' +
+               unmatched.slice(0, 5).join(', '));
+  }
+
+  // Case-split vocabularies in the material master — the defect _MatDataFix
+  // closed. Catching a regression is the whole point of a standing audit.
+  var caseSplit = [];
+  [['Category', matCat], ['Unit', matUnit]].forEach(function (pair) {
+    var seenU = {};
+    Object.keys(pair[1]).forEach(function (k) {
+      if (k === '(blank)') return;
+      var u = k.toUpperCase();
+      if (seenU[u] && seenU[u] !== k) caseSplit.push(pair[0] + ': "' + seenU[u] + '" vs "' + k + '"');
+      seenU[u] = k;
+    });
+  });
+  if (caseSplit.length) fails.push('case-split values in MASTERS_Materials: ' + caseSplit.join(' | '));
+
+  if (fails.length) {
+    fails.forEach(function (f) { out.push('  FAIL  ' + f); });
+    out.push('');
+    out.push('VOCAB AUDIT: FAIL');
+  } else {
+    out.push('  UoM disagreements: ' + uomMismatch.length + ' (baseline ' + UOM_BASELINE + ')');
+    out.push('  unresolved codes:  0 FG, 0 component');
+    out.push('  unmatched clients: 0');
+    out.push('  case-split values: 0');
+    out.push('');
+    out.push('VOCAB AUDIT: PASS');
+  }
   return out.join('\n');
 }

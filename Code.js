@@ -391,6 +391,16 @@ function doGet(e) {
     } catch (erii) { iqi = 'ERROR: ' + erii.message; }
     return ContentService.createTextOutput(String(iqi)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=bomvocabfix[&confirm=YES] → normalise BOM Comp UoM to master vocabulary
+  if (diag === 'bomvocabfix') {
+    var bvf;
+    try {
+      bvf = (typeof fixBomVocabulary === 'function')
+        ? fixBomVocabulary(String(e.parameter.confirm || '') === 'YES')
+        : 'fixBomVocabulary missing (is _BomVocabFix.js pushed?)';
+    } catch (erbv) { bvf = 'ERROR: ' + erbv.message; }
+    return ContentService.createTextOutput(String(bvf)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
   if (diag === 'vocabaudit') {
     var vca;

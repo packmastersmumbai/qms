@@ -601,6 +601,12 @@ function getBomRows_() {
   return data.filter(function(r){ return r[1] && String(r[1]).trim(); }).map(function(r){
     return {
       client:    String(r[0] || '').trim(),
+      // Resolved from MASTERS_Customers by name, so callers can filter by the
+      // stable CODE instead of a display name. Deliberately NOT a new BOM column:
+      // adding one would change the sheet's shape for a value that is already
+      // derivable, and this codebase's worst breaks came from widening sheets
+      // that positional readers index into.
+      clientCode: _bomClientCodeFor_(String(r[0] || '').trim()),
       fgCode:    String(r[1] || '').trim(),
       fgDesc:    String(r[2] || '').trim(),
       baseQty:   Number(r[3]) || 0,
@@ -610,7 +616,14 @@ function getBomRows_() {
       qtyStpo:   Number(r[7]) || 0,
       compUom:   String(r[8] || '').trim(),
       consum:    Number(r[9]) || 0,
-      type:      String(r[10] || '').trim(),
+      // DERIVED, not read from BOM col K. That column held 23 spellings for the
+      // ~20 values MASTERS_Materials.Category already carries, case-split three
+      // ways (LABEL/Labels/label, Bulk/BULK, Tape/TAPE). Every BOM component
+      // resolves to a material (?diag=vocabaudit: 0 unresolved), so the master
+      // is the single source and col K was a duplicate that could only drift.
+      // Falls back to the stored value if a code somehow does not resolve, so
+      // this can never show LESS than before.
+      type:      _bomTypeFor_(String(r[5] || '').trim()) || String(r[10] || '').trim(),
       masterP:   Number(r[11]) || 0
     };
   });
@@ -626,9 +639,22 @@ function getClientList() {
 
 function getFGListByClient(client) {
   var key = String(client || '').trim();
+  var keyU = key.toUpperCase();
   var seen = {}, out = [];
   getBomRows_().forEach(function(r){
-    if (key && r.client !== key) return;
+    // Match on CODE or NAME, case-insensitively. BOM.Client stores a display
+    // NAME and MASTERS_Customers is keyed by CODE, so the old exact-equality
+    // check (r.client !== key) silently returned an EMPTY FG list the moment a
+    // client name differed in case or was edited — no error, just no products.
+    // The master already says "DORF KETAL" where BOM says "Dorf Ketal", so this
+    // only worked because the caller happened to pass BOM's spelling back.
+    // CustomerReturn.js:48 already lowercases for the same reason; that was one
+    // site patched, not the cause.
+    if (key) {
+      var matches = (String(r.client || '').trim().toUpperCase() === keyU) ||
+                    (String(r.clientCode || '').trim().toUpperCase() === keyU);
+      if (!matches) return;
+    }
     if (!seen[r.fgCode]) {
       seen[r.fgCode] = true;
       out.push({ code: r.fgCode, desc: r.fgDesc, uom: r.fgUom, baseQty: r.baseQty });

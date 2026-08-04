@@ -42,6 +42,66 @@ function prodStockSummary_() {
   return c.stockSummary;
 }
 
+// MASTERS_Materials: code → Category. Backs the DERIVED `type` in getBomRows_,
+// which replaced BOM col K (23 spellings for the ~20 values this column already
+// holds). Memoised for the same reason everything else here is: getBomRows_ maps
+// ~195 rows, and a per-row sheet read is exactly the N-full-scans shape that
+// made the issue-plan slow (see the module header).
+function prodMatCategories_() {
+  var c = prodCache_();
+  if (c.matCategories) return c.matCategories;
+  var map = {};
+  try {
+    var ws = getSpreadsheet().getSheetByName('MASTERS_Materials');
+    if (ws && ws.getLastRow() > 1) {
+      ws.getDataRange().getValues().slice(1).forEach(function (r) {
+        var code = String(r[MAT_COL.CODE] || '').trim();
+        if (code) map[code] = String(r[MAT_COL.CATEGORY] || '').trim();
+      });
+    }
+  } catch (e) { Logger.log('prodMatCategories_: ' + e.message); }
+  c.matCategories = map;
+  return map;
+}
+
+// Component code → its material Category. Empty string when unresolved, so the
+// caller can fall back to whatever BOM col K still holds.
+function _bomTypeFor_(compCode) {
+  if (!compCode) return '';
+  return prodMatCategories_()[compCode] || '';
+}
+
+// MASTERS_Customers: UPPERCASED name → code, and code → code. Backs the
+// clientCode resolved in getBomRows_ so production can filter FG by a stable
+// code instead of a display name. Same memo rationale as prodMatCategories_.
+function prodCustomerCodes_() {
+  var c = prodCache_();
+  if (c.custCodes) return c.custCodes;
+  var map = {};
+  try {
+    var ws = getSpreadsheet().getSheetByName('MASTERS_Customers');
+    if (ws && ws.getLastRow() > 1) {
+      ws.getDataRange().getValues().slice(1).forEach(function (r) {
+        var code = String(r[0] || '').trim();
+        var name = String(r[1] || '').trim();
+        if (!code) return;
+        map[code.toUpperCase()] = code;
+        if (name) map[name.toUpperCase()] = code;
+      });
+    }
+  } catch (e) { Logger.log('prodCustomerCodes_: ' + e.message); }
+  c.custCodes = map;
+  return map;
+}
+
+// BOM.Client (a display name) → customer CODE. '' when unmatched, so a BOM row
+// referencing a client absent from the master degrades to name-only matching
+// rather than vanishing from the FG list.
+function _bomClientCodeFor_(clientName) {
+  if (!clientName) return '';
+  return prodCustomerCodes_()[clientName.toUpperCase()] || '';
+}
+
 // LOCATIONS: id → type (upper). One read; used to exclude quarantine/scrap/sample.
 function prodLocTypes_() {
   var c = prodCache_();
