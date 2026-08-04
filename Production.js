@@ -651,8 +651,19 @@ function getFGListByClient(client) {
     // CustomerReturn.js:48 already lowercases for the same reason; that was one
     // site patched, not the cause.
     if (key) {
-      var matches = (String(r.client || '').trim().toUpperCase() === keyU) ||
-                    (String(r.clientCode || '').trim().toUpperCase() === keyU);
+      // Resolve the CALLER's key to a customer code too, not just the row's.
+      // BOM col A now stores codes (?diag=bomsheetfix), so a caller passing the
+      // display name — an older saved job, a bookmark, PROD_JOBS col C which
+      // Production.js:852 stamped with the name — would match nothing. Measured:
+      // after the sheet fix, "Dorf Ketal" returned 0 FG while "DK" returned 18.
+      // Normalising BOTH sides makes the lookup accept either spelling in
+      // either direction.
+      var keyCode = (typeof _bomClientCodeFor_ === 'function')
+        ? String(_bomClientCodeFor_(key) || '').toUpperCase() : '';
+      var rowName = String(r.client || '').trim().toUpperCase();
+      var rowCode = String(r.clientCode || '').trim().toUpperCase();
+      var matches = rowName === keyU || rowCode === keyU ||
+                    (keyCode && (rowCode === keyCode || rowName === keyCode));
       if (!matches) return;
     }
     if (!seen[r.fgCode]) {

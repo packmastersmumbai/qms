@@ -415,6 +415,20 @@ function doGet(e) {
     } catch (ercs) { cs = 'ERROR: ' + ercs.message; }
     return ContentService.createTextOutput(String(cs)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'fguom') {
+    var fgu; try { fgu = fgUomProbe(); } catch(er){ fgu='ERR '+er.message; }
+    return ContentService.createTextOutput(String(fgu)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=bomsheetfix[&confirm=YES] → write BOM col K/col A from the masters
+  if (diag === 'bomsheetfix') {
+    var bsf;
+    try {
+      bsf = (typeof fixBomSheet === 'function')
+        ? fixBomSheet(String(e.parameter.confirm || '') === 'YES')
+        : 'fixBomSheet missing (is _BomSheetFix.js pushed?)';
+    } catch (erbs) { bsf = 'ERROR: ' + erbs.message; }
+    return ContentService.createTextOutput(String(bsf)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
   if (diag === 'vocabaudit') {
     var vca;
