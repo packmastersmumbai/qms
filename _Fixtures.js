@@ -138,14 +138,37 @@ function seedFixtures(apply) {
                                               : 'SET inspectionCategory ' + (curCat || '(blank)') + ' -> ' + FIX_CATEGORY_ });
   }
 
-  var grnNo = _testNextSeq_(FIX_PREFIX_ + '/GRN');
-  plan.push({ what: 'GRN ' + grnNo, act: 'CREATE — ' + FIX_QTY_ + ' units, appended (newest)' });
+  // Reuse an existing SELECTABLE fixture GRN instead of minting another. Without
+  // this, every seed appended one more and they accumulated (3 after three runs)
+  // — each consuming a slot in the 30-row getRecentGRNs window that live
+  // receipts also compete for. Only mint when none is selectable.
+  var grnNo = '', reused = false;
+  var iqcWs0 = ss.getSheetByName('IQC_LOG');
+  var inspected0 = {};
+  if (iqcWs0 && iqcWs0.getLastRow() > 1) {
+    iqcWs0.getRange(2, 3, iqcWs0.getLastRow() - 1, 1).getValues().forEach(function (r) {
+      if (r[0]) inspected0[String(r[0]).trim()] = true;
+    });
+  }
+  if (grnWs.getLastRow() > 1) {
+    var gAll = grnWs.getRange(2, 1, grnWs.getLastRow() - 1, 1).getValues();
+    for (var gi = gAll.length - 1; gi >= 0; gi--) {
+      var gv = String(gAll[gi][0] || '').trim();
+      if (gv.indexOf(FIX_PREFIX_) === 0 && !inspected0[gv]) { grnNo = gv; reused = true; break; }
+    }
+  }
+  if (!grnNo) grnNo = _testNextSeq_(FIX_PREFIX_ + '/GRN');
+  plan.push({ what: 'GRN ' + grnNo,
+              act: reused ? 'exists and is IQC-selectable — reuse'
+                          : 'CREATE — ' + FIX_QTY_ + ' units, appended (newest)' });
 
   plan.forEach(function (p) { out.push('  ' + p.what + ': ' + p.act); });
   out.push('');
 
   if (!apply) {
     _seedReworkFixture_(ss, out, false);
+    _seedFgLotFixture_(ss, out, false);
+    _seedOutboundGatepass_(ss, out, false);
     out.push('');
     out.push('DRY RUN — nothing written. Re-run with &confirm=YES.');
     return out.join('\n');
@@ -183,7 +206,18 @@ function seedFixtures(apply) {
     matWs.getRange(matRow, MAT_COL.INSP_CATEGORY + 1).setValue(FIX_CATEGORY_);
   }
 
-  // GRN — appended so it lands inside the last-30 window.
+  // GRN — appended so it lands inside the last-30 window. Skipped entirely when
+  // an existing fixture GRN is still selectable (see the reuse check above).
+  if (reused) {
+    out.push('');
+    _seedReworkFixture_(ss, out, true);
+    _seedFgLotFixture_(ss, out, true);
+    _seedOutboundGatepass_(ss, out, true);
+    out.push('');
+    out.push('SEEDED (GRN reused).');
+    out.push('  GRN: ' + grnNo + '  material: ' + FIX_MATERIAL_ + '  category: ' + FIX_CATEGORY_);
+    return out.join('\n');
+  }
   var now = new Date();
   var g = new Array(GRN_HEADERS.length).fill('');
   g[0]  = grnNo;
@@ -207,6 +241,8 @@ function seedFixtures(apply) {
 
   out.push('');
   _seedReworkFixture_(ss, out, true);
+  _seedFgLotFixture_(ss, out, true);
+  _seedOutboundGatepass_(ss, out, true);
 
   out.push('');
   out.push('SEEDED.');
@@ -256,6 +292,91 @@ function _seedReworkFixture_(ss, out, apply) {
   // material's category, so the form's own branch stays self-consistent.
   r[18] = 'RM';
   ws.appendRow(r);
+  ws.getRange(ws.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy');
+}
+
+// ── FG dispatch lot fixture ──────────────────────────────────────────────────
+// Dispatch's FIFO picker builds chosenPlan from a server plan (Dispatch_F.html:525)
+// that reads AVAILABLE rows out of FG_DISPATCH_LOTS. With no available lot the
+// picker stays empty and the save path is unreachable.
+//
+// Delegates to createTestFGLot (_TestHelpers.js:191) rather than re-implementing
+// the 19-column append — that helper already writes status AVAILABLE and the
+// qtyReleased/qtyDispatched/qtyAvailable triple correctly.
+function _seedFgLotFixture_(ss, out, apply) {
+  var ws = ss.getSheetByName('FG_DISPATCH_LOTS');
+  if (!ws) { out.push('FG_DISPATCH_LOTS: MISSING — skipped'); return; }
+
+  var avail = 0;
+  if (ws.getLastRow() > 1) {
+    var d = ws.getDataRange().getValues();
+    for (var i = 1; i < d.length; i++) {
+      // col 14 (0-based) = Status, per the sheet-schema quick ref.
+      if (String(d[i][0] || '').indexOf('TEST-FGL-') === 0 &&
+          String(d[i][14] || '').toUpperCase() === 'AVAILABLE') avail++;
+    }
+  }
+  if (avail) { out.push('FG_DISPATCH_LOTS: ' + avail + ' AVAILABLE test lot(s) — leave'); return; }
+  out.push('FG_DISPATCH_LOTS: CREATE 1 AVAILABLE lot');
+  if (!apply) return;
+
+  var r = (typeof createTestFGLot === 'function')
+    ? createTestFGLot({ qtyReleased: 500, batch: FIX_BATCH_ })
+    : { success: false, error: 'createTestFGLot missing' };
+  out.push('  ' + (r.success ? ('created ' + r.lotId) : ('FAILED: ' + r.error)));
+}
+
+// ── Outbound gatepass fixture (for CustomerReturn) ───────────────────────────
+// getReturnableGatepasses (CustomerReturn.js:65-70) keeps only rows whose TYPE
+// contains 'OUT' or 'DISPATCH', then filters by PARTY against the chosen
+// customer. So the return form needs a real outbound gatepass addressed to a
+// customer that exists in the customer dropdown — otherwise the cascade dead-ends
+// at "no gatepasses for this customer".
+//
+// PARTY must match a REAL customer, not the fixture supplier: the form filters by
+// the customer picked from MASTERS_Customers, so an invented party name would
+// never be selectable.
+function _seedOutboundGatepass_(ss, out, apply) {
+  var ws = ss.getSheetByName('GATEPASS_LOG');
+  if (!ws) { out.push('GATEPASS_LOG: MISSING — skipped'); return; }
+
+  var existing = 0;
+  if (ws.getLastRow() > 1) {
+    var d = ws.getDataRange().getValues();
+    for (var i = 1; i < d.length; i++) {
+      if (String(d[i][0] || '').indexOf(FIX_PREFIX_) === 0) existing++;
+    }
+  }
+  if (existing) { out.push('GATEPASS_LOG: ' + existing + ' fixture gatepass(es) — leave'); return; }
+
+  // Borrow the first real customer so the form's own dropdown can select it.
+  var party = '';
+  try {
+    var cw = ss.getSheetByName('MASTERS_Customers');
+    if (cw && cw.getLastRow() > 1) party = String(cw.getRange(2, 2).getValue() || '').trim();
+  } catch (e) {}
+  if (!party) { out.push('GATEPASS_LOG: no customer in MASTERS_Customers — skipped'); return; }
+
+  out.push('GATEPASS_LOG: CREATE 1 outbound gatepass for "' + party + '"');
+  if (!apply) return;
+
+  var now = new Date();
+  var g = new Array(GATEPASS_HEADERS.length).fill('');
+  g[0]  = _testNextSeq_(FIX_PREFIX_ + '/GP');
+  g[1]  = now;
+  g[2]  = 'FG OUT';               // must contain OUT / DISPATCH
+  g[3]  = '';                      // OQC_REF — optional; batch resolves via OQC_LOG
+  g[4]  = party;
+  g[5]  = FIX_MATERIAL_;
+  g[6]  = 'E2E Fixture Carton (do not use)';
+  g[7]  = 25;
+  g[8]  = 'NOS';
+  g[9]  = 'MH00FIX0000';
+  g[10] = 'E2E FIXTURE DRIVER';
+  g[12] = 'e2e-fixture';
+  g[14] = 'E2E fixture row — safe to archive (?diag=fixtureclear)';
+  g[15] = 'APPROVED';
+  ws.appendRow(g);
   ws.getRange(ws.getLastRow(), 2).setNumberFormat('dd-MMM-yyyy');
 }
 
@@ -312,10 +433,14 @@ function clearFixtures(apply) {
   // Rework rows are keyed by their own docNo (col A), so archiveTestRows handles
   // them directly. Without this, re-seeding would pile up open queue items.
   var movedRw = archiveTestRows('REWORK_LOG', FIX_PREFIX_, 0);
+  var movedFg = archiveTestRows('FG_DISPATCH_LOTS', 'TEST-FGL-', 0);
+  var movedGp = archiveTestRows('GATEPASS_LOG', FIX_PREFIX_, 0);
 
   out.push('CLEARED.');
   out.push('  IQC_LOG rows removed:     ' + targets.length);
   out.push('  GRN_LOG rows archived:    ' + ((moved && moved.moved) || 0));
   out.push('  REWORK_LOG rows archived: ' + ((movedRw && movedRw.moved) || 0));
+  out.push('  FG lot rows archived:     ' + ((movedFg && movedFg.moved) || 0));
+  out.push('  GATEPASS rows archived:   ' + ((movedGp && movedGp.moved) || 0));
   return out.join('\n');
 }

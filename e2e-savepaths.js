@@ -665,6 +665,188 @@ async function runOQC(s) {
   return finish(r, 'saveOQC');
 }
 
+// Dispatch DOES need seeded state — an AVAILABLE FG_DISPATCH_LOTS row, or the
+// FIFO planner returns an empty plan and btnConfirm never enables
+// (?diag=fixtureseed creates one via createTestFGLot).
+//
+// Control ids were read off the LIVE form, not guessed from source: the plan
+// trigger is iBtnPlan-<idx> and the save is btnConfirm ("Save Dispatch +
+// Gatepass"). Write fn: saveDispatchWithFIFO.
+async function runDispatch(s) {
+  await nav(s.app, s.page, 'Dispatch');
+  await s.page.waitForTimeout(11000);
+  const fr = await frameWith(s.page, 'iProd-0', 20000);
+  if (!fr) return { skip: 'form did not render (iProd-0 not found)' };
+  await fr.evaluate(installHelpers);
+
+  const setup = await fr.evaluate(() => {
+    const cust = window.__pickFirst('fCustomer');
+    const prod = window.__pickFirst('iProd-0');
+    if (!prod) return { ok: false, why: 'iProd-0 empty — no FG products' };
+    window.__set('iQty-0', 5);
+    try { if (typeof onItemQtyInput === 'function') onItemQtyInput(0); } catch (e) {}
+    window.__set('fVehicle', 'MH00FIX0000');
+    window.__set('fDriver', 'E2E FIXTURE DRIVER');
+    window.__pickFirst('fAuthorizedBy');
+    return { ok: true, cust: cust, prod: prod };
+  });
+  if (!setup.ok) return { skip: setup.why };
+  await s.page.waitForTimeout(1500);
+
+  // Plan FIFO — a server round-trip that fills ITEM_STATE[0].chosenPlan.
+  await fr.evaluate(() => {
+    const b = document.getElementById('iBtnPlan-0');
+    if (b && !b.disabled) b.click();
+  });
+  let planned = false;
+  for (let i = 0; i < 20 && !planned; i++) {
+    await s.page.waitForTimeout(800);
+    planned = await fr.evaluate(() =>
+      typeof ITEM_STATE !== 'undefined' && ITEM_STATE[0] &&
+      ITEM_STATE[0].chosenPlan && ITEM_STATE[0].chosenPlan.length > 0);
+  }
+  if (!planned) {
+    return { skip: 'FIFO plan empty — no AVAILABLE FG lot for this product (run ?diag=fixtureseed&confirm=YES)' };
+  }
+
+  await fr.evaluate(() => { try { if (typeof refreshSaveState === 'function') refreshSaveState(); } catch (e) {} });
+  await s.page.waitForTimeout(800);
+  const ready = await fr.evaluate(() => {
+    const b = document.getElementById('btnConfirm');
+    return b ? !b.disabled : false;
+  });
+  if (!ready) return { skip: 'btnConfirm stayed disabled after FIFO plan' };
+
+  const r = await fr.evaluate(() => {
+    const shim = window.__installShim('saveDispatchWithFIFO');
+    const btn = document.getElementById('btnConfirm');
+    const btnExists = !!btn;
+    const beforeDisabled = btn ? btn.disabled : null;
+    const answerOperatorModal = () => {
+      const name = document.querySelector('.op-name-btn');
+      if (name) name.click();
+      const confirm = document.getElementById('opConfirmBtn');
+      if (confirm && !confirm.disabled) { confirm.click(); return true; }
+      return false;
+    };
+    if (btn && !btn.disabled) btn.click();
+    return new Promise(resolve => setTimeout(() => {
+      answerOperatorModal();
+      setTimeout(() => {
+        const afterFirst = { disabled: btn ? btn.disabled : null,
+          html: btn ? (btn.innerHTML || '').replace(/<[^>]*>/g, '').trim().slice(0, 30) : '' };
+        if (btn && !btn.disabled) btn.click();
+        setTimeout(async () => {
+          answerOperatorModal();
+          for (let i = 0; i < 20 && !shim.calls.length; i++) {
+            await new Promise(r2 => setTimeout(r2, 500));
+          }
+          resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured });
+        }, 600);
+      }, 1500);
+    }, 800));
+  });
+  return finish(r, 'saveDispatchWithFIFO');
+}
+
+// CustomerReturn needs an outbound gatepass for the SELECTED customer
+// (getReturnableGatepasses, CustomerReturn.js:65-70 — TYPE must contain OUT or
+// DISPATCH, PARTY must match the customer NAME). Live data already satisfies
+// this for at least one customer, so rather than seed, the driver WALKS the
+// customer list until the cascade yields gatepasses. That is also honest about
+// what the form needs: picking the first customer blindly is exactly why this
+// was reported as un-drivable.
+async function runCustomerReturn(s) {
+  await nav(s.app, s.page, 'CustomerReturn');
+  await s.page.waitForTimeout(11000);
+  const fr = await frameWith(s.page, 'fCustomer', 20000);
+  if (!fr) return { skip: 'form did not render (fCustomer not found)' };
+  await fr.evaluate(installHelpers);
+
+  const custs = await fr.evaluate(() => window.__optsOf('fCustomer'));
+  if (!custs.length) return { skip: 'fCustomer empty — no live customers' };
+
+  // Walk customers until one has a returnable gatepass.
+  let chosen = null;
+  for (const c of custs) {
+    await fr.evaluate((v) => {
+      const sel = document.getElementById('fCustomer');
+      sel.value = v;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }, c);
+    let n = 0;
+    for (let i = 0; i < 8 && !n; i++) {
+      await s.page.waitForTimeout(700);
+      n = await fr.evaluate(() => {
+        const g = document.getElementById('fGatepass');
+        return g ? [...g.options].map(o => o.value).filter(Boolean).length : 0;
+      });
+    }
+    if (n) { chosen = { cust: c, gatepasses: n }; break; }
+  }
+  if (!chosen) return { skip: 'no customer has a returnable outbound gatepass' };
+
+  // Pick the gatepass, then tick its items.
+  await fr.evaluate(() => window.__pickFirst('fGatepass'));
+  await s.page.waitForTimeout(2500);
+
+  const ticked = await fr.evaluate(() => {
+    const boxes = [...document.querySelectorAll('input[type="checkbox"]')]
+      .filter(b => !b.disabled);
+    boxes.slice(0, 1).forEach(b => { if (!b.checked) b.click(); });
+    // Returned qty inputs appear once an item is ticked.
+    const qtys = [...document.querySelectorAll('input[type="number"]')].filter(i => !i.disabled);
+    qtys.slice(0, 1).forEach(i => {
+      i.value = '1';
+      i.dispatchEvent(new Event('input', { bubbles: true }));
+      i.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    window.__pickFirst('fReceivedBy');
+    return { boxes: boxes.length, qtys: qtys.length };
+  });
+  await s.page.waitForTimeout(1200);
+
+  const btnId = await fr.evaluate(() => {
+    const cands = [...document.querySelectorAll('button')]
+      .filter(b => /save|submit|record/i.test(b.textContent || ''));
+    return cands.length ? (cands[0].id || '(no-id)') : null;
+  });
+  if (!btnId) return { skip: 'no save button found after item selection (ticked ' + JSON.stringify(ticked) + ')' };
+
+  const r = await fr.evaluate((bid) => {
+    const shim = window.__installShim('saveCustomerReturnMulti');
+    const btn = bid === '(no-id)'
+      ? [...document.querySelectorAll('button')].filter(b => /save|submit|record/i.test(b.textContent || ''))[0]
+      : document.getElementById(bid);
+    const btnExists = !!btn;
+    const beforeDisabled = btn ? btn.disabled : null;
+    const answerOperatorModal = () => {
+      const name = document.querySelector('.op-name-btn');
+      if (name) name.click();
+      const confirm = document.getElementById('opConfirmBtn');
+      if (confirm && !confirm.disabled) { confirm.click(); return true; }
+      return false;
+    };
+    if (btn && !btn.disabled) btn.click();
+    return new Promise(resolve => setTimeout(() => {
+      answerOperatorModal();
+      setTimeout(() => {
+        const afterFirst = { disabled: btn ? btn.disabled : null,
+          html: btn ? (btn.innerHTML || '').replace(/<[^>]*>/g, '').trim().slice(0, 30) : '' };
+        if (btn && !btn.disabled) btn.click();
+        setTimeout(async () => {
+          answerOperatorModal();
+          for (let i = 0; i < 20 && !shim.calls.length; i++) {
+            await new Promise(r2 => setTimeout(r2, 500));
+          }
+          resolve({ btnExists, beforeDisabled, afterFirst, calls: shim.calls, captured: shim.captured });
+        }, 600);
+      }, 1500);
+    }, 800));
+  }, btnId);
+  return finish(r, 'saveCustomerReturnMulti');
+}
+
 // Shared "make sense of the result" step for every driver above.
 function finish(r, writeFn) {
   if (!r.btnExists) return { skip: 'save button not found in DOM' };
@@ -695,19 +877,16 @@ function finish(r, writeFn) {
 // generic script cannot responsibly fabricate: FIFO lot pick lists, IPQC's
 // start-check + per-parameter grid, OQC's disposition+AQL+IPQC-session gate,
 // CustomerReturn's existing-gatepass item picker). Reported honestly as SKIPPED.
-const STATIC_SKIPS = {
+const STATIC_SKIPS = {};   // empty: every form now has a real driver
 
-  Dispatch:       'requires FIFO lot selection UI per item (chosenPlan/skipped state) built from live stock — no generic fill path',
-  CustomerReturn: 'requires picking an existing live Gatepass and ticking specific returned items — no generic fill path',
-};
-
-const RUNNERS = { GRN: runGRN, IQC: runIQC, IPQC: runIPQC, OQC: runOQC, Gatepass: runGatepass, PO: runPOP, Rework: runRework };
+const RUNNERS = { GRN: runGRN, IQC: runIQC, IPQC: runIPQC, OQC: runOQC, Dispatch: runDispatch,
+                  Gatepass: runGatepass, CustomerReturn: runCustomerReturn, PO: runPOP, Rework: runRework };
 
 (async () => {
   const b = await launch();
   const rows = [];
 
-  for (const name of ['GRN', 'IQC', 'IPQC', 'OQC', 'Gatepass', 'PO', 'Rework']) {
+  for (const name of ['GRN', 'IQC', 'IPQC', 'OQC', 'Dispatch', 'Gatepass', 'CustomerReturn', 'PO', 'Rework']) {
     let s;
     try {
       s = await openApp(b);

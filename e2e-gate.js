@@ -20,11 +20,10 @@
 const { execFileSync, spawnSync } = require('child_process');
 const path = require('path');
 
-// Coverage floor. savepaths currently drives GRN + IQC + Gatepass; the other six
-// need their own fixtures (see _Fixtures.js). If coverage DROPS below this, the
-// gate fails even when every tested form passes — a shrinking denominator is
-// exactly how "3 -> 1 -> 2 tested" went unnoticed for a whole session.
-const MIN_TESTED = 7;
+// Coverage floor. savepaths drives ALL NINE write forms. If coverage DROPS
+// below this, the gate fails even when every tested form passes — a shrinking
+// denominator is exactly how "3 -> 1 -> 2 tested" went unnoticed for a session.
+const MIN_TESTED = 9;
 
 function run(file, args) {
   const r = spawnSync(process.execPath, [path.join(__dirname, file)].concat(args || []), {
