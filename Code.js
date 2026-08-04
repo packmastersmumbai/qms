@@ -429,6 +429,20 @@ function doGet(e) {
     } catch (erbs) { bsf = 'ERROR: ' + erbs.message; }
     return ContentService.createTextOutput(String(bsf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'pjuom') {
+    var pj; try { pj = pjUom(); } catch(er){ pj='ERR '+er.message; }
+    return ContentService.createTextOutput(String(pj)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=fguomfix[&confirm=YES] → FG unit -> NOS across BOM/PROD_JOBS/PROD_BOOKING_LOG
+  if (diag === 'fguomfix') {
+    var fuf;
+    try {
+      fuf = (typeof fixFgUom === 'function')
+        ? fixFgUom(String(e.parameter.confirm || '') === 'YES')
+        : 'fixFgUom missing (is _FgUomFix.js pushed?)';
+    } catch (erfu) { fuf = 'ERROR: ' + erfu.message; }
+    return ContentService.createTextOutput(String(fuf)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
   if (diag === 'vocabaudit') {
     var vca;
