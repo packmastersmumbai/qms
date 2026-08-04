@@ -198,15 +198,70 @@ function auditVocabularies() {
   });
   if (caseSplit.length) fails.push('case-split values in MASTERS_Materials: ' + caseSplit.join(' | '));
 
+  // Category -> InspCategory must stay 1:1. ?diag=catsplit made it a function
+  // (LABELS -> LABELS-BOTTLE/LABELS-FLAT, FG -> FG/FG-CARTON, TAPE ->
+  // TAPE-CARTON/TAPE-FLAT). If it goes ambiguous again, col M has stopped being
+  // derivable and anything relying on the derivation is silently wrong — the 2
+  // HANGER rows with a blank InspCategory are excluded, they are the known
+  // duplicate-item-code issue, not drift.
+  if (ambiguous > 0) {
+    fails.push(ambiguous + ' Category value(s) map to more than one InspCategory — ' +
+               'col M is no longer derivable (run ?diag=catsplit)');
+  }
+
+  // THE BOM CONNECTIONS the user asked for, enforced rather than assumed.
+  // getBomRows_ derives `type` from MASTERS_Materials.Category via _bomTypeFor_
+  // and `clientCode` from MASTERS_Customers via _bomClientCodeFor_. Both fall
+  // back silently when a code does not resolve, which is right for runtime but
+  // means a broken connection would never surface. Measure it here.
+  var typeUnresolved = 0, clientUnresolved = 0, typeSample = [], clientSample = [];
+  var catByCode = {};
+  if (mw && mw.getLastRow() > 1) {
+    mw.getDataRange().getValues().slice(1).forEach(function (r) {
+      var c = String(r[MAT_COL.CODE] || '').trim();
+      if (c) catByCode[c] = String(r[MAT_COL.CATEGORY] || '').trim();
+    });
+  }
+  var custLookup = {};
+  custCodes.forEach(function (c) { custLookup[c.toUpperCase()] = true; });
+  custNames.forEach(function (n) { custLookup[n.toUpperCase()] = true; });
+
+  if (bw && bw.getLastRow() > 1) {
+    bw.getDataRange().getValues().slice(1).forEach(function (r) {
+      if (!String(r[1] || '').trim()) return;
+      var comp = String(r[5] || '').trim();
+      if (comp && !catByCode[comp]) {
+        typeUnresolved++;
+        if (typeSample.length < 5) typeSample.push(comp);
+      }
+      var cl = String(r[0] || '').trim();
+      if (cl && !custLookup[cl.toUpperCase()]) {
+        clientUnresolved++;
+        if (clientSample.length < 5) clientSample.push(cl);
+      }
+    });
+  }
+  if (typeUnresolved) {
+    fails.push(typeUnresolved + ' BOM rows whose component does not resolve to a ' +
+               'material Category — derived `type` falls back to stale col K: ' + typeSample.join(', '));
+  }
+  if (clientUnresolved) {
+    fails.push(clientUnresolved + ' BOM rows whose Client does not resolve to a ' +
+               'customer — getFGListByClient cannot filter them by code: ' + clientSample.join(', '));
+  }
+
   if (fails.length) {
     fails.forEach(function (f) { out.push('  FAIL  ' + f); });
     out.push('');
     out.push('VOCAB AUDIT: FAIL');
   } else {
-    out.push('  UoM disagreements: ' + uomMismatch.length + ' (baseline ' + UOM_BASELINE + ')');
-    out.push('  unresolved codes:  0 FG, 0 component');
-    out.push('  unmatched clients: 0');
-    out.push('  case-split values: 0');
+    out.push('  UoM disagreements:      ' + uomMismatch.length + ' (baseline ' + UOM_BASELINE + ')');
+    out.push('  unresolved codes:       0 FG, 0 component');
+    out.push('  unmatched clients:      0');
+    out.push('  case-split values:      0');
+    out.push('  ambiguous categories:   0  (col M derivable from col D)');
+    out.push('  BOM type -> master:     all rows resolve');
+    out.push('  BOM client -> customer: all rows resolve');
     out.push('');
     out.push('VOCAB AUDIT: PASS');
   }

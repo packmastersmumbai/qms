@@ -401,6 +401,20 @@ function doGet(e) {
     } catch (erbv) { bvf = 'ERROR: ' + erbv.message; }
     return ContentService.createTextOutput(String(bvf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'amblist') {
+    var abl; try { abl = listAmbiguous(); } catch(er){ abl='ERR '+er.message; }
+    return ContentService.createTextOutput(String(abl)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=catsplit[&confirm=YES] → split ambiguous Category values 1:1 with InspCategory
+  if (diag === 'catsplit') {
+    var cs;
+    try {
+      cs = (typeof splitAmbiguousCategories === 'function')
+        ? splitAmbiguousCategories(String(e.parameter.confirm || '') === 'YES')
+        : 'splitAmbiguousCategories missing (is _CategorySplit.js pushed?)';
+    } catch (ercs) { cs = 'ERROR: ' + ercs.message; }
+    return ContentService.createTextOutput(String(cs)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
   if (diag === 'vocabaudit') {
     var vca;

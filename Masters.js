@@ -137,9 +137,37 @@ function getMaterials() {
         eachWeight: _geoNum_(r[MAT_COL.EACH_WEIGHT]),
         perPallet:  _geoNum_(r[MAT_COL.PER_PALLET]),
         fitClass:   String(r[MAT_COL.FIT_CLASS] || '').trim(),  // '' | 'WEIGHT' | 'VOLUME'
-        inspectionCategory: String(r[MAT_COL.INSP_CATEGORY] || '').trim()
+        // DERIVED from Category (col D), with col M as the fallback.
+        //
+        // ?diag=catsplit made Category -> InspCategory a FUNCTION by splitting
+        // the three genuinely-ambiguous values (LABELS -> LABELS-BOTTLE /
+        // LABELS-FLAT, FG -> FG / FG-CARTON, TAPE -> TAPE-CARTON / TAPE-FLAT),
+        // so the distinction now lives in the column people actually maintain.
+        // Before the split, deriving would have sent 19 materials to the wrong
+        // inspection — a bottle label tested flat, a corrugated box tested for
+        // fill weight — which is why this reads the split column, not the raw one.
+        //
+        // Col M is kept as the fallback rather than deleted: the 2 HANGER rows
+        // still have no Category-derivable value (they are the known duplicate
+        // item-code issue), and a material added with a brand-new Category has
+        // nothing to derive from until a sibling exists. ?diag=vocabaudit FAILS
+        // if the mapping ever goes ambiguous again.
+        inspectionCategory: _inspCatFor_(r)
       };
     });
+}
+
+// Category -> InspCategory, falling back to the stored col M. Kept next to the
+// reader it serves so the fallback rule is visible at the point of use.
+function _inspCatFor_(row) {
+  var stored = String(row[MAT_COL.INSP_CATEGORY] || '').trim();
+  try {
+    if (typeof inspCategoryForCategory === 'function') {
+      var derived = inspCategoryForCategory(row[MAT_COL.CATEGORY]);
+      if (derived) return derived;
+    }
+  } catch (e) { /* fall through to stored */ }
+  return stored;
 }
 
 // Backfill GRN_LOG rows whose Location ID (col U / index 20) is blank,
