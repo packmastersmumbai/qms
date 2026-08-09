@@ -52,6 +52,24 @@ function _grnFindByTxn_(ws, txnId) {
   return '';
 }
 
+// Did the save attempt carrying this txn key land? Called by the form's watchdog
+// when the reply is lost in transit (measured: saveGRN takes ~12s and returns,
+// but the double-iframe can drop the response). Read-only — it answers a
+// question the operator would otherwise have to answer by hunting through
+// Records, and turns a "may or may not have saved" warning into a fact.
+function findGRNByTxn(txnId) {
+  try {
+    var t = String(txnId || '').trim();
+    if (!t) return { docNo: '' };
+    var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+    if (!ws) return { docNo: '' };
+    return { docNo: _grnFindByTxn_(ws, t) || '' };
+  } catch (e) {
+    Logger.log('findGRNByTxn: ' + e.message);
+    return { docNo: '', error: e.message };
+  }
+}
+
 function saveGRN(data) {
   // Lock-free: getNextDocNumber('grn') is itself lock-guarded; appendRow is atomic;
   // applyGRNReceiptsToPO_ tolerates concurrent callers (idempotent recompute).

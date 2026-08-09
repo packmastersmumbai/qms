@@ -443,6 +443,18 @@ function doGet(e) {
     } catch (erfu) { fuf = 'ERROR: ' + erfu.message; }
     return ContentService.createTextOutput(String(fuf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'grnrecent') {
+    var gr; try { gr = grnRecent(); } catch(er){ gr='ERR '+er.message; }
+    return ContentService.createTextOutput(String(gr)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'grngap') {
+    var gg; try { gg = grnGap(); } catch(er){ gg='ERR '+er.message; }
+    return ContentService.createTextOutput(String(gg)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'cleane2egrn') {
+    var ce; try { ce = cleanE2EGrn(String(e.parameter.confirm||'')==='YES'); } catch(er){ ce='ERR '+er.message; }
+    return ContentService.createTextOutput(String(ce)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
   if (diag === 'vocabaudit') {
     var vca;
@@ -868,7 +880,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v155_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v156_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

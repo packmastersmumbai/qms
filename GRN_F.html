@@ -1279,12 +1279,49 @@ function _doSaveProceed() {
     // HtmlCache already guards on form open). Without this the latch stays true
     // and the form is permanently unsubmittable until reload.
     var settled = false;
+    // MEASURED, not assumed: saveGRN takes ~12s server-side and RETURNS
+    // SUCCESSFULLY (?diag= timing probe: 12.1s, docNo returned), but driving the
+    // real form shows the success handler never firing — the reply is lost in the
+    // GitHub Pages -> GAS double iframe on a call that long. The row IS written.
+    //
+    // The old watchdog then told the operator "it may or may not have gone
+    // through — check Records", after 30s of a spinner. That is the reported
+    // "GRN save is not working": the save worked, the UI never said so. Operators
+    // re-save, which is how PM/GRN/2026-107 came to be a burnt number.
+    //
+    // Instead of guessing, ASK. The txn key that already makes the save
+    // idempotent also makes the answer knowable: look the attempt up by its key.
     var watchdog = setTimeout(function() {
       if (settled) return;
       settled = true;
-      showErr('Save timed out after 30s. It may or may not have gone through — check Records for '
-              + 'this GRN before saving again.');
-      releaseSaveLatch_();
+      var txn = window._grnTxnId || '';
+      if (!txn) {
+        showErr('Save timed out after 30s. Check Records before saving again.');
+        releaseSaveLatch_();
+        return;
+      }
+      showErr('Still confirming the save…');
+      google.script.run
+        .withSuccessHandler(function (found) {
+          if (found && found.docNo) {
+            // It DID save. Close the attempt exactly as the success path would,
+            // so the operator gets the confirmation screen, not a scary warning.
+            window._grnTxnId = '';
+            formSaved = true;
+            showToast('Saved as ' + found.docNo + ' (confirmation was delayed).', 'success');
+            try { showConfirm({ grnId: found.docNo,
+              supplierCode: supplierObj.code || '', supplierName: supplierObj.name || '',
+              itemsList: data.items || [] }); } catch (e) {}
+          } else {
+            showErr('Save did not complete. Your entry is still here — press Save to retry.');
+            releaseSaveLatch_();   // txn key retained, so a retry cannot duplicate
+          }
+        })
+        .withFailureHandler(function () {
+          showErr('Save timed out and could not be confirmed. Check Records before saving again.');
+          releaseSaveLatch_();
+        })
+        .findGRNByTxn(txn);
     }, 30000);
     function settle_() {
       if (settled) return false;
