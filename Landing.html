@@ -1287,7 +1287,10 @@
   /* ═════════════ OPERATOR PICKER ═════════════ */
   function getOperatorName() { try { return sessionStorage.getItem('pmOperatorName') || ''; } catch (e) { return ''; } }
   function setOperatorName(n) { try { sessionStorage.setItem('pmOperatorName', n); } catch (e) {} }
-  function showOperatorPicker(list, onConfirm) {
+  // Third arg matches OperatorPicker.html's contract. Without it a caller that
+  // waits for either outcome (GRN_F.html:1434 passes onCancel) hangs forever on
+  // a dismissal, holding its in-flight latch and killing its Save button.
+  function showOperatorPicker(list, onConfirm, onCancel) {
     var existing = $('opModal'); if (existing) existing.remove();
     var modal = document.createElement('div');
     modal.id = 'opModal';
@@ -1307,15 +1310,57 @@
     });
     modal.querySelector('#opConfirmBtn').addEventListener('click', function () {
       if (!selected) return;
-      setOperatorName(selected); modal.remove();
+      setOperatorName(selected);
+      cleanup_();
       if (typeof onConfirm === 'function') onConfirm(selected);
     });
+
+    // Single dismissal path, mirroring OperatorPicker.html:95-103. Escape and a
+    // backdrop tap previously did NOTHING here — the modal could not be closed
+    // at all, and if it had been, the caller would never have been told.
+    var dismissed = false;
+    function cleanup_() {
+      dismissed = true;
+      modal.remove();
+      document.removeEventListener('keydown', onKey_, true);
+    }
+    function dismiss_() {
+      if (dismissed) return;          // Esc + backdrop can both fire
+      cleanup_();
+      if (typeof onCancel === 'function') onCancel();
+    }
+    function onKey_(e) { if (e.key === 'Escape' || e.keyCode === 27) dismiss_(); }
+    document.addEventListener('keydown', onKey_, true);
+    modal.addEventListener('click', function (e) { if (e.target === modal) dismiss_(); });
   }
   window.QMS = window.QMS || {};
   window.QMS.getOperatorName = getOperatorName;
   window.QMS.setOperatorName = setOperatorName;
-  window.QMS.requireOperator = function (list, cb) { var n = getOperatorName(); if (n) { cb(n); return; } showOperatorPicker(list, cb); };
-  window.QMS.showOperatorPicker = showOperatorPicker;
+
+  // Landing's picker is a LOCAL fallback and must never shadow OperatorPicker.html.
+  //
+  // THE BUG THIS FIXES (traced from a live GRN save that armed and fired its
+  // watchdog with no saveGRN dispatch at all):
+  //   - OperatorPicker.html:24 self-skips — "if (window.QMS.requireOperator) return".
+  //   - Landing defined requireOperator FIRST, so on any SPA navigation from the
+  //     landing page the real picker never installed.
+  //   - Landing's showOperatorPicker(list, onConfirm) takes NO onCancel, while
+  //     GRN_F.html:1434 passes three args. Escape or a backdrop tap therefore
+  //     removed the modal without telling the caller, leaving _grnSaveInFlight
+  //     true and the Save button permanently dead until reload.
+  // That is the exact failure OperatorPicker.html:90-101 documents having fixed —
+  // reintroduced by a duplicate definition rather than by a regression in it.
+  //
+  // Only claim these names if nothing better is loaded, and always honour the
+  // third argument so the cancel contract holds either way.
+  if (!window.QMS.requireOperator) {
+    window.QMS.requireOperator = function (list, cb, onCancel) {
+      var n = getOperatorName();
+      if (n) { cb(n); return; }
+      showOperatorPicker(list, cb, onCancel);
+    };
+  }
+  if (!window.QMS.showOperatorPicker) window.QMS.showOperatorPicker = showOperatorPicker;
 
   /* ═════════════ MODULE CATALOG (workflow order) ═════════════ */
   var GROUPS = [
