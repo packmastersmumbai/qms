@@ -479,6 +479,47 @@ function doGet(e) {
     } catch (erkm) { km = 'ERROR: ' + erkm.message; }
     return ContentService.createTextOutput(String(km)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=ipqcidem → prove the IPQC saveRound retry guard (writes, self-cleans)
+  if (diag === 'ipqcidem') {
+    var ii;
+    try {
+      ii = (typeof checkIpqcIdempotency === 'function')
+        ? checkIpqcIdempotency(String(e.parameter.confirm || '') === 'YES')
+        : 'checkIpqcIdempotency missing (is _IpqcIdemCheck.js pushed?)';
+    } catch (erii) { ii = 'ERROR: ' + erii.message; }
+    return ContentService.createTextOutput(String(ii)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=oqcinit → READ-ONLY: does getOQCFormInit still return FG materials?
+  if (diag === 'oqcinit') {
+    var oi = [];
+    try {
+      var init = getOQCFormInit();
+      oi.push('materials (FG): ' + ((init.materials || []).length));
+      oi.push('fgLocations:     ' + ((init.fgLocations || []).length) +
+              '   ' + (init.fgLocations || []).slice(0, 8).map(function (l) {
+                return (l && typeof l === 'object') ? (l.locationId || l.id || l.code || JSON.stringify(l)) : l;
+              }).join(', '));
+      oi.push('customers:       ' + ((init.customers || []).length));
+      oi.push('inspectors:      ' + ((init.inspectors || []).length));
+      oi.push('ipqcSessions:    ' + ((init.ipqcSessions || []).length));
+      oi.push('');
+      oi.push('first 5 FG: ' + (init.materials || []).slice(0, 5).map(function (m) {
+        return m.code + ' (' + (m.defaultLocation || 'no loc') + ')';
+      }).join(' | '));
+      oi.push('');
+      oi.push('helper _oqcDefaultLocFor_: ' + (typeof _oqcDefaultLocFor_));
+      oi.push('helper _oqcLocationIsValid_: ' + (typeof _oqcLocationIsValid_));
+      if (typeof _oqcDefaultLocFor_ === 'function' && (init.materials || []).length) {
+        var t = init.materials[0].code;
+        oi.push('  _oqcDefaultLocFor_("' + t + '") = "' + _oqcDefaultLocFor_(t) + '"');
+      }
+      if (typeof _oqcLocationIsValid_ === 'function') {
+        oi.push('  _oqcLocationIsValid_("FG-STORE-C") = ' + _oqcLocationIsValid_('FG-STORE-C'));
+        oi.push('  _oqcLocationIsValid_("FG-STORE-AA") = ' + _oqcLocationIsValid_('FG-STORE-AA'));
+      }
+    } catch (eoi) { oi.push('ERROR: ' + eoi.message); }
+    return ContentService.createTextOutput(oi.join('\n')).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=uomguard → READ-ONLY self-test: does the issue-plan UoM guard block?
   if (diag === 'uomguard') {
     var ug;
