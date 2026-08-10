@@ -469,6 +469,20 @@ function doGet(e) {
     var r24; try { r24 = restore201244(String(e.parameter.confirm||'')==='YES'); } catch(er){ r24='ERR '+er.message; }
     return ContentService.createTextOutput(String(r24)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=ketomat[&confirm=YES] → create KETO materials from the revised BOM
+  if (diag === 'ketomat') {
+    var km;
+    try {
+      km = (typeof fixKetoMaterials === 'function')
+        ? fixKetoMaterials(String(e.parameter.confirm || '') === 'YES')
+        : 'fixKetoMaterials missing (is _KetoMaterials.js pushed?)';
+    } catch (erkm) { km = 'ERROR: ' + erkm.message; }
+    return ContentService.createTextOutput(String(km)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'ketocust') {
+    var kc; try { kc = addKetoCustomer(String(e.parameter.confirm||'')==='YES'); } catch(er){ kc='ERR '+er.message; }
+    return ContentService.createTextOutput(String(kc)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
   if (diag === 'vocabaudit') {
     var vca;
