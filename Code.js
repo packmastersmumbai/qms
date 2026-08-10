@@ -479,6 +479,16 @@ function doGet(e) {
     } catch (erkm) { km = 'ERROR: ' + erkm.message; }
     return ContentService.createTextOutput(String(km)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=bomuomfix → relabel BOM Comp UoM on 3 evidence-decided components
+  if (diag === 'bomuomfix') {
+    var buf;
+    try {
+      buf = (typeof fixBomUomLabels === 'function')
+        ? fixBomUomLabels(String(e.parameter.confirm || '') === 'YES')
+        : 'fixBomUomLabels missing (is _BomUomLabelFix.js pushed?)';
+    } catch (erbu) { buf = 'ERROR: ' + erbu.message; }
+    return ContentService.createTextOutput(String(buf)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=ipqcidem → prove the IPQC saveRound retry guard (writes, self-cleans)
   if (diag === 'ipqcidem') {
     var ii;

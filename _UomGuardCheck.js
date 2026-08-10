@@ -23,24 +23,58 @@ function checkUomGuard() {
   if (!rows || !rows.length) return 'FAIL: BOM read returned no rows.';
 
   // Which components disagree, and which FGs are therefore unissuable?
-  var badComp = {}, fgWithBad = {};
+  var badComp = {}, fgWithBad = {}, fgDesc = {};
   rows.forEach(function (r) {
+    if (r.fgCode && !fgDesc[r.fgCode]) fgDesc[r.fgCode] = r.fgDesc || '';
     var masterUnit = prodUomMismatch_(r.compCode, r.compUom);
     if (!masterUnit) return;
-    badComp[r.compCode] = { bom: r.compUom, master: masterUnit };
+    badComp[r.compCode] = { bom: r.compUom, master: masterUnit, desc: r.compDesc || '' };
     (fgWithBad[r.fgCode] = fgWithBad[r.fgCode] || {})[r.compCode] = true;
   });
 
   var compCodes = Object.keys(badComp);
   var fgCodes = Object.keys(fgWithBad);
+  // Descriptions, not just codes: which unit is authoritative is a judgement
+  // about the physical material ("BOPP Tape 48mm 65mtr" is plainly metres), and
+  // a bare item code cannot support that judgement.
   out.push('components with a BOM/master unit disagreement: ' + compCodes.length);
   compCodes.forEach(function (c) {
-    out.push('  !! ' + c + '   BOM="' + badComp[c].bom + '"  master="' + badComp[c].master + '"');
+    out.push('  !! ' + c + '   BOM="' + badComp[c].bom + '"  master="' + badComp[c].master +
+             '"   ' + badComp[c].desc);
+  });
+  out.push('');
+  // The consumption figures decide which unit is authoritative far better than
+  // any opinion: a per-unit consum of 0.0154 for a 65 m roll is metres, while a
+  // flat 1 or 2 is whole rolls. Show every BOM row for each disputed component
+  // together with masterP (the pack size the issue rounds up to).
+  out.push('── consumption evidence (which unit is the BOM actually using?) ──');
+  compCodes.forEach(function (c) {
+    out.push('  ' + c + '  BOM="' + badComp[c].bom + '" vs master="' + badComp[c].master + '"');
+    var mine = rows.filter(function (r) { return r.compCode === c; });
+    var consums = {}, mps = {};
+    mine.forEach(function (r) {
+      consums[r.consum] = (consums[r.consum] || 0) + 1;
+      mps[r.masterP] = (mps[r.masterP] || 0) + 1;
+    });
+    out.push('      rows: ' + mine.length +
+             '   consum values: ' + Object.keys(consums).sort(function (a, b) { return a - b; })
+               .map(function (k) { return k + '×' + consums[k]; }).join(', '));
+    out.push('      masterP (pack size) values: ' + Object.keys(mps)
+               .map(function (k) { return k + '×' + mps[k]; }).join(', '));
+    // 1/consum is the implied units-per-FG. For a 65 m roll consumed in metres,
+    // this lands in the tens; for whole rolls it lands at 1 or below.
+    var uniq = Object.keys(consums).map(Number).filter(function (n) { return n > 0; });
+    if (uniq.length) {
+      out.push('      implied 1/consum: ' + uniq.map(function (n) {
+        return (Math.round((1 / n) * 100) / 100);
+      }).join(', '));
+    }
   });
   out.push('');
   out.push('FGs that therefore cannot be issued: ' + fgCodes.length);
   fgCodes.forEach(function (f) {
-    out.push('  ' + f + '   via ' + Object.keys(fgWithBad[f]).join(', '));
+    out.push('  ' + f + '   ' + (fgDesc[f] || '(no description)'));
+    out.push('      blocked by: ' + Object.keys(fgWithBad[f]).join(', '));
   });
   out.push('');
 
