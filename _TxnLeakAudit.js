@@ -25,7 +25,11 @@ function auditTxnTagLeak() {
     // reported PASS while being blind to two writers that now stamp tags —
     // a green check that proves nothing is worse than no check.
     { name: 'DISPATCH_LOG', col: 12, label: 'Remarks' },
-    { name: 'IPQC_LOG',     col: 11, label: 'remark'  }
+    { name: 'IPQC_LOG',     col: 11, label: 'remark'  },
+    { name: 'OQC_LOG',            col: 15, label: 'Remarks' },
+    { name: 'CUSTOMER_RETURN_LOG', col: 16, label: 'Remarks' }
+    // PO_HEADER lives in a SEPARATE spreadsheet (getPOSpreadsheet_), so it is
+    // probed by its display reader below rather than listed here.
   ];
   out.push('── tags stored in sheets (EXPECTED) ──');
   SHEETS.forEach(function (s) {
@@ -85,6 +89,26 @@ function auditTxnTagLeak() {
     if (!iqcDoc || typeof getIQCPrintData !== 'function') return null;
     var d = getIQCPrintData(iqcDoc);
     return d ? d.remarks : null;
+  });
+
+  // OQC's remarks print on the release certificate (PrintOQC_F.html:240).
+  var oqcDoc = newestTagged('OQC_LOG', 0, 15);
+  probe('getOQCPrintData(' + (oqcDoc || 'none') + ').remarks', function () {
+    if (!oqcDoc || typeof getOQCPrintData !== 'function') return null;
+    var d = getOQCPrintData(oqcDoc);
+    return d ? d.remarks : null;
+  });
+
+  // A PO is sent to a supplier. getPODetail reads PO_HEADER from a separate
+  // spreadsheet, so this probe is the only coverage for that column.
+  probe('getPOById(newest).header.remarks', function () {
+    if (typeof getRecentPOs !== 'function' || typeof getPOById !== 'function') return null;
+    var list = getRecentPOs(5) || [];
+    if (!list.length) return null;
+    var po = String(list[0].poNo || list[0].po_no || '').trim();
+    if (!po) return null;
+    var d = getPOById(po);
+    return (d && d.header) ? d.header.remarks : null;
   });
 
   // IPQC stamps its tag into the per-parameter remark, which getIPQCPrintData

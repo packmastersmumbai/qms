@@ -400,8 +400,26 @@ function buildPayload() {
     gstPct:        parseFloat(document.getElementById('gstPct').value) || 0,
     paymentTerms:  document.getElementById('paymentTerms').value,
     remarks:       document.getElementById('remarks').value,
+    // Idempotency key. savePO appends a header plus one PO_LINES row per item
+    // under a fresh PO number with no natural guard, so a retry after a dropped
+    // response raises a SECOND purchase order for the same goods — a commitment
+    // to a supplier. Both call sites (saveDraft and submit) share this builder.
+    // Retired on confirmed success by _poDone().
+    clientTxnId:   (function(){
+                     if (!window._poTxnId) {
+                       window._poTxnId = 'PO-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+                     }
+                     return window._poTxnId;
+                   })(),
     lines:         lines
   };
+}
+
+/* Retire the PO idempotency key. Called only from a confirmed success: on
+   failure the key must survive so a retry of THIS attempt is recognised. */
+function _poDone(r) {
+  if (r && r.success) window._poTxnId = null;
+  return r;
 }
 
 /* ── Save draft ── */
@@ -421,7 +439,8 @@ window.saveDraft = function() {
   var runner = google.script.run
     .withSuccessHandler(_g.wrap(function(r) {
       setBusy(false);
-      if (r.success) { _dirty = false; showToast('Draft saved: ' + r.poNo); setTimeout(goHome, 1200); }
+      _poDone(r);
+      if (r.success) { _dirty = false; showToast((r.duplicate ? 'Already saved: ' : 'Draft saved: ') + r.poNo); setTimeout(goHome, 1200); }
       else showToast('Error: ' + r.error, true);
     }))
     .withFailureHandler(_g.wrapFail(function(e) { setBusy(false); showToast(e.message, true); }));
@@ -480,7 +499,8 @@ window.confirmSubmit = function() {
   var runner = google.script.run
     .withSuccessHandler(_gs.wrap(function(r) {
       closeModal();
-      if (r.success) { _dirty = false; showToast('PO submitted: ' + r.poNo); setTimeout(goHome, 1400); }
+      _poDone(r);
+      if (r.success) { _dirty = false; showToast((r.duplicate ? 'Already submitted: ' : 'PO submitted: ') + r.poNo); setTimeout(goHome, 1400); }
       else { showToast('Error: ' + r.error, true); document.getElementById('btnConfirm').disabled = false; }
     }))
     .withFailureHandler(_gs.wrapFail(function(e) {

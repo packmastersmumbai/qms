@@ -523,6 +523,15 @@
         receivedBy:       document.getElementById('fReceivedBy').value,
         remarks:          document.getElementById('fRemarks').value.trim(),
         defectCategory:   _selectedDefect || '',
+        // Idempotency key. This appends with a fresh return number and has no
+        // natural guard, so a retry after a dropped response books the same
+        // physical return twice. Cleared on confirmed success below.
+        clientTxnId:      (function(){
+                            if (!window._crTxnId) {
+                              window._crTxnId = 'CR-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+                            }
+                            return window._crTxnId;
+                          })(),
         items:            items
       };
       if (!data.customerCode)        { showToast('Customer is required', 'error'); return; }
@@ -549,7 +558,10 @@
             showToast('Save failed: ' + (res && res.error || 'unknown'), 'error');
             return;
           }
-          showToast('Return ' + res.rtnNo + ' saved');
+          window._crTxnId = null;   // retire only on confirmed success
+          showToast(res.duplicate
+            ? 'Return ' + res.rtnNo + ' was already saved'
+            : 'Return ' + res.rtnNo + ' saved');
           if (res.warnings && res.warnings.length) {
             setTimeout(function(){ showToast('⚠ ' + res.warnings.join(' | '), 'warning'); }, 600);
           }

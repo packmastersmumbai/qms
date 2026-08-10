@@ -183,6 +183,34 @@ function previewPO(data) {
 // (po_no, line_no), so a partial line failure can be safely re-saved.
 // LockService was removed because Apps Script web app sessions were holding
 // it across background google.script.run calls, blocking submit.
+// PO_HEADER Remarks column, 0-based. Verified against the appendRow below: the
+// row is poNo, poDate, supplierCode, supplierName, dueDate, currency, gstPct,
+// paymentTerms, subTotal, gstAmount, grandTotal, status, remarks, ...
+var PO_REMARKS_COL_ = 12;
+
+function _poTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+
+function _poFindByTxn_(hdrWs, txnId) {
+  try {
+    if (!hdrWs || hdrWs.getLastRow() < 2 || !txnId) return '';
+    var tag = _poTxnTag_(txnId);
+    var n = hdrWs.getLastRow() - 1;
+    var vals = hdrWs.getRange(2, 1, n, PO_REMARKS_COL_ + 1).getValues();
+    for (var i = 0; i < n; i++) {
+      if (String(vals[i][PO_REMARKS_COL_] || '').indexOf(tag) >= 0) return String(vals[i][0] || '');
+    }
+  } catch (e) { Logger.log('_poFindByTxn_: ' + e.message); }
+  return '';
+}
+
+function _poStampTxn_(remarks, txnId) {
+  var base = String(remarks || '');
+  if (!txnId) return base;
+  return base + (base ? ' ' : '') + _poTxnTag_(txnId);
+}
+
 function savePO(data) {
   try {
     var result = canonicalizePO_(data);
@@ -193,6 +221,19 @@ function savePO(data) {
     var lnWs  = ss.getSheetByName('PO_LINES');
     if (!hdrWs) throw new Error('PO_HEADER sheet not found. Run Verify & Repair Sheets first.');
     if (!lnWs)  throw new Error('PO_LINES sheet not found. Run Verify & Repair Sheets first.');
+
+    // Idempotency guard. savePO appends a header AND one PO_LINES row per line
+    // item, both keyed to a freshly minted PO number, with no natural guard. A
+    // retry after a dropped response raises a SECOND purchase order for the same
+    // goods — a commitment to a supplier, not just a bad row.
+    var poTxnId = String(data.clientTxnId || '').trim();
+    if (poTxnId) {
+      var priorPo = _poFindByTxn_(hdrWs, poTxnId);
+      if (priorPo) {
+        return { success: true, poNo: priorPo, duplicate: true,
+                 warnings: ['This PO was already saved as ' + priorPo + '.'] };
+      }
+    }
 
     var submit = !!data.submit;
     var status = submit ? 'OPEN' : 'DRAFT';
@@ -215,7 +256,7 @@ function savePO(data) {
       result.totals.gstAmount,
       result.totals.grandTotal,
       status,
-      String(data.remarks || ''),
+      _poStampTxn_(data.remarks, poTxnId),   // + [txn:...] idempotency tag
       user,
       now,
       user,
@@ -409,7 +450,8 @@ function getPOById(poNo) {
         gstAmount:      Number(r[9]) || 0,
         grandTotal:     Number(r[10]) || 0,
         status:         String(r[11] || '').trim(),
-        remarks:        String(r[12] || ''),
+        // A PO is sent to a supplier — the tag must never appear on it.
+        remarks:        (typeof stripTxnTag_ === 'function') ? stripTxnTag_(r[12]) : String(r[12] || ''),
         createdBy:      String(r[13] || ''),
         createdAt:      fmtDateTime_(r[14]),
         approvedBy:     String(r[15] || ''),

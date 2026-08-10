@@ -1081,6 +1081,16 @@ function doSave() {
     level:           (document.getElementById('oqcLevel')||{}).value || 'I',
     lotSize:         parseInt((document.getElementById('oqcLotSize')||{}).value, 10) || 0,
     remarks:         document.getElementById('inpRemarks').value,
+    // Idempotency key. OQC release is the FG side's first stock entry — a retry
+    // after a dropped response credits FG stock twice and mints a second
+    // dispatch lot for one pallet. Generated once per attempt, reused across
+    // retries of that attempt, cleared on confirmed success.
+    clientTxnId:     (function(){
+                       if (!window._oqcTxnId) {
+                         window._oqcTxnId = 'OQC-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+                       }
+                       return window._oqcTxnId;
+                     })(),
     fgLocation:    (document.getElementById('selFGLocation') ? document.getElementById('selFGLocation').value : ''),
     items: [{
       batchPO:       batchNo,
@@ -1117,6 +1127,10 @@ function doSave() {
       onSuccess: function (res) {
         if (res && res.success) {
           gSaved = true;
+          // Retire the key ONLY on confirmed success, so the next OQC is a new
+          // transaction. Left in place on failure: a retry of THIS attempt must
+          // reuse it or the server cannot recognise the retry.
+          window._oqcTxnId = null;
           var docNo = (res.docNos && res.docNos[0]) ? res.docNos[0] : '';
           showConfirm(docNo, matDesc, batchNo, custName, gDisposition);
           var hasWarnings = (res.warnings && res.warnings.length) || res.ncrError;
@@ -1137,6 +1151,7 @@ function doSave() {
     .withSuccessHandler(function(res) {
       if (res && res.success) {
         gSaved = true;
+        window._oqcTxnId = null;   // see the guarded-save path above
         var docNo = (res.docNos && res.docNos[0]) ? res.docNos[0] : '';
         showConfirm(docNo, matDesc, batchNo, custName, gDisposition);
         var hasWarnings = (res.warnings && res.warnings.length) || res.ncrError;

@@ -98,12 +98,61 @@ function getReturnableGatepasses(customerName) {
   }
 }
 
+// 0-based index of 'Remarks' in CUSTOMER_RETURN_HEADERS. Lazy, for the same
+// cross-file evaluation-order reason as the IQC and OQC equivalents.
+function _crRemarksCol_() {
+  try {
+    if (typeof CUSTOMER_RETURN_HEADERS !== 'undefined') {
+      var i = CUSTOMER_RETURN_HEADERS.indexOf('Remarks');
+      if (i >= 0) return i;
+    }
+  } catch (e) {}
+  return 16;
+}
+
+function _crTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+
+function _crFindByTxn_(ws, txnId) {
+  try {
+    if (!ws || ws.getLastRow() < 2 || !txnId) return '';
+    var tag = _crTxnTag_(txnId);
+    var n = ws.getLastRow() - 1;
+    var rc = _crRemarksCol_();
+    var vals = ws.getRange(2, 1, n, rc + 1).getValues();
+    for (var i = 0; i < n; i++) {
+      if (String(vals[i][rc] || '').indexOf(tag) >= 0) return String(vals[i][0] || '');
+    }
+  } catch (e) { Logger.log('_crFindByTxn_: ' + e.message); }
+  return '';
+}
+
+function _crStampTxn_(remarks, txnId) {
+  var base = String(remarks || '');
+  if (!txnId) return base;
+  return base + (base ? ' ' : '') + _crTxnTag_(txnId);
+}
+
 function saveCustomerReturn(data) {
   try {
     var ss = getSpreadsheet();
     var ws = ss.getSheetByName('CUSTOMER_RETURN_LOG');
     if (!ws) throw new Error('CUSTOMER_RETURN_LOG sheet not found. Run Setup first.');
     ensureReturnExtraColumns_(ws);
+
+    // Idempotency guard. This appends with a freshly minted return number and has
+    // no natural guard (unlike Rework, whose COMPLETED status blocks a repeat),
+    // so a retry after a dropped response books the SAME physical return twice —
+    // two return numbers, double the returned quantity against the customer.
+    var crTxnId = String(data.clientTxnId || '').trim();
+    if (crTxnId) {
+      var priorCr = _crFindByTxn_(ws, crTxnId);
+      if (priorCr) {
+        return { success: true, rtnNo: priorCr, duplicate: true,
+                 warnings: ['This return was already saved as ' + priorCr + '.'] };
+      }
+    }
 
     var rtnNo = getNextDocNumber('rtn');
     var now   = new Date();
@@ -126,7 +175,7 @@ function saveCustomerReturn(data) {
       'PENDING_TRIAGE',                        // c14 Disposition
       '',                                      // c15 NCR Ref (set on disposition)
       'OPEN',                                  // c16 Status
-      data.remarks           || '',            // c17 Remarks
+      _crStampTxn_(data.remarks, crTxnId),     // c17 Remarks (+ [txn:...] tag)
       now                                      // c18 Timestamp
     ]);
     var lr = ws.getLastRow();
@@ -187,6 +236,20 @@ function saveCustomerReturnMulti(data) {
     if (!ws) throw new Error('CUSTOMER_RETURN_LOG sheet not found. Run Setup first.');
     ensureReturnExtraColumns_(ws);
 
+    // This is the function the form actually calls (CustomerReturn_F.html:595),
+    // so the guard matters more here than on the single-item variant. All items
+    // share ONE return number, so finding the tag means the whole return landed.
+    var crmTxnId = String(data.clientTxnId || '').trim();
+    if (crmTxnId) {
+      var priorCrm = _crFindByTxn_(ws, crmTxnId);
+      if (priorCrm) {
+        // rtnNo is the field the form reads (CustomerReturn_F.html:553) — a
+        // duplicate reply missing it would render "Return undefined saved".
+        return { success: true, rtnNo: priorCrm, itemCount: items.length, duplicate: true,
+                 warnings: ['This return was already saved as ' + priorCrm + '.'] };
+      }
+    }
+
     var rtnNo = getNextDocNumber('rtn');
     var now   = new Date();
     var hdrs  = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
@@ -213,7 +276,7 @@ function saveCustomerReturnMulti(data) {
         'PENDING_TRIAGE',
         '',
         'OPEN',
-        data.remarks          || '',
+        _crStampTxn_(data.remarks, crmTxnId),   // + [txn:...] idempotency tag
         now
       ]);
       var lr = ws.getLastRow();

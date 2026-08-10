@@ -164,11 +164,72 @@ function _getIPQCSessionsForProductBatch_(productCode, batch) {
   return count;
 }
 
+// 0-based index of 'Remarks' in OQC_HEADERS. Resolved LAZILY: OQC_HEADERS lives
+// in Initialize.js and GAS gives no cross-file evaluation order guarantee, so a
+// top-level indexOf can run against an undefined global and yield -1 — which
+// would read the column BEFORE col A. Same defence IQC's _iqcRemarksCol_ uses.
+function _oqcRemarksCol_() {
+  try {
+    if (typeof OQC_HEADERS !== 'undefined') {
+      var i = OQC_HEADERS.indexOf('Remarks');
+      if (i >= 0) return i;
+    }
+  } catch (e) {}
+  return 15;
+}
+
+function _oqcTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+
+// EVERY OQC doc number carrying this tag — saveOQC writes one row per item, so a
+// retried multi-item release must report all of them back or the operator sees a
+// partial result and saves again, which is the duplicate this guard prevents.
+function _oqcFindByTxn_(ws, txnId) {
+  var found = [];
+  try {
+    if (!ws || ws.getLastRow() < 2 || !txnId) return found;
+    var tag = _oqcTxnTag_(txnId);
+    var n = ws.getLastRow() - 1;
+    var rc = _oqcRemarksCol_();
+    var vals = ws.getRange(2, 1, n, rc + 1).getValues();
+    for (var i = 0; i < n; i++) {
+      if (String(vals[i][rc] || '').indexOf(tag) >= 0) {
+        var d = String(vals[i][0] || '');
+        if (d && found.indexOf(d) === -1) found.push(d);
+      }
+    }
+  } catch (e) { Logger.log('_oqcFindByTxn_: ' + e.message); }
+  return found;
+}
+
+function _oqcStampTxn_(remarks, txnId) {
+  var base = String(remarks || '');
+  if (!txnId) return base;
+  return base + (base ? ' ' : '') + _oqcTxnTag_(txnId);
+}
+
 function saveOQC(data) {
   try {
     var ss  = getSpreadsheet();
     var ws  = ss.getSheetByName('OQC_LOG');
     if (!ws) throw new Error('OQC_LOG sheet not found. Run Setup first.');
+
+    // Idempotency guard. OQC release is the FG side's FIRST stock entry — it
+    // writes an OQC_RELEASE ledger IN and creates the FG_DISPATCH_LOTS row that
+    // dispatch later draws against. A retry after a dropped response therefore
+    // credits FG stock TWICE and mints a second dispatch lot for one physical
+    // pallet. The existing duplicate-OQC block catches a repeat of the same
+    // batch+material, but only for non-REJECTED decisions and only by
+    // description match; this catches the retry itself, regardless of decision.
+    var oqcTxnId = String(data.clientTxnId || '').trim();
+    if (oqcTxnId) {
+      var priorOqc = _oqcFindByTxn_(ws, oqcTxnId);
+      if (priorOqc.length) {
+        return { success: true, docNos: priorOqc, duplicate: true,
+                 warnings: ['This OQC was already saved as ' + priorOqc.join(', ') + '.'] };
+      }
+    }
 
     var now    = new Date();
     var dec    = data.releaseDecision || 'PENDING';
@@ -298,7 +359,7 @@ function saveOQC(data) {
         checks.custSpec    || '',
         data.inspector     || '',
         dec,
-        data.remarks       || '',
+        _oqcStampTxn_(data.remarks, oqcTxnId),   // + [txn:...] idempotency tag
         acceptedQty,
         item.rejectedQty != null ? item.rejectedQty : 0,
         now,
@@ -390,7 +451,11 @@ function saveOQC(data) {
         materialDesc: firstItem.materialDesc || '',
         batchNo:      firstItem.batchPO || '',
         qtyAffected:  totalRejQty,
-        defectDesc:   data.remarks || ('OQC ' + dec.toLowerCase() + ' — see ' + docNos.join(', '))
+        // data.remarks is the operator's text, untagged — the tag is added only
+        // to the sheet cell. Stripped anyway so this stays correct if a caller
+        // ever passes an already-tagged value through.
+        defectDesc:   (typeof stripTxnTag_ === 'function' ? stripTxnTag_(data.remarks) : data.remarks) ||
+                      ('OQC ' + dec.toLowerCase() + ' — see ' + docNos.join(', '))
       });
       if (!ncrNo) {
         ncrError = 'NCR auto-raise FAILED — raise the NCR manually and update the OQC record.';
@@ -530,7 +595,9 @@ function getOQCPrintData(docNo) {
     },
     inspector:      String(r[13] || ''),
     releaseDecision:String(r[14] || ''),
-    remarks:        String(r[15] || ''),
+    // Printed on the release certificate (PrintOQC_F.html:240) — the tag must
+    // not appear there. This is the exact leak the first IQC guard shipped.
+    remarks:        (typeof stripTxnTag_ === 'function') ? stripTxnTag_(r[15]) : String(r[15] || ''),
     acceptedQty:    r[16] != null ? String(r[16]) : '',
     rejectedQty:    r[17] != null ? String(r[17]) : '',
     ipqcSessionRef: String(r[19] || ''),
