@@ -129,13 +129,30 @@ async function runGRN(s) {
   if (!fr) return { skip: 'form did not render (btnSubmit not found)' };
   await fr.evaluate(installHelpers);
 
-  const sup = await fr.evaluate(() => window.__optsOf('supplier'));
-  if (!sup.length) return { skip: 'supplier select empty — no live data to pick' };
+  // POLL for options rather than reading once. frameWith only proves the element
+  // EXISTS; the select is filled by a later google.script.run response, so a
+  // single read right after render sees an empty list and reported a bogus
+  // "no live data" skip while the form was genuinely fine (29 suppliers, no
+  // page errors — verified directly). Same class of false negative the CLAUDE.md
+  // notes warn about: poll for a known element, never assume a fixed delay.
+  let sup = [];
+  for (let i = 0; i < 12; i++) {
+    sup = await fr.evaluate(() => window.__optsOf('supplier'));
+    if (sup.length) break;
+    await s.page.waitForTimeout(2000);
+  }
+  if (!sup.length) return { skip: 'supplier select still empty after 24s — no live data to pick' };
   await fr.evaluate(() => window.__pickFirst('supplier'));
   await s.page.waitForTimeout(3500);
 
-  const items = await fr.evaluate(() => window.__optsOf('item'));
-  if (!items.length) return { skip: 'item select empty after supplier pick — no live data' };
+  // Cascading select — same polling reason as `supplier` above.
+  let items = [];
+  for (let i = 0; i < 10; i++) {
+    items = await fr.evaluate(() => window.__optsOf('item'));
+    if (items.length) break;
+    await s.page.waitForTimeout(2000);
+  }
+  if (!items.length) return { skip: 'item select still empty 20s after supplier pick — no live data' };
   await fr.evaluate(() => window.__pickFirst('item'));
   await s.page.waitForTimeout(1500);
 
