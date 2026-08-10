@@ -717,11 +717,20 @@ function computeProductionPlan(fgCode, fgQtyRequested) {
     var mp = Number(b.masterP) || 0;
     var packsToIssue = mp > 0 ? Math.ceil(required / mp) : 0;
     var issueQtyRounded = mp > 0 ? packsToIssue * mp : required;
+    // `required` is consum × qty in the BOM's Comp UoM; `available` is a
+    // STOCK_LEDGER balance in the MASTER's unit. If those units differ the
+    // shortfall, possibleFG and issue quantity below are all arithmetic on
+    // incompatible quantities — a wrong number with no symptom. Surface it per
+    // line here; issueProductionJob refuses to move stock on it.
+    var uomMasterUnit = (typeof prodUomMismatch_ === 'function')
+      ? prodUomMismatch_(b.compCode, b.compUom) : '';
     return {
       compCode:    b.compCode,
       compDesc:    b.compDesc,
       type:        b.type,
       compUom:     b.compUom,
+      uomMismatch:   !!uomMasterUnit,
+      uomMasterUnit: uomMasterUnit,
       qtyPerUnit:  b.consum,
       required:    required,
       available:   available,
@@ -806,6 +815,25 @@ function issueProductionJob(data) {
     if (!plan.success) return plan;
     if (plan.maxProducible < fgQty) {
       return { success: false, error: 'Requested ' + fgQty + ' exceeds maxProducible ' + plan.maxProducible + '. Reduce qty and retry.' };
+    }
+
+    // REFUSE to issue when a component's BOM unit disagrees with its master
+    // unit. `required` (BOM unit) and the ledger balance (master unit) are then
+    // different quantities, so the debit below would move a number nobody
+    // computed correctly. This is a data fix — the material's authoritative unit
+    // has to be decided by whoever owns it — and blocking is what surfaces it at
+    // the moment it would do damage. Checked BEFORE the lock: nothing is written.
+    var uomBad = plan.lines.filter(function (l) { return l.uomMismatch; });
+    if (uomBad.length) {
+      return {
+        success: false,
+        error: 'Unit mismatch on ' + uomBad.length + ' component(s) — cannot compute a ' +
+               'correct issue quantity. Fix the unit in MASTERS_Materials or the BOM, then retry:\n' +
+               uomBad.map(function (l) {
+                 return '  • ' + l.compCode + ' ' + (l.compDesc || '') +
+                        ':  BOM = ' + l.compUom + ',  master = ' + l.uomMasterUnit;
+               }).join('\n')
+      };
     }
 
     var lock = LockService.getScriptLock();

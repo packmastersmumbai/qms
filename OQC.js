@@ -3,6 +3,43 @@
 // Based on PM/FRM/FQC-01 Final Quality Control Release
 // ============================================================
 
+// MASTERS_Materials Default Location for an FG code, '' when unset or unknown.
+// Used only as a fallback when no location was chosen on the form.
+function _oqcDefaultLocFor_(materialCode) {
+  var code = String(materialCode || '').trim();
+  if (!code) return '';
+  try {
+    var mats = (typeof getMaterials === 'function') ? getMaterials() : [];
+    for (var i = 0; i < mats.length; i++) {
+      if (String(mats[i].code || '').trim() === code) {
+        return String(mats[i].defaultLocation || '').trim();
+      }
+    }
+  } catch (e) { Logger.log('_oqcDefaultLocFor_: ' + e.message); }
+  return '';
+}
+
+// Is this a location the FG side actually recognises? getFGLocations() is the
+// same set the form's dropdown is built from, so anything outside it could only
+// have come from a stale client or a typed value. Unvalidated locations are how
+// the ghost locations (FG-STORE-AA) got into STOCK_LEDGER and needed a repair
+// script — the OQC release write was gated on non-empty only.
+function _oqcLocationIsValid_(loc) {
+  var l = String(loc || '').trim();
+  if (!l) return false;
+  try {
+    if (typeof getFGLocations !== 'function') return true;  // cannot verify → do not block
+    var valid = getFGLocations() || [];
+    if (!valid.length) return true;                          // empty master → do not block
+    for (var i = 0; i < valid.length; i++) {
+      var v = valid[i];
+      var id = (v && typeof v === 'object') ? (v.locationId || v.id || v.code || '') : v;
+      if (String(id).trim().toUpperCase() === l.toUpperCase()) return true;
+    }
+  } catch (e) { Logger.log('_oqcLocationIsValid_: ' + e.message); return true; }
+  return false;
+}
+
 function getOQCFormInit() {
   var allMats = getMaterials();
   var fgMats  = allMats.filter(function(m) { return m.category && m.category.toUpperCase() === 'FG'; });
@@ -215,7 +252,26 @@ function saveOQC(data) {
     data.items.forEach(function(item) {
       var docNo  = getNextDocNumber('oqc');
       var checks = item.checks || {};
+      // Precedence: what the operator chose, then the form-level choice, then the
+      // material master's Default Location. The master is a FALLBACK, never an
+      // override — the person at the bench can see where the pallet is actually
+      // going and the sheet cannot. Before this, a blank location silently
+      // skipped the FG_DISPATCH_LOTS mirror below (the `&& fgLocation` guard),
+      // so released stock could exist in OQC_LOG and nowhere else.
       var fgLocation = String((item && item.fgLocation) || data.fgLocation || '').trim();
+      if (!fgLocation) {
+        var mcode = String((item && item.materialCode) || '').trim();
+        if (mcode && _oqcDefaultLocFor_) fgLocation = _oqcDefaultLocFor_(mcode);
+      }
+      // A location outside the FG set would be written straight into
+      // STOCK_LEDGER and FG_DISPATCH_LOTS, where nothing downstream validates
+      // it either. Drop it rather than create a ghost: the release still records
+      // in OQC_LOG, and the mirror below skips on empty as it already did.
+      if (fgLocation && !_oqcLocationIsValid_(fgLocation)) {
+        Logger.log('OQC: rejected unknown FG location "' + fgLocation + '" for ' +
+                   String((item && item.materialCode) || '') + ' — not in getFGLocations()');
+        fgLocation = '';
+      }
       var acceptedQty = item.acceptedQty != null ? Number(item.acceptedQty) : 0;
       // Compute the ISO 2859-1 plan from lot size (submitted, else accepted+rejected).
       var oqcLot = parseInt(item.lotSize || data.lotSize, 10) ||

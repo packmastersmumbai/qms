@@ -479,6 +479,16 @@ function doGet(e) {
     } catch (erkm) { km = 'ERROR: ' + erkm.message; }
     return ContentService.createTextOutput(String(km)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=uomguard → READ-ONLY self-test: does the issue-plan UoM guard block?
+  if (diag === 'uomguard') {
+    var ug;
+    try {
+      ug = (typeof checkUomGuard === 'function')
+        ? checkUomGuard()
+        : 'checkUomGuard missing (is _UomGuardCheck.js pushed?)';
+    } catch (erug) { ug = 'ERROR: ' + erug.message; }
+    return ContentService.createTextOutput(String(ug)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=cansrows → READ-ONLY: name the CANS rows whose InspCategory disagrees
   if (diag === 'cansrows') {
     var cr;
@@ -938,7 +948,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v157_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v158_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

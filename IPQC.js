@@ -256,7 +256,7 @@ function getSessionRounds(sessionId) {
         unit:        String(values[i][8] || ''),
         actualValue: values[i][9] != null ? String(values[i][9]) : '',
         result:      String(values[i][10] || ''),
-        remark:      String(values[i][11] || '')
+        remark:      _ipqcStripTxn_(values[i][11])
       });
     }
     Logger.log('getSessionRounds matched ' + matchCount + ' rows for sid=' + sid);
@@ -270,6 +270,51 @@ function getSessionRounds(sessionId) {
     Logger.log('getSessionRounds ERROR: ' + e);
     return { rounds: [], error: String(e) };
   }
+}
+
+// IPQC_LOG remark column, 0-based (col 12, 1-based). Named here so the txn
+// helpers below and the NCR back-stamp cannot drift apart.
+var IPQC_REMARK_COL_ = 11;
+
+function _ipqcTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+
+// The round number already written under this txn key, or 0 if none. Scoped to
+// the session: a txn key is unique per save attempt, but scoping means a stray
+// collision across sessions can never mask a genuine round.
+function _ipqcRoundForTxn_(logWs, sessionId, txnId) {
+  try {
+    if (!logWs || logWs.getLastRow() < 2 || !txnId) return 0;
+    var tag = _ipqcTxnTag_(txnId);
+    var n = logWs.getLastRow() - 1;
+    var vals = logWs.getRange(2, 1, n, IPQC_REMARK_COL_ + 1).getValues();
+    var sid = String(sessionId).trim();
+    for (var i = 0; i < n; i++) {
+      if (String(vals[i][0]).trim() !== sid) continue;
+      if (String(vals[i][IPQC_REMARK_COL_] || '').indexOf(tag) >= 0) {
+        return Number(vals[i][3]) || 0;
+      }
+    }
+  } catch (e) { Logger.log('_ipqcRoundForTxn_: ' + e.message); }
+  return 0;
+}
+
+// Suffix, so the operator's own remark still reads first. Delegates stripping to
+// the shared stripTxnTag_ (GRN.js) wherever a human reads the value.
+function _ipqcStampTxn_(remark, txnId) {
+  var base = String(remark || '');
+  if (!txnId) return base;
+  return base + (base ? ' ' : '') + _ipqcTxnTag_(txnId);
+}
+
+// Inverse of _ipqcStampTxn_, for every surface a human reads — the round matrix
+// and the printed IPQC report. Delegates to the shared stripTxnTag_ (GRN.js) so
+// the four writers cannot drift; the local fallback keeps this module working if
+// GRN.js has not evaluated yet (GAS gives no cross-file ordering guarantee).
+function _ipqcStripTxn_(remark) {
+  if (typeof stripTxnTag_ === 'function') return stripTxnTag_(remark);
+  return String(remark || '').replace(/\s*\[txn:[^\]]*\]\s*/g, ' ').trim();
 }
 
 function saveRound(sessionId, roundData) {
@@ -301,6 +346,14 @@ function saveRound(sessionId, roundData) {
     }
 
     var params = roundData.params || [];
+    // Idempotency key. The client latch stops a double-tap, but not a retry after
+    // a DROPPED RESPONSE — the measured GRN failure (server returns in ~12s, the
+    // handler never fires through the double iframe). Without this, pressing Save
+    // again appends a WHOLE EXTRA ROUND: new round number, one duplicate row per
+    // parameter, and the session's round counter bumped twice. Proven missing by
+    // e2e-savepaths (IPQC: txn-key NO). Same pattern as GRN/IQC/Gatepass —
+    // stamped into the existing remark column, no schema change.
+    var ipqcTxnId = String(roundData.clientTxnId || '').trim();
     var lock = LockService.getScriptLock();
     // SCOPED LOCK: round-number derivation, log append, and counter write must all be
     // atomic — two concurrent round submissions otherwise produce duplicate round numbers.
@@ -319,6 +372,17 @@ function saveRound(sessionId, roundData) {
           break;
         }
       }
+      // Checked INSIDE the lock, against the same re-read that derives the round
+      // number: a retry that arrives while the first call still holds the lock
+      // must see the committed rows, not race past them.
+      if (ipqcTxnId) {
+        var priorRound = _ipqcRoundForTxn_(logWs, sessionId, ipqcTxnId);
+        if (priorRound) {
+          return { ok: true, roundNo: priorRound, duplicate: true,
+                   warning: 'Round ' + priorRound + ' was already saved.' };
+        }
+      }
+
       roundNo = Number(freshRounds) + 1;
 
       var now   = new Date();
@@ -338,7 +402,7 @@ function saveRound(sessionId, roundData) {
           p.unit                    || '',
           p.actualValue             || '',
           p.result                  || '',
-          p.remark                  || '',
+          _ipqcStampTxn_(p.remark, ipqcTxnId),   // + [txn:...] idempotency tag
           roundData.elapsedHms      || '',
           roundData.periodStartTime || '',
           roundData.periodEndTime   || '',
@@ -536,7 +600,7 @@ function getIPQCPrintData(sessionId) {
         spec:   String(logVals[j][7]),
         actual: String(logVals[j][9]),
         result: String(logVals[j][10]),
-        remark: String(logVals[j][11])
+        remark: _ipqcStripTxn_(logVals[j][11])   // printed document — tag must not appear
       });
     }
     var rNos = Object.keys(roundMap).map(Number).sort(function(a,b){return a-b;});

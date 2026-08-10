@@ -71,6 +71,42 @@ function _bomTypeFor_(compCode) {
   return prodMatCategories_()[compCode] || '';
 }
 
+// MASTERS_Materials: code → Unit. Backs the issue-plan UoM coherence check.
+// Stock balances come out of STOCK_LEDGER in the MASTER's unit, while the BOM's
+// `consum` is expressed in the BOM's Comp UoM. When those two disagree,
+// `required = consum * qty` and `available` are different quantities and the
+// subtraction is meaningless — see prodUomMismatch_. Same memo rationale as
+// prodMatCategories_: one read, not one per BOM row.
+function prodMatUnits_() {
+  var c = prodCache_();
+  if (c.matUnits) return c.matUnits;
+  var map = {};
+  try {
+    var ws = getSpreadsheet().getSheetByName('MASTERS_Materials');
+    if (ws && ws.getLastRow() > 1) {
+      ws.getDataRange().getValues().slice(1).forEach(function (r) {
+        var code = String(r[MAT_COL.CODE] || '').trim();
+        if (code) map[code] = String(r[MAT_COL.UNIT] || '').trim();
+      });
+    }
+  } catch (e) { Logger.log('prodMatUnits_: ' + e.message); }
+  c.matUnits = map;
+  return map;
+}
+
+// Does this component's BOM unit disagree with its material master unit?
+// Returns '' when coherent (or when either side is unknown — an unresolved code
+// or a blank unit is a different problem, and blocking on it would stop
+// production for a data gap that is not an arithmetic error). Otherwise returns
+// the master unit, so the caller can name both units in its message.
+function prodUomMismatch_(compCode, bomUom) {
+  var bu = String(bomUom || '').trim().toUpperCase();
+  if (!compCode || !bu) return '';
+  var mu = String(prodMatUnits_()[compCode] || '').trim();
+  if (!mu) return '';
+  return mu.toUpperCase() === bu ? '' : mu;
+}
+
 // MASTERS_Customers: UPPERCASED name → code, and code → code. Backs the
 // clientCode resolved in getBomRows_ so production can filter FG by a stable
 // code instead of a display name. Same memo rationale as prodMatCategories_.

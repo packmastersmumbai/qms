@@ -1241,6 +1241,19 @@ function saveRound() {
       showToast('Error: ' + e.message, 'error');
     }))
     .saveRound(SESSION_ID, {
+      // Idempotency key for THIS round. Survives a retry after a dropped
+      // response (the server may have written the round and lost the reply), so
+      // saveRound returns the existing round instead of appending a duplicate.
+      // Keyed per session+round: cleared when a new round starts, so the next
+      // round is genuinely new rather than deduped against this one.
+      clientTxnId: (function(){
+                     var k = 'IPQC-' + SESSION_ID + '-R' + ROUND_NO;
+                     if (window._ipqcTxnKey !== k) {
+                       window._ipqcTxnKey = k;
+                       window._ipqcTxnId  = k + '-' + Date.now();
+                     }
+                     return window._ipqcTxnId;
+                   })(),
       productCode: SESSION_CODE,
       batch:       SESSION_BATCH,
       inspector:   SESSION_INSPECTOR,
