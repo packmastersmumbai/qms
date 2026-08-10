@@ -455,6 +455,20 @@ function doGet(e) {
     var ce; try { ce = cleanE2EGrn(String(e.parameter.confirm||'')==='YES'); } catch(er){ ce='ERR '+er.message; }
     return ContentService.createTextOutput(String(ce)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=ketofix[&confirm=YES] → repair the new BOM rows' client/uom/type
+  if (diag === 'ketofix') {
+    var kf;
+    try {
+      kf = (typeof fixKetoBom === 'function')
+        ? fixKetoBom(String(e.parameter.confirm || '') === 'YES')
+        : 'fixKetoBom missing (is _KetoBomFix.js pushed?)';
+    } catch (erkf) { kf = 'ERROR: ' + erkf.message; }
+    return ContentService.createTextOutput(String(kf)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'restore201244') {
+    var r24; try { r24 = restore201244(String(e.parameter.confirm||'')==='YES'); } catch(er){ r24='ERR '+er.message; }
+    return ContentService.createTextOutput(String(r24)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
   if (diag === 'vocabaudit') {
     var vca;
