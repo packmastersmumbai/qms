@@ -479,6 +479,36 @@ function doGet(e) {
     } catch (erkm) { km = 'ERROR: ' + erkm.message; }
     return ContentService.createTextOutput(String(km)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=putawayq → READ-ONLY: what is actually sitting in the putaway queue?
+  if (diag === 'putawayq') {
+    var pq = [];
+    try {
+      var q = getPutawayQueue() || [];
+      pq.push('PUTAWAY QUEUE — ' + q.length + ' pending row(s)');
+      pq.push('');
+      var byLoc = {}, fgRows = 0;
+      q.forEach(function (r) {
+        var l = String(r.fromLocationId || '(blank)');
+        byLoc[l] = (byLoc[l] || 0) + 1;
+        if (/^FG-/i.test(l)) fgRows++;
+      });
+      pq.push('by location:');
+      Object.keys(byLoc).sort().forEach(function (l) {
+        pq.push('  ' + (/^FG-/i.test(l) ? '!! ' : '   ') + l + '  ' + byLoc[l] + ' row(s)');
+      });
+      pq.push('');
+      pq.push('rows in an FG-* location: ' + fgRows +
+              '   (these can never be cleared — a pallet slot is ^B\\d{3}$, an RM bay)');
+      pq.push('');
+      pq.push('sample FG rows:');
+      q.filter(function (r) { return /^FG-/i.test(String(r.fromLocationId || '')); })
+       .slice(0, 10).forEach(function (r) {
+         pq.push('  ' + r.fromLocationId + '  ' + r.materialCode + '  ' +
+                 (r.desc || '') + '  qty=' + r.qty + '  cat=' + (r.category || ''));
+       });
+    } catch (epq) { pq.push('ERROR: ' + epq.message); }
+    return ContentService.createTextOutput(pq.join('\n')).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=bomuomfix → relabel BOM Comp UoM on 3 evidence-decided components
   if (diag === 'bomuomfix') {
     var buf;
@@ -999,7 +1029,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v158_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v159_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

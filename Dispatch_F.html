@@ -740,7 +740,19 @@
         authorizedBy:  document.getElementById('fAuthorizedBy').value,
         securityGuard: document.getElementById('fGuard').value.trim(),
         remarks:       document.getElementById('fRemarks').value.trim(),
-        operatorName:  document.getElementById('fOperator').value.trim()
+        operatorName:  document.getElementById('fOperator').value.trim(),
+        // Idempotency key. The guard above stops a double-tap, but not a retry
+        // after a DROPPED RESPONSE — the rows may already be written and the
+        // reply lost, and for dispatch that means FG stock debited twice and two
+        // gatepasses for one truck. Generated once per attempt, reused across
+        // retries of that attempt, cleared on success so the next dispatch is
+        // genuinely new. Same discipline GRN, IQC and Gatepass already use.
+        clientTxnId:   (function(){
+                         if (!window._dspTxnId) {
+                           window._dspTxnId = 'DSP-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+                         }
+                         return window._dspTxnId;
+                       })()
       };
 
       var btn = document.getElementById('btnConfirm');
@@ -761,6 +773,14 @@
           if (!res || !res.success) {
             showToast('Failed: ' + (res && res.error || 'unknown'), 'error');
             return;
+          }
+          // Retire the key ONLY on a confirmed success, so the next dispatch is a
+          // new transaction. Left in place on failure: a retry of THIS attempt
+          // must reuse it or the guard cannot recognise the retry.
+          window._dspTxnId = null;
+          if (res.duplicate) {
+            showToast((res.warnings && res.warnings[0]) ||
+                      'This dispatch was already saved.', 'warning');
           }
           showSuccessScreen(res);
         }))

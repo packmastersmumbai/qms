@@ -20,7 +20,12 @@ function auditTxnTagLeak() {
   var SHEETS = [
     { name: 'GRN_LOG',      col: 14, label: 'Remarks' },
     { name: 'IQC_LOG',      col: 25, label: 'Remarks' },
-    { name: 'GATEPASS_LOG', col: 14, label: 'REMARKS' }
+    { name: 'GATEPASS_LOG', col: 14, label: 'REMARKS' },
+    // Added with the Dispatch and IPQC guards. Without these entries this audit
+    // reported PASS while being blind to two writers that now stamp tags —
+    // a green check that proves nothing is worse than no check.
+    { name: 'DISPATCH_LOG', col: 12, label: 'Remarks' },
+    { name: 'IPQC_LOG',     col: 11, label: 'remark'  }
   ];
   out.push('── tags stored in sheets (EXPECTED) ──');
   SHEETS.forEach(function (s) {
@@ -80,6 +85,37 @@ function auditTxnTagLeak() {
     if (!iqcDoc || typeof getIQCPrintData !== 'function') return null;
     var d = getIQCPrintData(iqcDoc);
     return d ? d.remarks : null;
+  });
+
+  // IPQC stamps its tag into the per-parameter remark, which getIPQCPrintData
+  // renders onto the printed inspection report. Probe the newest tagged session.
+  var ipqcSid = newestTagged('IPQC_LOG', 0, 11);
+  probe('getIPQCPrintData(' + (ipqcSid || 'none') + ') param remarks', function () {
+    if (!ipqcSid || typeof getIPQCPrintData !== 'function') return null;
+    var d = getIPQCPrintData(ipqcSid);
+    if (!d || !d.rounds) return null;
+    var all = [];
+    (d.rounds || []).forEach(function (r) {
+      (r.params || r.rows || []).forEach(function (p) { if (p && p.remark) all.push(p.remark); });
+    });
+    return all.length ? all.join(' | ') : '';
+  });
+
+  // Dispatch stamps DISPATCH_LOG.Remarks. No print accessor reads that column
+  // today (the gatepass rows carry the operator's untagged remark), so the check
+  // is that the stored tag stays out of the gatepass the customer signs.
+  var dspTagged = newestTagged('DISPATCH_LOG', 4, 12);   // col 4 = GP No
+  probe('GATEPASS_LOG.REMARKS for ' + (dspTagged || 'none'), function () {
+    if (!dspTagged) return null;
+    var gw = ss.getSheetByName('GATEPASS_LOG');
+    if (!gw || gw.getLastRow() < 2) return null;
+    var n = gw.getLastRow() - 1;
+    var gv = gw.getRange(2, 1, n, 15).getValues();
+    var hits = [];
+    for (var i = 0; i < n; i++) {
+      if (String(gv[i][0] || '').trim() === dspTagged) hits.push(String(gv[i][14] || ''));
+    }
+    return hits.length ? hits.join(' | ') : '';
   });
 
   // The shared helper itself, including the mid-string case that a

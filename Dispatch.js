@@ -376,11 +376,76 @@ function planFGDispatchAllocation(customerCode, productCode, qtyRequested) {
 // Generates both a DSP- header doc number (DISPATCH_LOG) and a GP- number (GATEPASS_LOG).
 // Bypasses legacy assertOQCReleasedForRef_ (single-use guard); enforces gating via
 // FG_DISPATCH_LOTS.qtyAvailable + direct OQC decision re-check per lot.
+// 0-based index of 'Remarks' in DISPATCH_LOG_HEADERS. Derived, not hardcoded, so
+// a schema edit cannot silently point the idempotency lookup at another column.
+function _dspRemarksCol_() {
+  try {
+    var i = DISPATCH_LOG_HEADERS.indexOf('Remarks');
+    if (i >= 0) return i;
+  } catch (e) {}
+  return 12;
+}
+
+function _dspTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+
+// The DSP number already written under this txn key, plus its gatepass number,
+// or null. Both are returned because the client shows each one: reporting only
+// the DSP would leave the operator without the GP they need and invite a manual
+// re-save — the very duplicate this guard exists to prevent.
+function _dspFindByTxn_(txnId) {
+  try {
+    if (!txnId) return null;
+    var ws = getDispatchLogSheet_();
+    if (!ws || ws.getLastRow() < 2) return null;
+    var tag = _dspTxnTag_(txnId);
+    var n = ws.getLastRow() - 1;
+    var vals = ws.getRange(2, 1, n, DISPATCH_LOG_HEADERS.length).getValues();
+    var rc = _dspRemarksCol_();
+    for (var i = 0; i < n; i++) {
+      if (String(vals[i][rc] || '').indexOf(tag) >= 0) {
+        return { dspNo: String(vals[i][0] || ''), gpNo: String(vals[i][4] || '') };
+      }
+    }
+  } catch (e) { Logger.log('_dspFindByTxn_: ' + e.message); }
+  return null;
+}
+
+// Suffix, so the operator's own remark still reads first. Stripped by
+// stripTxnTag_ (GRN.js) wherever a human or a printed document reads it.
+function _dspStampTxn_(remarks, txnId) {
+  var base = String(remarks || '');
+  if (!txnId) return base;
+  return base + (base ? ' ' : '') + _dspTxnTag_(txnId);
+}
+
 function saveDispatchWithFIFO(payload) {
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
   try {
     if (!payload) return { success: false, error: 'Empty payload.' };
+
+    // Idempotency guard. Dispatch is the most consequential unguarded writer in
+    // the system: one call appends N GATEPASS_LOG rows, a DISPATCH_LOG header,
+    // an FG_DISPATCH ledger OUT per lot, and DECREMENTS FG_DISPATCH_LOTS. A
+    // retry after a dropped response repeats all of it — FG stock double-counted
+    // and two gatepasses for one truck. The dropped response is measured, not
+    // theoretical (saveGRN returns in ~12s and its handler still goes missing
+    // through the double iframe).
+    //
+    // Checked INSIDE the lock so a retry racing the first call sees committed
+    // rows rather than passing the check alongside it.
+    var dspTxnId = String(payload.clientTxnId || '').trim();
+    if (dspTxnId) {
+      var prior = _dspFindByTxn_(dspTxnId);
+      if (prior) {
+        return { success: true, docNo: prior.dspNo, dspNo: prior.dspNo,
+                 gatepassNo: prior.gpNo, gpNo: prior.gpNo, duplicate: true,
+                 warnings: ['This dispatch was already saved as ' + prior.dspNo +
+                            (prior.gpNo ? ' / ' + prior.gpNo : '') + '.'] };
+      }
+    }
     var custCode = String(payload.customerCode || '').trim();
     var custName = String(payload.customerName || '').trim();
     if (!custCode) return { success: false, error: 'Customer required.' };
@@ -633,7 +698,7 @@ function saveDispatchWithFIFO(payload) {
       payload.transporter   || '',
       payload.authorizedBy  || '',
       payload.securityGuard || '',
-      payload.remarks       || '',
+      _dspStampTxn_(payload.remarks, dspTxnId),   // + [txn:...] idempotency tag
       payload.operatorName  || userEmail,
       now,
       'ISSUED'
