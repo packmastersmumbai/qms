@@ -29,8 +29,16 @@ function auditMaterials() {
     // space anywhere upstream silently fails to match.
     if (typeof rawCode === 'number') numericCodes.push(code);
 
-    if (codeSeen[code]) dupes.push(code + ' (rows ' + codeSeen[code] + ' & ' + (i + 1) + ')');
-    else codeSeen[code] = i + 1;
+    if (codeSeen[code]) {
+      // Show the fields too. "Same code twice" and "same code, different data"
+      // are different problems: the first is a stray copy, the second means one
+      // variant is unreachable behind first-match-wins.
+      dupes.push(code + ' (rows ' + codeSeen[code] + ' & ' + (i + 1) + ')' +
+                 '  desc="' + String(r[C.DESC] || '').slice(0, 30) + '"' +
+                 ' cat=' + (String(r[C.CATEGORY] || '').trim() || '-') +
+                 ' insp=' + (String(r[C.INSP_CATEGORY] || '').trim() || '-') +
+                 ' unit=' + (String(r[C.UNIT] || '').trim() || '-'));
+    } else codeSeen[code] = i + 1;
 
     var cv = String(r[C.CATEGORY] || '').trim();
     cat[cv || '(blank)'] = (cat[cv || '(blank)'] || 0) + 1;
@@ -63,7 +71,7 @@ function auditMaterials() {
   out.push('  stored as NUMBER: ' + numericCodes.length + ' / ' + (d.length - 1) +
            (numericCodes.length ? '   eg ' + numericCodes.slice(0, 4).join(', ') : ''));
   out.push('  duplicate codes:  ' + dupes.length);
-  dupes.slice(0, 8).forEach(function (x) { out.push('     !! ' + x); });
+  dupes.forEach(function (x) { out.push('     !! ' + x); });
   out.push('');
 
   out.push('── Category (col D) — free text, no controlled list ──');

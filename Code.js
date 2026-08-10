@@ -479,6 +479,36 @@ function doGet(e) {
     } catch (erkm) { km = 'ERROR: ' + erkm.message; }
     return ContentService.createTextOutput(String(km)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=cansrows → READ-ONLY: name the CANS rows whose InspCategory disagrees
+  if (diag === 'cansrows') {
+    var cr;
+    try {
+      cr = (typeof diagCansRows === 'function')
+        ? diagCansRows(false, false)
+        : 'diagCansRows missing (is _CansRowDiag.js pushed?)';
+    } catch (ercr) { cr = 'ERROR: ' + ercr.message; }
+    return ContentService.createTextOutput(String(cr)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=cansfix → set InspCategory=CANS on the 3 approved rows (dry run by default)
+  if (diag === 'cansfix') {
+    var cf;
+    try {
+      cf = (typeof diagCansRows === 'function')
+        ? diagCansRows(String(e.parameter.confirm || '') === 'YES', true)
+        : 'diagCansRows missing (is _CansRowDiag.js pushed?)';
+    } catch (ercf) { cf = 'ERROR: ' + ercf.message; }
+    return ContentService.createTextOutput(String(cf)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=ketofgmat → create the 25 KETO FG rows getFG() needs (dry run by default)
+  if (diag === 'ketofgmat') {
+    var kfg;
+    try {
+      kfg = (typeof addKetoFgMaterials === 'function')
+        ? addKetoFgMaterials(String(e.parameter.confirm || '') === 'YES')
+        : 'addKetoFgMaterials missing (is _KetoFgMaterials.js pushed?)';
+    } catch (erkf) { kfg = 'ERROR: ' + erkf.message; }
+    return ContentService.createTextOutput(String(kfg)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'ketocust') {
     var kc; try { kc = addKetoCustomer(String(e.parameter.confirm||'')==='YES'); } catch(er){ kc='ERR '+er.message; }
     return ContentService.createTextOutput(String(kc)).setMimeType(ContentService.MimeType.TEXT);
