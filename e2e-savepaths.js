@@ -38,10 +38,37 @@ function installHelpers() {
     var e = document.getElementById(id);
     return e && e.options ? Array.from(e.options).map(function (o) { return o.value; }).filter(Boolean) : [];
   };
+  // WAIT for a select to be populated, then pick. Reading options once is the
+  // single most common cause of a bogus "select empty — no live data" skip in
+  // this suite: every one of these dropdowns is filled by a google.script.run
+  // response that lands AFTER the element exists, and GAS forms take 12-18s to
+  // finish initialising. ?diag=oqcinit reports 56 FG materials and ?diag=dropdiag
+  // 28 suppliers while this suite was calling both "empty" — the data was always
+  // there. Returns a promise so callers can await a real answer instead of
+  // sampling a race.
+  window.__waitOpts = function (id, timeoutMs) {
+    var deadline = Date.now() + (timeoutMs || 25000);
+    return new Promise(function (resolve) {
+      (function poll() {
+        var opts = window.__optsOf(id);
+        if (opts.length) return resolve(opts);
+        if (Date.now() > deadline) return resolve([]);
+        setTimeout(poll, 400);
+      })();
+    });
+  };
   window.__pickFirst = function (id) {
     var opts = window.__optsOf(id);
     if (!opts.length) return null;
     return window.__set(id, opts[0]) ? opts[0] : null;
+  };
+  // Populate-then-pick. Prefer this over __pickFirst for any select fed from the
+  // server; __pickFirst stays for selects populated synchronously in the markup.
+  window.__pickWhenReady = function (id, timeoutMs) {
+    return window.__waitOpts(id, timeoutMs).then(function (opts) {
+      if (!opts.length) return null;
+      return window.__set(id, opts[0]) ? opts[0] : null;
+    });
   };
   window.__installShim = function (writeFnName) {
     var calls = [];
@@ -405,8 +432,8 @@ async function runPOP(s) {
   if (!fr) return { skip: 'form did not render (supplierCode not found)' };
   await fr.evaluate(installHelpers);
 
-  const supPicked = await fr.evaluate(() => window.__pickFirst('supplierCode'));
-  if (!supPicked) return { skip: 'supplierCode select empty — no live supplier data' };
+  const supPicked = await fr.evaluate(() => window.__pickWhenReady('supplierCode', 25000));
+  if (!supPicked) return { skip: 'supplierCode still empty after 25s — no live supplier data' };
   await s.page.waitForTimeout(500);
 
   // Fill the first line. collectLines (POP_F.html:378-390) reads THREE inputs per
@@ -518,9 +545,12 @@ async function runIPQC(s) {
   if (!fr) return { skip: 'form did not render (setupProduct not found)' };
   await fr.evaluate(installHelpers);
 
-  const started = await fr.evaluate(() => {
-    const p = window.__pickFirst('setupProduct');
-    if (!p) return { ok: false, why: 'setupProduct empty — no live product data' };
+  const started = await fr.evaluate(async () => {
+    // Wait for population: picking from an unfilled select sent an EMPTY product
+    // to startSession, which then failed server-side and surfaced downstream as
+    // the misleading "Start Check did not produce a parameter matrix".
+    const p = await window.__pickWhenReady('setupProduct', 25000);
+    if (!p) return { ok: false, why: 'setupProduct still empty after 25s — no live product data' };
     // UNIQUE batch per run. startSession rejects a repeat with "A CLOSED session
     // already exists for this product+batch" (IPQC.js:161), so a fixed batch
     // passes exactly once and then skips forever — self-inflicted drift of
@@ -614,19 +644,20 @@ async function runOQC(s) {
   if (!fr) return { skip: 'form did not render (selMaterial not found)' };
   await fr.evaluate(installHelpers);
 
-  const picked = await fr.evaluate(() => {
-    const mat = window.__pickFirst('selMaterial');
-    if (!mat) return { ok: false, why: 'selMaterial empty — no FG materials' };
+  const picked = await fr.evaluate(async () => {
+    // Wait for the server to fill it — 56 FG materials exist (?diag=oqcinit).
+    const mat = await window.__pickWhenReady('selMaterial', 25000);
+    if (!mat) return { ok: false, why: 'selMaterial still empty after 25s — no FG materials' };
     return { ok: true, mat: mat };
   });
   if (!picked.ok) return { skip: picked.why };
   await s.page.waitForTimeout(2500);   // material change repopulates IPQC/lot data
 
-  const filled = await fr.evaluate(() => {
+  const filled = await fr.evaluate(async () => {
     const out = {};
-    out.ipqc = window.__pickFirst('selIPQC');
-    out.cust = window.__pickFirst('selCustomer');
-    out.fgLoc = window.__pickFirst('selFGLocation');
+    out.ipqc = await window.__pickWhenReady('selIPQC', 15000);
+    out.cust = await window.__pickWhenReady('selCustomer', 15000);
+    out.fgLoc = await window.__pickWhenReady('selFGLocation', 15000);
     window.__set('inpBatch', 'E2E-FIX-BATCH');
     window.__set('inpQty', 10);
     // Params are module state set through setCheck, not form fields.
@@ -696,10 +727,10 @@ async function runDispatch(s) {
   if (!fr) return { skip: 'form did not render (iProd-0 not found)' };
   await fr.evaluate(installHelpers);
 
-  const setup = await fr.evaluate(() => {
-    const cust = window.__pickFirst('fCustomer');
-    const prod = window.__pickFirst('iProd-0');
-    if (!prod) return { ok: false, why: 'iProd-0 empty — no FG products' };
+  const setup = await fr.evaluate(async () => {
+    const cust = await window.__pickWhenReady('fCustomer', 20000);
+    const prod = await window.__pickWhenReady('iProd-0', 25000);
+    if (!prod) return { ok: false, why: 'iProd-0 still empty after 25s — no FG products' };
     window.__set('iQty-0', 5);
     try { if (typeof onItemQtyInput === 'function') onItemQtyInput(0); } catch (e) {}
     window.__set('fVehicle', 'MH00FIX0000');

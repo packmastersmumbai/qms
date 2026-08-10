@@ -479,6 +479,70 @@ function doGet(e) {
     } catch (erkm) { km = 'ERROR: ' + erkm.message; }
     return ContentService.createTextOutput(String(km)).setMimeType(ContentService.MimeType.TEXT);
   }
+  //   ?diag=whichsheet → READ-ONLY: which spreadsheet is the server actually writing to?
+  if (diag === 'whichsheet') {
+    var ws2 = [];
+    try {
+      var sso = getSpreadsheet();
+      ws2.push('name: ' + sso.getName());
+      ws2.push('id:   ' + sso.getId());
+      ws2.push('url:  ' + sso.getUrl());
+      ws2.push('');
+      ws2.push('Open THAT url — a sheet tab opened earlier does not auto-refresh.');
+      ws2.push('');
+      // Prove the write landed by reading the specific cells back.
+      var gsw = sso.getSheetByName('GRN_LOG');
+      if (gsw) {
+        ws2.push('GRN_LOG spot checks (col G = Material Code, col L = Unit):');
+        [278, 279, 289, 292, 293, 326].forEach(function (rw) {
+          if (rw <= gsw.getLastRow()) {
+            ws2.push('  row' + rw + '  G="' + String(gsw.getRange(rw, 7).getValue()).trim() +
+                     '"  L="' + String(gsw.getRange(rw, 12).getValue()).trim() +
+                     '"  A="' + String(gsw.getRange(rw, 1).getValue()).trim() + '"');
+          }
+        });
+      }
+      var msw = sso.getSheetByName('MASTERS_Materials');
+      if (msw) {
+        ws2.push('');
+        ws2.push('MASTERS_Materials rows: ' + (msw.getLastRow() - 1) +
+                 '   (6 created, 1 duplicate deleted this session)');
+        var lastFew = msw.getRange(Math.max(2, msw.getLastRow() - 5), 1, Math.min(6, msw.getLastRow() - 1), 4).getValues();
+        ws2.push('last rows: ' + lastFew.map(function (r) { return String(r[0]).trim(); }).join(', '));
+      }
+    } catch (ews) { ws2.push('ERROR: ' + ews.message); }
+    return ContentService.createTextOutput(ws2.join('\n')).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=repoint → move GRN+ledger rows onto the correct material code (dry run default)
+  if (diag === 'repoint') {
+    var rp;
+    try {
+      rp = (typeof repointMaterialCodes === 'function')
+        ? repointMaterialCodes(String(e.parameter.confirm || '') === 'YES')
+        : 'repointMaterialCodes missing (is _CodeRepoint.js pushed?)';
+    } catch (errp) { rp = 'ERROR: ' + errp.message; }
+    return ContentService.createTextOutput(String(rp)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=grndatafix → create 6 missing master rows + relabel PC->NOS (dry run default)
+  if (diag === 'grndatafix') {
+    var gdf;
+    try {
+      gdf = (typeof fixGrnData === 'function')
+        ? fixGrnData(String(e.parameter.confirm || '') === 'YES')
+        : 'fixGrnData missing (is _GrnDataFix.js pushed?)';
+    } catch (ergdf) { gdf = 'ERROR: ' + ergdf.message; }
+    return ContentService.createTextOutput(String(gdf)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  //   ?diag=grniqcaudit → READ-ONLY: GRN_LOG + IQC_LOG vs MASTERS_Materials
+  if (diag === 'grniqcaudit') {
+    var gia;
+    try {
+      gia = (typeof auditGrnIqc === 'function')
+        ? auditGrnIqc()
+        : 'auditGrnIqc missing (is _GrnIqcAudit.js pushed?)';
+    } catch (ergia) { gia = 'ERROR: ' + ergia.message; }
+    return ContentService.createTextOutput(String(gia)).setMimeType(ContentService.MimeType.TEXT);
+  }
   //   ?diag=putawayq → READ-ONLY: what is actually sitting in the putaway queue?
   if (diag === 'putawayq') {
     var pq = [];

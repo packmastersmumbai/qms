@@ -12,7 +12,12 @@ const EXEC = process.env.PM_EXEC || 'https://script.google.com/macros/s/AKfycbxM
   const ctx = await b.newContext({ storageState: fs.existsSync(STATE) ? STATE : undefined });
   const page = await ctx.newPage();
   const url = EXEC + '?diag=' + q;
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  // Long-running diags exceed the 180s default: ?diag=smokeprod drives the whole
+  // plan -> issue -> book chain server-side and simply does not answer inside it,
+  // so it failed with a Playwright navigation timeout rather than a result.
+  // Override with PM_DIAG_TIMEOUT_MS (e.g. 540000 for the smoke suites).
+  const NAV_TIMEOUT = Number(process.env.PM_DIAG_TIMEOUT_MS) || 180000;
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT });
   await page.waitForTimeout(3000);
   // GAS text output renders inside a nested frame. Collect every frame's text,
   // then PREFER one that parses as JSON.

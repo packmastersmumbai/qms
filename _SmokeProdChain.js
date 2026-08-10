@@ -77,14 +77,25 @@ function smokeProdChain(opts) {
       var d = String(l.iqcDisposition||'').toUpperCase();
       if (d==='ACCEPTED'||d==='PASS'||d==='ACCEPTED WITH DEVIATION') issuableA += Number(l.balance)||0;
     });
-    // 60 received, less IQC samples actually pulled to the cabinet (sampleSize 8 per
-    // receipt x 2 = 16). Sampling is now a paired move, so it really leaves the RM
-    // location — it used to vanish from the ledger, which is what this expected before.
-    assert('compA issuable = 60 (76 received - 16 sampled)', Math.abs(issuableA - 60) < 0.001, 'issuable=' + issuableA);
-    // The sampled units must be AT the cabinet, not gone — proves the pairing.
+    // Only a CONTROL PIECE is retained per receipt, not the whole sample.
+    // IQC_CONTROL_SAMPLE_QTY = 1 (IQC.js:167): inspection is non-destructive, so
+    // the tested pieces go back to storage with the material and only one piece is
+    // held for traceability. Two receipts -> 2 pieces held.
+    //
+    // This assertion previously expected 16 (the full sampleSize 8 x 2) and 60
+    // issuable, encoding the OLD whole-sample behaviour. That was changed
+    // deliberately after ?diag=samplefate measured 800 units held across 234 pulls
+    // with ZERO ever returned. Derived from the constant rather than hardcoded, so
+    // retuning IQC_CONTROL_SAMPLE_QTY cannot silently break this again.
+    var ctlQty = (typeof IQC_CONTROL_SAMPLE_QTY !== 'undefined') ? Number(IQC_CONTROL_SAMPLE_QTY) : 1;
+    var expectHeld = ctlQty * 2;                 // two receipts
+    var expectIssuable = 76 - expectHeld;
+    assert('compA issuable = ' + expectIssuable + ' (76 received - ' + expectHeld + ' control pieces)',
+      Math.abs(issuableA - expectIssuable) < 0.001, 'issuable=' + issuableA);
+    // The retained pieces must be AT the cabinet, not gone — proves the pairing.
     var cabinetBal = bal(compA, batchA, 'SAMPLE-CABINET');
-    assert('sampled 16 units are held at SAMPLE-CABINET (paired move, not a bare debit)',
-      Math.abs(cabinetBal - 16) < 0.001, 'cabinet=' + cabinetBal);
+    assert('control pieces (' + expectHeld + ') held at SAMPLE-CABINET (paired move, not a bare debit)',
+      Math.abs(cabinetBal - expectHeld) < 0.001, 'cabinet=' + cabinetBal);
 
     // ---- computeProductionPlan ----
     header('computeProductionPlan');
