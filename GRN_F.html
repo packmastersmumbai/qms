@@ -194,6 +194,16 @@
     #po-multi-table { width: 100%; min-width: 460px; border-collapse: collapse; font-size: 11px; }
     #po-multi-table th { padding: 4px 6px; background: #fef3c7; text-align: left; }
     #po-multi-table td { padding: 4px 6px; }
+    /* Column widths were inline style= attributes on each <th>. Per
+       FORM-GUIDELINES §0.1 those are unreachable by any later layout fix, so
+       they are classes now. */
+    #po-multi-table .c-ord, #po-multi-table .c-pend { width: 60px; text-align: right; }
+    #po-multi-table .c-recv  { width: 80px; text-align: right; }
+    #po-multi-table .c-pend  { color: #b45309; }
+    #po-multi-table .c-batch { width: 90px; }
+    .po-multi-cap  { font-size: 11px; color: #92400E; font-weight: 700;
+                     margin-bottom: 6px; letter-spacing: .4px; }
+    .po-multi-note { font-size: 10px; color: #92400E; margin-top: 6px; }
     .po-multi-qty, .po-multi-batch { padding: 3px 5px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px; }
     .po-multi-qty { width: 70px; text-align: right; }
     .po-multi-batch { width: 85px; }
@@ -265,7 +275,10 @@
        for a batch number or a quantity. wide-first (supplier/PO) stays full
        width: a truncated supplier name is unusable. */
     .fk-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .fk-row.wide-first { grid-template-columns: 1fr; }
+    /* Supplier keeps the full width — a truncated supplier name is unusable —
+       and PO + Invoice pair beneath it, so the header costs 2 rows, not 3. */
+    .fk-row.wide-first { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fk-row.wide-first > #f-supplier { grid-column: 1 / -1; }
     /* The 64px disposition buttons were the tallest single block. 48px is still
        comfortably above the 44px touch minimum. */
     .disp-btn { min-height: 48px; }
@@ -327,6 +340,20 @@
   #formWrap .fk-input.fk-w-mid,   #formWrap .fk-select.fk-w-mid   { max-width: 420px; }
   #formWrap textarea { max-width: 640px; }
 
+  /* Replaces an inline style= on #clearPOLink. Per FORM-GUIDELINES §0.1 an
+     inline style is unreachable by any later layout fix, so it becomes a class.
+     Visibility is now the `hidden` attribute, toggled from JS. */
+  .fk-linkhint { cursor: pointer; text-decoration: underline; }
+
+  /* Replaces a 7-declaration inline style= on #btnAddItem. Same reason: an
+     inline style on a control cannot be overridden by any later layer. */
+  .fk-btn-add {
+    width: 100%; min-height: 44px; padding: 10px 12px;
+    font-size: 14px; font-weight: 700; color: #fff;
+    background: var(--pm-header-ink, #0b2a4a);
+    border: none; border-radius: 8px; cursor: pointer;
+  }
+
   /* Rows pack from the left at intrinsic width on a PHONE, where one column is
      all there is. Capping widths alone left a ragged left column with ~50% white
      on every row (measured at 960px: the material card used 47% of its width and
@@ -336,7 +363,11 @@
     #formWrap .fk-row { grid-template-columns: repeat(auto-fit, minmax(0, max-content));
                         justify-content: start; column-gap: 14px; row-gap: 8px;
                         align-items: start; }
-    #formWrap .fk-row.wide-first { grid-template-columns: 1fr; }
+    #formWrap .fk-row.wide-first { grid-template-columns: repeat(2, minmax(0, 1fr));
+                                   justify-content: stretch; }
+    #formWrap .fk-row.wide-first > #f-supplier { grid-column: 1 / -1; }
+    #formWrap .fk-row.wide-first .fk-input,
+    #formWrap .fk-row.wide-first .fk-select { max-width: 100%; }
     #formWrap .fk-row > .fk-span-all { grid-column: 1 / -1; }
 
     /* The grid must PAIR on a phone too, not stack. Flattening the .fk-row
@@ -363,14 +394,46 @@
       column-gap: 16px; row-gap: 10px; align-items: start;
     }
     #formWrap .fk-grid > .span-2 { grid-column: span 2; }
+  }
+
+  @media (min-width: 560px) {
     #formWrap .fk-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
                         column-gap: 16px; row-gap: 10px; align-items: start; }
-    #formWrap .fk-row.wide-first { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+    /* Supplier / PO / Invoice on ONE line. Supplier takes 2 tracks because its
+       option text is a full company name; PO and Invoice hold short codes. */
+    #formWrap .fk-row.wide-first {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+    #formWrap .fk-row.wide-first > #f-supplier { grid-column: auto; }
     /* Let a field use its whole track now that tracks are sized, otherwise the
        caps re-introduce the gaps this grid exists to remove. */
     #formWrap .fk-grid .fk-input, #formWrap .fk-grid .fk-select,
     #formWrap .fk-row .fk-input,  #formWrap .fk-row .fk-select { max-width: 100%; }
     #formWrap .fk-grid .fk-w-num, #formWrap .fk-row .fk-w-num { max-width: 130px; }
+  }
+
+  /* ── The receipt line is TWO rows, not three ────────────────────────────
+     MUST come after the 560px block: same specificity, and that block sets
+     .fk-grid's template with auto-fit, so an earlier rule loses the tie.
+
+     auto-fit gave 3 or 4 tracks depending on the viewport, so the five fields
+     wrapped unpredictably — usually Material(2)+Batch+Expiry, then Qty+Storage
+     with two empty tracks trailing. Four explicit tracks from 720px pin it:
+
+        [ Material ........... ][ Batch    ][ Expiry  ]
+        [ Qty ][ Storage ..................]
+
+     Qty is the narrowest value on the form so it leads the second row, and
+     Storage takes the remaining tracks rather than leaving a hole. */
+  @media (min-width: 720px) {
+    #formWrap .fk-card > .fk-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    #formWrap .fk-card > .fk-grid > #f-item        { grid-column: 1 / span 2; }
+    #formWrap .fk-card > .fk-grid > #f-batchNo     { grid-column: 3 / span 1; }
+    #formWrap .fk-card > .fk-grid > #f-expiry      { grid-column: 4 / span 1; }
+    #formWrap .fk-card > .fk-grid > #f-qtyReceived { grid-column: 1 / span 1; }
+    #formWrap .fk-card > .fk-grid > #f-storage-loc { grid-column: 2 / span 3; }
+    /* The PO multi-line table is a whole alternate mode — it owns the row. */
+    #formWrap .fk-card > .fk-grid > #po-multi-section { grid-column: 1 / -1; }
   }
 
   /* ── Helper text ───────────────────────────────────────────────────────
@@ -557,8 +620,10 @@
   <!-- Section 1: Header / Supplier -->
   <section class="fk-card">
 
-    <!-- Supplier + PO share a row: supplier is the wider, primary choice.
-         Collapses to one column below 640px. -->
+    <!-- Supplier + PO + Invoice are the ONE fact "who delivered, against what
+         paperwork". They share a row: supplier is the wider, primary choice and
+         gets 2 tracks. Invoice on its own row spent a whole line on a 12-char
+         value. Collapses to two columns on a phone (supplier full width). -->
     <div class="fk-row wide-first">
       <div id="f-supplier" class="fk-field">
         <label class="fk-label" for="supplier">Supplier <span class="req">*</span></label>
@@ -573,16 +638,14 @@
         <select id="poRefSelect" onchange="onPORefChange()" class="fk-select">
           <option value="">— no PO —</option>
         </select>
-        <div id="clearPOLink" class="fk-hint" onclick="clearPORef()"
-             style="display:none;cursor:pointer;text-decoration:underline">✕ Clear PO reference</div>
+        <div id="clearPOLink" class="fk-hint fk-linkhint" onclick="clearPORef()" hidden>✕ Clear PO reference</div>
       </div>
-    </div>
 
-    <!-- Invoice Number -->
-    <div class="fk-field">
-      <label class="fk-label" for="invoiceNo">Invoice Number <span class="opt">Optional</span></label>
-      <input id="invoiceNo" type="text" placeholder="e.g. INV-2026-001" autocomplete="off" class="fk-input fk-w-short">
-      <span class="fk-hint">From the supplier's invoice or challan.</span>
+      <div class="fk-field">
+        <label class="fk-label" for="invoiceNo">Invoice No <span class="opt">Optional</span></label>
+        <input id="invoiceNo" type="text" placeholder="e.g. INV-2026-001" autocomplete="off" class="fk-input fk-w-short">
+        <span class="fk-hint">From the supplier's challan.</span>
+      </div>
     </div>
 
   </section>
@@ -609,23 +672,23 @@
     </div>
 
     <!-- PO Multi-line table -->
-    <div id="po-multi-section" style="display:none">
-      <div style="font-size:11px;color:#92400E;font-weight:700;margin-bottom:6px;letter-spacing:0.4px;">PO LINES — enter qty received per line</div>
+    <div id="po-multi-section" hidden>
+      <div class="po-multi-cap">PO LINES — enter qty received per line</div>
       <div id="po-multi-scroll">
       <table id="po-multi-table">
         <thead>
           <tr>
             <th>Material</th>
-            <th style="text-align:right;width:60px">Ordered</th>
-            <th style="text-align:right;width:60px;color:#b45309">Pending</th>
-            <th style="text-align:right;width:80px">Receive</th>
-            <th style="width:90px">Batch</th>
+            <th class="c-ord">Ordered</th>
+            <th class="c-pend">Pending</th>
+            <th class="c-recv">Receive</th>
+            <th class="c-batch">Batch</th>
           </tr>
         </thead>
         <tbody id="po-multi-body"></tbody>
       </table>
       </div>
-      <div style="font-size:10px;color:#92400E;margin-top:6px">Enter received qty per line (numeric). Leave Receive blank to skip a line. All lines land pending IQC.</div>
+      <div class="po-multi-note">Enter received qty per line. Blank Receive skips the line. All lines land pending IQC.</div>
     </div>
 
     <!-- Batch + Expiry pair on one row: both are short, and they describe the
@@ -638,7 +701,7 @@
         <span class="fk-hint">As printed on the supplier's label.</span>
         <div class="field-error-msg" id="err-batchNo">Batch / Lot No is required</div>
       </div>
-      <div class="fk-field">
+      <div id="f-expiry" class="fk-field">
         <label class="fk-label" for="expiryDate">Expiry <span class="opt">Optional</span></label>
         <input id="expiryDate" type="month" placeholder="MM/YYYY" class="fk-input fk-w-date">
         <span class="fk-hint">Month and year.</span>
@@ -688,10 +751,7 @@
   <section id="extra-items-section" class="fk-card fk-optional">
     <details class="fk-disclose">
     <summary><span class="fk-section" style="margin:0">Additional Items</span><span class="fk-opt-note">optional</span></summary>
-    <button type="button" id="btnAddItem" onclick="addExtraItem()"
-      style="font-size:14px;font-weight:700;color:#fff;background:var(--pm-header-ink, #0b2a4a);padding:12px;border:none;border-radius:8px;cursor:pointer;width:100%;">
-      + Add Item
-    </button>
+    <button type="button" id="btnAddItem" class="fk-btn-add" onclick="addExtraItem()">+ Add Item</button>
     <div id="extra-items-list" class="flex flex-col gap-3"></div>
     <div id="extra-items-empty" class="text-[11px] text-[#64748b]">Same supplier, invoice, disposition. Different material/batch.</div>
     </details>
@@ -872,7 +932,7 @@ function clearAllErrors() {
 // ── Save button enable/disable ─────────────────────────────────────
 function refreshSaveBtn() {
   var isMulti = !!(_activePO && document.getElementById('po-multi-section') &&
-                   document.getElementById('po-multi-section').style.display !== 'none');
+                   !document.getElementById('po-multi-section').hidden);
   if (isMulti) {
     var anyQty = false;
     document.querySelectorAll('#po-multi-body .po-multi-qty').forEach(function(inp) {
@@ -1223,7 +1283,7 @@ function onPORefChange() {
   }
   suppSel.disabled = true;
   suppSel.dispatchEvent(new Event('change'));
-  document.getElementById('clearPOLink').style.display = 'block';
+  document.getElementById('clearPOLink').hidden = false;
 
   var lines = (poData.lines || []).filter(function(l) { return Number(l.qtyPending) > 0; });
   if (lines.length > 1) {
@@ -1256,7 +1316,7 @@ function renderPOMultiTable(lines) {
 function setRowDisp() {}  // no-op: per-row disposition removed
 
 function setMultiMode(on) {
-  document.getElementById('po-multi-section').style.display = on ? 'block' : 'none';
+  document.getElementById('po-multi-section').hidden = !on;
   var ex = document.getElementById('extra-items-section');
   if (ex) ex.style.display = on ? 'none' : '';
   ['f-item','f-storage-loc'].forEach(function(id) {
@@ -1276,7 +1336,7 @@ function setMultiMode(on) {
 function clearPORef() {
   _activePO = null;
   document.getElementById('poRefSelect').value = '';
-  document.getElementById('clearPOLink').style.display = 'none';
+  document.getElementById('clearPOLink').hidden = true;
   document.getElementById('supplier').disabled = false;
   setMultiMode(false);
 }
@@ -1422,7 +1482,7 @@ function uploadImagesAndSave_(afterUpload) {
 
 // ── Save ───────────────────────────────────────────────────────────
 function doSave() {
-  var isMulti = !!(_activePO && document.getElementById('po-multi-section').style.display !== 'none');
+  var isMulti = !!(_activePO && !document.getElementById('po-multi-section').hidden);
 
   if (!isMulti) {
     clearAllErrors();
@@ -1569,7 +1629,7 @@ function _doSaveProceed() {
   if (_grnSaveInFlight) return;
   _grnSaveInFlight = true;
 
-  var isMulti = !!(_activePO && document.getElementById('po-multi-section') && document.getElementById('po-multi-section').style.display !== 'none');
+  var isMulti = !!(_activePO && document.getElementById('po-multi-section') && !document.getElementById('po-multi-section').hidden);
   var btn = document.getElementById('btnSubmit');
   // Disable to stop a double-tap, but do NOT say "Saving…" yet.
   //
