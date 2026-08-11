@@ -446,6 +446,34 @@
   .fk-switch-compact { min-height: 34px; padding: 2px; }
   .fk-switch-compact .fk-switch-label { flex: none; margin-right: 10px; }
 
+  /* ── Extra-item card ───────────────────────────────────────────────────
+     Built by addExtraItem(). Every value here comes from a FormKit token so this
+     card cannot drift from the main receipt line the way the previous hand-rolled
+     inline styles did (their own 1.5px #d1d5db border, 6px radius, 42px height and
+     14px font all duplicated --fk tokens by hand). NESTED CARD is deliberate and
+     the one exception on this form: it is a repeated record inside a section, so
+     it needs an edge — but it is a flat inset, not a second elevation. */
+  .xi-card {
+    border: 1px solid var(--fk-hairline, #E5E7EB);
+    border-radius: var(--fk-r-md, 10px);
+    padding: var(--fk-s4, 12px);
+    background: var(--fk-canvas-soft, #FAFBFC);
+    display: flex; flex-direction: column; gap: var(--fk-s3, 8px);
+  }
+  .xi-head { display: flex; align-items: center; justify-content: space-between; }
+  .xi-idx {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--fk-muted, #6B7280);
+  }
+  .xi-del {
+    display: grid; place-items: center; width: 32px; height: 32px; flex: none;
+    background: none; border: 0; border-radius: var(--fk-r-sm, 4px); cursor: pointer;
+    color: var(--fk-muted, #6B7280); font-size: 20px; line-height: 1;
+    transition: color .15s ease, background .15s ease;
+  }
+  .xi-del:hover { color: var(--fk-fail-deep, #B91C1C); background: var(--fk-fail-soft, #FEE2E2); }
+
   /* ── Image tiles ───────────────────────────────────────────────────────
      Two 88px tiles side by side replace two stacked full-width dashed bands
      (~150px). Fixed size so they read as buttons, not as a drop target. */
@@ -1010,7 +1038,7 @@ function syncSubmitHint_() {
 }
 
 function hasValidExtraItem() {
-  var cards = document.querySelectorAll('#extra-items-list > div');
+  var cards = document.querySelectorAll('#extra-items-list > .xi-card');
   for (var i = 0; i < cards.length; i++) {
     var c = cards[i];
     var mat   = c.querySelector('.xi-mat') && c.querySelector('.xi-mat').value;
@@ -2027,7 +2055,11 @@ function addExtraItem() {
   var list = document.getElementById('extra-items-list');
   var card = document.createElement('div');
   card.id = id;
-  card.setAttribute('style','border:1.5px solid #d1d5db;border-radius:10px;padding:12px;background:var(--pm-page, #f8fafc);display:flex;flex-direction:column;gap:8px;position:relative;');
+  // CLASS, not an inline style attribute. Inline styles beat every stylesheet, so
+  // the hand-rolled `width:100%` on each control here was the reason the extra-item
+  // rows stayed full-width and unlabelled through several rounds of CSS work on
+  // this form — no layer could reach them. See .xi-card in the style block.
+  card.className = 'xi-card';
   card.dataset.idx = EXTRA_ITEMS_SEQ;
 
   var matOpts = '<option value="">Select material</option>' +
@@ -2037,21 +2069,42 @@ function addExtraItem() {
              (m.code || '') + ' — ' + (m.desc || '') + '</option>';
     }).join('');
 
-  var idxNum = document.querySelectorAll("#extra-items-list > div").length + 2;
-  var inputStyle = 'height:42px;border:1.5px solid #d1d5db;border-radius:6px;padding:0 10px;font-size:14px;width:100%;box-sizing:border-box;background:#fff;';
+  var idxNum = document.querySelectorAll("#extra-items-list > .xi-card").length + 2;
+  // Same structure as the main receipt line: real <label>s (a placeholder is not a
+  // label — it vanishes the moment the operator types, and "Batch No *" as grey
+  // placeholder text fails contrast besides), .fk-input/.fk-select for one source
+  // of border/height/radius, and one .fk-grid so the fields FILL the row instead
+  // of each taking a line.
   card.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-      '<span style="font-size:11px;font-weight:700;color:var(--pm-header-ink, #0b2a4a);letter-spacing:0.4px;">ITEM #' + idxNum + '</span>' +
-      '<button type="button" onclick="removeExtraItem(\'' + id + '\')" style="color:#b32a2a;font-size:22px;line-height:1;background:none;border:none;cursor:pointer;padding:2px 8px;">&times;</button>' +
+    '<div class="xi-head">' +
+      '<span class="xi-idx">Item ' + idxNum + '</span>' +
+      '<button type="button" class="xi-del" aria-label="Remove item ' + idxNum + '"' +
+        ' onclick="removeExtraItem(\'' + id + '\')">&times;</button>' +
     '</div>' +
-    '<select class="xi-mat" style="' + inputStyle + '">' + matOpts + '</select>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-      '<input type="text"  class="xi-batch"  placeholder="Batch No *"     style="' + inputStyle + '">' +
-      '<input type="month" class="xi-expiry" placeholder="Expiry"          style="' + inputStyle + '">' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-      '<input type="number" min="0" step="any" class="xi-qty" placeholder="Qty Received *" style="' + inputStyle + '">' +
-      '<input type="number" min="0" step="any" class="xi-acc" placeholder="Qty Accepted"   style="' + inputStyle + '">' +
+    '<div class="fk-grid">' +
+      '<div class="fk-field span-2">' +
+        '<label class="fk-label">Material <span class="req">*</span></label>' +
+        '<select class="fk-select xi-mat">' + matOpts + '</select>' +
+      '</div>' +
+      '<div class="fk-field">' +
+        '<label class="fk-label">Batch Number <span class="req">*</span></label>' +
+        '<input type="text" class="fk-input xi-batch" placeholder="B-">' +
+      '</div>' +
+      '<div class="fk-field">' +
+        '<label class="fk-label">Expiry <span class="opt">Optional</span></label>' +
+        '<input type="month" class="fk-input xi-expiry">' +
+      '</div>' +
+      '<div class="fk-field">' +
+        '<label class="fk-label">Qty Received <span class="req">*</span></label>' +
+        '<div class="fk-inline">' +
+          '<input type="number" min="0" step="any" class="fk-input mono fk-w-num xi-qty" placeholder="0">' +
+          '<span class="fk-unit xi-unit" hidden></span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="fk-field">' +
+        '<label class="fk-label">Qty Accepted <span class="opt">Optional</span></label>' +
+        '<input type="number" min="0" step="any" class="fk-input mono fk-w-num xi-acc" placeholder="0">' +
+      '</div>' +
     '</div>';
 
   list.appendChild(card);
@@ -2061,6 +2114,16 @@ function addExtraItem() {
     inp.addEventListener('input',  refreshSaveBtn);
     inp.addEventListener('change', refreshSaveBtn);
   });
+  // Same unit chip as the main line — an extra item is booked into the same ledger,
+  // so it carries the same wrong-unit exposure.
+  var xiMat = card.querySelector('.xi-mat');
+  if (xiMat) xiMat.addEventListener('change', function () {
+    var o = xiMat.options[xiMat.selectedIndex];
+    var u = (o && o.dataset && o.dataset.unit) ? String(o.dataset.unit).trim() : '';
+    var chip = card.querySelector('.xi-unit');
+    if (!chip) return;
+    if (u) { chip.textContent = u; chip.hidden = false; } else { chip.textContent = ''; chip.hidden = true; }
+  });
   refreshSaveBtn();
 }
 
@@ -2068,24 +2131,30 @@ function removeExtraItem(id) {
   var el = document.getElementById(id);
   if (el) el.remove();
   renumberExtraItems();
-  if (!document.querySelectorAll('#extra-items-list > div').length) {
+  if (!document.querySelectorAll('#extra-items-list > .xi-card').length) {
     document.getElementById('extra-items-empty').style.display = '';
   }
   refreshSaveBtn();
 }
 
 function renumberExtraItems() {
-  var cards = document.querySelectorAll('#extra-items-list > div');
+  var cards = document.querySelectorAll('#extra-items-list > .xi-card');
   cards.forEach(function(c, i){
-    var lbl = c.querySelector('span');
-    if (lbl) lbl.textContent = 'ITEM #' + (i + 2);
+    // Target .xi-idx explicitly. A bare querySelector('span') used to be safe
+    // when the card held no labels; now the first span in the card is the
+    // required-marker <span class="req"> inside the Material label, so the old
+    // selector would rewrite a LABEL instead of the index.
+    var lbl = c.querySelector('.xi-idx');
+    if (lbl) lbl.textContent = 'Item ' + (i + 2);
+    var del = c.querySelector('.xi-del');
+    if (del) del.setAttribute('aria-label', 'Remove item ' + (i + 2));
   });
 }
 
 function collectExtraItems(disposition) {
   var rows = [];
   var skipped = [];
-  document.querySelectorAll('#extra-items-list > div').forEach(function(card, i){
+  document.querySelectorAll('#extra-items-list > .xi-card').forEach(function(card, i){
     var matSel = card.querySelector('.xi-mat');
     var mat    = matSel.value;
     var batch  = card.querySelector('.xi-batch').value.trim();
