@@ -327,22 +327,50 @@
   #formWrap .fk-input.fk-w-mid,   #formWrap .fk-select.fk-w-mid   { max-width: 420px; }
   #formWrap textarea { max-width: 640px; }
 
-  /* Rows pack from the left at intrinsic width rather than splitting the card into
-     equal halves — two 1fr columns put ~150px of dead space between a 186px batch
-     field and a 158px date field. Applies at EVERY width: the first version was
-     gated under 900px, which is why the tablet screenshots still showed
-     full-width fields and empty right-hand thirds. */
-  @media (min-width: 360px) {
+  /* Rows pack from the left at intrinsic width on a PHONE, where one column is
+     all there is. Capping widths alone left a ragged left column with ~50% white
+     on every row (measured at 960px: the material card used 47% of its width and
+     stood 335px tall) — narrow fields fixed "too wide" and created "half empty".
+     Above 560px the card becomes a real GRID so rows FILL instead of packing. */
+  @media (min-width: 360px) and (max-width: 559px) {
     #formWrap .fk-row { grid-template-columns: repeat(auto-fit, minmax(0, max-content));
                         justify-content: start; column-gap: 14px; row-gap: 8px;
                         align-items: start; }
-    #formWrap .fk-row.wide-first { grid-template-columns: minmax(0, 420px) minmax(0, 260px); }
-    #formWrap .fk-row > .fk-span-all { grid-column: 1 / -1; }
-  }
-  @media (max-width: 519px) {
-    /* Supplier needs the full line on a phone — a truncated supplier name is
-       unusable — so wide-first stacks below 520px. */
     #formWrap .fk-row.wide-first { grid-template-columns: 1fr; }
+    #formWrap .fk-row > .fk-span-all { grid-column: 1 / -1; }
+
+    /* The grid must PAIR on a phone too, not stack. Flattening the .fk-row
+       wrappers into one .fk-grid regressed the phone from 1129px to 1246px,
+       because below 560px the grid fell back to a single column and batch/expiry
+       and qty/storage each took a row again. Two 165px tracks fit a 390px screen
+       with the 12px card padding, and Material spans both. */
+    #formWrap .fk-grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 10px; row-gap: 8px; align-items: start;
+    }
+    #formWrap .fk-grid > .span-2 { grid-column: 1 / -1; }
+    #formWrap .fk-grid .fk-input, #formWrap .fk-grid .fk-select { max-width: 100%; }
+  }
+
+  /* ── Filled grid from 560px ─────────────────────────────────────────────
+     Fields flow into equal tracks and the row is consumed left to right, so a
+     tablet shows three inputs per line instead of one input and two-thirds of
+     nothing. minmax(0,1fr) (not auto) is what makes the track share the space;
+     the per-field max-widths still stop a select from becoming absurdly long. */
+  @media (min-width: 560px) {
+    #formWrap .fk-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      column-gap: 16px; row-gap: 10px; align-items: start;
+    }
+    #formWrap .fk-grid > .span-2 { grid-column: span 2; }
+    #formWrap .fk-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+                        column-gap: 16px; row-gap: 10px; align-items: start; }
+    #formWrap .fk-row.wide-first { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+    /* Let a field use its whole track now that tracks are sized, otherwise the
+       caps re-introduce the gaps this grid exists to remove. */
+    #formWrap .fk-grid .fk-input, #formWrap .fk-grid .fk-select,
+    #formWrap .fk-row .fk-input,  #formWrap .fk-row .fk-select { max-width: 100%; }
+    #formWrap .fk-grid .fk-w-num, #formWrap .fk-row .fk-w-num { max-width: 130px; }
   }
 
   /* ── Helper text ───────────────────────────────────────────────────────
@@ -399,6 +427,24 @@
   #formWrap ~ #stickyFooter #btnSubmit:disabled,
   #stickyFooter #btnSubmit:disabled { pointer-events: none; }
   #stickyFooter { cursor: pointer; }
+
+  /* ── Optional strip ────────────────────────────────────────────────────
+     Three collapsed cards stacked vertically each cost a full row to show a
+     40px summary — measured 152px + 110px + 172px, and the widest used 21% of
+     its width. Side by side above 720px they occupy ONE row and the wasted
+     width becomes the thing that saves the height. They still stack on a phone,
+     where there is only one column to give. */
+  @media (min-width: 720px) {
+    #formWrap .fk-optional-strip {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px; align-items: start;
+    }
+    /* An OPEN disclosure needs the full width for its content (a textarea, a list
+       of extra items), so it spans the strip instead of staying in a third. */
+    #formWrap .fk-optional-strip > .fk-card:has(details[open]) { grid-column: 1 / -1; }
+  }
+  .fk-switch-compact { min-height: 34px; padding: 2px; }
+  .fk-switch-compact .fk-switch-label { flex: none; margin-right: 10px; }
 
   /* ── Image tiles ───────────────────────────────────────────────────────
      Two 88px tiles side by side replace two stacked full-width dashed bands
@@ -518,8 +564,14 @@
 
   <!-- Section 1b: Material card (wide — holds the PO multi-line table) -->
   <section class="fk-card">
+    <!-- ONE grid for the whole receipt line. Material, batch, expiry, quantity and
+         storage flow into equal tracks and consume the row left to right, so a
+         tablet fills the line instead of showing one field and two-thirds of
+         nothing. Material spans two tracks: its option text is the longest string
+         on the form ("[1308119] LOCTITE BONDACE 007 POWDER 16KG"). -->
+    <div class="fk-grid">
     <!-- Item -->
-    <div id="f-item" class="fk-field">
+    <div id="f-item" class="fk-field span-2">
       <label class="fk-label" for="item">Material Code <span class="req">*</span></label>
       <select id="item" disabled onchange="onItemChange()" class="fk-select fk-w-mid">
         <option value="">Select Material</option>
@@ -552,7 +604,6 @@
          same physical lot, so they read as one fact. (The old "single column
          per DESIGN.md" note referred to the superseded 430px-mobile-only spec;
          the Stitch authority states DESKTOP IS SUPPORTED.) Stacks below 640px. -->
-    <div class="fk-row">
       <div id="f-batchNo" class="fk-field">
         <label class="fk-label" for="batchNo">Batch Number <span class="req">*</span></label>
         <input id="batchNo" type="text" placeholder="B-" autocomplete="off" class="fk-input fk-w-code">
@@ -564,28 +615,7 @@
         <input id="expiryDate" type="month" placeholder="MM/YYYY" class="fk-input fk-w-date">
         <span class="fk-hint">Month and year.</span>
       </div>
-    </div>
 
-    <!-- COA Received toggle (iOS style). justify-start + gap keeps the switch
-         beside its label; justify-between stranded it ~700px away on desktop. -->
-    <div class="flex items-center gap-3 py-1">
-      <span class="fk-label">COA Received</span>
-      <label class="relative inline-flex items-center cursor-pointer">
-        <input type="checkbox" id="coaReceived" class="sr-only peer">
-        <div class="w-12 h-7 bg-slate-300 rounded-full peer peer-checked:bg-[#0ea5e9] transition-colors"></div>
-        <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></div>
-      </label>
-    </div>
-
-    <!-- Quantity + Storage Location share a row, and BOTH live in this card
-         rather than in a separate "Quantity" section.
-         Material code, batch, expiry and quantity are ONE receipt line — the
-         operator reads them as a single fact off the delivery. Splitting the
-         quantity into its own card cost a border, a padding, a section label and
-         a gap (142px measured) to say nothing the grouping did not already say.
-         Storage is auto-filled from the master, so it belongs beside the number
-         it qualifies, not on a row of its own. -->
-    <div class="fk-row">
       <div id="f-qtyReceived" class="fk-field">
         <label class="fk-label" for="qtyReceived">Qty Received <span class="req">*</span></label>
         <!-- The unit sits BESIDE the number, not in a hint below it. A GRN booked
@@ -608,9 +638,23 @@
           class="fk-input fk-w-code">
         <span id="hint-storage-loc" class="fk-hint">From the material master.</span>
       </div>
-    </div>
+    </div><!-- /.fk-grid -->
+
+    <!-- COA sits on the card's own footer rather than consuming a grid track: it
+         is a yes/no about the paperwork, not a field of the receipt line, and as a
+         grid cell it left a labelled hole beside the quantity. -->
+    <label class="fk-switch-row fk-switch-compact">
+      <span class="fk-switch-label">COA Received</span>
+      <input type="checkbox" id="coaReceived" class="fk-switch-input">
+      <span class="fk-switch-track" aria-hidden="true"></span>
+    </label>
 
   </section>
+
+  <!-- The three optional sections sit SIDE BY SIDE above 720px (see
+       .fk-optional-strip): stacked, each spent a whole row to show a 40px
+       summary. -->
+  <div class="fk-optional-strip">
 
   <!-- Section 3b: Additional Items (manual mode only) -->
   <section id="extra-items-section" class="fk-card fk-optional">
@@ -674,6 +718,8 @@
         class="w-full border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 py-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all resize-none"></textarea>
     </details>
   </section>
+
+  </div><!-- /.fk-optional-strip -->
 
   <!-- One switch does not need a card. A 54px section with a border and a shadow
        for a single optional toggle is the heaviest possible container for the
