@@ -319,17 +319,30 @@
   #formWrap .fk-input.fk-w-date,  #formWrap .fk-select.fk-w-date  { max-width: 158px; }
   #formWrap .fk-input.fk-w-code,  #formWrap .fk-select.fk-w-code  { max-width: 186px; }
   #formWrap .fk-input.fk-w-short, #formWrap .fk-select.fk-w-short { max-width: 260px; }
-  #formWrap .fk-input.fk-w-mid,   #formWrap .fk-select.fk-w-mid   { max-width: 100%; }
-  #formWrap textarea { max-width: 100%; }
+  /* 420px, not 100%. Measured at 1024px: #item and #storageLocation each rendered
+     894px — 93% of the form — for a code like "1308119" or "RM-STORE-C". That is
+     the dead space on the right of every row. A select's TEXT can be long
+     ("[1308119] LOCTITE BONDACE 007 POWDER 16KG") so it gets more room than an
+     input, but not the whole line. */
+  #formWrap .fk-input.fk-w-mid,   #formWrap .fk-select.fk-w-mid   { max-width: 420px; }
+  #formWrap textarea { max-width: 640px; }
 
-  /* Rows pack from the left at their intrinsic width rather than splitting the
-     card into equal halves — two 1fr columns put ~150px of dead space between a
-     186px batch field and a 158px date field. */
-  @media (max-width: 899px) and (min-width: 360px) {
-    #formWrap .fk-row { grid-template-columns: auto auto; justify-content: start;
-                        column-gap: 10px; row-gap: 8px; align-items: start; }
-    #formWrap .fk-row.wide-first { grid-template-columns: 1fr; }
+  /* Rows pack from the left at intrinsic width rather than splitting the card into
+     equal halves — two 1fr columns put ~150px of dead space between a 186px batch
+     field and a 158px date field. Applies at EVERY width: the first version was
+     gated under 900px, which is why the tablet screenshots still showed
+     full-width fields and empty right-hand thirds. */
+  @media (min-width: 360px) {
+    #formWrap .fk-row { grid-template-columns: repeat(auto-fit, minmax(0, max-content));
+                        justify-content: start; column-gap: 14px; row-gap: 8px;
+                        align-items: start; }
+    #formWrap .fk-row.wide-first { grid-template-columns: minmax(0, 420px) minmax(0, 260px); }
     #formWrap .fk-row > .fk-span-all { grid-column: 1 / -1; }
+  }
+  @media (max-width: 519px) {
+    /* Supplier needs the full line on a phone — a truncated supplier name is
+       unusable — so wide-first stacks below 520px. */
+    #formWrap .fk-row.wide-first { grid-template-columns: 1fr; }
   }
 
   /* ── Helper text ───────────────────────────────────────────────────────
@@ -386,6 +399,57 @@
   #formWrap ~ #stickyFooter #btnSubmit:disabled,
   #stickyFooter #btnSubmit:disabled { pointer-events: none; }
   #stickyFooter { cursor: pointer; }
+
+  /* ── Image tiles ───────────────────────────────────────────────────────
+     Two 88px tiles side by side replace two stacked full-width dashed bands
+     (~150px). Fixed size so they read as buttons, not as a drop target. */
+  .img-tiles { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; }
+  .img-tile {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; width: 88px; height: 68px; flex: none; cursor: pointer;
+    border: 1.5px solid var(--fk-hairline-strong, #CBD5E1);
+    border-radius: 10px; background: var(--fk-canvas-soft, #FAFBFC);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .img-tile:active { background: var(--fk-primary-soft, #EEF1FA); }
+  .img-tile:hover  { border-color: var(--fk-primary, #0D1B6E); }
+  .img-tile-ico { font-size: 22px; line-height: 1; color: var(--fk-primary, #0D1B6E); }
+  .img-tile-prod .img-tile-ico { color: var(--fk-pass-deep, #15803D); }
+  .img-tile-cap {
+    font-family: 'Public Sans', 'Inter', system-ui, sans-serif;
+    font-size: 11px; font-weight: 600; color: var(--fk-body, #374151);
+  }
+  /* Previews only occupy space once a photo exists — :empty keeps two invisible
+     flex children from adding gap to the row. */
+  .img-previews { display: flex; flex-wrap: wrap; gap: 6px; }
+  .img-previews:empty { display: none; }
+
+  /* ── Compact switch row ────────────────────────────────────────────────
+     A bare row, not a card. 32px against the 54px the carded version measured. */
+  .fk-switch-row {
+    display: flex; align-items: center; gap: 10px; padding: 6px 2px;
+    min-height: 44px; cursor: pointer; user-select: none;
+  }
+  .fk-switch-ico { font-size: 19px; line-height: 1; color: var(--fk-whatsapp, #25D366); flex: none; }
+  .fk-switch-label {
+    font-family: 'Public Sans', 'Inter', system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--fk-body, #374151); flex: 1 1 auto;
+  }
+  .fk-switch-input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .fk-switch-track {
+    position: relative; width: 42px; height: 24px; border-radius: 999px; flex: none;
+    background: var(--fk-hairline-strong, #CBD5E1); transition: background .18s ease;
+  }
+  .fk-switch-track::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.28);
+    transition: transform .18s ease;
+  }
+  .fk-switch-input:checked ~ .fk-switch-track { background: var(--fk-whatsapp, #25D366); }
+  .fk-switch-input:checked ~ .fk-switch-track::after { transform: translateX(18px); }
+  .fk-switch-input:focus-visible ~ .fk-switch-track {
+    outline: 2px solid var(--fk-link, #0070F3); outline-offset: 2px;
+  }
 
   /* Toast anchored TOP, restated here for the same cascade reason as above.
      bottom:90px put it inside the sticky save bar's band (footer measured at
@@ -513,22 +577,15 @@
       </label>
     </div>
 
-    <!-- Storage Location -->
-    <div id="f-storage-loc" class="fk-field">
-      <label class="fk-label" for="storageLocation">Storage Location</label>
-      <input id="storageLocation" type="text" disabled placeholder="Pick a material…"
-        class="fk-input fk-w-mid">
-      <span id="hint-storage-loc" class="fk-hint">Auto-assigned from the material's default location.</span>
-    </div>
-
-  </section>
-
-  <!-- Section 3: Quantity -->
-  <section id="qty-section" class="fk-card">
-    <h2 class="fk-section">Quantity</h2>
-    <!-- Single column per DESIGN.md -->
-    <div class="flex flex-col gap-3">
-
+    <!-- Quantity + Storage Location share a row, and BOTH live in this card
+         rather than in a separate "Quantity" section.
+         Material code, batch, expiry and quantity are ONE receipt line — the
+         operator reads them as a single fact off the delivery. Splitting the
+         quantity into its own card cost a border, a padding, a section label and
+         a gap (142px measured) to say nothing the grouping did not already say.
+         Storage is auto-filled from the master, so it belongs beside the number
+         it qualifies, not on a row of its own. -->
+    <div class="fk-row">
       <div id="f-qtyReceived" class="fk-field">
         <label class="fk-label" for="qtyReceived">Qty Received <span class="req">*</span></label>
         <!-- The unit sits BESIDE the number, not in a hint below it. A GRN booked
@@ -541,11 +598,18 @@
             class="fk-input mono fk-w-num">
           <span id="qtyUnit" class="fk-unit" hidden></span>
         </div>
-        <span id="hint-qtyReceived" class="fk-hint">Everything received — IQC sets the accepted amount later.</span>
+        <span id="hint-qtyReceived" class="fk-hint">All received — IQC accepts later.</span>
         <div class="field-error-msg" id="err-qtyReceived">Enter a quantity greater than 0</div>
       </div>
 
+      <div id="f-storage-loc" class="fk-field">
+        <label class="fk-label" for="storageLocation">Storage Location</label>
+        <input id="storageLocation" type="text" disabled placeholder="Pick a material…"
+          class="fk-input fk-w-code">
+        <span id="hint-storage-loc" class="fk-hint">From the material master.</span>
+      </div>
     </div>
+
   </section>
 
   <!-- Section 3b: Additional Items (manual mode only) -->
@@ -568,32 +632,27 @@
     <details class="fk-disclose">
     <summary><span class="fk-section" style="margin:0">Images</span><span class="fk-opt-note">optional · max 5 per type</span></summary>
 
-    <!-- Document Images -->
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-[#1e3a5f] text-[18px]" style="font-variation-settings:'FILL' 1">description</span>
-        <span class="fk-label">Document Images</span>
-        <span class="text-[10px] text-[#64748b]">Invoice / COA / Challan</span>
-      </div>
-      <div id="doc-img-preview" class="flex flex-wrap gap-2"></div>
-      <label id="doc-img-btn" class="flex items-center justify-center gap-2 h-[42px] border-[1.5px] border-dashed border-[#94a3b8] rounded-lg cursor-pointer text-[13px] font-semibold text-[#64748b] hover:border-accent hover:text-accent transition-all">
-        <span class="material-symbols-outlined text-[18px]">add_a_photo</span> Add Document Photo
+    <!-- Two icon tiles on ONE row, not two stacked full-width dashed zones.
+         The old pair cost ~150px for two actions that are each a single tap: a
+         label row, a preview row and a 42px drop zone apiece. The icon carries
+         the meaning (document vs carton) and the caption names it — a dashed
+         "Add Document Photo" band the width of the screen is a desktop
+         file-drop affordance on a device that has no drag and drop.
+         Previews render beside the tiles and only take height once a photo
+         exists. -->
+    <div class="img-tiles">
+      <label id="doc-img-btn" class="img-tile">
+        <span class="material-symbols-outlined img-tile-ico" style="font-variation-settings:'FILL' 1">description</span>
+        <span class="img-tile-cap">Document</span>
         <input type="file" accept="image/*" multiple class="hidden img-file-input" data-kind="doc">
       </label>
-    </div>
-
-    <!-- Product Images -->
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-[#15803d] text-[18px]" style="font-variation-settings:'FILL' 1">inventory_2</span>
-        <span class="fk-label">Product Images</span>
-        <span class="text-[10px] text-[#64748b]">Material / Packaging photos</span>
-      </div>
-      <div id="prod-img-preview" class="flex flex-wrap gap-2"></div>
-      <label id="prod-img-btn" class="flex items-center justify-center gap-2 h-[42px] border-[1.5px] border-dashed border-[#94a3b8] rounded-lg cursor-pointer text-[13px] font-semibold text-[#64748b] hover:border-accent hover:text-accent transition-all">
-        <span class="material-symbols-outlined text-[18px]">add_a_photo</span> Add Product Photo
+      <label id="prod-img-btn" class="img-tile img-tile-prod">
+        <span class="material-symbols-outlined img-tile-ico" style="font-variation-settings:'FILL' 1">inventory_2</span>
+        <span class="img-tile-cap">Product</span>
         <input type="file" accept="image/*" multiple class="hidden img-file-input" data-kind="product">
       </label>
+      <div id="doc-img-preview" class="img-previews"></div>
+      <div id="prod-img-preview" class="img-previews"></div>
     </div>
 
     <div id="img-upload-status" class="hidden text-[12px] font-semibold text-[#1e3a5f] flex items-center gap-2">
@@ -616,18 +675,17 @@
     </details>
   </section>
 
-  <!-- WhatsApp notification toggle -->
-  <section class="fk-card fk-card-inline">
-    <div class="flex items-center gap-2">
-      <span class="material-symbols-outlined text-[#15803d]" style="font-variation-settings:'FILL' 1">chat</span>
-      <span class="fk-label">Notify supplier on WhatsApp</span>
-    </div>
-    <label class="relative inline-flex items-center cursor-pointer">
-      <input type="checkbox" id="notifyWhatsapp" class="sr-only peer">
-      <div class="w-12 h-7 bg-slate-300 rounded-full peer peer-checked:bg-[#0ea5e9] transition-colors"></div>
-      <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></div>
-    </label>
-  </section>
+  <!-- One switch does not need a card. A 54px section with a border and a shadow
+       for a single optional toggle is the heaviest possible container for the
+       lightest possible control; as a bare inline row it costs ~32px and still
+       reads as its own step. The WhatsApp brand green is the signal here, which
+       is why it keeps a colour while the rest of the row stays neutral. -->
+  <label class="fk-switch-row">
+    <span class="material-symbols-outlined fk-switch-ico" style="font-variation-settings:'FILL' 1">chat</span>
+    <span class="fk-switch-label">Notify supplier on WhatsApp</span>
+    <input type="checkbox" id="notifyWhatsapp" class="fk-switch-input">
+    <span class="fk-switch-track" aria-hidden="true"></span>
+  </label>
 
 </main><!-- /#formWrap -->
 
@@ -1133,8 +1191,11 @@ function setMultiMode(on) {
   });
   var batchField = document.getElementById('f-batchNo');
   if (batchField) batchField.style.display = on ? 'none' : '';
-  var qtySection = document.getElementById('qty-section');
-  if (qtySection) qtySection.style.display = on ? 'none' : '';
+  // Was #qty-section, which no longer exists: the quantity moved INTO the material
+  // card (it is one receipt line, not two). Hide the field itself, or PO
+  // multi-line mode would leave a stray single-item quantity on screen.
+  var qtyField = document.getElementById('f-qtyReceived');
+  if (qtyField) qtyField.style.display = on ? 'none' : '';
   refreshSaveBtn();
 }
 
