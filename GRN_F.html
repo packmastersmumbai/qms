@@ -381,6 +381,9 @@
     }
     #formWrap .fk-grid > .span-2 { grid-column: 1 / -1; }
     #formWrap .fk-grid .fk-input, #formWrap .fk-grid .fk-select { max-width: 100%; }
+    /* Two 165px tracks leave no room for a 42px track plus its label, so on a
+       phone the switch takes the whole row and keeps its 44px hit area. */
+    #formWrap .fk-grid > #f-coa { grid-column: 1 / -1; margin-top: 2px; }
   }
 
   /* ── Filled grid from 560px ─────────────────────────────────────────────
@@ -421,17 +424,20 @@
      with two empty tracks trailing. Four explicit tracks from 720px pin it:
 
         [ Material ........... ][ Batch    ][ Expiry  ]
-        [ Qty ][ Storage ..................]
+        [ Qty ][ Storage ....... ][ COA Received     ]
 
-     Qty is the narrowest value on the form so it leads the second row, and
-     Storage takes the remaining tracks rather than leaving a hole. */
+     Qty is the narrowest value on the form so it leads the second row. COA
+     takes the last track: as a full-width footer it cost a THIRD row, and as
+     an early grid cell it left a labelled hole beside the quantity. At the end
+     of a full row it does neither. */
   @media (min-width: 720px) {
     #formWrap .fk-card > .fk-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     #formWrap .fk-card > .fk-grid > #f-item        { grid-column: 1 / span 2; }
     #formWrap .fk-card > .fk-grid > #f-batchNo     { grid-column: 3 / span 1; }
     #formWrap .fk-card > .fk-grid > #f-expiry      { grid-column: 4 / span 1; }
     #formWrap .fk-card > .fk-grid > #f-qtyReceived { grid-column: 1 / span 1; }
-    #formWrap .fk-card > .fk-grid > #f-storage-loc { grid-column: 2 / span 3; }
+    #formWrap .fk-card > .fk-grid > #f-storage-loc { grid-column: 2 / span 2; }
+    #formWrap .fk-card > .fk-grid > #f-coa         { grid-column: 4 / span 1; }
     /* The PO multi-line table is a whole alternate mode — it owns the row. */
     #formWrap .fk-card > .fk-grid > #po-multi-section { grid-column: 1 / -1; }
   }
@@ -571,6 +577,16 @@
   .fk-switch-label {
     font-family: 'Public Sans', 'Inter', system-ui, sans-serif;
     font-size: 13px; font-weight: 600; color: var(--fk-body, #374151); flex: 1 1 auto;
+  }
+  /* A switch inside the receipt grid has no .fk-label above it, so with the
+     grid's align-items:start it would float at the cell top while every input
+     beside it sits one label-line lower. Push it down by that line and give it
+     the input's own box so it reads as a control on the row, not stray text. */
+  .fk-switch-inline {
+    align-self: start; margin-top: 18px; padding: 0 10px;
+    min-height: 48px; box-sizing: border-box;
+    border: 1px solid var(--fk-hairline, #e2e8f0); border-radius: 8px;
+    background: var(--fk-surface, #fff);
   }
   .fk-switch-input { position: absolute; opacity: 0; width: 0; height: 0; }
   .fk-switch-track {
@@ -729,16 +745,18 @@
           class="fk-input fk-w-code">
         <span id="hint-storage-loc" class="fk-hint">From the material master.</span>
       </div>
+      <!-- COA rides the END of row 2, not a third row of its own. It was the
+           card's footer because as a full-width grid cell it left a labelled
+           hole beside the quantity — but as the LAST track of an otherwise
+           full row it fills space instead of creating it. Storage gives up one
+           track to make room. Still a switch, not a field: no label element
+           above it, so .fk-switch-inline centres it against the inputs. -->
+      <label id="f-coa" class="fk-switch-row fk-switch-compact fk-switch-inline">
+        <span class="fk-switch-label">COA Received</span>
+        <input type="checkbox" id="coaReceived" class="fk-switch-input">
+        <span class="fk-switch-track" aria-hidden="true"></span>
+      </label>
     </div><!-- /.fk-grid -->
-
-    <!-- COA sits on the card's own footer rather than consuming a grid track: it
-         is a yes/no about the paperwork, not a field of the receipt line, and as a
-         grid cell it left a labelled hole beside the quantity. -->
-    <label class="fk-switch-row fk-switch-compact">
-      <span class="fk-switch-label">COA Received</span>
-      <input type="checkbox" id="coaReceived" class="fk-switch-input">
-      <span class="fk-switch-track" aria-hidden="true"></span>
-    </label>
 
   </section>
 
