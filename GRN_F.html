@@ -162,7 +162,20 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* Toast */
-    .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1e3a5f; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s ease; z-index: 9999; pointer-events: none; white-space: nowrap; max-width: 90vw; }
+    /* TOP, not bottom:90px. The old position sat inside the sticky save bar's
+       band (footer top measured at y=683 on a 390x844 phone, toast at y=756), so
+       a validation error rendered UNDER the footer or behind the on-screen
+       keyboard and the operator never saw why Save was refusing. Anchored below
+       the 56px header instead, where nothing overlaps it.
+       white-space:normal so a two-clause message wraps instead of being clipped
+       at 90vw — the old nowrap truncated exactly the long "Add a material, a
+       batch number and a quantity" strings this form produces most. */
+    .toast { position: fixed; top: calc(56px + 10px); left: 50%; transform: translateX(-50%) translateY(-12px);
+             background: #1e3a5f; color: #fff; padding: 11px 18px; border-radius: 10px; font-size: 13px;
+             font-weight: 600; opacity: 0; transition: opacity .22s ease, transform .22s ease;
+             z-index: 100000; pointer-events: none; white-space: normal; text-align: center;
+             max-width: min(92vw, 460px); line-height: 1.35;
+             box-shadow: 0 6px 20px rgba(15,23,42,0.28); }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { background: #dc2626; }
     .toast.success { background: #16a34a; }
@@ -223,6 +236,166 @@
   <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
 <?!= include('FormKit') ?>
 <?!= include('HtmlCache') ?>
+<style>
+  /* ── COMPACT LAYER (GRN only) ──────────────────────────────────────────
+     MUST come after include('FormKit'): .fk-card/.fk-field/.fk-row live there
+     at the SAME specificity, so a copy of these rules in the <style> block at
+     the top of this file lost every cascade tie. Verified — the first attempt
+     changed nothing at all, computed gap stayed 16px.
+
+     Measured before: 1832px tall on a 390x844 phone = 2.17 screens of scroll for
+     8 fields, and 1661px on a 768px iPad. Receiving is a two-hands-busy job at a
+     delivery bay, so scrolling twice to reach Save is the complaint.
+
+     Scoped to this file deliberately: FormKit is shared by every form, so
+     tightening it there would silently reshape IQC, OQC, IPQC and the rest.
+
+     Only SPACING changes. Control heights stay >= 44px (touch target) and the
+     16px input font-size stays, because anything smaller makes iOS Safari zoom on
+     focus, which is worse than scrolling. */
+  @media (max-width: 899px) {
+    /* 16px -> 10px between seven cards is ~42px back on its own. */
+    #formWrap { gap: 10px; padding: calc(56px + 10px) 12px 12px; }
+    .fk-card { padding: 12px; gap: 10px; }
+    .fk-field { gap: 4px; }
+    .fk-label { font-size: 12px; }
+    .fk-section { margin: 6px 0 -2px; }
+    /* Pair fields from 380px instead of FormKit's 640px. Two controls side by
+       side cost one row, not two, and at 390px each still gets ~180px — enough
+       for a batch number or a quantity. wide-first (supplier/PO) stays full
+       width: a truncated supplier name is unusable. */
+    .fk-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .fk-row.wide-first { grid-template-columns: 1fr; }
+    /* The 64px disposition buttons were the tallest single block. 48px is still
+       comfortably above the 44px touch minimum. */
+    .disp-btn { min-height: 48px; }
+    /* The hint is redundant here now: the same sentence appears as a toast when a
+       blocked Save is tapped, and inside the footer it was never visible anyway
+       (measured at y=756 on an 844px viewport). Reclaims footer height. */
+    #submitHint { display: none !important; }
+    #stickyFooter { padding: 10px 12px; }
+    #btnSubmit { height: 50px; }
+  }
+
+  /* ── Collapsible optional sections ────────────────────────────────────
+     Measured on a 390px phone: Images 219px + Remarks 155px + Additional Items
+     134px = 508px, a third of the whole form, for fields most receipts never
+     touch. The four that actually gate Save are supplier, material, batch, qty.
+     <details> keeps the controls in the DOM (so doSave still reads them) while
+     costing one 40px summary row each when closed. */
+  .fk-optional { padding: 0 !important; }
+  .fk-disclose > summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 12px; cursor: pointer; list-style: none; min-height: 44px;
+  }
+  .fk-disclose > summary::-webkit-details-marker { display: none; }
+  /* A chevron that rotates — without it a closed section reads as a dead label. */
+  .fk-disclose > summary::after {
+    content: '⌄'; font-size: 16px; line-height: 1; color: #64748b;
+    transition: transform .18s ease; flex: none;
+  }
+  .fk-disclose[open] > summary::after { transform: rotate(180deg); }
+  .fk-opt-note { font-size: 10px; color: #94a3b8; font-weight: 500; margin-left: auto; margin-right: 4px; }
+  .fk-disclose > *:not(summary) { margin: 0 12px 12px; }
+  .fk-disclose[open] > summary { border-bottom: 1px solid var(--fk-hairline, #e2e8f0); margin-bottom: 10px; }
+  /* Desktop keeps the chevron and stays interactive; the `open` attribute is set
+     from JS at load (openOptionalOnWide_), because CSS cannot force a <details>
+     open — only the attribute does that. */
+
+  /* ── Field sizing on TOUCH ─────────────────────────────────────────────
+     Root cause of "wide text input fields": FormKit's whole density layer —
+     including .fk-w-num / -code / -date / -short / -mid — sits inside
+     `@media (min-width: 900px) and (pointer: fine)`, so a phone or tablet
+     receives NONE of it and every control stretches to the container.
+     Measured on a 390px viewport: invoiceNo, qtyReceived and storageLocation each
+     340px (87% of the screen) to hold 8-12 characters, while a quantity of "7"
+     got the same 340px as a supplier name.
+
+     A field should be as wide as the value it holds — that is what makes a form
+     scannable, and it is what lets two fields share a row instead of each taking
+     one. Same ceilings as the desktop layer, so the two agree.
+     max-width (never width) so a field still shrinks inside a narrow column. */
+  #formWrap .fk-input.fk-w-num,   #formWrap .fk-select.fk-w-num   { max-width: 108px; }
+  #formWrap .fk-input.fk-w-date,  #formWrap .fk-select.fk-w-date  { max-width: 158px; }
+  #formWrap .fk-input.fk-w-code,  #formWrap .fk-select.fk-w-code  { max-width: 186px; }
+  #formWrap .fk-input.fk-w-short, #formWrap .fk-select.fk-w-short { max-width: 260px; }
+  #formWrap .fk-input.fk-w-mid,   #formWrap .fk-select.fk-w-mid   { max-width: 100%; }
+  #formWrap textarea { max-width: 100%; }
+
+  /* Rows pack from the left at their intrinsic width rather than splitting the
+     card into equal halves — two 1fr columns put ~150px of dead space between a
+     186px batch field and a 158px date field. */
+  @media (max-width: 899px) and (min-width: 360px) {
+    #formWrap .fk-row { grid-template-columns: auto auto; justify-content: start;
+                        column-gap: 10px; row-gap: 8px; align-items: start; }
+    #formWrap .fk-row.wide-first { grid-template-columns: 1fr; }
+    #formWrap .fk-row > .fk-span-all { grid-column: 1 / -1; }
+  }
+
+  /* ── Helper text ───────────────────────────────────────────────────────
+     Only 2 of 9 fields had a hint, and none on quantity — the field with the
+     real failure modes (over-receipt against a PO, wrong unit). A hint sits on
+     ONE line under the control and is the same height as the error that replaces
+     it, so validating a field never shifts the layout below it. */
+  #formWrap .fk-hint {
+    font-size: 11px; line-height: 1.35; color: var(--fk-muted, #6B7280);
+    min-height: 15px; display: block;
+  }
+  /* The unit chip after a quantity — the operator must see KG vs NOS without
+     hunting for it, since a unit mismatch is the defect the issue-plan guard
+     blocks downstream. Not decoration: it is the field's contract. */
+  .fk-unit {
+    display: inline-flex; align-items: center; height: 24px; padding: 0 8px;
+    border-radius: 6px; background: var(--fk-primary-soft, #EEF1FA);
+    color: var(--fk-primary, #0D1B6E);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px; font-weight: 600; letter-spacing: -0.2px; white-space: nowrap;
+  }
+  .fk-inline { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+
+  /* ── Per-field validation ──────────────────────────────────────────────
+     .field-error-msg already existed in the markup but nothing ever revealed it,
+     so a blocked Save gave no per-field signal — the operator had to guess which
+     of four fields was wrong. Shown only after a field is touched-and-left, so
+     an untouched form is never a wall of red. */
+  #formWrap .field-error-msg {
+    display: none; font-size: 11px; line-height: 1.35; font-weight: 600;
+    color: var(--fk-fail-deep, #B91C1C); min-height: 15px;
+  }
+  #formWrap .fk-field.is-invalid .field-error-msg { display: block; }
+  #formWrap .fk-field.is-invalid .fk-hint { display: none; }
+  #formWrap .fk-field.is-invalid .fk-input,
+  #formWrap .fk-field.is-invalid .fk-select {
+    border-color: var(--fk-fail, #DC2626);
+    box-shadow: 0 0 0 3px var(--fk-fail-soft, #FEE2E2);
+  }
+  /* Satisfied required field: a 2px left edge on the label only, not a colored
+     card border. Confirms progress without competing with the PASS/FAIL signal
+     the inspection UI depends on. */
+  #formWrap .fk-field.is-valid > .fk-label::before {
+    content: ''; width: 3px; height: 3px; border-radius: 50%; flex: none;
+    background: var(--fk-pass, #16A34A); margin-right: 2px;
+  }
+
+  /* A disabled <button> is not merely click-swallowing — the browser fires NO
+     pointer event for it at all, so a capture-phase listener on the footer never
+     sees the tap either (measured: real mouse click on the disabled Save produced
+     no toast, invalidFields=0). Turning pointer-events off lets the tap fall
+     THROUGH to the footer, which then explains what is missing. The button still
+     cannot be activated, because it is still disabled. */
+  #formWrap ~ #stickyFooter #btnSubmit:disabled,
+  #stickyFooter #btnSubmit:disabled { pointer-events: none; }
+  #stickyFooter { cursor: pointer; }
+
+  /* Toast anchored TOP, restated here for the same cascade reason as above.
+     bottom:90px put it inside the sticky save bar's band (footer measured at
+     y=683 on a 390x844 phone, toast at y=756), so a validation error rendered
+     under the footer or behind the on-screen keyboard and was never read. */
+  .toast { top: calc(56px + 10px) !important; bottom: auto !important;
+           white-space: normal !important; max-width: min(92vw, 460px) !important;
+           text-align: center; line-height: 1.35; z-index: 100000 !important;
+           box-shadow: 0 6px 20px rgba(15,23,42,0.28); }
+</style>
 <script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
 </head>
 <body class="bg-surface font-body text-[#0f172a] antialiased flex flex-col min-h-screen">
@@ -271,6 +444,7 @@
     <div class="fk-field">
       <label class="fk-label" for="invoiceNo">Invoice Number <span class="opt">Optional</span></label>
       <input id="invoiceNo" type="text" placeholder="e.g. INV-2026-001" autocomplete="off" class="fk-input fk-w-short">
+      <span class="fk-hint">From the supplier's invoice or challan.</span>
     </div>
 
   </section>
@@ -286,7 +460,8 @@
       <select id="item" disabled onchange="onItemChange()" class="fk-select fk-w-mid">
         <option value="">Select Material</option>
       </select>
-      <div class="field-error-msg" id="err-item">Item is required</div>
+      <span id="hint-item" class="fk-hint">Choose a supplier first.</span>
+      <div class="field-error-msg" id="err-item">Select the material received</div>
     </div>
 
     <!-- PO Multi-line table -->
@@ -317,11 +492,13 @@
       <div id="f-batchNo" class="fk-field">
         <label class="fk-label" for="batchNo">Batch Number <span class="req">*</span></label>
         <input id="batchNo" type="text" placeholder="B-" autocomplete="off" class="fk-input fk-w-code">
+        <span class="fk-hint">As printed on the supplier's label.</span>
         <div class="field-error-msg" id="err-batchNo">Batch / Lot No is required</div>
       </div>
       <div class="fk-field">
         <label class="fk-label" for="expiryDate">Expiry <span class="opt">Optional</span></label>
         <input id="expiryDate" type="month" placeholder="MM/YYYY" class="fk-input fk-w-date">
+        <span class="fk-hint">Month and year.</span>
       </div>
     </div>
 
@@ -354,29 +531,42 @@
 
       <div id="f-qtyReceived" class="fk-field">
         <label class="fk-label" for="qtyReceived">Qty Received <span class="req">*</span></label>
-        <input id="qtyReceived" type="number" inputmode="decimal" min="0" step="1" placeholder="0"
-          class="fk-input mono fk-w-num">
-        <div class="field-error-msg" id="err-qtyReceived">Must be &gt; 0</div>
+        <!-- The unit sits BESIDE the number, not in a hint below it. A GRN booked
+             in the wrong unit is the defect the issue-plan guard now blocks
+             downstream (6 rows of bulk received in LTR against masters in KG), so
+             the unit is part of reading the value, not a footnote. Populated from
+             the material master by onItemChange. -->
+        <div class="fk-inline">
+          <input id="qtyReceived" type="number" inputmode="decimal" min="0" step="1" placeholder="0"
+            class="fk-input mono fk-w-num">
+          <span id="qtyUnit" class="fk-unit" hidden></span>
+        </div>
+        <span id="hint-qtyReceived" class="fk-hint">Everything received — IQC sets the accepted amount later.</span>
+        <div class="field-error-msg" id="err-qtyReceived">Enter a quantity greater than 0</div>
       </div>
 
     </div>
   </section>
 
   <!-- Section 3b: Additional Items (manual mode only) -->
-  <section id="extra-items-section" class="fk-card">
-    <h2 class="fk-section" style="margin:0 0 2px;">Additional Items</h2>
+  <section id="extra-items-section" class="fk-card fk-optional">
+    <details class="fk-disclose">
+    <summary><span class="fk-section" style="margin:0">Additional Items</span><span class="fk-opt-note">optional</span></summary>
     <button type="button" id="btnAddItem" onclick="addExtraItem()"
       style="font-size:14px;font-weight:700;color:#fff;background:var(--pm-header-ink, #0b2a4a);padding:12px;border:none;border-radius:8px;cursor:pointer;width:100%;">
       + Add Item
     </button>
     <div id="extra-items-list" class="flex flex-col gap-3"></div>
     <div id="extra-items-empty" class="text-[11px] text-[#64748b]">Same supplier, invoice, disposition. Different material/batch.</div>
-
+    </details>
   </section>
 
-  <!-- Section 5: Images -->
-  <section class="fk-card">
-    <h2 class="fk-section">Images <span class="text-[10px] font-normal normal-case tracking-normal text-[#64748b]">(optional · max 5 per type)</span></h2>
+  <!-- Section 5: Images — 219px measured, the single tallest optional block.
+       Collapsed by default; the file inputs stay in the DOM so
+       onImageFilesChosen_ and the save payload are unaffected. -->
+  <section class="fk-card fk-optional">
+    <details class="fk-disclose">
+    <summary><span class="fk-section" style="margin:0">Images</span><span class="fk-opt-note">optional · max 5 per type</span></summary>
 
     <!-- Document Images -->
     <div class="flex flex-col gap-2">
@@ -410,13 +600,20 @@
       <span class="spinner" style="border-color:rgba(30,58,95,0.3);border-top-color:#1e3a5f;"></span>
       <span id="img-upload-msg">Uploading images…</span>
     </div>
+    </details>
   </section>
 
-  <!-- Section 6: Remarks -->
-  <section class="fk-card">
-    <h2 class="fk-section">Remarks</h2>
-    <textarea id="remarks" rows="3" placeholder="Deviations, observations, or notes"
-      class="w-full border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 py-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all resize-none"></textarea>
+  <!-- Section 6: Remarks — collapsed by default on small screens.
+       <details> not JS: the textarea stays IN THE DOM either way, so
+       document.getElementById('remarks').value in doSave keeps working whether or
+       not the operator ever opens it. A JS show/hide that removed the node would
+       have broken the save payload. -->
+  <section class="fk-card fk-optional">
+    <details class="fk-disclose">
+      <summary><span class="fk-section" style="margin:0">Remarks</span><span class="fk-opt-note">optional</span></summary>
+      <textarea id="remarks" rows="3" placeholder="Deviations, observations, or notes"
+        class="w-full border-[1.5px] border-[#d1d5db] rounded-lg text-[16px] text-[#0f172a] px-3 py-3 focus:border-accent focus:ring-4 focus:ring-accent/15 outline-none transition-all resize-none"></textarea>
+    </details>
   </section>
 
   <!-- WhatsApp notification toggle -->
@@ -561,6 +758,8 @@ function refreshSaveBtn() {
            (topValid || extraValid);
   document.getElementById('btnSubmit').disabled = !ok;
   syncSubmitHint_();
+  revealNonEmptyOptional_();
+  grnValidateAll_(false);   // repaint touched fields; never flags an untouched one
 }
 
 // The "what's missing" hint is only useful while Save is blocked.
@@ -572,12 +771,112 @@ function refreshSaveBtn() {
 // a control that does not exist, while omitting Batch Number, which really does gate
 // Save. Now it names the actual missing fields, read from the same elements
 // refreshSaveBtn() validates, so the two cannot drift apart again.
-function syncSubmitHint_() {
-  var b = document.getElementById('btnSubmit');
-  var h = document.getElementById('submitHint');
-  if (!b || !h) return;
-  if (!b.disabled) { h.style.display = 'none'; return; }
+// ONE builder for both surfaces — the inline hint and the tap-to-explain toast.
+// Two copies of this sentence would drift, which is the exact defect the comment
+// above records (the old fixed sentence named a control that no longer exists).
+// ── Per-field validation ───────────────────────────────────────────────
+// The .field-error-msg divs shipped in the markup but nothing ever revealed
+// them, so a blocked Save named no field and the operator had to guess which of
+// four was wrong. Errors appear only after a field is TOUCHED AND LEFT — an
+// untouched form showing four red messages trains people to ignore red, and red
+// is the PASS/FAIL signal the rest of this app depends on.
+var GRN_VALIDATORS_ = [
+  { id: 'supplier',    field: 'f-supplier',    test: function (v) { return !!v; } },
+  { id: 'item',        field: 'f-item',        test: function (v) { return !!v; } },
+  { id: 'batchNo',     field: 'f-batchNo',     test: function (v) { return !!v.trim(); } },
+  { id: 'qtyReceived', field: 'f-qtyReceived', test: function (v) { return parseFloat(v) > 0; } }
+];
 
+function grnFieldWrap_(v) {
+  var byId = document.getElementById(v.field);
+  if (byId) return byId;
+  var el = document.getElementById(v.id);
+  return el && el.closest ? el.closest('.fk-field') : null;
+}
+
+// Paint one field. `force` marks it even if untouched — used when a blocked Save
+// is tapped, so the toast and the fields agree about what is missing.
+function grnValidateField_(v, force) {
+  var el = document.getElementById(v.id);
+  var wrap = grnFieldWrap_(v);
+  if (!el || !wrap) return true;
+  var ok = v.test(String(el.value || ''));
+  var touched = el.dataset.touched === '1' || force;
+  wrap.classList.toggle('is-invalid', !ok && !!touched);
+  // Only mark VALID once there is something to confirm; an empty optional-looking
+  // field with a green dot reads as done when it is not.
+  wrap.classList.toggle('is-valid', ok && String(el.value || '').trim() !== '');
+  return ok;
+}
+
+function grnValidateAll_(force) {
+  var allOk = true;
+  GRN_VALIDATORS_.forEach(function (v) { if (!grnValidateField_(v, force)) allOk = false; });
+  return allOk;
+}
+
+function wireFieldValidation_() {
+  GRN_VALIDATORS_.forEach(function (v) {
+    var el = document.getElementById(v.id);
+    if (!el) return;
+    // blur = "touched and left". Validating on every keystroke flags a batch
+    // number as invalid while it is still being typed.
+    el.addEventListener('blur', function () {
+      el.dataset.touched = '1';
+      grnValidateField_(v, false);
+    });
+    // Clear an existing error as soon as the value becomes good — an error that
+    // outlives its cause is worse than no error.
+    var live = function () { if (el.dataset.touched === '1') grnValidateField_(v, false); };
+    el.addEventListener('input', live);
+    el.addEventListener('change', function () { el.dataset.touched = '1'; grnValidateField_(v, false); });
+  });
+}
+
+// The unit belongs beside the quantity: a GRN booked in the wrong unit is the
+// defect the issue-plan guard blocks downstream. Reads the material master's
+// unit, which onItemChange has already resolved into itemObj.
+function syncQtyUnit_() {
+  var chip = document.getElementById('qtyUnit');
+  if (!chip) return;
+  var u = (itemObj && (itemObj.unit || itemObj.uom)) ? String(itemObj.unit || itemObj.uom).trim() : '';
+  if (u) { chip.textContent = u; chip.hidden = false; }
+  else   { chip.textContent = ''; chip.hidden = true; }
+}
+
+// Keep a collapsed section from HIDING content that matters. An extra item can
+// satisfy Save on its own (hasValidExtraItem), and an uploaded image or a typed
+// remark must stay visible — otherwise the operator cannot see or correct what
+// they entered. Called after any change to those sections.
+function revealNonEmptyOptional_() {
+  try {
+    var open = function (el) {
+      var d = el && el.closest ? el.closest('details.fk-disclose') : null;
+      if (d && !d.open) d.open = true;
+    };
+    var list = document.getElementById('extra-items-list');
+    if (list && list.children.length) open(list);
+    var r = document.getElementById('remarks');
+    if (r && String(r.value || '').trim()) open(r);
+    ['doc-img-preview', 'prod-img-preview'].forEach(function (id) {
+      var p = document.getElementById(id);
+      if (p && p.children.length) open(p);
+    });
+  } catch (e) {}
+}
+
+// On a wide screen there is no scroll problem to solve, so the optional sections
+// (Images / Remarks / Additional Items) start OPEN — collapsing them on a desktop
+// would hide fields from someone who can see the whole form at once. CSS cannot
+// do this: only the `open` attribute opens a <details>.
+function openOptionalOnWide_() {
+  try {
+    if (!window.matchMedia || !window.matchMedia('(min-width: 900px)').matches) return;
+    document.querySelectorAll('details.fk-disclose').forEach(function (d) { d.open = true; });
+  } catch (e) {}
+}
+
+function missingFieldsMessage_() {
   var missing = [];
   var val = function (id) {
     var e = document.getElementById(id);
@@ -591,12 +890,19 @@ function syncSubmitHint_() {
     if (!val('batchNo'))                     missing.push('a batch number');
     if (!(parseFloat(val('qtyReceived')) > 0)) missing.push('a quantity');
   }
-
-  h.style.display = '';
-  h.textContent = missing.length
+  return missing.length
     ? 'Add ' + (missing.length === 1 ? missing[0]
         : missing.slice(0, -1).join(', ') + ' and ' + missing[missing.length - 1]) + ' to save.'
     : 'Complete the highlighted fields to save.';
+}
+
+function syncSubmitHint_() {
+  var b = document.getElementById('btnSubmit');
+  var h = document.getElementById('submitHint');
+  if (!b || !h) return;
+  if (!b.disabled) { h.style.display = 'none'; return; }
+  h.style.display = '';
+  h.textContent = missingFieldsMessage_();
 }
 
 function hasValidExtraItem() {
@@ -646,6 +952,11 @@ function onSupplierChange() {
   var code = document.getElementById('supplier').value;
   itemObj = {};
   qtyManuallyEdited = false;
+  // Material changed out from under the quantity — drop the stale unit chip and
+  // reset the material hint rather than leaving the previous item's unit showing.
+  syncQtyUnit_();
+  var ih = document.getElementById('hint-item');
+  if (ih) ih.textContent = code ? 'Materials supplied by this supplier.' : 'Choose a supplier first.';
   if (!code) {
     supplierObj = {};
     document.getElementById('item').innerHTML = '<option value="">Select supplier first...</option>';
@@ -668,6 +979,17 @@ function onItemChange() {
   var opt = sel.options[sel.selectedIndex];
   itemObj = (opt && opt.dataset.obj) ? JSON.parse(opt.dataset.obj) : {};
   setFieldErr('f-item', 'err-item', false);
+  syncQtyUnit_();
+  // Once a material is chosen the "choose a supplier first" hint is stale; name
+  // the material's unit instead, which is what the operator needs while typing a
+  // quantity.
+  var itemHint = document.getElementById('hint-item');
+  if (itemHint) {
+    var iu = (itemObj && (itemObj.unit || itemObj.uom)) ? String(itemObj.unit || itemObj.uom).trim() : '';
+    itemHint.textContent = itemObj && itemObj.code
+      ? (itemObj.code + (iu ? ' · received in ' + iu : ''))
+      : 'Choose a supplier first.';
+  }
   var locInput = document.getElementById('storageLocation');
   var hint = document.getElementById('hint-storage-loc');
   if (locInput) {
@@ -1546,6 +1868,36 @@ pmReady(function() {
   document.getElementById('qtyReceived').addEventListener('input', function() { onQtyReceivedInput(); checkOverReceiptWarning(); });
   document.getElementById('batchNo').addEventListener('input', refreshSaveBtn);
   document.getElementById('btnSubmit').addEventListener('click', doSave);
+  // A DISABLED button fires no click event, so tapping Save while it is blocked
+  // did absolutely nothing — no message, no movement. The reason was only ever in
+  // #submitHint, which sits inside the sticky footer and is off-screen or behind
+  // the keyboard on a phone (measured: hint at y=756 on an 844px viewport).
+  // Listen on the FOOTER in the capture phase so the tap is seen even though the
+  // button itself swallows it, and surface the same reason as a toast.
+  openOptionalOnWide_();
+
+  var _footer = document.getElementById('stickyFooter');
+  if (_footer) _footer.addEventListener('click', function (ev) {
+    var b = document.getElementById('btnSubmit');
+    if (!b || !b.disabled) return;
+    // No target check: the disabled button carries pointer-events:none (see the
+    // CSS note), so the tap lands on the FOOTER, never on the button. An
+    // `ev.target === b` guard therefore rejected every real tap — measured.
+    // The footer holds nothing else while Save is blocked, so any tap in it is
+    // the operator reaching for Save.
+    // force=true: the toast names what is missing, so the fields must light up to
+    // match. Telling someone "add a batch number" without showing WHICH field
+    // still leaves them hunting.
+    grnValidateAll_(true);
+    showToast(missingFieldsMessage_(), 'warning');
+    var firstBad = document.querySelector('#formWrap .fk-field.is-invalid');
+    if (firstBad && firstBad.scrollIntoView) {
+      firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      var ctl = firstBad.querySelector('input,select,textarea');
+      if (ctl && ctl.focus) { try { ctl.focus({ preventScroll: true }); } catch (e) { ctl.focus(); } }
+    }
+  }, true);
+  wireFieldValidation_();
   document.getElementById('btnIqc').addEventListener('click', goToIqc);
   document.getElementById('btnHome').addEventListener('click', function() { navigate('Landing'); });
 
