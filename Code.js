@@ -463,6 +463,14 @@ function doGet(e) {
     var bra; try { bra = perfBlastRadius(); } catch(er){ bra='ERR '+er.message; }
     return ContentService.createTextOutput(String(bra)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'ledgeraudit') {
+    var lga; try { lga = ledgerAudit(); } catch(er){ lga = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(lga)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'whysilent') {
+    var wsl; try { wsl = ledgerWhySilent(); } catch(er){ wsl = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(wsl)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'telegram') {
     var tgd; try { tgd = perfTelegram(); } catch(er){ tgd = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(tgd)).setMimeType(ContentService.MimeType.TEXT);
