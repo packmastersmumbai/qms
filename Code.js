@@ -467,6 +467,16 @@ function doGet(e) {
     var lga; try { lga = ledgerAudit(); } catch(er){ lga = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(lga)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'negcompare') {
+    var ngc; try { ngc = ledgerNegCompare(); } catch(er){ ngc = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(ngc)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'zeroqtyfix') {
+    var zqf;
+    try { zqf = zeroQtyBackfill(String(e.parameter.confirm || '') === 'YES'); }
+    catch(er){ zqf = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(zqf)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'zeroproddates') {
     var zpe; try { zpe = ledgerZeroProdDates(); } catch(er){ zpe = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(zpe)).setMimeType(ContentService.MimeType.TEXT);

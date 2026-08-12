@@ -118,18 +118,27 @@ function ledgerAudit() {
     }
     if (expect < -0.001) negatives[key] = expect;
   });
+  // A key can dip negative mid-history (a consume recorded before its receipt)
+  // and recover by the end. Only the END state is a real shortfall — reporting
+  // the dip count alone overstates it (36 vs 28 measured after the backfill).
+  var finalNeg = {};
+  Object.keys(running).forEach(function (k) {
+    if (running[k] < -0.001) finalNeg[k] = running[k];
+  });
   out.push(mismatchTotal
     ? 'MISMATCHES: ' + mismatchTotal + ' row(s)  (showing first ' + mismatches.length + ')'
     : 'OK — every BalanceAfter matches the running total for its key.');
   mismatches.forEach(function (m) { out.push('   ' + m); });
 
-  var negKeys = Object.keys(negatives);
+  var negKeys = Object.keys(finalNeg);
+  var dipKeys = Object.keys(negatives);
   out.push('');
-  out.push('negative-balance keys: ' + negKeys.length +
-           (negKeys.length ? '  (stock issued that was never received)' : ''));
-  negKeys.slice(0, 8).forEach(function (k) {
-    out.push('   ' + _laPad_(k, 46) + negatives[k]);
-  });
+  out.push('negative at END:  ' + negKeys.length + '  (real shortfall — stock issued, never received)');
+  out.push('dipped negative:  ' + dipKeys.length + '  (includes keys that recovered — sequencing only)');
+  negKeys.sort(function (a, b) { return finalNeg[a] - finalNeg[b]; })
+    .slice(0, 8).forEach(function (k) {
+      out.push('   ' + _laPad_(k, 46) + Math.round(finalNeg[k] * 1000) / 1000);
+    });
 
   // ── 3. Paired moves ───────────────────────────────────────────────────
   out.push('');
@@ -182,7 +191,7 @@ function ledgerAudit() {
   if (bothNonZero)          fail.push(bothNonZero + ' row(s) with both in and out set');
   out.push(fail.length ? ('FAIL — ' + fail.join(' | ')) : 'PASS — ledger is internally consistent.');
   if (negKeys.length) {
-    out.push('NOTE: ' + negKeys.length + ' negative-balance key(s) — pre-existing data, ' +
+    out.push('NOTE: ' + negKeys.length + ' key(s) negative at END — pre-existing data, ' +
              'reported separately from the writer check.');
   }
   return out.join('\n');
@@ -318,5 +327,41 @@ function ledgerZeroProdDates() {
       ? 'VERDICT: the newest production row is CORRECT and newer than the newest'
       : 'VERDICT: a qty-0 row is the NEWEST — the writer may still be broken.');
   }
+  return out.join('\n');
+}
+
+// Reconcile the backfill's negative-key prediction against reality.
+// The fix predicted 28 negative keys; the audit reports 36. One of the two
+// counts is measuring something different — find out which before trusting
+// either number.
+function ledgerNegCompare() {
+  var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+  var vals = ws.getRange(2, 1, ws.getLastRow() - 1, 14).getValues();
+  var running = {}, everNeg = {}, finalNeg = {};
+  vals.forEach(function (r) {
+    var key = String(r[LA_COL_.MAT]).trim() + '|' + String(r[LA_COL_.BATCH]).trim() +
+              '|' + String(r[LA_COL_.LOC]).trim();
+    var bal = (running[key] || 0) + _laNum_(r[LA_COL_.IN]) - _laNum_(r[LA_COL_.OUT]);
+    running[key] = bal;
+    if (bal < -0.001) everNeg[key] = true;      // dipped negative at ANY point
+  });
+  Object.keys(running).forEach(function (k) {
+    if (running[k] < -0.001) finalNeg[k] = running[k];   // negative at the END
+  });
+  var out = ['NEGATIVE-BALANCE RECONCILIATION', ''];
+  out.push(_laPad_('keys ever negative', 26) + Object.keys(everNeg).length +
+           '   <- what ledgerAudit reports');
+  out.push(_laPad_('keys negative at END', 26) + Object.keys(finalNeg).length +
+           '   <- what actually needs stock');
+  out.push('');
+  out.push('A key that dips negative mid-history and recovers is a SEQUENCING');
+  out.push('artifact (a consume recorded before its receipt), not missing stock.');
+  out.push('Only the end-state list is a real shortfall.');
+  out.push('');
+  out.push('final negatives:');
+  Object.keys(finalNeg).sort(function (a, b) { return finalNeg[a] - finalNeg[b]; })
+    .forEach(function (k) {
+      out.push('   ' + _laPad_(k, 46) + Math.round(finalNeg[k] * 1000) / 1000);
+    });
   return out.join('\n');
 }
