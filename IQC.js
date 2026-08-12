@@ -687,27 +687,17 @@ function saveIQC(data) {
       }
     }
 
-    // Generate QR + PDF for the first docNo (one per submission batch)
+    // QR + PDF + Telegram are DEFERRED — see DeferredDocWork.js. Measured on
+    // GRN they cost ~12s inside the save, for paperwork that does not affect
+    // the record: the IQC rows and their stock ledger entries are already
+    // committed above. The operator is freed; the documents follow ~10s later.
     if (docNos.length > 0) {
-      try {
-        var primaryDoc = docNos[0];
-        var qrBase64 = generateIQCQR_(primaryDoc);
-        var pdfUrl   = generateIQCPdf_(primaryDoc, (severityIn + ' ' + IQC_SAMPLING_METHOD));
-        if (qrBase64) ws.getRange(firstAppendRow, 39, docNos.length, 1).setValue(qrBase64);
-        if (pdfUrl)   ws.getRange(firstAppendRow, 40, docNos.length, 1).setValue(pdfUrl);
-      } catch(qrPdfErr) {
-        Logger.log('IQC QR/PDF generation failed: ' + qrPdfErr.message);
-        warnings.push('Record saved but QR/PDF generation failed — regenerate from DocView.');
-      }
+      deferDocWork_('IQC', docNos[0], firstAppendRow, {
+        count:    docNos.length,
+        sampling: severityIn + ' ' + IQC_SAMPLING_METHOD,
+        ncrNo:    ncrNo || ''
+      });
     }
-
-    // Announce to Telegram + push next-action task to DWM. Best-effort.
-    try {
-      if (typeof qmsAnnounce_ === 'function' && docNos.length) {
-        var rec = getIQCRowForWA(firstAppendRow);
-        if (rec) { rec.ncrRef = ncrNo || rec.ncrRef; qmsAnnounce_(rec); }
-      }
-    } catch (annErr) { Logger.log('IQC announce skipped: ' + annErr.message); }
 
     return { success: true, docNos: docNos, ncrNo: ncrNo, ncrError: ncrError, warnings: warnings, putaway: putaway };
 

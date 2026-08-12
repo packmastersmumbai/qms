@@ -514,26 +514,15 @@ function saveOQC(data) {
       }
     }
 
-    // Generate QR + PDF for the first docNo
+    // QR + PDF + Telegram are DEFERRED — see DeferredDocWork.js. Same reasoning
+    // as GRN and IQC: the OQC rows are committed above, so none of this needs
+    // to sit between the operator and their confirmation.
     if (docNos.length > 0) {
-      try {
-        var qrBase64Oqc = generateOQCQR_(docNos[0]);
-        var pdfUrlOqc   = generateOQCPdf_(docNos[0]);
-        if (qrBase64Oqc) ws.getRange(firstAppendRowOQC, 26, docNos.length, 1).setValue(qrBase64Oqc);
-        if (pdfUrlOqc)   ws.getRange(firstAppendRowOQC, 27, docNos.length, 1).setValue(pdfUrlOqc);
-      } catch(qrPdfErr) {
-        Logger.log('OQC QR/PDF generation failed: ' + qrPdfErr.message);
-        warnings.push('Record saved but QR/PDF generation failed — regenerate from DocView.');
-      }
+      deferDocWork_('OQC', docNos[0], firstAppendRowOQC, {
+        count: docNos.length,
+        ncrNo: ncrNo || ''
+      });
     }
-
-    // Announce to Telegram + push next-action task to DWM. Best-effort.
-    try {
-      if (typeof qmsAnnounce_ === 'function' && docNos.length) {
-        var rec = getOQCRowForWA(firstAppendRowOQC);
-        if (rec) { rec.ncrRef = ncrNo || rec.ncrRef; qmsAnnounce_(rec); }
-      }
-    } catch (annErr) { Logger.log('OQC announce skipped: ' + annErr.message); }
 
     return { success: true, docNos: docNos, ncrNo: ncrNo, ncrError: ncrError, warnings: warnings };
   } catch(e) {

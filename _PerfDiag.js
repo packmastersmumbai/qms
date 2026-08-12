@@ -583,7 +583,7 @@ function perfDeferCheck(docNo) {
 
   var q = [];
   try { q = JSON.parse(PropertiesService.getScriptProperties()
-        .getProperty(GRN_DEFER_PROP_) || '[]'); } catch (e) {}
+        .getProperty(DEFER_QUEUE_PROP_) || '[]'); } catch (e) {}
   out.push('queue depth   : ' + q.length + (q.length ? '  (drain pending or failed)' : '  (drained)'));
 
   var trg = [];

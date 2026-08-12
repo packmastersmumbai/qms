@@ -467,6 +467,14 @@ function doGet(e) {
     var lga; try { lga = ledgerAudit(); } catch(er){ lga = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(lga)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'defermigrate') {
+    var dm; try { dm = migrateOldGrnDeferQueue(); } catch(er){ dm = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(dm)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'deferqueue') {
+    var dq; try { dq = deferQueueStatus(); } catch(er){ dq = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(dq)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'defercheck') {
     var dfc;
     try { dfc = perfDeferCheck(e.parameter.doc || ''); } catch(er){ dfc = 'ERR ' + er.message; }
