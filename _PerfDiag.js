@@ -872,3 +872,39 @@ function perfAllModuleDrive() {
   });
   return out.join('\n');
 }
+
+// Does onOpen actually build? A menu that throws leaves the spreadsheet with NO
+// QMS menu at all, and the failure is invisible until someone opens the sheet.
+// This calls every launcher target by name to prove it is defined, without
+// opening dialogs (showModelessDialog needs a real UI context).
+function perfMenuCheck() {
+  var targets = [
+    'openPOPForm','openGRNForm','openIQCForm',
+    'openProductionIssueForm','openProductionBookForm','openIPQCForm','openReworkForm',
+    'openOQCForm','openDispatchForm','openGatepassForm',
+    'openNCRForm','openCustomerReturnForm',
+    'openDashboard','openKPIDashboard','openRecords','openTraceForm','openWarehouseForm',
+    'sendWhatsAppSelected','openImportCSV',
+    'runHealthCheckUI','runLedgerAuditUI','runReachCheckUI','runDeferQueueUI',
+    'initializeProject','verifyMastersSeed','seedDefaultParameters',
+    'verifyAndRepairSheets','forceFixSheetHeaders','verifyDocCounters',
+    'forceReleaseStuckLock','flushAllCachesUI',
+    'backfillFGDispatchLotsFromOQCUI','backfillStockLedgerFromGRNUI',
+    'backfillGRNLocationsUI','reconcilePOReceipts'
+  ];
+  var missing = [], ok = 0;
+  targets.forEach(function (name) {
+    var fn = null;
+    try { fn = eval(name); } catch (e) {}
+    if (typeof fn === 'function') ok++; else missing.push(name);
+  });
+  var out = ['SHEETS MENU CHECK', ''];
+  out.push('menu items : ' + targets.length);
+  out.push('defined    : ' + ok);
+  out.push('MISSING    : ' + (missing.length ? missing.join(', ') : 'none'));
+  out.push('');
+  out.push(missing.length
+    ? 'A missing target throws when clicked. Fix before shipping.'
+    : 'Every menu item resolves to a real function.');
+  return out.join('\n');
+}

@@ -57,24 +57,48 @@ function onOpen() {
   try { ensureMaterialsLocationColumn_(); } catch(e) {}
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('QMS System')
-    // ── Daily operations ──────────────────────────────────────
-    .addItem('📥  New GRN', 'openGRNForm')
-    .addItem('🔍  New IQC', 'openIQCForm')
-    .addItem('🏭  New IPQC Check', 'openIPQCForm')
-    .addItem('📤  New OQC', 'openOQCForm')
-    .addItem('📋  NCR Triage',   'openNCRForm')
-    .addItem('📦  Customer Returns', 'openCustomerReturnForm')
-    .addItem('📋  New Purchase Order', 'openPOPForm')
-    .addItem('🚚  New Dispatch (FIFO)','openDispatchForm')
+    // ── RECEIVE ────────────────────────────────────────────────
+    // Ordered by how material actually moves through the plant, so the menu
+    // reads like the process rather than like the file list. Every stage that
+    // has a form now has an entry — Production Issue, Production Book, Rework,
+    // Gatepass, Warehouse and Trace were all reachable only from the web app.
+    .addSubMenu(ui.createMenu('📥  Receive')
+      .addItem('New Purchase Order',      'openPOPForm')
+      .addItem('New GRN (goods receipt)', 'openGRNForm')
+      .addItem('New IQC (incoming QC)',   'openIQCForm'))
+    // ── PRODUCE ────────────────────────────────────────────────
+    .addSubMenu(ui.createMenu('🏭  Produce')
+      .addItem('Production — Issue RM (per BOM)', 'openProductionIssueForm')
+      .addItem('Production — Book FG',            'openProductionBookForm')
+      .addItem('IPQC (in-process check)',         'openIPQCForm')
+      .addItem('Rework',                          'openReworkForm'))
+    // ── DESPATCH ───────────────────────────────────────────────
+    .addSubMenu(ui.createMenu('📤  Despatch')
+      .addItem('New OQC (outgoing QC)',    'openOQCForm')
+      .addItem('New Dispatch (FIFO)',      'openDispatchForm')
+      .addItem('Gatepass',                 'openGatepassForm'))
+    // ── EXCEPTIONS ─────────────────────────────────────────────
+    .addSubMenu(ui.createMenu('⚠️  Exceptions')
+      .addItem('NCR Triage',        'openNCRForm')
+      .addItem('Customer Returns',  'openCustomerReturnForm'))
     .addSeparator()
-    // ── Views & reports ───────────────────────────────────────
-    .addItem('📊  Open Dashboard', 'openDashboard')
-    .addItem('📋  Records', 'openRecords')
-    .addItem('📊  Open KPI Dashboard', 'openKPIDashboard')
+    // ── VIEWS ──────────────────────────────────────────────────
+    .addItem('📊  Dashboard',      'openDashboard')
+    .addItem('📈  KPI Dashboard',  'openKPIDashboard')
+    .addItem('📋  Records',        'openRecords')
+    .addItem('🔎  Trace a document','openTraceForm')
+    .addItem('🏬  Warehouse / Putaway', 'openWarehouseForm')
+    .addSeparator()
     .addItem('📲  Send WhatsApp (selected row)', 'sendWhatsAppSelected')
     .addItem('📂  Import Past Data (CSV)', 'openImportCSV')
     .addSeparator()
-    // ── Admin / maintenance (was inline; test & pure-diag items removed) ──
+    // ── HEALTH ─────────────────────────────────────────────────
+    .addSubMenu(ui.createMenu('🩺  Health & Diagnostics')
+      .addItem('Run full health check',   'runHealthCheckUI')
+      .addItem('Stock ledger audit',      'runLedgerAuditUI')
+      .addItem('Drive / notifications reach', 'runReachCheckUI')
+      .addItem('Deferred work queue',     'runDeferQueueUI'))
+    // ── ADMIN ──────────────────────────────────────────────────
     .addSubMenu(ui.createMenu('⚙️  Admin / Maintenance')
       .addItem('⚙️  Setup / Initialize Project', 'initializeProject')
       .addItem('🌱  Verify Masters Seed',    'verifyMastersSeed')
@@ -83,7 +107,7 @@ function onOpen() {
       .addItem('🔨  Force-Fix Sheet Headers','forceFixSheetHeaders')
       .addItem('🔢  Verify Doc Counters',    'verifyDocCounters')
       .addItem('🔧  Force Release Stuck Lock','forceReleaseStuckLock')
-      .addItem('♻️  Flush KPI Cache', 'kpiCacheFlush')
+      .addItem('♻️  Flush all caches', 'flushAllCachesUI')
       .addSeparator()
       .addItem('♻️  Backfill FG Dispatch Lots','backfillFGDispatchLotsFromOQCUI')
       .addItem('♻️  Backfill Stock Ledger from GRN','backfillStockLedgerFromGRNUI')
@@ -479,6 +503,10 @@ function doGet(e) {
   if (diag === 'tracereal') {
     var trl; try { trl = perfTraceReal(); } catch(er){ trl = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(trl)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'menucheck') {
+    var mck; try { mck = perfMenuCheck(); } catch(er){ mck = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(mck)).setMimeType(ContentService.MimeType.TEXT);
   }
   if (diag === 'alldrive') {
     var adr; try { adr = perfAllModuleDrive(); } catch(er){ adr = 'ERR ' + er.message; }
@@ -1849,4 +1877,125 @@ function forceReleaseStuckLock() {
   });
 
   ui.alert('Lock state report:\n\n' + report.join('\n') + '\n\nApps Script auto-releases held locks at the end of the holding execution (max 6 min). If the report shows HELD for ScriptLock and you see no Running executions, the holder is likely a stuck/abandoned tab — wait 6 minutes and retry.');
+}
+
+// ── Form launchers added 2026-08-13 ───────────────────────────
+// These forms existed and were reachable from the web app, but had no Sheets
+// menu entry — so anyone working in the spreadsheet could not open Production
+// Issue, Production Book, Gatepass, Warehouse or Trace at all.
+
+function openProductionIssueForm() {
+  var t = HtmlService.createTemplateFromFile('Production_F');
+  var html = t.evaluate().setWidth(1000).setHeight(700);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'Production — Issue RM per BOM');
+}
+
+function openProductionBookForm() {
+  // Same form; it opens on the booking tab. Kept as a separate entry because
+  // "issue RM" and "book FG" are two different jobs to the person doing them.
+  var t = HtmlService.createTemplateFromFile('Production_F');
+  var html = t.evaluate().setWidth(1000).setHeight(700);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'Production — Book FG');
+}
+
+function openGatepassForm() {
+  var html = HtmlService.createTemplateFromFile('Gatepass_F').evaluate()
+    .setWidth(900).setHeight(620);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'Gatepass — Pack Masters QMS');
+}
+
+function openWarehouseForm() {
+  var html = HtmlService.createTemplateFromFile('Warehouse_F').evaluate()
+    .setWidth(1000).setHeight(700);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'Warehouse / Putaway');
+}
+
+function openTraceForm() {
+  var html = HtmlService.createTemplateFromFile('Trace_F').evaluate()
+    .setWidth(900).setHeight(700);
+  SpreadsheetApp.getUi().showModelessDialog(html, 'Trace a document');
+}
+
+// ── Health & diagnostics, from the menu ───────────────────────
+// The ?diag= endpoints are driven from a laptop with node. These put the same
+// answers one click away for whoever is actually in the spreadsheet.
+
+function runLedgerAuditUI() {
+  var out;
+  try { out = ledgerAudit(); } catch (e) { out = 'ERROR: ' + e.message; }
+  _showReport_('Stock Ledger Audit', out);
+}
+
+function runReachCheckUI() {
+  var out;
+  try { out = perfBlastRadius(); } catch (e) { out = 'ERROR: ' + e.message; }
+  _showReport_('Drive / Notification Reach', out);
+}
+
+function runDeferQueueUI() {
+  var out;
+  try { out = deferQueueStatus(); } catch (e) { out = 'ERROR: ' + e.message; }
+  _showReport_('Deferred Work Queue', out);
+}
+
+function flushAllCachesUI() {
+  var msgs = [];
+  try { invalidatePmCache_(); msgs.push('pm caches cleared'); } catch (e) { msgs.push('pm: ' + e.message); }
+  try { if (typeof kpiCacheFlush === 'function') { kpiCacheFlush(); msgs.push('KPI cache cleared'); } } catch (e) {}
+  try { bumpPmFingerprint_(); msgs.push('fingerprint bumped'); } catch (e) {}
+  SpreadsheetApp.getUi().alert('Caches', msgs.join('\n'), SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+// Server-side half of the health check: proves each module can still reach
+// Sheets, Drive and the network, and times the reads the forms depend on.
+// The BROWSER half (render, load time, responsiveness) is `node e2e-health.js`,
+// which the dialog names — a script inside Sheets cannot measure page paint.
+function runHealthCheckUI() {
+  var lines = ['PM QMS — SERVER HEALTH', ''];
+  function t(label, fn) {
+    var t0 = new Date().getTime(), note = '';
+    try { note = String(fn() || 'OK'); } catch (e) { note = 'FAIL ' + e.message.slice(0, 60); }
+    lines.push(_hcPad_(label, 30) + _hcPad_((new Date().getTime() - t0) + 'ms', 9) + note.slice(0, 60));
+  }
+  t('Spreadsheet reachable', function () { return getSpreadsheet().getName(); });
+  t('GRN form init',   function () { return getGRNFormInit().suppliers.length + ' suppliers'; });
+  t('IQC form init',   function () { return getIQCFormInit().recentGRNs.length + ' pending GRNs'; });
+  t('Drive write (PDF)', function () {
+    var r = drvHtmlToPdf('<b>health</b>', 'HEALTH_' + new Date().getTime(),
+                         qmsMonthFolderId_('GRN', new Date()));
+    drvTrash(r.id);
+    return 'wrote + trashed';
+  });
+  t('Outbound network', function () {
+    return 'HTTP ' + UrlFetchApp.fetch('https://www.google.com/generate_204',
+      { muteHttpExceptions: true }).getResponseCode();
+  });
+  t('Telegram configured', function () {
+    var tok = PropertiesService.getScriptProperties().getProperty('TelegramBotToken');
+    return tok ? 'token set' : 'NOT configured';
+  });
+  t('Cache fingerprint', function () {
+    var fp = _pmSheetFingerprint_();
+    return fp === '0' ? 'DEAD (constant)' : fp;
+  });
+  t('Deferred queue', function () {
+    var q = JSON.parse(PropertiesService.getScriptProperties()
+            .getProperty(DEFER_QUEUE_PROP_) || '[]');
+    return q.length + ' pending';
+  });
+  lines.push('');
+  lines.push('Page load time and responsiveness are measured in a real browser:');
+  lines.push('    node e2e-health.js');
+  _showReport_('Health Check', lines.join('\n'));
+}
+
+function _hcPad_(s, n) { s = String(s); while (s.length < n) s += ' '; return s; }
+
+function _showReport_(title, text) {
+  var safe = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  var html = HtmlService.createHtmlOutput(
+    '<pre style="font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;' +
+    'white-space:pre-wrap;padding:12px;margin:0;">' + safe + '</pre>')
+    .setWidth(760).setHeight(560);
+  SpreadsheetApp.getUi().showModelessDialog(html, title);
 }
