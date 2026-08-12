@@ -32,6 +32,19 @@ var QMS_DATA_PARENT_PROP_ = 'pm.drive.qmsDataParentId';
  * Resolution order: configured ID → a root folder literally named "PM QMS" →
  * the spreadsheet's parent (which, for this deployment, is My Drive root).
  */
+// SCOPE NOTE (2026-08-12): the pinned ID is now the PRIMARY path, and the
+// root-folder scan is a last resort that is expected never to run in production.
+//
+// Why it matters: getRootFolder() browses the user's whole Drive, so it forces
+// the RESTRICTED https://.../auth/drive scope. Google will not grant a
+// restricted scope on a standard GCP project until the app passes OAuth
+// verification — which is what currently blocks images, PDFs and QR codes.
+//
+// Every other call this project makes (getFileById on files it created,
+// createFile, createFolder, makeCopy) is satisfied by
+// https://.../auth/drive.file, which is NON-sensitive and needs no verification.
+// So: pin the parent folder once via setQmsDataParent(<id>), and the runtime
+// never needs the restricted scope again.
 function getProjectFolder_() {
   var props = PropertiesService.getScriptProperties();
   var pinned = props.getProperty(QMS_DATA_PARENT_PROP_);
@@ -39,23 +52,94 @@ function getProjectFolder_() {
     try { return DriveApp.getFolderById(pinned); }
     catch (e) { /* stale id — fall through and re-resolve */ }
   }
-  var byName = DriveApp.getRootFolder().getFoldersByName('PM QMS');
-  if (byName.hasNext()) {
-    var f = byName.next();
-    props.setProperty(QMS_DATA_PARENT_PROP_, f.getId()); // cache for next time
-    return f;
-  }
-  var ss = getSpreadsheet();
-  var parents = DriveApp.getFileById(ss.getId()).getParents();
-  if (!parents.hasNext()) throw new Error('Cannot find a parent folder for QMS Data.');
-  return parents.next();
+
+  // MEASURED 2026-08-12: the granted scope is drive.file, NOT the restricted
+  // drive. Under drive.file a script may only touch what IT created — so
+  // getFileById(spreadsheet) and getRootFolder() both throw here, and adopting
+  // the human-made "PM QMS" folder is impossible by design, not by misconfig.
+  //
+  // Both were tried and both failed (?diag=drivefile). The route that DOES work
+  // is for the script to create its own folder and keep using that. New PDFs and
+  // images land there; files already stored elsewhere keep working, because a
+  // Drive file id is stable regardless of which folder holds it, and every link
+  // in the sheets is stored by id.
+  //
+  // Restricted-scope alternatives were rejected deliberately: auth/drive needs
+  // Google OAuth verification, which this project cannot pass quickly, and it
+  // would grant the app the user's ENTIRE Drive to write a few PDFs.
+  throw new Error('getProjectFolder_ is unavailable under drive.file. ' +
+    'Use qmsFolderId_(...) / DriveRest.js instead — see the note above.');
 }
 
-/** Pin the QMS Data parent explicitly (e.g. after moving the folder). */
+// ── REST folder resolution (drive.file safe) ──────────────────────────
+// Returns a folder ID, not a DriveApp Folder object, because DriveApp cannot
+// open even the folders it created under drive.file. Everything downstream
+// therefore works with ids and DriveRest functions.
+function qmsRootFolderId_() {
+  var props = PropertiesService.getScriptProperties();
+  var pinned = props.getProperty(QMS_DATA_PARENT_PROP_);
+  if (pinned) return pinned;
+  var id = drvGetOrCreateFolder(QMS_SELF_ROOT_, '');
+  props.setProperty(QMS_DATA_PARENT_PROP_, id);
+  return id;
+}
+
+/** <app root>/QMS Data/<module>/<yyyy-MM> — returns the month folder id. */
+function qmsMonthFolderId_(moduleName, date) {
+  var ym = Utilities.formatDate(date || new Date(), 'Asia/Kolkata', 'yyyy-MM');
+  var dataId = drvGetOrCreateFolder(QMS_DATA_ROOT_, qmsRootFolderId_());
+  var modId  = drvGetOrCreateFolder(String(moduleName), dataId);
+  return drvGetOrCreateFolder(ym, modId);
+}
+
+/** <app root>/QMS Data/Media/<module>/<yyyy-MM> — returns the month folder id. */
+function qmsMediaFolderId_(moduleName, date) {
+  var ym = Utilities.formatDate(date || new Date(), 'Asia/Kolkata', 'yyyy-MM');
+  var dataId  = drvGetOrCreateFolder(QMS_DATA_ROOT_, qmsRootFolderId_());
+  var mediaId = drvGetOrCreateFolder('Media', dataId);
+  var modId   = drvGetOrCreateFolder(String(moduleName), mediaId);
+  return drvGetOrCreateFolder(ym, modId);
+}
+
+// The folder the script creates and owns. Named distinctly from the human-made
+// "PM QMS" folder so the two are never confused when both exist in Drive.
+var QMS_SELF_ROOT_ = 'PM QMS (app)';
+
+/** Pin the QMS Data parent explicitly (e.g. after moving the folder).
+ *
+ * It used to call DriveApp.getFolderById(folderId) first, purely to validate the
+ * id. That check cost MORE permission than the write it guarded: opening a
+ * folder the script did not create needs drive.readonly or the restricted
+ * drive scope, so under drive.file the validation threw and pinning became
+ * impossible — the exact thing pinning exists to avoid.
+ *
+ * The id is now stored as given. It is verified on FIRST USE instead, by
+ * getProjectFolder_, which already treats an unopenable pinned id as stale and
+ * re-resolves. A wrong id therefore costs one fallback, not a failed setup.
+ */
 function setQmsDataParent(folderId) {
-  DriveApp.getFolderById(folderId); // throws if invalid
-  PropertiesService.getScriptProperties().setProperty(QMS_DATA_PARENT_PROP_, folderId);
-  return { ok: true, parentId: folderId };
+  var id = String(folderId || '').trim();
+  if (!id) throw new Error('setQmsDataParent: pass the folder id, e.g. setQmsDataParent("1AbC…").');
+  // Accept a pasted Drive URL as well as a bare id — the id is the long token.
+  var m = id.match(/[-\w]{25,}/);
+  if (m) id = m[0];
+  PropertiesService.getScriptProperties().setProperty(QMS_DATA_PARENT_PROP_, id);
+  return { ok: true, parentId: id,
+           note: 'Stored. Verified on first use — run checkQmsDataParent() to test it now.' };
+}
+
+/** Is the pinned parent actually reachable under the CURRENT scopes?
+ *  Separated from setQmsDataParent so that pinning never depends on a
+ *  permission the runtime does not need. */
+function checkQmsDataParent() {
+  var id = PropertiesService.getScriptProperties().getProperty(QMS_DATA_PARENT_PROP_);
+  if (!id) return { ok: false, error: 'Nothing pinned yet.' };
+  try {
+    var f = DriveApp.getFolderById(id);
+    return { ok: true, id: id, name: f.getName() };
+  } catch (e) {
+    return { ok: false, id: id, error: e.message };
+  }
 }
 
 /**

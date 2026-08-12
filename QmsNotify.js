@@ -159,10 +159,9 @@ function notifyStage_(r) {
 function _tgPdfBlob_(pdfUrl) {
   var m = String(pdfUrl || '').match(/[-\w]{25,}/);
   if (!m) return null;
-  var file = DriveApp.getFileById(m[0]);
-  var blob = file.getBlob();
-  blob.setName(file.getName());
-  return blob;
+  // Drive REST, not DriveApp — under drive.file the wrapper cannot open even
+  // files this script created. drvGetBlob goes over the REST media endpoint.
+  return drvGetBlob(m[0], 'document.pdf');
 }
 
 // Compact date for footer, e.g. "04-Jul 14:30". Accepts Date/string/blank.

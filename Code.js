@@ -475,6 +475,30 @@ function doGet(e) {
     var shk; try { shk = perfShareKit(e.parameter.form || 'GRN'); } catch(er){ shk = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(shk)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'driverest') {
+    // RUN it from the web app, not just read a stored result. The web app now
+    // holds the same drive.file + external_request grant the editor does, so it
+    // can execute the probe itself — no editor round-trip needed.
+    var drp;
+    try { drp = probeDriveRest(); } catch(er){ drp = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(drp)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'granted') {
+    var grs; try { grs = readGrantedScopes(); } catch(er){ grs = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(grs)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'drivefile') {
+    var dfp; try { dfp = readDriveFileProbe(); } catch(er){ dfp = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(dfp)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'scopeerrors') {
+    var sce; try { sce = readScopeErrors(); } catch(er){ sce = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(sce)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'probeeditor') {
+    var pei; try { pei = readEditorProbe(); } catch(er){ pei = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(pei)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'probetrigger') {
     var ptr; try { ptr = readProbeResult(); } catch(er){ ptr = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(ptr)).setMimeType(ContentService.MimeType.TEXT);

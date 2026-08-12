@@ -131,13 +131,10 @@ function perfImgUpload() {
     }
   }
 
-  var parent = step('getProjectFolder_()', function () {
-    var f = getProjectFolder_();
-    return f.getName() + '  id=' + f.getId();
-  });
-  var media = step('getQmsMediaFolder_(GRN)', function () {
-    var f = getQmsMediaFolder_('GRN', new Date());
-    return f.getName() + '  id=' + f.getId();
+  // Probe the REST paths the product now uses, not the retired DriveApp ones.
+  var parent = step('qmsRootFolderId_()', function () { return qmsRootFolderId_(); });
+  var media  = step('qmsMediaFolderId_(GRN)', function () {
+    return qmsMediaFolderId_('GRN', new Date());
   });
 
   // 1x1 transparent PNG — smallest valid payload the real path would carry.
@@ -147,19 +144,23 @@ function perfImgUpload() {
     return Utilities.base64Decode(px).length + ' bytes';
   });
 
-  var created = step('createFile in media folder', function () {
-    var f = getQmsMediaFolder_('GRN', new Date());
+  var created = step('drvUploadBlob', function () {
     var blob = Utilities.newBlob(Utilities.base64Decode(px), 'image/png',
                                  'PROBE_' + Date.now() + '.png');
-    var file = f.createFile(blob);
-    return file.getId();
+    return drvUploadBlob(blob, 'PROBE_' + Date.now() + '.png',
+                         qmsMediaFolderId_('GRN', new Date())).id;
   });
 
-  step('setSharing ANYONE_WITH_LINK', function () {
-    if (!created) throw new Error('skipped — createFile failed');
-    var file = DriveApp.getFileById(created);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return file.getUrl();
+  step('drvShareAnyone', function () {
+    if (!created) throw new Error('skipped — upload failed');
+    return drvShareAnyone(created);
+  });
+
+  step('PDF generation (drvHtmlToPdf)', function () {
+    var r = drvHtmlToPdf('<h1>probe</h1>', 'PROBE_PDF_' + new Date().getTime(),
+                         qmsMonthFolderId_('GRN', new Date()));
+    drvTrash(r.id);
+    return r.url;
   });
 
   // The real function, end to end.
@@ -172,24 +173,12 @@ function perfImgUpload() {
   // Clean up both probe files so the folder does not fill with 1x1 pngs.
   step('cleanup probe files', function () {
     var n = 0;
-    if (created) { try { DriveApp.getFileById(created).setTrashed(true); n++; } catch (e) {} }
-    try {
-      var f = getQmsMediaFolder_('GRN', new Date());
-      var it = f.getFiles();
-      while (it.hasNext()) {
-        var fl = it.next();
-        if (fl.getName().indexOf('PROBE_') === 0 ||
-            /^GRN_DOC_1_\d+\.png$/.test(fl.getName())) { fl.setTrashed(true); n++; }
-      }
-    } catch (e) {}
+    if (created) { try { drvTrash(created); n++; } catch (e) {} }
     return n + ' trashed';
   });
 
   out.push('');
-  out.push('Drive quota remaining: ' + (function () {
-    try { return DriveApp.getStorageLimit() - DriveApp.getStorageUsed(); }
-    catch (e) { return 'unreadable: ' + e.message; }
-  })());
+  // Drive quota needs drive.readonly — deliberately not requested. Skipped.
   return out.join('\n');
 }
 
@@ -246,9 +235,20 @@ function perfBlastRadius() {
   }
 
   probe('Save GRN/IQC/OQC rows', 'SpreadsheetApp', function () { getSpreadsheet().getName(); });
-  probe('Image upload',          'DriveApp',       function () { DriveApp.getRootFolder().getName(); });
+  // These used to test getRootFolder / getFileById(spreadsheet) — BOTH of which
+  // drive.file legitimately forbids, because neither object was created by this
+  // script. Under drive.file the honest test is: can the script create and reuse
+  // its OWN folder and file? That is all the image and PDF paths actually do.
+  probe('Image upload',          'DriveApp',       function () {
+    var f = DriveApp.createFolder('PM_QMS_PROBE_' + new Date().getTime());
+    f.createFile(Utilities.newBlob('x', 'text/plain', 'p.txt'));
+    f.setTrashed(true);
+  });
   probe('PDF generation',        'DriveApp',       function () {
-    DriveApp.getFileById(getSpreadsheet().getId()).getName();
+    var f = DriveApp.createFolder('PM_QMS_PDFPROBE_' + new Date().getTime());
+    var fl = f.createFile(Utilities.newBlob('<b>x</b>', 'text/html', 'p.html'));
+    fl.getAs('application/pdf');
+    f.setTrashed(true);
   });
   probe('QR code on documents',  'UrlFetchApp',    function () {
     UrlFetchApp.fetch('https://www.google.com/generate_204', { muteHttpExceptions: true });

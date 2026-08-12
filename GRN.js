@@ -382,8 +382,9 @@ function uploadGRNImages(images) {
   // Called from client before save; returns { docUrls: [], productUrls: [] }
   // images = [{ base64, mime, kind }]  kind = 'doc' | 'product'
   try {
-    // <project>/QMS Data/Media/GRN/yyyy-MM — see QmsDrive.js
-    var monthFolder = getQmsMediaFolder_('GRN', new Date());
+    // Drive REST, not DriveApp: the granted scope is drive.file, and the
+    // DriveApp wrapper refuses even its own files under it. See DriveRest.js.
+    var folderId = qmsMediaFolderId_('GRN', new Date());
 
     var docUrls     = [];
     var productUrls = [];
@@ -395,10 +396,10 @@ function uploadGRNImages(images) {
       var idx      = img.kind === 'product' ? prodIdx++ : docIdx++;
       var filename = 'GRN_' + kind + '_' + idx + '_' + Date.now() + '.' + ext;
       var blob     = Utilities.newBlob(Utilities.base64Decode(img.base64), img.mime, filename);
-      var file     = monthFolder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      if (img.kind === 'product') productUrls.push(file.getUrl());
-      else                        docUrls.push(file.getUrl());
+      var up       = drvUploadBlob(blob, filename, folderId);
+      var url      = drvShareAnyone(up.id);
+      if (img.kind === 'product') productUrls.push(url);
+      else                        docUrls.push(url);
     });
 
     return { success: true, docUrls: docUrls, productUrls: productUrls };
@@ -441,18 +442,12 @@ function generateGRNPdf_(docNo) {
   var tmpl = HtmlService.createTemplateFromFile('PrintGRN_F');
   tmpl.printData = data;
   var html = tmpl.evaluate().getContent();
-  var blob = Utilities.newBlob(html, 'text/html', docNo + '.html');
 
-  // <project>/QMS Data/GRN/yyyy-MM — see QmsDrive.js
-  var folder = getQmsMonthFolder_('GRN', new Date());
-
-  var tempFile = DriveApp.createFile(blob);
-  var pdfBlob  = tempFile.getAs('application/pdf');
-  pdfBlob.setName(docNo + '.pdf');
-  var pdfFile  = folder.createFile(pdfBlob);
-  tempFile.setTrashed(true);
-  pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return pdfFile.getUrl();
+  // Blob.getAs('application/pdf') is a pure conversion and needs no Drive
+  // access, so the old temp-file-in-Drive dance is gone entirely — it existed
+  // only to hold the HTML, and under drive.file DriveApp.createFile fails.
+  var folderId = qmsMonthFolderId_('GRN', new Date());
+  return drvHtmlToPdf(html, String(docNo).replace(/[\/\\]/g, '_'), folderId).url;
 }
 
 // ── Print data ────────────────────────────────────────────────────────────────
