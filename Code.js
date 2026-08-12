@@ -463,6 +463,10 @@ function doGet(e) {
     var bra; try { bra = perfBlastRadius(); } catch(er){ bra='ERR '+er.message; }
     return ContentService.createTextOutput(String(bra)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'telegram') {
+    var tgd; try { tgd = perfTelegram(); } catch(er){ tgd = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(tgd)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'printrender') {
     var prr;
     try { prr = perfPrintRender(e.parameter.doc || ''); } catch(er){ prr = 'ERR ' + er.message; }

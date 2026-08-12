@@ -316,3 +316,56 @@ function perfPrintRender(docNo) {
   }
   return out.join('\n');
 }
+
+// ── Telegram probe ────────────────────────────────────────────────────
+// notifyStage_ swallows every failure into Logger.log, so "notifications are
+// not firing" gives no signal at all. This separates the three possible causes:
+// not configured / blocked by scope / rejected by Telegram.
+function perfTelegram() {
+  var out = ['TELEGRAM NOTIFICATION PROBE', ''];
+  function line(l, v) { out.push(_perfPad_(l, 26) + v); }
+
+  var token = '', chat = '';
+  try {
+    var props = PropertiesService.getScriptProperties();
+    token = props.getProperty('TelegramBotToken') || props.getProperty('TELEGRAM_BOT_TOKEN') || '';
+    chat  = props.getProperty('TelegramChatID')   || props.getProperty('TELEGRAM_CHAT_ID')   || '';
+  } catch (e) {}
+  if (!token && typeof getConfigValue === 'function') {
+    try { token = String(getConfigValue('TelegramBotToken') || ''); } catch (e) {}
+    try { chat  = String(getConfigValue('TelegramChatID')   || ''); } catch (e) {}
+  }
+  line('bot token', token ? 'SET (len ' + token.length + ')' : 'MISSING');
+  line('chat id',   chat  ? 'SET (' + chat + ')'             : 'MISSING');
+  line('TelegramLib present', (typeof TelegramLib !== 'undefined') ? 'yes' : 'NO — file not pushed');
+
+  // Can we reach the network at all? This is the scope question.
+  try {
+    UrlFetchApp.fetch('https://www.google.com/generate_204', { muteHttpExceptions: true });
+    line('UrlFetchApp', 'WORKS');
+  } catch (e) {
+    line('UrlFetchApp', 'BLOCKED — ' + e.message.slice(0, 60));
+    out.push('');
+    out.push('VERDICT: Telegram cannot fire. UrlFetchApp is unavailable to this');
+    out.push('execution, so no outbound call of any kind can be made. Config is');
+    out.push('irrelevant until that is resolved.');
+    return out.join('\n');
+  }
+
+  // Network is fine — ask Telegram whether the bot itself is valid.
+  if (!token) {
+    out.push('');
+    out.push('VERDICT: network OK but no bot token configured.');
+    return out.join('\n');
+  }
+  try {
+    var r = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/getMe',
+                              { muteHttpExceptions: true });
+    var j = JSON.parse(r.getContentText());
+    line('getMe', j.ok ? ('OK — @' + (j.result && j.result.username))
+                       : ('REJECTED — ' + (j.description || r.getResponseCode())));
+  } catch (e) {
+    line('getMe', 'THREW — ' + e.message.slice(0, 60));
+  }
+  return out.join('\n');
+}
