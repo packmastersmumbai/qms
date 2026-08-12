@@ -336,28 +336,25 @@ function saveGRN(data) {
       }
     }
 
-    // QR + PDF (fire-and-forget; non-fatal)
-    try {
-      var qrBase64 = generateGRNQR_(docNo);
-      var pdfUrl   = generateGRNPdf_(docNo);
-      var allRows2 = ws.getDataRange().getValues();
-      for (var ri2 = 1; ri2 < allRows2.length; ri2++) {
-        if (String(allRows2[ri2][0]).trim() === String(docNo).trim()) {
-          ws.getRange(ri2 + 1, 24).setValue(qrBase64);
-          ws.getRange(ri2 + 1, 25).setValue(pdfUrl);
-        }
-      }
-    } catch(qrErr) {
-      Logger.log('GRN QR/PDF generation failed: ' + qrErr.message);
-    }
-
-    // Announce to Telegram + push next-action task to DWM. Best-effort.
-    try {
-      if (typeof qmsAnnounce_ === 'function') {
-        var rec = getGRNRowForWA(startRow);
-        if (rec) qmsAnnounce_(rec);
-      }
-    } catch (annErr) { Logger.log('GRN announce skipped: ' + annErr.message); }
+    // QR + PDF + Telegram are DEFERRED, not run inline.
+    //
+    // The comment here used to say "fire-and-forget" but the code was
+    // synchronous, so the operator waited for all of it. Measured on a 1-item
+    // GRN (?diag=savebreak):
+    //     QR (UrlFetch)          0.2s
+    //     PDF render + upload    4.0s
+    //     Telegram + DWM         8.0s
+    //     two full-sheet scans   2.9s
+    //   -> 12.2s of work the operator has no reason to wait for, inside a save
+    //      that measured 54s over the bridge and routinely outlived the client
+    //      watchdog — so the row was written but the UI reported failure.
+    //
+    // None of it affects correctness of the GRN: the row and its stock ledger
+    // entries are already committed above. Deferring means the document is
+    // saved and the operator freed, while the paperwork catches up seconds
+    // later. A trigger also runs as the OWNER, so it keeps working regardless
+    // of the anonymous web-app token.
+    _grnDeferDocWork_(docNo, startRow);
 
     // Undefined-location warning (see the WARN-ONLY note in the item loop). Raised
     // once per distinct location rather than per item, so a 10-line GRN into one
@@ -552,4 +549,90 @@ function getGRNRowForWA(row) {
     inspector:  r[16],
     pdfUrl:     r[24] || ''
   };
+}
+
+// ── Deferred document work (QR / PDF / Telegram) ──────────────────────
+// Measured 2026-08-12: these cost 12.2s inside saveGRN, on top of ~20s of
+// unavoidable work and ~20s of double-iframe bridge overhead — a 54s save whose
+// reply routinely outlived the client watchdog, so a SUCCESSFUL save looked
+// like a failure to the operator.
+//
+// The queue lives in Script Properties (not a sheet) so enqueuing costs
+// milliseconds and cannot contend with the GRN_LOG write that just happened.
+// A one-shot trigger drains it ~10s later, running as the project owner.
+var GRN_DEFER_PROP_ = 'pm.grn.deferQueue';
+
+function _grnDeferDocWork_(docNo, startRow) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var q = [];
+    try { q = JSON.parse(props.getProperty(GRN_DEFER_PROP_) || '[]'); } catch (e) { q = []; }
+    q.push({ docNo: docNo, row: startRow, at: new Date().getTime() });
+    // Bound the queue: a backlog means the drain is failing, and an unbounded
+    // property would eventually exceed the 9KB per-value limit and lose it all.
+    if (q.length > 50) q = q.slice(-50);
+    props.setProperty(GRN_DEFER_PROP_, JSON.stringify(q));
+
+    // One-shot trigger. Delete any earlier pending one first so a burst of
+    // saves does not install a trigger each — the drain handles the whole queue.
+    var existing = ScriptApp.getProjectTriggers();
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i].getHandlerFunction() === 'grnDrainDeferred') {
+        ScriptApp.deleteTrigger(existing[i]);
+      }
+    }
+    ScriptApp.newTrigger('grnDrainDeferred').timeBased().after(10 * 1000).create();
+  } catch (e) {
+    // If deferral itself fails, fall back to doing the work inline — a slow
+    // save is far better than a GRN with no PDF and no notification.
+    Logger.log('_grnDeferDocWork_ failed, running inline: ' + e.message);
+    try { _grnDoDocWork_(docNo, startRow); } catch (e2) {
+      Logger.log('inline doc work also failed: ' + e2.message);
+    }
+  }
+}
+
+// Trigger entry point — must be a top-level function.
+function grnDrainDeferred() {
+  var props = PropertiesService.getScriptProperties();
+  var q = [];
+  try { q = JSON.parse(props.getProperty(GRN_DEFER_PROP_) || '[]'); } catch (e) { q = []; }
+  if (!q.length) return;
+  // Claim the whole queue up front: if this run dies mid-way, the remaining
+  // items are still gone rather than being reprocessed forever. Each item's
+  // work is idempotent anyway (it overwrites the same two cells).
+  props.setProperty(GRN_DEFER_PROP_, '[]');
+  q.forEach(function (item) {
+    try { _grnDoDocWork_(item.docNo, item.row); }
+    catch (e) { Logger.log('grnDrainDeferred ' + item.docNo + ': ' + e.message); }
+  });
+}
+
+// The actual QR + PDF + announce work, shared by the deferred and inline paths.
+function _grnDoDocWork_(docNo, startRow) {
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  if (!ws) return;
+
+  try {
+    var qrBase64 = generateGRNQR_(docNo);
+    var pdfUrl   = generateGRNPdf_(docNo);
+    // One scan, not two — the original stamped images and QR/PDF in separate
+    // passes over the whole sheet (2.9s combined on 341 rows).
+    var rows = ws.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === String(docNo).trim()) {
+        ws.getRange(i + 1, 24).setValue(qrBase64);
+        ws.getRange(i + 1, 25).setValue(pdfUrl);
+      }
+    }
+  } catch (qrErr) {
+    Logger.log('GRN QR/PDF generation failed: ' + qrErr.message);
+  }
+
+  try {
+    if (typeof qmsAnnounce_ === 'function') {
+      var rec = getGRNRowForWA(startRow);
+      if (rec) qmsAnnounce_(rec);
+    }
+  } catch (annErr) { Logger.log('GRN announce skipped: ' + annErr.message); }
 }

@@ -467,6 +467,20 @@ function doGet(e) {
     var lga; try { lga = ledgerAudit(); } catch(er){ lga = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(lga)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'defercheck') {
+    var dfc;
+    try { dfc = perfDeferCheck(e.parameter.doc || ''); } catch(er){ dfc = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(dfc)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'savewrite') {
+    var swp; try { swp = perfSaveWritePhase(); } catch(er){ swp = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(swp)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'savebreak') {
+    var sbd;
+    try { sbd = perfSaveBreakdown(e.parameter.doc || ''); } catch(er){ sbd = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(sbd)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'sharemsg') {
     var smg; try { smg = perfShareMsg(); } catch(er){ smg = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(smg)).setMimeType(ContentService.MimeType.TEXT);

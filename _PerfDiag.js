@@ -434,3 +434,165 @@ function perfShareMsg() {
   } catch (e) { out.push('   THREW ' + e.message); }
   return out.join('\n');
 }
+
+// ── Where do saveGRN's 54 seconds go? ─────────────────────────────────
+// Measured over the bridge: saveGRN = 54.2s for a 1-item GRN. That is long
+// enough that the reply routinely outlives the client watchdog, so the operator
+// sees a failure for a save that succeeded.
+//
+// This times the POST-WRITE block against a real, already-saved doc. Nothing
+// here writes to GRN_LOG — the QR/PDF/announce steps are re-run in isolation
+// and their artefacts trashed, so the timing is honest without creating rows.
+function perfSaveBreakdown(docNo) {
+  var out = ['saveGRN POST-WRITE BREAKDOWN', ''];
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  if (!docNo) {
+    docNo = String(ws.getRange(ws.getLastRow(), 1).getValue() || '').trim();
+  }
+  out.push('doc: ' + docNo);
+  out.push('GRN_LOG rows: ' + (ws.getLastRow() - 1));
+  out.push('');
+
+  var total = 0;
+  function t(label, fn) {
+    var t0 = new Date().getTime();
+    var note = '';
+    try { note = fn() || ''; } catch (e) { note = 'THREW ' + e.message.slice(0, 60); }
+    var ms = new Date().getTime() - t0;
+    total += ms;
+    out.push(_perfPad_(label, 34) + _perfPad_(ms + 'ms', 10) + String(note).slice(0, 70));
+    return ms;
+  }
+
+  // The two full-sheet scans saveGRN performs to stamp images, QR and PDF.
+  t('getDataRange (image stamp scan)', function () {
+    return ws.getDataRange().getValues().length + ' rows read';
+  });
+  t('getDataRange (qr/pdf stamp scan)', function () {
+    return ws.getDataRange().getValues().length + ' rows read';
+  });
+
+  // QR: an external HTTP round trip, only possible since external_request landed.
+  t('generateGRNQR_ (UrlFetch)', function () {
+    var qr = generateGRNQR_(docNo);
+    return (qr || '').length + ' chars';
+  });
+
+  // PDF: template render + Drive REST upload + share.
+  var pdfId = null;
+  t('generateGRNPdf_ (render+upload)', function () {
+    var url = generateGRNPdf_(docNo);
+    var m = String(url).match(/[-\w]{25,}/);
+    if (m) pdfId = m[0];
+    return url;
+  });
+  if (pdfId) { try { drvTrash(pdfId); } catch (e) {} }
+
+  // Telegram announce — now that UrlFetchApp works this actually runs, and it
+  // may be NEW time that was silently skipped before.
+  t('qmsAnnounce_ (Telegram+DWM)', function () {
+    if (typeof qmsAnnounce_ !== 'function') return 'not defined';
+    var rows = ws.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === docNo) {
+        var rec = getGRNRowForWA(i + 1);
+        if (rec) { qmsAnnounce_(rec); return 'announced'; }
+      }
+    }
+    return 'row not found';
+  });
+
+  out.push('');
+  out.push(_perfPad_('TOTAL post-write', 34) + total + 'ms');
+  out.push('');
+  out.push('saveGRN measured over the bridge: ~54000ms. Anything not accounted');
+  out.push('for above is the row write itself plus google.script.run overhead');
+  out.push('(~5-20s fixed through the double iframe — see pmqms-form-open-perf).');
+  return out.join('\n');
+}
+
+// The pre/write phase of saveGRN — the ~39s the post-write breakdown did not
+// explain. Each of these runs on EVERY save, before the row is even appended.
+// Read-only: no rows are created.
+function perfSaveWritePhase() {
+  var out = ['saveGRN PRE-WRITE / WRITE PHASE', ''];
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('GRN_LOG');
+  var total = 0;
+  function t(label, fn) {
+    var t0 = new Date().getTime();
+    var note = '';
+    try { note = fn() || ''; } catch (e) { note = 'THREW ' + e.message.slice(0, 60); }
+    var ms = new Date().getTime() - t0;
+    total += ms;
+    out.push(_perfPad_(label, 32) + _perfPad_(ms + 'ms', 10) + String(note).slice(0, 60));
+    return ms;
+  }
+
+  t('getSpreadsheet()', function () { return getSpreadsheet().getName(); });
+  t('_grnFindByTxn_ (idempotency)', function () {
+    return _grnFindByTxn_(ws, 'GRN-PERF-PROBE-' + new Date().getTime()) || '(no match, full scan)';
+  });
+  t('peekNextDocNumber(grn)', function () { return peekNextDocNumber('grn'); });
+  t('Session.getActiveUser', function () {
+    return Session.getActiveUser().getEmail() || '(blank)';
+  });
+  t('getMaterials (location lookup)', function () { return getMaterials().length + ' rows'; });
+  t('getStockBalance_ x1', function () {
+    return typeof getStockBalance_ === 'function'
+      ? String(getStockBalance_('1308119', 'PROBE', 'RM-STORE-A')) : 'n/a';
+  });
+  t('writeStockLedger_ read path', function () {
+    // The balance read each ledger row performs, without writing.
+    return typeof getStockBalance_ === 'function'
+      ? String(getStockBalance_('1308119', 'PROBE2', 'RM-STORE-A')) : 'n/a';
+  });
+  t('applyGRNReceiptsToPO_ probe', function () {
+    return typeof applyGRNReceiptsToPO_ === 'function' ? '(defined — runs only with a PO)' : 'n/a';
+  });
+
+  out.push('');
+  out.push(_perfPad_('TOTAL pre-write', 32) + total + 'ms');
+  out.push('');
+  out.push('Post-write measured separately at ~15000ms (?diag=savebreak).');
+  out.push('Bridge overhead through the double iframe is ~5-20s on top.');
+  return out.join('\n');
+}
+
+// Did the deferred QR/PDF/Telegram work actually run for a given doc?
+// Deferring is only correct if the artefacts still arrive — otherwise the save
+// got faster by silently dropping the paperwork.
+function perfDeferCheck(docNo) {
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  var out = ['DEFERRED WORK CHECK', ''];
+  if (!docNo) docNo = String(ws.getRange(ws.getLastRow(), 1).getValue() || '').trim();
+  out.push('doc: ' + docNo);
+
+  var rows = ws.getDataRange().getValues();
+  var found = 0, qr = '', pdf = '';
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === docNo) {
+      found++;
+      qr  = String(rows[i][23] || '');   // col 24, 0-based 23
+      pdf = String(rows[i][24] || '');   // col 25
+    }
+  }
+  out.push('rows for doc  : ' + found);
+  out.push('QR stamped    : ' + (qr  ? 'YES (' + qr.length + ' chars)' : 'no'));
+  out.push('PDF stamped   : ' + (pdf ? pdf : 'no'));
+
+  var q = [];
+  try { q = JSON.parse(PropertiesService.getScriptProperties()
+        .getProperty(GRN_DEFER_PROP_) || '[]'); } catch (e) {}
+  out.push('queue depth   : ' + q.length + (q.length ? '  (drain pending or failed)' : '  (drained)'));
+
+  var trg = [];
+  ScriptApp.getProjectTriggers().forEach(function (t) { trg.push(t.getHandlerFunction()); });
+  out.push('triggers      : ' + trg.join(', '));
+  out.push('');
+  out.push(qr && pdf
+    ? 'VERDICT: deferred work COMPLETED — save got faster without losing the paperwork.'
+    : 'VERDICT: artefacts missing. Either the drain has not fired yet (wait ~15s\n' +
+      'and re-check) or it failed — see the Apps Script executions log.');
+  return out.join('\n');
+}
