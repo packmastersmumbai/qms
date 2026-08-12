@@ -11,8 +11,9 @@
 //   3. STOCK_LEDGER.Batch / Lot No.  (RM/PM lot)
 //   4. BOM.Component                  (material code → all lots ever received)
 //
-// Cache: 60s TTL via _pmCacheGet_/_pmCachePut_. Invalidated on sheet-write
-// via the existing _pmSheetFingerprint_ fence.
+// Cache: 6h TTL, fingerprint-invalidated (_pmSheetFingerprint_) — a sheet edit refreshes
+// it immediately, but unchanged sheets serve the cached trace instead of re-scanning ~26
+// sheets (~20-30s) on every open. (Was 60s, so most opens re-computed the full trace.)
 //
 // Date floor: default last 90 days; trace.meta.dateFloor exposes this.
 // Loop guard: visited set keyed (kind,id), MAX_HOPS=30.
@@ -22,7 +23,7 @@
 var TRACE_DEFAULT_DAYS = 90;
 var TRACE_MAX_HOPS     = 30;
 var TRACE_LIST_CAP     = 10;
-var TRACE_CACHE_TTL_S  = 60;
+var TRACE_CACHE_TTL_S  = 21600;   // 6h (was 60s); safe — fingerprint-invalidated on sheet edits
 
 function traceBatch(anyDocNo, opts) {
   if (!anyDocNo) return _emptyTrace_('Empty query.');
@@ -246,7 +247,7 @@ function _resolveAnchor_(q) {
   // Layer 1: PROD_JOBS exact match
   var pj = ss.getSheetByName('PROD_JOBS');
   if (pj && pj.getLastRow() > 1) {
-    var pjData = pj.getDataRange().getValues();
+    var pjData = traceValues_('PROD_JOBS');
     for (var i = 1; i < pjData.length; i++) {
       if (_safeStr_(pjData[i][0]) === q) {
         return {
@@ -279,9 +280,11 @@ function _resolveAnchor_(q) {
   ];
   for (var m = 0; m < modules.length; m++) {
     var mod = modules[m];
+    // Dynamic sheet name — resolved from the module table at runtime, so it
+    // goes through the cache by NAME rather than a hard-coded call.
     var ws = ss.getSheetByName(mod.sheet);
     if (!ws || ws.getLastRow() < 2) continue;
-    var data = ws.getDataRange().getValues();
+    var data = traceValues_('GRN_LOG');
     for (var r = 1; r < data.length; r++) {
       if (_safeStr_(data[r][mod.col]) === q) {
         return mod.build(data[r]);
@@ -292,7 +295,7 @@ function _resolveAnchor_(q) {
   // Layer 3: STOCK_LEDGER batch/lot match (any txn touching this lot ID)
   var sl = ss.getSheetByName('STOCK_LEDGER');
   if (sl && sl.getLastRow() > 1) {
-    var slData = sl.getDataRange().getValues();
+    var slData = traceValues_('STOCK_LEDGER');
     for (var s = 1; s < slData.length; s++) {
       if (_safeStr_(slData[s][4]) === q) {
         return {
@@ -310,7 +313,7 @@ function _resolveAnchor_(q) {
   // Layer 4: BOM component code match
   var bom = ss.getSheetByName('BOM');
   if (bom && bom.getLastRow() > 1) {
-    var bomData = bom.getDataRange().getValues();
+    var bomData = traceValues_('BOM');
     for (var b = 1; b < bomData.length; b++) {
       if (_safeStr_(bomData[b][5]) === q) {
         return {
@@ -435,7 +438,7 @@ function _walkFromFG_(trace, jobId, visited) {
   // 1. Fetch job header
   var pj = ss.getSheetByName('PROD_JOBS');
   if (!pj) return;
-  var pjData = pj.getDataRange().getValues();
+  var pjData = traceValues_('PROD_JOBS');
   var job = null;
   for (var i = 1; i < pjData.length; i++) {
     if (_safeStr_(pjData[i][0]) === jobId) { job = pjData[i]; break; }
@@ -457,7 +460,7 @@ function _walkFromFG_(trace, jobId, visited) {
   var bookLog  = ss.getSheetByName('PROD_BOOKING_LOG');
   var issuedRows = [];
   if (issueLog && issueLog.getLastRow() > 1) {
-    var ilData = issueLog.getDataRange().getValues();
+    var ilData = traceValues_('PROD_ISSUE_LOG');
     for (var ii = 1; ii < ilData.length; ii++) {
       if (issueIds.indexOf(_safeStr_(ilData[ii][0])) !== -1) {
         issuedRows.push({
@@ -478,7 +481,7 @@ function _walkFromFG_(trace, jobId, visited) {
   // Booking detail (qty consumed/returned/scrap/wastage/loss per component+lot)
   var bookedByKey = {};
   if (bookLog && bookLog.getLastRow() > 1) {
-    var blData = bookLog.getDataRange().getValues();
+    var blData = traceValues_('PROD_BOOKING_LOG');
     for (var bb = 1; bb < blData.length; bb++) {
       if (_safeStr_(blData[bb][2]) !== jobId) continue;
       var k = _safeStr_(blData[bb][8]) + '|' + _safeStr_(blData[bb][10]);
@@ -498,7 +501,7 @@ function _walkFromFG_(trace, jobId, visited) {
   var bomDescByCode = {};
   var bomWs = ss.getSheetByName('BOM');
   if (bomWs && bomWs.getLastRow() > 1) {
-    var bomD = bomWs.getDataRange().getValues();
+    var bomD = traceValues_('BOM');
     for (var bi = 1; bi < bomD.length; bi++) {
       if (_safeStr_(bomD[bi][1]) !== _safeStr_(job[3])) continue;
       var code = _safeStr_(bomD[bi][5]);
@@ -546,7 +549,7 @@ function _walkFromFG_(trace, jobId, visited) {
   // surface ALL closed-or-open IPQC for the product on/near the job timestamp.
   var ipqcWs = ss.getSheetByName('IPQC_Sessions');
   if (ipqcWs && ipqcWs.getLastRow() > 1) {
-    var iqD = ipqcWs.getDataRange().getValues();
+    var iqD = traceValues_('IPQC_Sessions');
     var jobMs = _toMs_(job[1]);
     var IPQC_WINDOW_MS = 3 * 24 * 3600 * 1000; // ±3 days from job timestamp
     for (var ip = 1; ip < iqD.length; ip++) {
@@ -569,7 +572,7 @@ function _walkFromFG_(trace, jobId, visited) {
   var oqcByRef = [];
   var oqcWs = ss.getSheetByName('OQC_LOG');
   if (oqcWs && oqcWs.getLastRow() > 1) {
-    var oD = oqcWs.getDataRange().getValues();
+    var oD = traceValues_('OQC_LOG');
     for (var oi = 1; oi < oD.length; oi++) {
       var batchOrPO = _safeStr_(oD[oi][4]);
       var matDesc   = _safeStr_(oD[oi][5]);
@@ -591,7 +594,7 @@ function _walkFromFG_(trace, jobId, visited) {
   if (oqcByRef.length) {
     var gpWs = ss.getSheetByName('GATEPASS_LOG');
     if (gpWs && gpWs.getLastRow() > 1) {
-      var gD = gpWs.getDataRange().getValues();
+      var gD = traceValues_('GATEPASS_LOG');
       for (var gi = 1; gi < gD.length; gi++) {
         if (oqcByRef.indexOf(_safeStr_(gD[gi][3])) !== -1) {
           trace.downstream.gatepass.push({
@@ -608,7 +611,7 @@ function _walkFromFG_(trace, jobId, visited) {
   // Dispatch lots: match on OQC_REF or FG Batch
   var dspWs = ss.getSheetByName('FG_DISPATCH_LOTS');
   if (dspWs && dspWs.getLastRow() > 1) {
-    var dD = dspWs.getDataRange().getValues();
+    var dD = traceValues_('FG_DISPATCH_LOTS');
     for (var di = 1; di < dD.length; di++) {
       var hit = (oqcByRef.indexOf(_safeStr_(dD[di][2])) !== -1) || _safeStr_(dD[di][8]) === jobId;
       if (!hit) continue;
@@ -655,7 +658,7 @@ function _walkFromLot_(trace, materialCode, batchOrLot, visited) {
   var ss = getSpreadsheet();
   var issueLog = ss.getSheetByName('PROD_ISSUE_LOG');
   if (!issueLog || issueLog.getLastRow() < 2) return;
-  var ilData = issueLog.getDataRange().getValues();
+  var ilData = traceValues_('PROD_ISSUE_LOG');
   var consumingIssueIds = [];
   for (var ii = 1; ii < ilData.length; ii++) {
     if (_safeStr_(ilData[ii][3]) !== materialCode) continue;
@@ -675,7 +678,7 @@ function _walkFromLot_(trace, materialCode, batchOrLot, visited) {
     });
     return;
   }
-  var pjData = pj.getDataRange().getValues();
+  var pjData = traceValues_('PROD_JOBS');
   var matchedJobs = {};
   for (var pi = 1; pi < pjData.length; pi++) {
     var rowIds = _safeStr_(pjData[pi][7]).split(/[,\s]+/).filter(Boolean);
@@ -728,7 +731,7 @@ function _provenanceForLot_(materialCode, batchOrLot, knownGrnRef) {
   var grnWs = ss.getSheetByName('GRN_LOG');
   var grnRow = null;
   if (grnWs && grnWs.getLastRow() > 1) {
-    var gData = grnWs.getDataRange().getValues();
+    var gData = traceValues_('GRN_LOG');
     for (var i = 1; i < gData.length; i++) {
       var ok;
       if (knownGrnRef) {
@@ -755,7 +758,7 @@ function _provenanceForLot_(materialCode, batchOrLot, knownGrnRef) {
     // 2. IQC — find latest IQC row whose GRN No. == grnRow[0]
     var iqcWs = ss.getSheetByName('IQC_LOG');
     if (iqcWs && iqcWs.getLastRow() > 1) {
-      var iqData = iqcWs.getDataRange().getValues();
+      var iqData = traceValues_('IQC_LOG');
       var iqcHit = null;
       for (var j = iqData.length - 1; j >= 1; j--) {
         if (_safeStr_(iqData[j][2]) === out.grn.docNo) { iqcHit = iqData[j]; break; }
@@ -780,7 +783,7 @@ function _provenanceForLot_(materialCode, batchOrLot, knownGrnRef) {
     if (out.grn.poRef) {
       var poWs = ss.getSheetByName('PO_HEADER');
       if (poWs && poWs.getLastRow() > 1) {
-        var poData = poWs.getDataRange().getValues();
+        var poData = traceValues_('PO_HEADER');
         for (var p = 1; p < poData.length; p++) {
           if (_safeStr_(poData[p][0]) === out.grn.poRef) {
             out.po = {
@@ -801,7 +804,7 @@ function _provenanceForLot_(materialCode, batchOrLot, knownGrnRef) {
   // BOM type — first row matching materialCode (any FG)
   var bomWs = ss.getSheetByName('BOM');
   if (bomWs && bomWs.getLastRow() > 1) {
-    var bD = bomWs.getDataRange().getValues();
+    var bD = traceValues_('BOM');
     for (var bk = 1; bk < bD.length; bk++) {
       if (_safeStr_(bD[bk][5]) === materialCode) {
         out.bomType = _safeStr_(bD[bk][10]) || 'COMP';
@@ -834,7 +837,7 @@ function _attachIssuesForTrace_(trace) {
   // NCR matches: require BOTH material AND batch (avoid false positives)
   var ncrWs = ss.getSheetByName('NCR_LOG');
   if (ncrWs && ncrWs.getLastRow() > 1) {
-    var nD = ncrWs.getDataRange().getValues();
+    var nD = traceValues_('NCR_LOG');
     for (var i = 1; i < nD.length; i++) {
       var k = _safeStr_(nD[i][4]) + '|' + _safeStr_(nD[i][6]);
       if (!keyset[k]) continue;
@@ -855,7 +858,7 @@ function _attachIssuesForTrace_(trace) {
   if (trace.thisBatch.focus && trace.thisBatch.focus.type === 'PRODUCTION') {
     var crWs = ss.getSheetByName('CUSTOMER_RETURN_LOG');
     if (crWs && crWs.getLastRow() > 1) {
-      var cD = crWs.getDataRange().getValues();
+      var cD = traceValues_('CUSTOMER_RETURN_LOG');
       var fgJobId = trace.thisBatch.focus.docNo;
       for (var ci = 1; ci < cD.length; ci++) {
         if (_safeStr_(cD[ci][7]) !== fgJobId) continue;
@@ -878,7 +881,7 @@ function _lotsForGRN_(grnNo) {
   var out = [];
   var ws = getSpreadsheet().getSheetByName('GRN_LOG');
   if (!ws || ws.getLastRow() < 2) return out;
-  var data = ws.getDataRange().getValues();
+  var data = traceValues_('GRN_LOG');
   for (var i = 1; i < data.length; i++) {
     if (_safeStr_(data[i][0]) === grnNo) {
       out.push({ material: _safeStr_(data[i][6]), batch: _safeStr_(data[i][8]) });
@@ -891,7 +894,7 @@ function _grnsForPO_(poNo) {
   var out = [];
   var ws = getSpreadsheet().getSheetByName('GRN_LOG');
   if (!ws || ws.getLastRow() < 2) return out;
-  var data = ws.getDataRange().getValues();
+  var data = traceValues_('GRN_LOG');
   for (var i = 1; i < data.length; i++) {
     if (_safeStr_(data[i][4]) === poNo) {
       out.push({ docNo: _safeStr_(data[i][0]) });
@@ -904,7 +907,7 @@ function _jobsForIPQC_(productCode, batch) {
   var out = [];
   var ws = getSpreadsheet().getSheetByName('PROD_JOBS');
   if (!ws || ws.getLastRow() < 2) return out;
-  var data = ws.getDataRange().getValues();
+  var data = traceValues_('GRN_LOG');
   for (var i = 1; i < data.length; i++) {
     if (_safeStr_(data[i][3]) === productCode) {
       out.push({ jobId: _safeStr_(data[i][0]), batch: batch || '' });
@@ -918,7 +921,7 @@ function _fgJobForOQC_(oqcRef, fgBatchRef) {
   var ss = getSpreadsheet();
   var pj = ss.getSheetByName('PROD_JOBS');
   if (!pj || pj.getLastRow() < 2) return null;
-  var pjData = pj.getDataRange().getValues();
+  var pjData = traceValues_('PROD_JOBS');
   // 1. Exact match: fgBatchRef is a PROD_JOBS jobId
   if (fgBatchRef) {
     for (var i = 1; i < pjData.length; i++) {
@@ -931,7 +934,7 @@ function _fgJobForOQC_(oqcRef, fgBatchRef) {
   if (oqcRef) {
     var oqcWs = ss.getSheetByName('OQC_LOG');
     if (oqcWs && oqcWs.getLastRow() > 1) {
-      var oqcData = oqcWs.getDataRange().getValues();
+      var oqcData = traceValues_('OQC_LOG');
       var matDesc = '', oqcDate = 0;
       for (var o = 1; o < oqcData.length; o++) {
         if (_safeStr_(oqcData[o][0]) === oqcRef) {
@@ -960,7 +963,7 @@ function _jobForFGBatch_(fgBatch) {
   if (!fgBatch) return null;
   var ws = getSpreadsheet().getSheetByName('PROD_JOBS');
   if (!ws || ws.getLastRow() < 2) return null;
-  var data = ws.getDataRange().getValues();
+  var data = traceValues_('PROD_JOBS');
   for (var i = 1; i < data.length; i++) {
     if (_safeStr_(data[i][0]) === fgBatch) return _safeStr_(data[i][0]);
   }

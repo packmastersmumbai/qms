@@ -596,3 +596,209 @@ function perfDeferCheck(docNo) {
       'and re-check) or it failed — see the Apps Script executions log.');
   return out.join('\n');
 }
+
+// ── Why is Trace slow? ────────────────────────────────────────────────
+// Trace.js performs 26 full-sheet getDataRange().getValues() calls across 13
+// sheets, and opens PROD_JOBS six separate times. This times the real
+// traceBatch() end to end and reports what each sheet costs to read once, so
+// the fix is aimed at the expensive reads rather than guessed at.
+function perfTrace(docNo) {
+  var out = ['TRACE PERFORMANCE', ''];
+  var ss = getSpreadsheet();
+
+  if (!docNo) {
+    var gw = ss.getSheetByName('GRN_LOG');
+    docNo = String(gw.getRange(gw.getLastRow(), 1).getValue() || '').trim();
+  }
+  out.push('doc: ' + docNo);
+  out.push('');
+
+  // 1. The real call, twice — the second shows whether anything is cached.
+  var t0 = new Date().getTime();
+  var r1 = null, err1 = '';
+  try { r1 = traceBatch(docNo); } catch (e) { err1 = e.message.slice(0, 80); }
+  var ms1 = new Date().getTime() - t0;
+
+  var t1 = new Date().getTime();
+  try { traceBatch(docNo); } catch (e) {}
+  var ms2 = new Date().getTime() - t1;
+
+  out.push(_perfPad_('traceBatch() 1st', 30) + ms1 + 'ms' + (err1 ? '  ERR ' + err1 : ''));
+  out.push(_perfPad_('traceBatch() 2nd (same exec)', 30) + ms2 + 'ms' +
+           (ms2 < ms1 / 2 ? '   <- cached' : '   <- NOT cached, re-reads everything'));
+  if (r1) {
+    out.push(_perfPad_('nodes returned', 30) +
+             ((r1.nodes && r1.nodes.length) || (r1.timeline && r1.timeline.length) || 0));
+  }
+
+  // 2. Cost of reading each sheet ONCE, and how big it is.
+  out.push('');
+  out.push('per-sheet single read:');
+  var sheets = ['PROD_JOBS','GRN_LOG','BOM','PROD_ISSUE_LOG','OQC_LOG','STOCK_LEDGER',
+                'PROD_BOOKING_LOG','PO_HEADER','NCR_LOG','IQC_LOG','GATEPASS_LOG',
+                'FG_DISPATCH_LOTS','CUSTOMER_RETURN_LOG'];
+  var totalOnce = 0;
+  sheets.forEach(function (name) {
+    var sh = ss.getSheetByName(name);
+    if (!sh) { out.push('   ' + _perfPad_(name, 22) + '(missing)'); return; }
+    var s0 = new Date().getTime();
+    var v = sh.getDataRange().getValues();
+    var ms = new Date().getTime() - s0;
+    totalOnce += ms;
+    out.push('   ' + _perfPad_(name, 22) + _perfPad_(ms + 'ms', 9) +
+             v.length + ' rows x ' + (v[0] ? v[0].length : 0) + ' cols');
+  });
+  out.push('   ' + _perfPad_('TOTAL if read once', 22) + totalOnce + 'ms');
+  out.push('');
+  out.push('Trace makes 26 such reads across these 13 sheets (PROD_JOBS x6).');
+  out.push('The gap between ' + totalOnce + 'ms and ' + ms1 + 'ms is repeat reading.');
+  return out.join('\n');
+}
+
+// Is the per-sheet cost fixed overhead or data volume?
+// The trace probe showed CUSTOMER_RETURN_LOG (3 rows) at 521ms and
+// FG_DISPATCH_LOTS (16 rows) at 769ms, while STOCK_LEDGER (1281 rows) took
+// 614ms — which says the cost is per CALL, not per row. If so, the fix is to
+// make FEWER calls (one batched read), not to read less data.
+function perfSheetOverhead() {
+  var ss = getSpreadsheet();
+  var out = ['SHEET READ: FIXED COST vs DATA VOLUME', ''];
+
+  // Same tiny sheet, read 5 times. If cost is per-call, every read is similar.
+  var sh = ss.getSheetByName('CUSTOMER_RETURN_LOG');
+  out.push('CUSTOMER_RETURN_LOG (3 rows), 5 consecutive reads:');
+  for (var i = 0; i < 5; i++) {
+    var t = new Date().getTime();
+    sh.getDataRange().getValues();
+    out.push('   read ' + (i + 1) + ': ' + (new Date().getTime() - t) + 'ms');
+  }
+
+  // One row vs the whole sheet, on the biggest sheet.
+  var led = ss.getSheetByName('STOCK_LEDGER');
+  var t1 = new Date().getTime();
+  led.getRange(1, 1, 1, 1).getValue();
+  var one = new Date().getTime() - t1;
+  var t2 = new Date().getTime();
+  led.getDataRange().getValues();
+  var all = new Date().getTime() - t2;
+  out.push('');
+  out.push('STOCK_LEDGER 1 cell      : ' + one + 'ms');
+  out.push('STOCK_LEDGER 1281 rows   : ' + all + 'ms');
+
+  // getSheetByName itself — is opening the tab the expensive part?
+  var t3 = new Date().getTime();
+  for (var j = 0; j < 10; j++) ss.getSheetByName('GRN_LOG');
+  out.push('');
+  out.push('getSheetByName x10       : ' + (new Date().getTime() - t3) + 'ms');
+
+  out.push('');
+  out.push('If 1 cell costs about the same as 1281 rows, the bottleneck is the');
+  out.push('round trip per call — so batching reads is the fix, not reading less.');
+  return out.join('\n');
+}
+
+// A fast trace that returns NOTHING proves nothing. This runs traceBatch over
+// several real documents of different types and reports both the timing AND the
+// payload size, so "fast" cannot be confused with "empty".
+function perfTraceReal() {
+  var ss = getSpreadsheet();
+  var out = ['TRACE — REAL DOCUMENTS', ''];
+
+  function pick(sheet, col) {
+    try {
+      var sh = ss.getSheetByName(sheet);
+      if (!sh || sh.getLastRow() < 2) return '';
+      var n = Math.min(sh.getLastRow() - 1, 40);
+      var v = sh.getRange(sh.getLastRow() - n + 1, col || 1, n, 1).getValues();
+      for (var i = v.length - 1; i >= 0; i--) {
+        var s = String(v[i][0] || '').trim();
+        if (s) return s;
+      }
+    } catch (e) {}
+    return '';
+  }
+
+  var docs = [
+    ['GRN',        pick('GRN_LOG', 1)],
+    ['IQC',        pick('IQC_LOG', 1)],
+    ['OQC',        pick('OQC_LOG', 1)],
+    ['PRODUCTION', pick('PROD_JOBS', 1)],
+    ['DISPATCH',   pick('GATEPASS_LOG', 1)]
+  ];
+
+  docs.forEach(function (d) {
+    if (!d[1]) { out.push(_perfPad_(d[0], 12) + '(no document found)'); return; }
+    traceCacheReset_();                     // honest cold timing per document
+    var t = new Date().getTime();
+    var r = null, err = '';
+    try { r = traceBatch(d[1]); } catch (e) { err = e.message.slice(0, 60); }
+    var ms = new Date().getTime() - t;
+    var size = 0, stages = 0;
+    if (r) {
+      try { size = JSON.stringify(r).length; } catch (e) {}
+      stages = (r.timeline && r.timeline.length) || (r.nodes && r.nodes.length) || 0;
+    }
+    out.push(_perfPad_(d[0], 12) + _perfPad_(d[1], 22) +
+             _perfPad_(ms + 'ms', 9) + _perfPad_(stages + ' stages', 12) +
+             size + ' bytes' + (err ? '  ERR ' + err : ''));
+  });
+
+  out.push('');
+  var st = traceCacheStats_();
+  out.push('cache held ' + st.sheets + ' sheet(s) on the last run');
+  out.push('');
+  out.push('A trace that is fast AND returns stages is a real improvement;');
+  out.push('a fast empty result would just mean the anchor was not found.');
+  return out.join('\n');
+}
+
+// The production trace is still 14.7s despite the read cache. Where?
+// Instrument traceValues_ to count how often each sheet is asked for, and how
+// many of those were served from cache vs cost a real round trip.
+var _TV_STATS = null;
+function perfTraceInstrument(docNo) {
+  var ss = getSpreadsheet();
+  if (!docNo) {
+    var pj = ss.getSheetByName('PROD_JOBS');
+    docNo = String(pj.getRange(pj.getLastRow(), 1).getValue() || '').trim();
+  }
+  // Wrap traceValues_ to record hits and misses.
+  _TV_STATS = { asks: {}, misses: {}, missMs: {} };
+  var real = traceValues_;
+  traceValues_ = function (name) {
+    _TV_STATS.asks[name] = (_TV_STATS.asks[name] || 0) + 1;
+    var c = _TRACE_READ_CACHE || {};
+    var hit = c.hasOwnProperty(name);
+    var t = new Date().getTime();
+    var v = real(name);
+    if (!hit) {
+      _TV_STATS.misses[name] = (_TV_STATS.misses[name] || 0) + 1;
+      _TV_STATS.missMs[name] = (_TV_STATS.missMs[name] || 0) + (new Date().getTime() - t);
+    }
+    return v;
+  };
+
+  traceCacheReset_();
+  var t0 = new Date().getTime();
+  var r = null, err = '';
+  try { r = traceBatch(docNo); } catch (e) { err = e.message.slice(0, 70); }
+  var total = new Date().getTime() - t0;
+  traceValues_ = real;
+
+  var out = ['TRACE INSTRUMENTED', '', 'doc: ' + docNo,
+             'total: ' + total + 'ms' + (err ? '  ERR ' + err : ''), ''];
+  var readMs = 0, asks = 0, misses = 0;
+  Object.keys(_TV_STATS.asks).sort().forEach(function (k) {
+    var a = _TV_STATS.asks[k], m = _TV_STATS.misses[k] || 0, ms = _TV_STATS.missMs[k] || 0;
+    asks += a; misses += m; readMs += ms;
+    out.push('   ' + _perfPad_(k, 22) + _perfPad_('asked ' + a, 10) +
+             _perfPad_('read ' + m, 9) + ms + 'ms');
+  });
+  out.push('');
+  out.push(_perfPad_('total asks', 22) + asks);
+  out.push(_perfPad_('actual sheet reads', 22) + misses + '   (cache saved ' + (asks - misses) + ')');
+  out.push(_perfPad_('time in reads', 22) + readMs + 'ms of ' + total + 'ms');
+  out.push(_perfPad_('time NOT in reads', 22) + (total - readMs) + 'ms   <- walking/CPU');
+  if (r) { try { out.push('payload: ' + JSON.stringify(r).length + ' bytes'); } catch (e) {} }
+  return out.join('\n');
+}

@@ -471,6 +471,24 @@ function doGet(e) {
     var dm; try { dm = migrateOldGrnDeferQueue(); } catch(er){ dm = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(dm)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'traceinstr') {
+    var tri;
+    try { tri = perfTraceInstrument(e.parameter.doc || ''); } catch(er){ tri = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(tri)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'tracereal') {
+    var trl; try { trl = perfTraceReal(); } catch(er){ trl = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(trl)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'sheetoverhead') {
+    var sov; try { sov = perfSheetOverhead(); } catch(er){ sov = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(sov)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'perftrace') {
+    var ptc;
+    try { ptc = perfTrace(e.parameter.doc || ''); } catch(er){ ptc = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(ptc)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'deferqueue') {
     var dq; try { dq = deferQueueStatus(); } catch(er){ dq = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(dq)).setMimeType(ContentService.MimeType.TEXT);
