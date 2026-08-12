@@ -1478,7 +1478,12 @@ function uploadImagesAndSave_(afterUpload) {
     .withSuccessHandler(function(res) {
       statusEl.classList.add('hidden');
       if (!res || !res.success) {
-        showToast('Image upload failed — saving without images.', 'warning');
+        // Distinguish "the script lost Drive access" (an owner action fixes it)
+        // from a transient upload failure. The generic toast sent the operator
+        // hunting for a problem with their photo.
+        showToast(res && res.authError
+          ? 'Images need Drive re-authorization by the site owner. The GRN still saves.'
+          : 'Image upload failed — saving without images.', 'warning');
         afterUpload([]);
         return;
       }

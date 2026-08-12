@@ -404,7 +404,26 @@ function uploadGRNImages(images) {
     return { success: true, docUrls: docUrls, productUrls: productUrls };
   } catch(e) {
     Logger.log('uploadGRNImages: ' + e.message);
-    return { success: false, error: e.message, docUrls: [], productUrls: [] };
+    // A missing Drive scope is not the same failure as a full disk or a bad
+    // blob, and the operator can do nothing about it — but the OWNER can, by
+    // re-authorizing. Naming it here is the difference between "images are
+    // broken" and a one-line fix. Measured 2026-08-12: every DriveApp call
+    // threw "You do not have permission to call DriveApp.getRootFolder"
+    // while Sheets kept working, i.e. a stale grant, not a code fault.
+    var msg = String(e.message || e);
+    var isAuth = /do not have permission to call DriveApp|Required permissions/i.test(msg);
+    return {
+      success: false,
+      error: msg,
+      authError: isAuth,
+      hint: isAuth
+        ? 'The script has lost Drive authorization. The account that deployed ' +
+          'the web app must open the Apps Script editor, Run any function once, ' +
+          'and accept the Drive permission prompt. Receiving still works — ' +
+          'only image and PDF storage is affected.'
+        : '',
+      docUrls: [], productUrls: []
+    };
   }
 }
 

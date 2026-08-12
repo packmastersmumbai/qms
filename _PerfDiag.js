@@ -111,3 +111,84 @@ function perfCacheSize() {
     : 'VERDICT: TOO BIG — _pmCachePut_ will silently skip; cache stays cold.');
   return out.join('\n');
 }
+
+// ── Image upload probe ────────────────────────────────────────────────
+// uploadGRNImages() catches every failure and returns {success:false} with the
+// message only in Logger, so the operator sees "unable to upload images" and we
+// see nothing. This runs the SAME path with a 1x1 PNG and returns the real
+// error, including which step threw.
+function perfImgUpload() {
+  var out = ['GRN IMAGE UPLOAD PROBE', ''];
+
+  function step(label, fn) {
+    try {
+      var v = fn();
+      out.push(_perfPad_(label, 30) + 'OK  ' + (v == null ? '' : String(v).slice(0, 90)));
+      return v;
+    } catch (e) {
+      out.push(_perfPad_(label, 30) + 'THREW: ' + e.message);
+      return null;
+    }
+  }
+
+  var parent = step('getProjectFolder_()', function () {
+    var f = getProjectFolder_();
+    return f.getName() + '  id=' + f.getId();
+  });
+  var media = step('getQmsMediaFolder_(GRN)', function () {
+    var f = getQmsMediaFolder_('GRN', new Date());
+    return f.getName() + '  id=' + f.getId();
+  });
+
+  // 1x1 transparent PNG — smallest valid payload the real path would carry.
+  var px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+  step('Utilities.base64Decode', function () {
+    return Utilities.base64Decode(px).length + ' bytes';
+  });
+
+  var created = step('createFile in media folder', function () {
+    var f = getQmsMediaFolder_('GRN', new Date());
+    var blob = Utilities.newBlob(Utilities.base64Decode(px), 'image/png',
+                                 'PROBE_' + Date.now() + '.png');
+    var file = f.createFile(blob);
+    return file.getId();
+  });
+
+  step('setSharing ANYONE_WITH_LINK', function () {
+    if (!created) throw new Error('skipped — createFile failed');
+    var file = DriveApp.getFileById(created);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl();
+  });
+
+  // The real function, end to end.
+  var res = step('uploadGRNImages() itself', function () {
+    var r = uploadGRNImages([{ base64: px, mime: 'image/png', kind: 'doc' }]);
+    return 'success=' + r.success + (r.error ? '  error=' + r.error : '') +
+           '  docUrls=' + (r.docUrls || []).length;
+  });
+
+  // Clean up both probe files so the folder does not fill with 1x1 pngs.
+  step('cleanup probe files', function () {
+    var n = 0;
+    if (created) { try { DriveApp.getFileById(created).setTrashed(true); n++; } catch (e) {} }
+    try {
+      var f = getQmsMediaFolder_('GRN', new Date());
+      var it = f.getFiles();
+      while (it.hasNext()) {
+        var fl = it.next();
+        if (fl.getName().indexOf('PROBE_') === 0 ||
+            /^GRN_DOC_1_\d+\.png$/.test(fl.getName())) { fl.setTrashed(true); n++; }
+      }
+    } catch (e) {}
+    return n + ' trashed';
+  });
+
+  out.push('');
+  out.push('Drive quota remaining: ' + (function () {
+    try { return DriveApp.getStorageLimit() - DriveApp.getStorageUsed(); }
+    catch (e) { return 'unreadable: ' + e.message; }
+  })());
+  return out.join('\n');
+}
