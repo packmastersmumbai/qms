@@ -768,9 +768,7 @@ function saveIQCVideo_(base64, mime, ext, docNo, grnNo, materialDesc, dispositio
   ].join('_') + '.' + ext;
 
   var blob = Utilities.newBlob(Utilities.base64Decode(base64), mime, filename);
-  var file = monthFolder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return file.getUrl();
+  return drvStoreModuleImage('IQC', filename, blob);
 }
 
 function getOrCreateFolder_(parent, name) {
@@ -789,9 +787,7 @@ function uploadIQCImages_(images, docNo, grnNo) {
     var ext = img.mime === 'image/jpeg' ? 'jpg' : 'png';
     var filename = ['IQC', clean(docNo), clean(grnNo), (idx+1)].join('_') + '.' + ext;
     var blob = Utilities.newBlob(Utilities.base64Decode(img.base64), img.mime, filename);
-    var file = monthFolder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    urls.push(file.getUrl());
+    urls.push(drvStoreModuleImage('IQC', filename, blob));
   });
   return urls;
 }
@@ -884,18 +880,10 @@ function generateIQCPdf_(docNo, samplingMethod) {
   var html = tmpl.evaluate().getContent();
   var blob = Utilities.newBlob(html, 'text/html', docNo + '.html');
 
-  var ss     = getSpreadsheet();
-  // <project>/QMS Data/IQC/yyyy-MM — see QmsDrive.js
-  var folder = getQmsMonthFolder_('IQC', new Date());
-
-  // Convert HTML blob to PDF via Drive
-  var tempFile = DriveApp.createFile(blob);
-  var pdfBlob  = tempFile.getAs('application/pdf');
-  pdfBlob.setName(docNo + '.pdf');
-  var pdfFile  = folder.createFile(pdfBlob);
-  tempFile.setTrashed(true);
-  pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return pdfFile.getUrl();
+  // Drive REST — DriveApp is refused under the granted drive.file scope, so
+  // the old temp-file + folder.createFile path threw and this module
+  // silently stopped producing files. See DriveRest.js.
+  return drvStoreModulePdf('IQC', docNo, html);
 }
 
 function getIQCPrintHtml(docNo) {

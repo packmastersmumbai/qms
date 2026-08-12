@@ -480,6 +480,14 @@ function doGet(e) {
     var trl; try { trl = perfTraceReal(); } catch(er){ trl = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(trl)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'alldrive') {
+    var adr; try { adr = perfAllModuleDrive(); } catch(er){ adr = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(adr)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'fingerprint') {
+    var fpr; try { fpr = perfFingerprint(); } catch(er){ fpr = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(fpr)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'sheetoverhead') {
     var sov; try { sov = perfSheetOverhead(); } catch(er){ sov = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(sov)).setMimeType(ContentService.MimeType.TEXT);
@@ -1522,12 +1530,39 @@ var PMQMS_CACHE_TTL_S_ = 21600;
 // Auto-invalidating cache: stores cache entries with a sheet-mtime fingerprint.
 // On read, compares current sheet mtime to cached fingerprint; cache miss if sheet has been edited.
 // Avoids manual invalidation in every write path.
+// MEASURED 2026-08-13 (?diag=fingerprint): this returned the CONSTANT '0'.
+// DriveApp.getFileById is refused under the granted drive.file scope (the
+// script did not create the spreadsheet), the catch swallowed it, and every
+// cache keyed on the fingerprint — landing, records counts, form masters,
+// trace — therefore never invalidated. An edit to any sheet stayed invisible
+// for the full 6h TTL. A fingerprint that cannot change is worse than no cache.
+//
+// Rejected alternatives, both measured:
+//   Drive REST modifiedTime  -> HTTP 404 (same reason: not our file)
+//   sum of getLastRow() x5   -> correct but 4693ms, far too slow for a hot path
+//
+// A monotonic counter bumped by the writers is both exact and free: it changes
+// only when something is actually written, which is precisely when a cache
+// should drop. Falls back to a time bucket so a cold script still expires
+// caches on its own rather than pinning them forever.
+var PM_FP_PROP_ = 'pm.cache.fingerprint';
+
 function _pmSheetFingerprint_() {
   try {
-    var ss = getSpreadsheet();
-    // Use the file's last-modified ms as fingerprint. Cheap.
-    return String(DriveApp.getFileById(ss.getId()).getLastUpdated().getTime());
-  } catch (e) { return '0'; }
+    var v = PropertiesService.getScriptProperties().getProperty(PM_FP_PROP_);
+    if (v) return v;
+  } catch (e) {}
+  // No counter yet — bucket by the hour so a fresh deploy still turns over.
+  return 'h' + Math.floor(new Date().getTime() / 3600000);
+}
+
+// Call after ANY write that a cached read could observe. Cheap: one property
+// write, no sheet access.
+function bumpPmFingerprint_() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    props.setProperty(PM_FP_PROP_, String(new Date().getTime()));
+  } catch (e) {}
 }
 function _pmCacheGet_(key) {
   try {
@@ -1549,6 +1584,10 @@ function _pmCachePut_(key, val) {
   } catch (e) {}
 }
 function invalidatePmCache_() {
+  // Bump the fingerprint too: removeAll only clears the keys listed below, but
+  // form-masters and trace caches are keyed by fingerprint and would otherwise
+  // survive a write that should have dropped them.
+  bumpPmFingerprint_();
   try {
     CacheService.getScriptCache().removeAll([
       'pmqms_landing_v1', 'pmqms_records_counts_v1', 'pmqms_pending_v1',

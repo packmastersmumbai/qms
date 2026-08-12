@@ -330,10 +330,9 @@ function uploadNCRPhoto(data) {
 
     var bytes = Utilities.base64Decode(data.base64);
     var blob  = Utilities.newBlob(bytes, mime, data.filename || ('ncr-' + Date.now() + '.jpg'));
-    var folder = getOrCreateNCRPhotoFolder_();
-    var file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    var url = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+    // Drive REST — DriveApp is refused under drive.file. See DriveRest.js.
+    var url = drvStoreModuleImage('NCR',
+                data.filename || ('ncr-' + Date.now() + '.jpg'), blob);
     return appendNCRPhoto(data.ncrDocNo, url);
   } catch(e) {
     Logger.log('uploadNCRPhoto error: ' + e.message);

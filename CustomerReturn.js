@@ -331,10 +331,9 @@ function uploadCustomerReturnPhoto(data) {
     }
     var bytes = Utilities.base64Decode(data.base64);
     var blob  = Utilities.newBlob(bytes, mime, data.filename || ('rtn-' + Date.now() + '.jpg'));
-    var folder = getOrCreateReturnPhotoFolder_();
-    var file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    var url = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+    // Drive REST — DriveApp is refused under drive.file. See DriveRest.js.
+    var url = drvStoreModuleImage('CustomerReturn',
+                data.filename || ('rtn-' + Date.now() + '.jpg'), blob);
 
     var ss = getSpreadsheet();
     var ws = ss.getSheetByName('CUSTOMER_RETURN_LOG');

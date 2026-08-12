@@ -104,6 +104,9 @@ function writeStockLedger_(txnType, materialCode, batchOrLotNo, locationId,
   } finally {
     if (lockAcquired) lock.releaseLock();
   }
+  // Every stock-affecting write funnels through here, so this is the one place
+  // that reliably marks cached reads stale. See _pmSheetFingerprint_.
+  try { if (typeof bumpPmFingerprint_ === 'function') bumpPmFingerprint_(); } catch (e) {}
   // Invalidate the request-scoped read snapshot so any subsequent read in this
   // same request (e.g. the next lot's warehouse gate) sees this debit/credit.
   if (typeof prodCacheReset_ === 'function') prodCacheReset_();

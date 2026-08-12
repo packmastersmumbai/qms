@@ -546,14 +546,10 @@ function generateOQCPdf_(docNo) {
   var html = tmpl.evaluate().getContent();
   var blob = Utilities.newBlob(html, 'text/html', docNo + '.html');
   // <project>/QMS Data/OQC/yyyy-MM — see QmsDrive.js
-  var folder   = getQmsMonthFolder_('OQC', new Date());
-  var tempFile = DriveApp.createFile(blob);
-  var pdfBlob  = tempFile.getAs('application/pdf');
-  pdfBlob.setName(docNo + '.pdf');
-  var pdfFile  = folder.createFile(pdfBlob);
-  tempFile.setTrashed(true);
-  pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return pdfFile.getUrl();
+  // Drive REST — DriveApp is refused under the granted drive.file scope, so
+  // the old temp-file + folder.createFile path threw and this module
+  // silently stopped producing files. See DriveRest.js.
+  return drvStoreModulePdf('OQC', docNo, html);
 }
 
 function getOQCPrintData(docNo) {
@@ -608,13 +604,11 @@ function getOQCPrintHtml(docNo) {
 function saveOQCVideo_(base64, mime, ext, docNo, materialDesc, disposition) {
   var ss = getSpreadsheet();
   // <project>/QMS Data/Media/OQC/yyyy-MM — see QmsDrive.js
-  var monthFolder = getQmsMediaFolder_('OQC', new Date());
   var fileName = docNo + '_' + (disposition || 'OQC').replace(/\s+/g, '_') + '.' + ext;
   var bytes = Utilities.base64Decode(base64);
   var blob  = Utilities.newBlob(bytes, mime, fileName);
-  var file  = monthFolder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return file.getUrl();
+  // Drive REST — DriveApp is refused under drive.file. See DriveRest.js.
+  return drvStoreModuleImage('OQC', fileName, blob);
 }
 
 function getOQCIPQCCheck_(productCode, batch) {

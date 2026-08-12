@@ -148,3 +148,21 @@ function drvTrash(fileId) {
     payload: JSON.stringify({ trashed: true })
   });
 }
+
+// ── Module-level helpers so every writer shares one Drive path ────────
+// GRN, IQC, IPQC and OQC each had their own copy of "render template -> temp
+// file -> getAs(pdf) -> folder.createFile -> setSharing". All four broke the
+// moment the scope became drive.file, and only GRN was migrated, so IQC/IPQC/
+// OQC silently stopped producing PDFs and images. One helper each, used by all.
+
+/** Render an HTML string to a shared PDF under QMS Data/<module>/<yyyy-MM>. */
+function drvStoreModulePdf(moduleName, docNo, html) {
+  var safe = String(docNo).replace(/[^A-Za-z0-9_.\-]/g, '_');
+  return drvHtmlToPdf(html, safe, qmsMonthFolderId_(moduleName, new Date())).url;
+}
+
+/** Store one image blob under QMS Data/Media/<module>/<yyyy-MM>, shared by link. */
+function drvStoreModuleImage(moduleName, filename, blob) {
+  var up = drvUploadBlob(blob, filename, qmsMediaFolderId_(moduleName, new Date()));
+  return drvShareAnyone(up.id);
+}

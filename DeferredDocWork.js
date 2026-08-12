@@ -34,6 +34,10 @@ var DEFER_MAX_        = 50;   // 9KB per-property cap; a backlog means the drain
  * @param {Object=} extra  module-specific payload (e.g. {ncrNo, sampling, count})
  */
 function deferDocWork_(module, docNo, row, extra) {
+  // Every GRN/IQC/OQC save reaches here, so it is a reliable place to mark
+  // cached reads stale — the writers themselves never called
+  // invalidatePmCache_, which is why landing counts could lag a save.
+  try { if (typeof bumpPmFingerprint_ === 'function') bumpPmFingerprint_(); } catch (e) {}
   try {
     var props = PropertiesService.getScriptProperties();
     var q = [];

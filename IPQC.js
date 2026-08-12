@@ -563,14 +563,10 @@ function generateIPQCPdf_(sessionId) {
   var html = tmpl.evaluate().getContent();
   var blob = Utilities.newBlob(html, 'text/html', sessionId + '.html');
   // <project>/QMS Data/IPQC/yyyy-MM — see QmsDrive.js
-  var folder   = getQmsMonthFolder_('IPQC', new Date());
-  var tempFile = DriveApp.createFile(blob);
-  var pdfBlob  = tempFile.getAs('application/pdf');
-  pdfBlob.setName(sessionId + '.pdf');
-  var pdfFile  = folder.createFile(pdfBlob);
-  tempFile.setTrashed(true);
-  pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return pdfFile.getUrl();
+  // Drive REST — DriveApp is refused under the granted drive.file scope, so
+  // the old temp-file + folder.createFile path threw and this module
+  // silently stopped producing files. See DriveRest.js.
+  return drvStoreModulePdf('IPQC', sessionId, html);
 }
 
 function getIPQCPrintData(sessionId) {
@@ -665,13 +661,11 @@ function saveIPQCSessionVideo(sessionId, videoBase64, videoMime, videoExt) {
   try {
     var ss = getSpreadsheet();
     // <project>/QMS Data/Media/IPQC/yyyy-MM — see QmsDrive.js
-    var monthFolder = getQmsMediaFolder_('IPQC', new Date());
     var fileName    = sessionId + '.' + (videoExt || 'mp4');
     var bytes = Utilities.base64Decode(videoBase64);
     var blob  = Utilities.newBlob(bytes, videoMime || 'video/mp4', fileName);
-    var file  = monthFolder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    var videoUrl = file.getUrl();
+    // Drive REST — DriveApp is refused under drive.file. See DriveRest.js.
+    var videoUrl = drvStoreModuleImage('IPQC', fileName, blob);
     // Back-stamp col 12 (1-based) on the session row
     var ws = _ensureIPQCSessions();
     var values = ws.getDataRange().getValues();

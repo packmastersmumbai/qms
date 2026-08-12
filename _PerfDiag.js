@@ -802,3 +802,73 @@ function perfTraceInstrument(docNo) {
   if (r) { try { out.push('payload: ' + JSON.stringify(r).length + ' bytes'); } catch (e) {} }
   return out.join('\n');
 }
+
+// _pmSheetFingerprint_ uses DriveApp.getFileById, which drive.file refuses for
+// the spreadsheet (the script did not create it). It CATCHES and returns '0' —
+// a constant. Every cache keyed on it (landing, records, form masters, trace)
+// would then never invalidate on a sheet edit: stale data served until TTL.
+// Verify, and prove the replacement moves.
+function perfFingerprint() {
+  var out = ['CACHE FINGERPRINT', ''];
+  var fp1 = _pmSheetFingerprint_();
+  out.push('_pmSheetFingerprint_()      : ' + fp1 +
+           (fp1 === '0' ? '   <- CONSTANT: caches never invalidate' : ''));
+
+  // Alternatives that work under drive.file.
+  try {
+    var ss = getSpreadsheet();
+    var t = new Date().getTime();
+    var lastRowSum = 0;
+    ['GRN_LOG','IQC_LOG','STOCK_LEDGER','OQC_LOG','PROD_JOBS'].forEach(function (n) {
+      var sh = ss.getSheetByName(n);
+      if (sh) lastRowSum += sh.getLastRow();
+    });
+    out.push('row-count fingerprint      : ' + lastRowSum +
+             '   (' + (new Date().getTime() - t) + 'ms)');
+  } catch (e) { out.push('row-count fingerprint      : THREW ' + e.message.slice(0, 50)); }
+
+  try {
+    var t2 = new Date().getTime();
+    var rest = _drvFetch_('https://www.googleapis.com/drive/v3/files/' +
+      getSpreadsheet().getId() + '?fields=modifiedTime', { method: 'get' });
+    out.push('REST modifiedTime          : ' + rest.modifiedTime +
+             '   (' + (new Date().getTime() - t2) + 'ms)');
+  } catch (e) {
+    out.push('REST modifiedTime          : THREW ' + e.message.slice(0, 70));
+  }
+  out.push('');
+  out.push('A fingerprint that never changes is WORSE than no cache: an edit to');
+  out.push('any sheet is invisible until the 6h TTL expires.');
+  return out.join('\n');
+}
+
+// Do IQC / IPQC / OQC / CR / NCR actually produce Drive artefacts now?
+// Only GRN was migrated to REST; the rest kept calling DriveApp and threw.
+// This exercises each module's REAL store path and trashes what it creates.
+function perfAllModuleDrive() {
+  var out = ['PER-MODULE DRIVE WRITE', ''];
+  var px = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  ['GRN', 'IQC', 'IPQC', 'OQC', 'CustomerReturn', 'NCR'].forEach(function (m) {
+    // image
+    var imgMsg = '';
+    try {
+      var blob = Utilities.newBlob(Utilities.base64Decode(px), 'image/png', 'PROBE.png');
+      var url = drvStoreModuleImage(m, 'PROBE_' + m + '_' + new Date().getTime() + '.png', blob);
+      imgMsg = 'img OK';
+      var id = String(url).match(/[-\w]{25,}/);
+      if (id) drvTrash(id[0]);
+    } catch (e) { imgMsg = 'img FAIL ' + e.message.slice(0, 40); }
+
+    // pdf
+    var pdfMsg = '';
+    try {
+      var u = drvStoreModulePdf(m, 'PROBE_' + m + '_' + new Date().getTime(), '<h1>probe</h1>');
+      pdfMsg = 'pdf OK';
+      var pid = String(u).match(/[-\w]{25,}/);
+      if (pid) drvTrash(pid[0]);
+    } catch (e) { pdfMsg = 'pdf FAIL ' + e.message.slice(0, 40); }
+
+    out.push(_perfPad_(m, 16) + _perfPad_(imgMsg, 22) + pdfMsg);
+  });
+  return out.join('\n');
+}
