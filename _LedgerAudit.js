@@ -23,8 +23,13 @@ var LA_EXPECTED_ = {
   'IQC decisions':      ['IQC_ACCEPT', 'IQC_ACCEPT_REMAINDER_OUT', 'IQC_ACCEPT_REMAINDER_QUARANTINE',
                          'IQC_REJECT_OUT', 'IQC_REJECT_QUARANTINE', 'IQC_HOLD_OUT', 'IQC_HOLD_IN',
                          'IQC_HOLD_ACCEPT', 'IQC_HOLD_REJECT'],
-  'Production issue':   ['PROD_CONSUME'],
-  'Production booking': ['PROD_BOOK_REVERSE', 'PROD_BOOK_ROLLBACK'],
+  // RM_ISSUE / PROD_BOOK / PROD_RETURN / SAMPLE are CURRENT vocabulary, not
+  // legacy: Warehouse.js:1037 chooses between RM_ISSUE and PROD_BOOK at issue
+  // time, and Production.js:1537-1542 reads PROD_BOOK and PROD_RETURN to compute
+  // booked/returned per job. An earlier version of this map omitted them and
+  // reported them as unknown — the map was wrong, not the ledger.
+  'Production issue':   ['PROD_CONSUME', 'RM_ISSUE'],
+  'Production booking': ['PROD_BOOK', 'PROD_BOOK_REVERSE', 'PROD_BOOK_ROLLBACK', 'PROD_RETURN'],
   'Production losses':  ['PROD_LOSS', 'PROD_SCRAP', 'PROD_WASTAGE'],
   'Rework':             ['REWORK_COMPLETE_IN', 'REWORK_COMPLETE_OUT', 'REWORK_SCRAP', 'REWORK_SCRAP_IN'],
   'NCR rework':         ['NCR_REWORK_IN', 'NCR_REWORK_OUT'],
@@ -33,7 +38,7 @@ var LA_EXPECTED_ = {
   'Dispatch':           ['FG_DISPATCH'],
   'Customer return':    ['CUSTOMER_RETURN_IN', 'CUSTOMER_RETURN_RESTOCK_IN', 'CUSTOMER_RETURN_RESTOCK_OUT',
                          'CUSTOMER_RETURN_REWORK_IN', 'CUSTOMER_RETURN_REWORK_OUT'],
-  'Sampling':           ['SAMPLE_IN', 'SAMPLE_OUT'],
+  'Sampling':           ['SAMPLE_IN', 'SAMPLE_OUT', 'SAMPLE'],
   'Scrap':              ['SCRAP']
 };
 
@@ -210,5 +215,108 @@ function ledgerWhySilent() {
   out.push('');
   out.push('A rework only writes to the ledger when it is COMPLETED. If no row is');
   out.push('COMPLETED, "NEVER WRITTEN" means the feature is unused, not broken.');
+  return out.join('\n');
+}
+
+// What ARE the 205 zero-qty rows? A no-op row is only harmless if it is a
+// status marker; if a real movement wrote 0 by mistake, stock is missing.
+function ledgerZeroRows() {
+  var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+  var vals = ws.getRange(2, 1, ws.getLastRow() - 1, 14).getValues();
+  var byType = {}, samples = [];
+  vals.forEach(function (r, i) {
+    if (_laNum_(r[LA_COL_.IN]) || _laNum_(r[LA_COL_.OUT])) return;
+    var t = String(r[LA_COL_.TYPE] || '(blank)').trim();
+    byType[t] = (byType[t] || 0) + 1;
+    if (samples.length < 10) {
+      samples.push('row ' + (i + 2) + '  ' + _laPad_(t, 20) +
+                   _laPad_(String(r[LA_COL_.MAT]), 14) +
+                   _laPad_(String(r[LA_COL_.REFNO]), 20) +
+                   'bal=' + r[LA_COL_.BAL] + '  ' + String(r[LA_COL_.REMARK]).slice(0, 40));
+    }
+  });
+  var out = ['ZERO-QUANTITY LEDGER ROWS', ''];
+  Object.keys(byType).sort(function (a, b) { return byType[b] - byType[a]; })
+    .forEach(function (t) { out.push('   ' + _laPad_(t, 26) + byType[t]); });
+  out.push('');
+  out.push('samples:');
+  samples.forEach(function (s) { out.push('   ' + s); });
+  return out.join('\n');
+}
+
+// The 36 production rows with qty 0 carry the real amount in their REMARK
+// ("Consumed 36.424 KG"). If the remark says a number and the qty column says
+// 0, stock left the floor and the ledger never debited it. Quantify the gap.
+function ledgerZeroQtyProd() {
+  var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+  var vals = ws.getRange(2, 1, ws.getLastRow() - 1, 14).getValues();
+  var PROD = { PROD_CONSUME:1, PROD_SCRAP:1, PROD_WASTAGE:1, PROD_LOSS:1, SCRAP:1 };
+  var rows = [], byType = {}, totalByUnit = {};
+  vals.forEach(function (r, i) {
+    var t = String(r[LA_COL_.TYPE] || '').trim();
+    if (!PROD[t]) return;
+    if (_laNum_(r[LA_COL_.IN]) || _laNum_(r[LA_COL_.OUT])) return;
+    var rem = String(r[LA_COL_.REMARK] || '');
+    // "Consumed 36.424 KG (booking ...)" / "Scrap 4 KG (...)"
+    var m = rem.match(/([\d.]+)\s*([A-Za-z']+)/);
+    var qty = m ? Number(m[1]) : 0;
+    var unit = m ? m[2].toUpperCase() : '?';
+    byType[t] = (byType[t] || 0) + 1;
+    if (qty) totalByUnit[unit] = (totalByUnit[unit] || 0) + qty;
+    if (rows.length < 40) {
+      rows.push(_laPad_('row ' + (i + 2), 9) + _laPad_(t, 14) +
+                _laPad_(String(r[LA_COL_.MAT]), 12) +
+                _laPad_(String(r[LA_COL_.BATCH]), 22) +
+                _laPad_(String(r[LA_COL_.REFNO]), 22) +
+                'remark says ' + (qty ? (qty + ' ' + unit) : '(no qty)'));
+    }
+  });
+  var out = ['PRODUCTION ROWS WRITTEN WITH QTY 0', ''];
+  out.push('These say a quantity in the remark but debited NOTHING.');
+  out.push('');
+  Object.keys(byType).forEach(function (t) { out.push('   ' + _laPad_(t, 16) + byType[t] + ' rows'); });
+  out.push('');
+  out.push('undebited totals by unit:');
+  Object.keys(totalByUnit).forEach(function (u) {
+    out.push('   ' + _laPad_(u, 8) + Math.round(totalByUnit[u] * 1000) / 1000);
+  });
+  out.push('');
+  rows.forEach(function (r) { out.push(r); });
+  return out.join('\n');
+}
+
+// Are the qty-0 production rows HISTORICAL (an old bug, already fixed) or is
+// the live code still producing them? Dates decide it. If the newest one is
+// old, the writer is fine and only the data needs repair.
+function ledgerZeroProdDates() {
+  var ws = getSpreadsheet().getSheetByName('STOCK_LEDGER');
+  var vals = ws.getRange(2, 1, ws.getLastRow() - 1, 14).getValues();
+  var PROD = { PROD_CONSUME:1, PROD_SCRAP:1, PROD_WASTAGE:1, PROD_LOSS:1 };
+  var zero = [], good = [];
+  vals.forEach(function (r) {
+    var t = String(r[LA_COL_.TYPE] || '').trim();
+    if (!PROD[t]) return;
+    var d = r[LA_COL_.DATE];
+    var when = (d instanceof Date) ? d.getTime() : 0;
+    if (!_laNum_(r[LA_COL_.IN]) && !_laNum_(r[LA_COL_.OUT])) zero.push(when);
+    else good.push(when);
+  });
+  function fmt(ms) {
+    return ms ? Utilities.formatDate(new Date(ms), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm') : '(none)';
+  }
+  var out = ['ZERO-QTY PRODUCTION ROWS — ARE THEY STILL HAPPENING?', ''];
+  out.push(_laPad_('qty-0 rows', 22) + zero.length);
+  out.push(_laPad_('  earliest', 22) + fmt(Math.min.apply(null, zero.concat([Infinity])) === Infinity ? 0 : Math.min.apply(null, zero)));
+  out.push(_laPad_('  LATEST', 22) + fmt(zero.length ? Math.max.apply(null, zero) : 0));
+  out.push('');
+  out.push(_laPad_('correct rows', 22) + good.length);
+  out.push(_laPad_('  earliest', 22) + fmt(good.length ? Math.min.apply(null, good) : 0));
+  out.push(_laPad_('  LATEST', 22) + fmt(good.length ? Math.max.apply(null, good) : 0));
+  out.push('');
+  if (zero.length && good.length) {
+    out.push(Math.max.apply(null, good) > Math.max.apply(null, zero)
+      ? 'VERDICT: the newest production row is CORRECT and newer than the newest'
+      : 'VERDICT: a qty-0 row is the NEWEST — the writer may still be broken.');
+  }
   return out.join('\n');
 }
