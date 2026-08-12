@@ -8,7 +8,6 @@ const PNG='iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJUlEQVR42mNk+M9QzzCKR
   const ctx=await b.newContext({viewport:{width:430,height:900},
     storageState:fs.existsSync(STATE)?STATE:undefined});
   const page=await ctx.newPage();
-  page.on('pageerror',e=>console.log('PAGEERR '+e.message.slice(0,120)));
   await page.goto(WRAP+'?page=landing',{waitUntil:'domcontentloaded',timeout:60000});
   let app=null;
   for(let i=0;i<60&&!app;i++){ for(const f of page.frames()){
@@ -20,31 +19,6 @@ const PNG='iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJUlEQVR42mNk+M9QzzCKR
   let fr=null;
   for(const f of page.frames()){
     try{ if(await f.evaluate(()=>!!document.getElementById('formWrap'))) fr=f; }catch(_){}}
-
-  // Wrap google.script.run so every server call is logged with its outcome.
-  await fr.evaluate(()=>{
-    window.__calls=[];
-    const orig=google.script.run;
-    function wrap(base){
-      return new Proxy(base,{ get(t,p){
-        const v=t[p];
-        if(typeof v!=='function') return v;
-        return function(){
-          if(p==='withSuccessHandler'||p==='withFailureHandler'){
-            const cb=arguments[0];
-            return wrap(v.call(t,function(){
-              window.__calls.push(p==='withSuccessHandler'?'OK':'FAIL');
-              return cb&&cb.apply(this,arguments);
-            }));
-          }
-          window.__calls.push('CALL '+String(p));
-          return v.apply(t,arguments);
-        };
-      }});
-    }
-    Object.defineProperty(window.google.script,'run',{get(){return wrap(orig);}});
-  });
-
   await fr.waitForFunction(()=>{const s=document.getElementById('supplier');
     return s&&s.options.length>1;},{timeout:90000});
   await fr.evaluate(()=>{const s=document.getElementById('supplier');
@@ -64,16 +38,21 @@ const PNG='iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJUlEQVR42mNk+M9QzzCKR
   fs.writeFileSync(tmp,Buffer.from(PNG,'base64'));
   await (await fr.$('input.img-file-input[data-kind="doc"]')).setInputFiles(tmp);
   await page.waitForTimeout(4000);
-  await fr.evaluate(()=>{window.__calls=[]; window.doSave();});
 
-  for(let i=0;i<50;i++){
-    const st=await fr.evaluate(()=>({
-      calls:(window.__calls||[]).slice(0,12),
-      conf:(document.getElementById('confGrnId')||{}).textContent||''
-    }));
-    if(st.conf.trim()){ console.log('CONFIRMED '+st.conf.trim()); console.log('calls: '+st.calls.join(' -> ')); break; }
-    if(i%10===9) console.log('t+'+(i*2)+'s calls: '+st.calls.join(' -> '));
-    await page.waitForTimeout(2000);
-  }
+  const diag=await fr.evaluate(()=>{
+    const v = (typeof window.validate==='function') ? window.validate() : 'no validate';
+    const vals={};
+    ['supplier','item','batchNo','qtyReceived','invoiceNo'].forEach(id=>{
+      const e=document.getElementById(id); vals[id]=e?String(e.value).slice(0,28):'(missing)';
+    });
+    // Which error messages are visible?
+    const shown=[...document.querySelectorAll('.field-error-msg')]
+      .filter(e=>getComputedStyle(e).display!=='none'&&e.offsetHeight>0)
+      .map(e=>e.id+': '+e.textContent.trim().slice(0,40));
+    return { validate:v, vals:vals, shownErrors:shown,
+             disposition: (typeof disposition!=='undefined')?String(disposition):'(undefined)',
+             activePO: (typeof _activePO!=='undefined'&&_activePO)?'set':'null' };
+  });
+  console.log(JSON.stringify(diag,null,1));
   await b.close();
 })();
