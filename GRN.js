@@ -2,17 +2,44 @@
 // GRN.gs — Save and read GRN records
 // ============================================================
 
+// Measured (?diag=perfinit): the five master reads cost ~1.7s of the ~1.8s this
+// call takes, and NONE of them was cached — every form open re-scanned
+// MASTERS_Materials (274 rows), MASTERS_Suppliers, LOCATIONS and the inspector
+// list, none of which change between two receipts.
+//
+// _pmCacheGet_ keys on the spreadsheet's Drive last-modified time, so an edit to
+// any master invalidates this immediately; unchanged sheets serve from
+// CacheService. The doc number is deliberately OUTSIDE the cache: peekNextDocNumber
+// must reflect the live counter or two operators receive the same GRN number.
 function getGRNFormInit() {
-  var locations = [];
-  try { locations = (typeof getOpenRMLocations === 'function') ? getOpenRMLocations() : []; } catch(e) {}
+  var masters = _grnFormMasters_();
   return {
     docNumber:  peekNextDocNumber('grn'),
+    suppliers:  masters.suppliers,
+    materials:  masters.materials,
+    inspectors: masters.inspectors,
+    locations:  masters.locations,
+    today:      Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
+  };
+}
+
+// The cacheable half of the form-init payload — everything that is a master,
+// not a transaction. Shared so IQC and the other write forms can reuse the one
+// cached copy instead of each paying for its own scan.
+function _grnFormMasters_() {
+  var cached = _pmCacheGet_('pmqms_form_masters_v1');
+  if (cached) return cached;
+
+  var locations = [];
+  try { locations = (typeof getOpenRMLocations === 'function') ? getOpenRMLocations() : []; } catch(e) {}
+  var out = {
     suppliers:  getSuppliers(),
     materials:  getMaterials(),
     inspectors: getInspectors(),
-    locations:  locations,
-    today:      Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd')
+    locations:  locations
   };
+  _pmCachePut_('pmqms_form_masters_v1', out);
+  return out;
 }
 
 // Find a prior save of the SAME attempt by its client txn id. Newest-first: a

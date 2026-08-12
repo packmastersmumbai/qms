@@ -1944,9 +1944,48 @@
       .getLandingBundleV3Fast(getPersona());
   }
 
+  /* Prefetch the form's DATA, not just its HTML.
+     Measured over the real bridge: getGRNFormInit does ~1.8s of server work but
+     takes 6.2-23.1s to return, and getIQCFormInit 5.7-8.6s. That gap is fixed
+     google.script.run overhead through the double iframe — it does not shrink
+     by making the reads faster. The only way the operator stops waiting for it
+     is for the answer to already be in the browser when the form opens.
+
+     So: while the operator is looking at the landing page (which they do for a
+     second or two anyway), fetch each hot form's init payload and park it in
+     sessionStorage. The form reads it synchronously on boot and renders filled.
+     Falls back to the live call on a miss, so nothing breaks if this never ran.
+
+     Kept short (60s) because docNumber rides along in the same payload and must
+     not go stale — the forms re-check it on save regardless. */
+  var PM_INIT_PFX = 'pmqms_init_v1_';
+  var PM_INIT_TTL = 60 * 1000;
+  function prefetchFormData(form, fnName) {
+    try {
+      var raw = sessionStorage.getItem(PM_INIT_PFX + form);
+      if (raw && (Date.now() - (JSON.parse(raw).ts || 0)) < PM_INIT_TTL) return;
+    } catch (e) {}
+    google.script.run
+      .withSuccessHandler(function (d) {
+        if (!d) return;
+        try {
+          sessionStorage.setItem(PM_INIT_PFX + form,
+            JSON.stringify({ ts: Date.now(), data: d }));
+        } catch (e) { /* quota — form falls back to the live call */ }
+      })
+      .withFailureHandler(function () {})
+      [fnName]();
+  }
+
   /* Idle prefetch — top 4 most-used forms only, heavily staggered to not compete with data calls */
   function schedulePrefetch() {
     var targets = ['IQC', 'Production', 'GRN', 'OQC'];
+    // Data prefetch for the two forms whose init is measurably the slowest.
+    // Staggered well after the HTML prefetch so they never contend.
+    var dataIdle = window.requestIdleCallback || function (cb) { return setTimeout(cb, 2500); };
+    dataIdle(function () { prefetchFormData('GRN', 'getGRNFormInit'); }, { timeout: 4000 });
+    dataIdle(function () { prefetchFormData('IQC', 'getIQCFormInit'); }, { timeout: 6000 });
+
     if (window.PMHtmlCache && typeof window.PMHtmlCache.prefetch === 'function') {
       window.PMHtmlCache.prefetch(targets);
       return;

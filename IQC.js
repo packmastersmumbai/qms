@@ -166,11 +166,15 @@ var IQC_SAMPLING_METHOD = 'Single';   // engine is single-sampling only
 // control piece is held. Set to 0 to retain nothing.
 var IQC_CONTROL_SAMPLE_QTY = 1;
 
+// getInspectors() re-scanned its master on every open (measured 403ms) for a
+// 4-row list that changes maybe twice a year. It now comes from the shared
+// form-masters cache, which invalidates on any sheet edit.
+// recentGRNs stays live — an un-inspected GRN list that lags is wrong.
 function getIQCFormInit() {
   return {
     docNumber:  peekNextDocNumber('iqc'),
     recentGRNs: getUnInspectedGRNs(),
-    inspectors: getInspectors(),
+    inspectors: _grnFormMasters_().inspectors,
     params:          IQC_PARAMS,
     aqlValues:       IQC_AQL_VALUES,
     defaultAql:      IQC_DEFAULT_AQL,

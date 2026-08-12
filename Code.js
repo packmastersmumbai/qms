@@ -443,6 +443,18 @@ function doGet(e) {
     } catch (erfu) { fuf = 'ERROR: ' + erfu.message; }
     return ContentService.createTextOutput(String(fuf)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'perfinit') {
+    var pi; try { pi = perfFormInit(); } catch(er){ pi='ERR '+er.message; }
+    return ContentService.createTextOutput(String(pi)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'perfcachesize') {
+    var pcs; try { pcs = perfCacheSize(); } catch(er){ pcs='ERR '+er.message; }
+    return ContentService.createTextOutput(String(pcs)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'perfsheets') {
+    var ps; try { ps = perfSheets(); } catch(er){ ps='ERR '+er.message; }
+    return ContentService.createTextOutput(String(ps)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'grnrecent') {
     var gr; try { gr = grnRecent(); } catch(er){ gr='ERR '+er.message; }
     return ContentService.createTextOutput(String(gr)).setMimeType(ContentService.MimeType.TEXT);
@@ -1093,7 +1105,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v173_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v174_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

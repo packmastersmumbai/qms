@@ -2035,29 +2035,61 @@ function goToIqc() {
 
 // ── Init ───────────────────────────────────────────────────────────
 function init() {
+  // Apply the init payload — same code whether it came from the prefetch cache
+  // or the live call, so there is one render path to reason about.
+  function applyInit(d) {
+    SUPPLIERS       = d.suppliers  || [];
+    ALL_MATS        = d.materials  || [];
+    LOCATIONS       = d.locations  || [];
+    _inspectorNames = (d.inspectors || []).map(function(i) {
+      return typeof i === 'string' ? i : (i.name || '');
+    }).filter(Boolean);
+
+    if (d.docNumber) {
+      document.getElementById('docBadge').textContent = d.docNumber;
+      var il = document.getElementById('docBadgeInline');
+      if (il) il.textContent = d.docNumber;
+    }
+
+    var sSel = document.getElementById('supplier');
+    // Guard against double-apply: a cache hit renders immediately and the
+    // background refresh below applies again a few seconds later.
+    sSel.innerHTML = '<option value="">Select Supplier</option>';
+    SUPPLIERS.forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s.code;
+      opt.textContent = s.name;
+      sSel.appendChild(opt);
+    });
+  }
+
+  // Landing parks this payload in sessionStorage while the operator is still
+  // looking at the tiles. Measured: the live call takes 6.2-23.1s to come back
+  // through the double iframe for ~1.8s of actual server work, so a hit here is
+  // the difference between a form that is usable on arrival and one that is not.
+  var cachedInit = null;
+  try {
+    var raw = sessionStorage.getItem('pmqms_init_v1_GRN');
+    if (raw) {
+      var o = JSON.parse(raw);
+      if (o && o.data && (Date.now() - (o.ts || 0)) < 60000) cachedInit = o.data;
+    }
+  } catch (e) {}
+
+  if (cachedInit) {
+    applyInit(cachedInit);
+    // The doc number is the one field that must not be stale — two operators
+    // receiving at once would otherwise both see the same GRN number. Refresh
+    // in the background; the form is already usable while this runs.
+    google.script.run
+      .withSuccessHandler(function(d) { if (d) applyInit(d); })
+      .withFailureHandler(function() {})
+      .getGRNFormInit();
+    return;
+  }
+
   google.script.run
-    .withSuccessHandler(function(d) {
-      SUPPLIERS       = d.suppliers  || [];
-      ALL_MATS        = d.materials  || [];
-      LOCATIONS       = d.locations  || [];
-      _inspectorNames = (d.inspectors || []).map(function(i) {
-        return typeof i === 'string' ? i : (i.name || '');
-      }).filter(Boolean);
-
-      if (d.docNumber) {
-        document.getElementById('docBadge').textContent = d.docNumber;
-        var il = document.getElementById('docBadgeInline');
-        if (il) il.textContent = d.docNumber;
-      }
-
-      var sSel = document.getElementById('supplier');
-      SUPPLIERS.forEach(function(s) {
-        var opt = document.createElement('option');
-        opt.value = s.code;
-        opt.textContent = s.name;
-        sSel.appendChild(opt);
-      });
-    })
+    .withSuccessHandler(applyInit)
     .withFailureHandler(function(e) {
       showErr('Failed to load form data: ' + (e.message || String(e)));
     })
