@@ -463,6 +463,11 @@ function doGet(e) {
     var bra; try { bra = perfBlastRadius(); } catch(er){ bra='ERR '+er.message; }
     return ContentService.createTextOutput(String(bra)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'printrender') {
+    var prr;
+    try { prr = perfPrintRender(e.parameter.doc || ''); } catch(er){ prr = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(prr)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'perfsheets') {
     var ps; try { ps = perfSheets(); } catch(er){ ps='ERR '+er.message; }
     return ContentService.createTextOutput(String(ps)).setMimeType(ContentService.MimeType.TEXT);

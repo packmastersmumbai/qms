@@ -266,3 +266,53 @@ function perfBlastRadius() {
   out.push('the web app is deployed ANYONE_ANONYMOUS.');
   return out.join('\n');
 }
+
+// ── Print/PDF render probe ────────────────────────────────────────────
+// "All saved PDFs have blank data." Renders the real template with real data and
+// reports whether the embedded JSON is valid JavaScript. <?= ?> HTML-escapes it
+// (" -> &quot;), so `d` never parses and every field renders empty — invisible
+// unless you look at the produced HTML.
+function perfPrintRender(docNo) {
+  var out = ['PRINT TEMPLATE RENDER PROBE', ''];
+  try {
+    if (!docNo) {
+      var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+      var v = ws.getRange(ws.getLastRow(), 1).getValue();
+      docNo = String(v || '').trim();
+    }
+    out.push('docNo: ' + docNo);
+
+    var data = getGRNPrintData(docNo);
+    out.push('getGRNPrintData: OK  keys=' + Object.keys(data).length +
+             '  supplier=' + (data.supplierName || '(none)') +
+             '  items=' + ((data.items || []).length));
+
+    var tmpl = HtmlService.createTemplateFromFile('PrintGRN_F');
+    tmpl.printData = data;
+    var html = tmpl.evaluate().getContent();
+    out.push('rendered HTML: ' + html.length + ' bytes');
+
+    // Pull the `var d = ...;` line back out and see if it is parseable JSON.
+    // Anchored to end-of-LINE, not the first ';' — a ';' inside a remark or a
+    // supplier name would otherwise truncate the capture and the probe would
+    // report a parse failure the product does not have.
+    var m = html.match(/var d = (.*);[ \t]*$/m);
+    if (!m) { out.push('VERDICT: could not find the `var d =` assignment'); return out.join('\n'); }
+    var snippet = m[1];
+    out.push('embedded JSON head: ' + snippet.slice(0, 70));
+    var escaped = snippet.indexOf('&quot;') >= 0 || snippet.indexOf('&#') >= 0;
+    out.push('HTML-escaped?     : ' + (escaped ? 'YES — this is the blank-PDF bug' : 'no'));
+    try {
+      JSON.parse(snippet);
+      out.push('JSON.parse        : OK');
+    } catch (e) {
+      out.push('JSON.parse        : FAILED — ' + e.message.slice(0, 70));
+    }
+    out.push('');
+    out.push(escaped ? 'VERDICT: BLANK — template uses the escaping operator.'
+                     : 'VERDICT: RENDERS — data reaches the page.');
+  } catch (e) {
+    out.push('THREW: ' + e.message);
+  }
+  return out.join('\n');
+}
