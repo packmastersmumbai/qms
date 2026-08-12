@@ -28,6 +28,7 @@
   .toast { position:fixed; bottom:72px; left:50%; transform:translateX(-50%); background:#323232; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; z-index:9999; display:none; }
   .toast.success { background:#2E7D32; } .toast.error { background:#C62828; }
 </style>
+<?!= include('ShareKit') ?>
 </head>
 <body>
 
@@ -218,6 +219,18 @@ function submitCompletion() {
       btn.textContent = 'Submit Completion';
       if (!res.success) { showToast(res.error || 'Save failed.', 'error'); return; }
       showToast('Rework ' + SELECTED.reworkId + ' completed. ' + res.qtyReworked + ' → ' + res.destination, 'success');
+      // Success here is a toast, not a screen, so the share offer floats.
+      if (window.PMShare) {
+        PMShare.offer({
+          type: 'Rework', title: 'Rework Completed',
+          docNo: SELECTED.reworkId,
+          date: new Date().toLocaleDateString('en-GB'),
+          material: SELECTED.materialDesc || SELECTED.materialCode || '',
+          batch: SELECTED.batchNo || '',
+          qty: res.qtyReworked, status: 'COMPLETED → ' + res.destination,
+          pdfUrl: res.pdfUrl || ''
+        });
+      }
       closeForm();
       loadItems();
     }))

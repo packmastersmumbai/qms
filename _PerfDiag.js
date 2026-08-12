@@ -369,3 +369,68 @@ function perfTelegram() {
   }
   return out.join('\n');
 }
+
+// Did ShareKit actually make it into the served form HTML?
+// The browser probe said window.PMShare was undefined; this checks the SOURCE
+// the server produces, which separates "include broken" from "cache stale"
+// from "client script threw".
+function perfShareKit(form) {
+  var out = ['SHAREKIT DELIVERY CHECK', ''];
+  form = form || 'GRN';
+  try {
+    var html = getFormHtml(form);
+    out.push('form            : ' + form);
+    out.push('served bytes    : ' + html.length);
+    out.push('has PMShare     : ' + (html.indexOf('window.PMShare') >= 0 ? 'YES' : 'NO'));
+    out.push('has pm-share-btn: ' + (html.indexOf('pm-share-btn')   >= 0 ? 'YES' : 'NO'));
+    out.push('has shareSlot   : ' + (html.indexOf('shareSlot')      >= 0 ? 'YES' : 'NO'));
+    out.push('has PMShare.mount call: ' + (html.indexOf('PMShare.mount') >= 0 ? 'YES' : 'NO'));
+    out.push('');
+    out.push(html.indexOf('window.PMShare') >= 0
+      ? 'VERDICT: ShareKit IS in the served HTML. If the browser says undefined,\n' +
+        'the page is serving from a stale sessionStorage/CacheService copy, or a\n' +
+        'script above it threw before PMShare was assigned.'
+      : 'VERDICT: ShareKit is NOT in the served HTML — the include did not resolve.');
+  } catch (e) {
+    out.push('THREW: ' + e.message);
+  }
+  return out.join('\n');
+}
+
+// Does the WhatsApp message now carry the PDF, for every record type?
+// Before this work, buildMessage_ never emitted pdfUrl in any branch.
+function perfShareMsg() {
+  var types = ['GRN','IQC','OQC','IPQC','Dispatch','Gatepass','CustomerReturn','PO','Rework'];
+  var out = ['WHATSAPP MESSAGE — PDF + DEEP LINK PER TYPE', ''];
+  types.forEach(function (t) {
+    var msg = '';
+    try {
+      msg = buildWhatsAppURL({
+        type: t, docNo: 'PM/' + t + '/2026-001', date: '12-Aug-2026',
+        supplier: 'Test Supplier', customer: 'Test Customer',
+        material: 'Test Material', batch: 'B-1', qty: 10,
+        status: 'ACCEPTED', disposition: 'ACCEPTED', releaseDecision: 'RELEASED',
+        pdfUrl: 'https://drive.google.com/file/d/TESTPDFID/view',
+        recordUrl: 'https://example.com/?doc=X'
+      });
+      msg = decodeURIComponent(msg.replace('https://wa.me/?text=', ''));
+    } catch (e) { msg = 'THREW ' + e.message; }
+    var hasPdf  = msg.indexOf('TESTPDFID') >= 0;
+    var hasLink = msg.indexOf('Open record') >= 0;
+    var body    = msg.length;
+    out.push(_perfPad_(t, 16) + _perfPad_('pdf=' + (hasPdf ? 'YES' : 'no'), 10) +
+             _perfPad_('link=' + (hasLink ? 'YES' : 'no'), 11) + body + ' chars');
+  });
+  out.push('');
+  out.push('sample (GRN):');
+  try {
+    var s = decodeURIComponent(buildWhatsAppURL({
+      type: 'GRN', docNo: 'PM/GRN/2026-125', date: '12-Aug-2026',
+      supplier: 'Sunraj Corrugators', material: 'Test', batch: 'B-1',
+      qtyReceived: 100, status: 'PENDING',
+      pdfUrl: 'https://drive.google.com/file/d/ABC/view'
+    }).replace('https://wa.me/?text=', ''));
+    s.split('\n').forEach(function (l) { out.push('   ' + l); });
+  } catch (e) { out.push('   THREW ' + e.message); }
+  return out.join('\n');
+}

@@ -40,6 +40,7 @@
     #toast.warning { background: #d97706; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('ShareKit') ?>
 <?!= include('HtmlCache') ?>
 </head>
 <body class="pb-20">
@@ -397,6 +398,14 @@
           document.getElementById('openCount').textContent = OPEN_RETURNS.length + ' open';
           if (!OPEN_RETURNS.length) renderTriage();
           showToast(disposition + ' recorded' + (res.ncrNo ? ' — NCR ' + res.ncrNo : ''));
+          if (window.PMShare) {
+            PMShare.offer({
+              type: 'CustomerReturn', title: 'Customer Return',
+              docNo: rtnNo, date: new Date().toLocaleDateString('en-GB'),
+              status: disposition + (res.ncrNo ? ' · NCR ' + res.ncrNo : ''),
+              pdfUrl: res.pdfUrl || ''
+            }, { label: rtnNo + ' — ' + disposition });
+          }
           var hasWarnings = (res.warnings && res.warnings.length) || res.ncrError;
           if (hasWarnings) {
             var msgs = (res.warnings && res.warnings.length) ? res.warnings : [res.ncrError];

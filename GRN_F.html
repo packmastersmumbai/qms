@@ -245,6 +245,7 @@
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
   <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
 <?!= include('FormKit') ?>
+<?!= include('ShareKit') ?>
 <?!= include('HtmlCache') ?>
 <style>
   /* ── COMPACT LAYER (GRN only) ──────────────────────────────────────────
@@ -853,6 +854,7 @@
   <div class="text-[13px] text-[#64748b] mb-3" id="confBatch"></div>
   <div id="confItemsTable" style="display:none;max-width:520px;margin:0 auto 16px;text-align:left;font-size:11px;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;"></div>
   <div id="confBadge" class="confirm-badge mb-8"></div>
+  <div id="shareSlot" class="w-full max-w-md mx-auto mb-3"></div>
   <button id="btnIqc"
     class="w-full max-w-md mx-auto block h-[52px] bg-status-open text-white rounded-[10px] font-headline text-[15px] font-bold mb-3 transition-colors">
     PROCEED TO IQC &#8594;
@@ -1985,6 +1987,18 @@ function showConfirm(g) {
 
   document.getElementById('confGrnId').textContent = '#' + g.grnId;
   document.getElementById('confItem').textContent  = g.itemName + ' — ' + g.supplierName;
+
+  // Share the saved GRN. ShareKit owns the message text, the deep link and the
+  // PDF attachment; this only supplies the facts the operator just entered.
+  if (window.PMShare) {
+    PMShare.mount(document.getElementById('shareSlot'), function () {
+      return {
+        type: 'GRN', docNo: g.grnId, date: new Date().toLocaleDateString('en-GB'),
+        supplier: g.supplierName, material: g.itemName, batch: g.batchNo || '',
+        qtyReceived: g.qtyReceived, status: 'PENDING', pdfUrl: g.pdfUrl || ''
+      };
+    });
+  }
 
   var items = g.itemsList || [];
   var tbl = document.getElementById('confItemsTable');

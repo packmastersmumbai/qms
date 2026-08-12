@@ -170,6 +170,7 @@
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
   <?!= HtmlService.createHtmlOutputFromFile('OperatorPicker').getContent(); ?>
 <?!= include('FormKit') ?>
+<?!= include('ShareKit') ?>
 <?!= include('HtmlCache') ?>
 <script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
 </head>
@@ -568,6 +569,7 @@
         <div class="text-[11px] text-green-700">IQC saved successfully</div>
       </div>
     </div>
+    <div id="shareSlot"></div>
     <button id="saveBtn" disabled onclick="saveIQC()"
       class="w-full h-[56px] bg-primary text-white rounded-[10px] font-semibold text-[16px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-40">
       <span class="material-symbols-outlined">save</span>Save IQC Result
@@ -1945,6 +1947,20 @@ function doSaveIQC() {
         if (banner) {
           if (docNoEl) docNoEl.textContent = lastSavedDocNo || 'IQC Saved';
           banner.style.display = 'flex';
+        }
+        if (window.PMShare) {
+          PMShare.mount(document.getElementById('shareSlot'), function () {
+            return {
+              type: 'IQC', docNo: lastSavedDocNo || '',
+              date: new Date().toLocaleDateString('en-GB'),
+              grnNo: (typeof selectedGRN !== 'undefined' && selectedGRN) ? selectedGRN.grnNo : '',
+              supplier: (typeof selectedGRN !== 'undefined' && selectedGRN) ? selectedGRN.supplierName : '',
+              material: (typeof selectedGRN !== 'undefined' && selectedGRN) ? selectedGRN.materialDesc : '',
+              batch: (typeof selectedGRN !== 'undefined' && selectedGRN) ? selectedGRN.batchNo : '',
+              disposition: (res && res.disposition) || '',
+              pdfUrl: (res && res.pdfUrl) || ''
+            };
+          });
         }
         document.getElementById('saveBtn').style.display = 'none';
         document.getElementById('emailReportBtn').style.display = 'flex';

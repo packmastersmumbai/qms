@@ -275,6 +275,11 @@
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('FormKit') ?>
+<!-- IPQC keeps its own bespoke share (it sends per-round stats and fail detail
+     that no other form has), but ShareKit is included so the button styling and
+     the PMShare API are available here too — and so a future change to the
+     share UI does not have to be made twice. -->
+<?!= include('ShareKit') ?>
 <?!= include('HtmlCache') ?>
 <script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
 </head>

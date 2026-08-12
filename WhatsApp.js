@@ -15,6 +15,14 @@ function getQmsAppUrl_() {
   return '';
 }
 
+// Public-facing base URL for user-scannable / shareable links (QR codes, emails,
+// WhatsApp). Points at GitHub Pages, NOT the raw script.google.com URL — the
+// Pages index.html forwards ?doc=/?page= query params into the GAS iframe.
+// Use this for anything a person clicks/scans; use getQmsAppUrl_ (GAS) only for
+// in-app google.script.run navigation.
+var QMS_PUBLIC_BASE_ = 'https://packmastersmumbai.github.io/qms';
+function getPublicUrl_() { return QMS_PUBLIC_BASE_; }
+
 function buildWhatsAppURL(record) {
   var msg = buildMessage_(record);
   return 'https://wa.me/?text=' + encodeURIComponent(msg);
@@ -34,7 +42,7 @@ function buildMessage_(r) {
     lines.push('Qty Rcvd : ' + (r.qtyReceived || '—'));
     lines.push('IQC Status: ' + statusEmoji_(r.status) + ' ' + (r.status || 'PENDING'));
     lines.push('');
-    lines.push('Next Step — Open IQC: ' + getQmsAppUrl_());
+    lines.push('Next Step — Open IQC: ' + getPublicUrl_());
   }
 
   else if (r.type === 'IQC') {
@@ -49,7 +57,7 @@ function buildMessage_(r) {
     lines.push('Result   : ' + statusEmoji_(r.disposition) + ' ' + (r.disposition || 'PENDING'));
     if (r.ncrRef) lines.push('NCR Ref  : ' + r.ncrRef);
     lines.push('');
-    lines.push('Next Step — Open OQC: ' + getQmsAppUrl_());
+    lines.push('Next Step — Open OQC: ' + getPublicUrl_());
   }
 
   else if (r.type === 'OQC') {
@@ -110,14 +118,48 @@ function buildMessage_(r) {
       lines.push('');
     }
 
-    // Deep link to the actual record
-    if (r.recordUrl) {
-      lines.push('🔗 Open record:');
-      lines.push(r.recordUrl);
-    } else {
-      lines.push('Open QMS: ' + getQmsAppUrl_());
-    }
-    return lines.join('\n');  // skip the trailing "Raised by..." block below
+    // IPQC used to `return` here to skip the "Raised by" footer. It now falls
+    // through like every other branch, because the shared footer below is what
+    // attaches the PDF link — an early return would leave IPQC (the one form
+    // that already HAD sharing) as the only one without its document.
+    // recordUrl is emitted by the shared footer, so only the no-link fallback
+    // stays here.
+    if (!r.recordUrl) lines.push('Open QMS: ' + getPublicUrl_());
+  }
+
+  // ── Generic fallback ────────────────────────────────────────────────
+  // Every record type that has no bespoke branch above still produces a
+  // useful message instead of a bare header. Without this, adding Share to
+  // Dispatch / Gatepass / PO / Rework / CustomerReturn would post an empty
+  // card. Fields are printed only when present, so one branch serves all.
+  else {
+    lines.push('📋 ' + (r.title || r.type || 'QMS Record'));
+    [['Doc No   ', r.docNo],
+     ['Date     ', r.date],
+     ['Supplier ', r.supplier],
+     ['Customer ', r.customer],
+     ['Material ', r.material],
+     ['Product  ', r.product],
+     ['Batch    ', r.batch],
+     ['Qty      ', r.qty],
+     ['Vehicle  ', r.vehicleNo],
+     ['Operator ', r.operator],
+     ['Inspector', r.inspector]
+    ].forEach(function (p) { if (p[1]) lines.push(p[0] + ': ' + p[1]); });
+    var st = r.status || r.disposition || r.releaseDecision;
+    if (st) lines.push('Status   : ' + statusEmoji_(st) + ' ' + st);
+  }
+
+  // ── Shared footer: the document itself ──────────────────────────────
+  // wa.me carries TEXT ONLY — it cannot attach a file — so the PDF travels as
+  // a link. Previously no branch emitted pdfUrl at all, so a shared message
+  // never referenced the document it described.
+  if (r.pdfUrl) {
+    lines.push('');
+    lines.push('📎 PDF: ' + r.pdfUrl);
+  }
+  if (r.recordUrl) {
+    lines.push('🔗 Open record: ' + r.recordUrl);
   }
 
   lines.push('');

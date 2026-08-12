@@ -130,10 +130,39 @@ function pushDwmNextAction_(r) {
 function notifyStage_(r) {
   try {
     var msg = _tgFromRecord_(r);
-    if (msg) TelegramLib.send(msg);
+    if (!msg) return;
+
+    // Attach the PDF itself when the record has one. Previously the message
+    // carried only a link, which the recipient had to open in a browser and
+    // authenticate against Drive to read — so the document never actually
+    // reached the channel. sendDocument uploads the bytes.
+    //
+    // Falls back to the plain message on ANY failure (no pdfUrl, Drive
+    // unreachable, file too large for Telegram's 50 MB cap), because a
+    // notification without its attachment still beats no notification.
+    if (r && r.pdfUrl) {
+      try {
+        var blob = _tgPdfBlob_(r.pdfUrl);
+        if (blob && TelegramLib.sendDocument(blob, msg)) return;
+      } catch (ePdf) {
+        Logger.log('notifyStage_ pdf attach failed, sending text only: ' + ePdf.message);
+      }
+    }
+    TelegramLib.send(msg);
   } catch (e) {
     Logger.log('notifyStage_ skipped: ' + e.message);
   }
+}
+
+// Resolve a Drive file URL to a blob Telegram can upload.
+// Accepts the /d/<id>/ and ?id=<id> URL shapes DriveApp produces.
+function _tgPdfBlob_(pdfUrl) {
+  var m = String(pdfUrl || '').match(/[-\w]{25,}/);
+  if (!m) return null;
+  var file = DriveApp.getFileById(m[0]);
+  var blob = file.getBlob();
+  blob.setName(file.getName());
+  return blob;
 }
 
 // Compact date for footer, e.g. "04-Jul 14:30". Accepts Date/string/blank.

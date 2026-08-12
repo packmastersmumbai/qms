@@ -115,6 +115,7 @@
     .pm-btn-primary { background-color: #0D1B6E !important; color: #fff !important; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('ShareKit') ?>
 <?!= include('HtmlCache') ?>
 </head>
 <body class="bg-surface text-[#0f172a] min-h-screen pb-[80px]">
@@ -351,6 +352,7 @@
     <div class="text-[20px] font-bold text-[#0f172a]">Gatepass Saved</div>
     <div class="text-[24px] font-bold text-primary border-b-[3px] border-amber-400 pb-1 inline-block" id="confirmDocNo">#—</div>
     <div class="flex flex-wrap gap-2 justify-center" id="confirmChips"></div>
+    <div id="shareSlot" class="w-full max-w-xs"></div>
     <button id="btnHome"
       class="w-full max-w-xs bg-primary text-white font-headline text-[14px] font-bold rounded-button py-4 mt-4 active:bg-[#0a1450] transition-colors">
       Back to Home
@@ -721,6 +723,20 @@ function showConfirmation(docNo, matType, desc, qty, unit, vehicle) {
   document.getElementById('screenConfirm').style.display = '';
 
   document.getElementById('confirmDocNo').textContent = '#' + (docNo || _docNo);
+
+  if (window.PMShare) {
+    PMShare.mount(document.getElementById('shareSlot'), function () {
+      return {
+        type: 'Gatepass', title: 'Gatepass',
+        docNo: docNo || _docNo || '',
+        date: new Date().toLocaleDateString('en-GB'),
+        customer: (typeof _customer !== 'undefined' ? _customer : ''),
+        vehicleNo: (typeof _vehicleNo !== 'undefined' ? _vehicleNo : ''),
+        status: 'ISSUED',
+        pdfUrl: (typeof _pdfUrl !== 'undefined' ? _pdfUrl : '')
+      };
+    });
+  }
 
   var chips = document.getElementById('confirmChips');
   chips.innerHTML = '';

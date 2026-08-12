@@ -1,0 +1,142 @@
+<!-- ShareKit — one "Share on WhatsApp" implementation for every form.
+     Include AFTER FormKit:  <?!= include('ShareKit') ?>
+
+     WHY THIS EXISTS: IPQC carried ~60 lines of nested google.script.run calls to
+     build one share link. Copying that into the other eight forms would be eight
+     more places to fix when the message format changes, and the pattern already
+     had a bug worth not duplicating (the deep-link fallback silently dropped the
+     record URL).
+
+     USE:
+       PMShare.button({ type:'GRN', docNo:'PM/GRN/2026-125', ... })   -> HTML string
+       PMShare.send({ type:'GRN', ... })                              -> opens WhatsApp
+
+     Any field the server's buildMessage_ understands may be passed. Unknown
+     record types fall through to its generic branch, so a new form works with
+     no server change.
+-->
+<style>
+  .pm-share-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 0 16px; width: 100%;
+    font-family: inherit; font-size: 14px; font-weight: 700; color: #fff;
+    background: var(--fk-whatsapp, #25D366);
+    border: none; border-radius: 8px; cursor: pointer;
+  }
+  .pm-share-btn:disabled { opacity: .55; cursor: default; }
+  .pm-share-btn svg { width: 18px; height: 18px; fill: currentColor; flex: none; }
+</style>
+<script>
+(function () {
+  'use strict';
+
+  var WA_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 004.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0012.04 2zm5.8 14.06c-.24.68-1.42 1.31-1.96 1.35-.5.04-.99.22-3.34-.7-2.81-1.11-4.6-3.98-4.74-4.16-.14-.19-1.13-1.5-1.13-2.87s.72-2.03.97-2.31c.25-.28.55-.35.73-.35.18 0 .37 0 .53.01.17.01.4-.06.63.48.24.55.8 1.92.87 2.06.07.14.12.31.02.5-.1.19-.14.31-.28.47-.14.17-.3.37-.42.5-.14.14-.29.29-.12.57.16.28.73 1.2 1.56 1.94 1.07.95 1.98 1.25 2.26 1.39.28.14.44.12.6-.07.17-.19.7-.81.88-1.09.19-.28.37-.23.63-.14.25.09 1.62.76 1.9.9.28.14.46.21.53.32.07.12.07.66-.17 1.34z"/></svg>';
+
+  // Ask the server for the deep-link base once and reuse it. The old per-form
+  // code fetched it on every share and had a fallback path that dropped the
+  // record URL entirely when the fetch failed.
+  var _scriptUrl = null, _urlPending = [];
+  function withScriptUrl(cb) {
+    if (_scriptUrl !== null) { cb(_scriptUrl); return; }
+    _urlPending.push(cb);
+    if (_urlPending.length > 1) return;            // a fetch is already in flight
+    google.script.run
+      .withSuccessHandler(function (u) { flush(u || ''); })
+      .withFailureHandler(function ()  { flush(''); })   // share still works, minus the deep link
+      .getScriptUrl();
+  }
+  function flush(u) {
+    _scriptUrl = u;
+    var q = _urlPending; _urlPending = [];
+    q.forEach(function (cb) { try { cb(u); } catch (e) {} });
+  }
+
+  function toast(msg, kind) {
+    if (typeof showToast === 'function') showToast(msg, kind || 'error');
+  }
+
+  // Build the record payload, adding the deep link when we have a base URL.
+  function enrich(rec, base) {
+    var out = {};
+    Object.keys(rec || {}).forEach(function (k) { out[k] = rec[k]; });
+    if (!out.recordUrl && base && out.docNo) {
+      out.recordUrl = base + '?doc=' + encodeURIComponent(out.docNo);
+    }
+    return out;
+  }
+
+  function send(rec, btn) {
+    if (btn) { btn.disabled = true; }
+    withScriptUrl(function (base) {
+      google.script.run
+        .withSuccessHandler(function (url) {
+          if (btn) btn.disabled = false;
+          if (!url) { toast('Could not build the WhatsApp link.'); return; }
+          // Opened synchronously inside the handler so the browser still treats
+          // it as user-initiated where possible; a blocked pop-up is reported
+          // rather than failing silently.
+          var w = null;
+          try { w = window.open(url, '_blank'); } catch (e) {}
+          if (!w) toast('Pop-up blocked — allow pop-ups to share.');
+        })
+        .withFailureHandler(function (e) {
+          if (btn) btn.disabled = false;
+          toast('Share failed: ' + ((e && e.message) || 'unknown error'));
+        })
+        .getWhatsAppURLForRecord(enrich(rec, base));
+    });
+  }
+
+  // Render a button bound to a record supplied at click time, so a form can
+  // build the payload from its CURRENT state rather than at render time.
+  function mount(el, getRecord) {
+    if (!el) return;
+    el.innerHTML = '<button type="button" class="pm-share-btn">' + WA_ICON +
+                   'Share on WhatsApp</button>';
+    el.querySelector('button').addEventListener('click', function () {
+      var rec = (typeof getRecord === 'function') ? getRecord() : getRecord;
+      if (!rec) { toast('Nothing to share yet — save the record first.'); return; }
+      send(rec, this);
+    });
+  }
+
+  // A floating share bar, for forms whose success state is only a toast
+  // (Rework, Customer Return) or a card built entirely in markup. One call,
+  // no slot element needed. Auto-dismisses so it cannot strand the screen.
+  function offer(rec, opts) {
+    if (!rec) return;
+    var o = opts || {};
+    var old = document.getElementById('pm-share-bar');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+
+    var bar = document.createElement('div');
+    bar.id = 'pm-share-bar';
+    bar.style.cssText =
+      'position:fixed;left:12px;right:12px;bottom:16px;z-index:9999;' +
+      'max-width:420px;margin:0 auto;display:flex;gap:8px;align-items:center;' +
+      'background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;' +
+      'box-shadow:0 6px 24px rgba(15,23,42,.18);font-family:inherit;';
+    bar.innerHTML =
+      '<div style="flex:1;min-width:0;font-size:12px;color:#0f172a;font-weight:600;">' +
+        (o.label || ((rec.docNo || 'Record') + ' saved')) +
+      '</div>' +
+      '<button type="button" class="pm-share-btn" style="width:auto;padding:0 14px;">' +
+        WA_ICON + 'Share</button>' +
+      '<button type="button" aria-label="Dismiss" style="background:none;border:0;' +
+        'font-size:20px;line-height:1;color:#94a3b8;cursor:pointer;padding:0 6px;">&times;</button>';
+
+    var btns = bar.querySelectorAll('button');
+    btns[0].addEventListener('click', function () { send(rec, this); });
+    btns[1].addEventListener('click', function () { close(); });
+    document.body.appendChild(bar);
+
+    var t = setTimeout(close, o.timeout || 20000);
+    function close() {
+      clearTimeout(t);
+      if (bar.parentNode) bar.parentNode.removeChild(bar);
+    }
+  }
+
+  window.PMShare = { send: send, mount: mount, offer: offer, icon: WA_ICON };
+})();
+</script>

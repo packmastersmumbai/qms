@@ -318,6 +318,7 @@
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
 <?!= include('FormKit') ?>
+<?!= include('ShareKit') ?>
 <?!= include('HtmlCache') ?>
 <script>document.fonts && document.fonts.ready.then(function(){document.documentElement.classList.add('fonts-ready');});</script>
 </head>
@@ -513,6 +514,7 @@
     <h2 class="font-headline text-[24px] font-bold text-[#0f172a] mb-1">OQC Saved</h2>
     <p class="text-[14px] text-[#64748b] mb-5" id="confirmId"></p>
     <div class="flex flex-wrap gap-2 justify-center mb-7" id="confirmChips"></div>
+    <div id="shareSlot" class="w-full max-w-xs mb-3"></div>
     <button id="btnHome" class="w-full max-w-xs h-[52px] bg-[#1e3a5f] text-white font-headline font-bold text-[16px] rounded-lg active:scale-[0.98] transition-transform shadow-md">
       Back to Home
     </button>
@@ -1183,6 +1185,18 @@ function showConfirm(docNo, matDesc, batchNo, custName, disposition) {
   document.getElementById('screen2').style.display  = '';
 
   document.getElementById('confirmId').textContent = docNo ? 'OQC #' + docNo : 'OQC Saved';
+
+  if (window.PMShare) {
+    PMShare.mount(document.getElementById('shareSlot'), function () {
+      return {
+        type: 'OQC', docNo: docNo || '', date: new Date().toLocaleDateString('en-GB'),
+        customer: (typeof gCustomer !== 'undefined' ? gCustomer : ''),
+        material: (typeof gMaterial !== 'undefined' ? gMaterial : ''),
+        releaseDecision: (typeof gDecision !== 'undefined' ? gDecision : ''),
+        pdfUrl: (typeof gPdfUrl !== 'undefined' ? gPdfUrl : '')
+      };
+    });
+  }
 
   var chipsEl = document.getElementById('confirmChips');
   chipsEl.innerHTML = '';

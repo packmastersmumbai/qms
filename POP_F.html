@@ -43,6 +43,7 @@
     .pdate-row { margin-top: 8px; }
   </style>
   <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= include('ShareKit') ?>
 <?!= include('HtmlCache') ?>
 </head>
 <body class="bg-[#f8fafc] font-body text-[#0f172a] antialiased min-h-screen pb-[100px]">
@@ -440,7 +441,20 @@ window.saveDraft = function() {
     .withSuccessHandler(_g.wrap(function(r) {
       setBusy(false);
       _poDone(r);
-      if (r.success) { _dirty = false; showToast((r.duplicate ? 'Already saved: ' : 'Draft saved: ') + r.poNo); setTimeout(goHome, 1200); }
+      if (r.success) {
+        _dirty = false;
+        showToast((r.duplicate ? 'Already saved: ' : 'Draft saved: ') + r.poNo);
+        // goHome is deferred, so the share offer would be torn down with the
+        // page. Give the operator the choice before navigating away.
+        if (window.PMShare) {
+          PMShare.offer({
+            type: 'PO', title: 'Purchase Order',
+            docNo: r.poNo, date: new Date().toLocaleDateString('en-GB'),
+            supplier: (typeof _supplierName !== 'undefined' ? _supplierName : ''),
+            status: 'DRAFT', pdfUrl: r.pdfUrl || ''
+          }, { label: r.poNo + ' saved' });
+        } else { setTimeout(goHome, 1200); }
+      }
       else showToast('Error: ' + r.error, true);
     }))
     .withFailureHandler(_g.wrapFail(function(e) { setBusy(false); showToast(e.message, true); }));
