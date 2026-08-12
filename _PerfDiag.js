@@ -192,3 +192,77 @@ function perfImgUpload() {
   })());
   return out.join('\n');
 }
+
+// ── Who is executing, and what can they reach? ────────────────────────
+// "Why is it not permanent" needs the EXECUTING identity, not the manifest.
+// A web app deployed USER_DEPLOYING runs as whoever created the deployment;
+// if that grant predates the current scope list, DriveApp fails forever until
+// that same account re-consents. ANYONE_ANONYMOUS means getActiveUser() is
+// usually blank, so getEffectiveUser() is the one that matters.
+function perfWhoAmI() {
+  var out = ['EXECUTION IDENTITY & SCOPE REACH', ''];
+  function probe(label, fn) {
+    try { out.push(_perfPad_(label, 30) + 'OK   ' + String(fn())); }
+    catch (e) { out.push(_perfPad_(label, 30) + 'FAIL ' + e.message.slice(0, 100)); }
+  }
+  probe('Session.getEffectiveUser', function () { return Session.getEffectiveUser().getEmail() || '(blank)'; });
+  probe('Session.getActiveUser',    function () { return Session.getActiveUser().getEmail()   || '(blank)'; });
+  probe('SpreadsheetApp (sheets)',  function () { return getSpreadsheet().getName(); });
+  probe('DriveApp.getRootFolder',   function () { return DriveApp.getRootFolder().getName(); });
+  probe('DriveApp.getFileById(ss)', function () {
+    return DriveApp.getFileById(getSpreadsheet().getId()).getName();
+  });
+  probe('ScriptApp.getOAuthToken',  function () {
+    var t = ScriptApp.getOAuthToken();
+    return t ? ('token len=' + t.length) : '(none)';
+  });
+  // The authoritative answer: ask Google which scopes THIS token actually holds.
+  probe('tokeninfo -> granted scopes', function () {
+    var r = UrlFetchApp.fetch(
+      'https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' +
+      encodeURIComponent(ScriptApp.getOAuthToken()), { muteHttpExceptions: true });
+    var j = JSON.parse(r.getContentText());
+    var sc = String(j.scope || '').split(/\s+/).filter(Boolean).map(function (s) {
+      return s.replace('https://www.googleapis.com/auth/', '');
+    });
+    return '\n    ' + sc.sort().join('\n    ');
+  });
+  return out.join('\n');
+}
+
+// ── Blast radius of the restricted anonymous token ────────────────────
+// Which user-facing features actually break? Each probe calls the same API the
+// feature calls, so the answer is measured rather than inferred from grep.
+function perfBlastRadius() {
+  var out = ['FEATURE REACH UNDER THE WEB-APP TOKEN', ''];
+  function probe(feature, api, fn) {
+    var r;
+    try { fn(); r = 'WORKS'; }
+    catch (e) {
+      r = /do not have permission|Required permissions/i.test(e.message)
+        ? 'BLOCKED (scope)' : 'ERROR: ' + e.message.slice(0, 60);
+    }
+    out.push(_perfPad_(feature, 26) + _perfPad_(api, 22) + r);
+  }
+
+  probe('Save GRN/IQC/OQC rows', 'SpreadsheetApp', function () { getSpreadsheet().getName(); });
+  probe('Image upload',          'DriveApp',       function () { DriveApp.getRootFolder().getName(); });
+  probe('PDF generation',        'DriveApp',       function () {
+    DriveApp.getFileById(getSpreadsheet().getId()).getName();
+  });
+  probe('QR code on documents',  'UrlFetchApp',    function () {
+    UrlFetchApp.fetch('https://www.google.com/generate_204', { muteHttpExceptions: true });
+  });
+  probe('Telegram / WhatsApp',   'UrlFetchApp',    function () {
+    UrlFetchApp.fetch('https://www.google.com/generate_204', { muteHttpExceptions: true });
+  });
+  probe('Email notifications',   'MailApp',        function () { MailApp.getRemainingDailyQuota(); });
+  probe('Who is signed in',      'Session',        function () { Session.getEffectiveUser().getEmail(); });
+  probe('Scheduled triggers',    'ScriptApp',      function () { ScriptApp.getProjectTriggers().length; });
+
+  out.push('');
+  out.push('Legend: BLOCKED (scope) = declared in appsscript.json but NOT in the');
+  out.push('token this execution received. Re-consent does not change it while');
+  out.push('the web app is deployed ANYONE_ANONYMOUS.');
+  return out.join('\n');
+}

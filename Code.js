@@ -455,6 +455,14 @@ function doGet(e) {
     var pim; try { pim = perfImgUpload(); } catch(er){ pim='ERR '+er.message; }
     return ContentService.createTextOutput(String(pim)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'authscopes') {
+    var wai; try { wai = perfWhoAmI(); } catch(er){ wai='ERR '+er.message; }
+    return ContentService.createTextOutput(String(wai)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'blastradius') {
+    var bra; try { bra = perfBlastRadius(); } catch(er){ bra='ERR '+er.message; }
+    return ContentService.createTextOutput(String(bra)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'perfsheets') {
     var ps; try { ps = perfSheets(); } catch(er){ ps='ERR '+er.message; }
     return ContentService.createTextOutput(String(ps)).setMimeType(ContentService.MimeType.TEXT);
