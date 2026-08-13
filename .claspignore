@@ -65,3 +65,27 @@ tools-*.cjs
 **/* (2).js
 **/* (1).html
 **/* (2).html
+
+# Spent one-off investigations — their ?diag= routes were removed from Code.js
+# in the same change, so nothing can call them. Kept on disk (and backed up) as
+# a record of how each was fixed; excluded from the GAS push because every
+# shipped .js is parsed on every execution.
+#   KETO customer import (completed), a one-time row restore, and column probes
+#   for schemas that have since been fixed.
+_CansRowDiag.js
+_CodeRepoint.js
+_GrnEquivCheck.js
+_IqcInitTiming.js
+_KetoBomFix.js
+_KetoCustomer.js
+_KetoFgMaterials.js
+_KetoMaterials.js
+_LotSizeProfile.js
+_MatColProbe.js
+_ParamColScan.js
+_ParamHeaderFix.js
+_Restore201244.js
+_SampleFate.js
+_SmokeFullChain.js
+_StockViewCheck.js
+_TestHelpers.js

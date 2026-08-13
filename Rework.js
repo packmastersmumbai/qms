@@ -77,11 +77,73 @@ function getReworkItems() {
 //   qtyReworked + qtyScrapped must equal original qty
 //   FG rework: reOQCRef required before stock released to FG-STORE
 //   RM rework: reIQCRef required before stock released back to RM-STORE-A
+// 0-based index of 'Remarks' in REWORK_LOG_HEADERS. Derived from the header
+// constant, not hardcoded, so a schema edit cannot silently point the
+// idempotency lookup at another column — the positional-column class of bug
+// that has already caused four data-corruption incidents in this repo.
+function _rwkRemarksCol_() {
+  try {
+    var i = REWORK_LOG_HEADERS.indexOf('Remarks');
+    if (i >= 0) return i;
+  } catch (e) {}
+  return 17;
+}
+
+function _rwkTxnTag_(txnId) {
+  return '[txn:' + String(txnId).replace(/[\[\]]/g, '') + ']';
+}
+
+// Has this exact completion attempt already been written? Returns the completed
+// row's summary or null.
+//
+// The pre-existing "already completed" status check is NOT idempotency: on a
+// retry after a dropped response it returns an ERROR, so the operator sees a
+// failure for a completion that actually succeeded — and the natural next move
+// is to re-enter it by hand. This guard makes the retry return the original
+// success instead.
+function _rwkFindByTxn_(ws, txnId) {
+  try {
+    if (!txnId) return null;
+    if (!ws || ws.getLastRow() < 2) return null;
+    var tag = _rwkTxnTag_(txnId);
+    var n = ws.getLastRow() - 1;
+    var vals = ws.getRange(2, 1, n, ws.getLastColumn()).getValues();
+    var rc = _rwkRemarksCol_();
+    for (var i = 0; i < n; i++) {
+      if (String(vals[i][rc] || '').indexOf(tag) >= 0) {
+        return {
+          reworkId:    String(vals[i][0] || ''),
+          qtyReworked: Number(vals[i][13]) || 0,
+          qtyScrapped: Number(vals[i][14]) || 0
+        };
+      }
+    }
+  } catch (e) { Logger.log('_rwkFindByTxn_: ' + e.message); }
+  return null;
+}
+
 function submitReworkCompletion(data) {
   try {
     var ss = getSpreadsheet();
     var ws = ss.getSheetByName('REWORK_LOG');
     if (!ws) throw new Error('REWORK_LOG sheet not found. Run Setup first.');
+
+    // Idempotency. Rework moves stock through FOUR ledger writes, so a duplicate
+    // does not merely add a row — it double-debits REWORK-AREA and double-credits
+    // FG-STORE/SCRAP-AREA. Checked before any validation so a retry short-circuits.
+    var rwkTxnId = String(data.clientTxnId || '').trim();
+    if (rwkTxnId) {
+      var prior = _rwkFindByTxn_(ws, rwkTxnId);
+      if (prior) {
+        return {
+          success: true, duplicate: true,
+          reworkId: prior.reworkId,
+          qtyReworked: prior.qtyReworked,
+          qtyScrapped: prior.qtyScrapped,
+          warnings: ['This rework completion was already saved.']
+        };
+      }
+    }
 
     var reworkId   = String(data.reworkId   || '').trim();
     var qtyReworked= Number(data.qtyReworked)  || 0;
@@ -168,7 +230,13 @@ function submitReworkCompletion(data) {
       ws.getRange(rRow, 15).setValue(qtyScrapped);
       if (reOQCRef) ws.getRange(rRow, 16).setValue(reOQCRef);
       if (reIQCRef) ws.getRange(rRow, 17).setValue(reIQCRef);
-      if (remarks)  ws.getRange(rRow, 18).setValue(remarks);
+
+      // The txn tag is a SUFFIX so the operator's own remark still reads first,
+      // and it is written even when there is no remark — the guard depends on it
+      // being present. stripTxnTag_ removes it for display and print.
+      var remarkCell = remarks;
+      if (rwkTxnId) remarkCell = (remarks ? remarks + ' ' : '') + _rwkTxnTag_(rwkTxnId);
+      if (remarkCell) ws.getRange(rRow, _rwkRemarksCol_() + 1).setValue(remarkCell);
 
       return {
         success: true,

@@ -355,13 +355,6 @@ function doGet(e) {
     return ContentService.createTextOutput(String(ot)).setMimeType(ContentService.MimeType.TEXT);
   }
 
-  // Real getStockView() bucket counts (_StockViewCheck.js). READ-ONLY.
-  if (diag === 'stockview') {
-    var sv;
-    try { sv = (typeof checkStockViewBuckets === 'function') ? checkStockViewBuckets() : 'checkStockViewBuckets missing'; }
-    catch (er17) { sv = 'ERROR: ' + er17.message + '\n' + (er17.stack || ''); }
-    return ContentService.createTextOutput(String(sv)).setMimeType(ContentService.MimeType.TEXT);
-  }
 
   // Warehouse RM/FG view classification (_WhViewDiag.js). READ-ONLY.
   if (diag === 'whview') {
@@ -377,15 +370,6 @@ function doGet(e) {
     try { pla = (typeof auditParamLinks === 'function') ? auditParamLinks() : 'auditParamLinks missing'; }
     catch (erpl) { pla = 'ERROR: ' + erpl.message; }
     return ContentService.createTextOutput(String(pla)).setMimeType(ContentService.MimeType.TEXT);
-  }
-  if (diag === 'paramheaderfix') {
-    var phf;
-    try {
-      phf = (typeof fixParamHeader === 'function')
-        ? fixParamHeader(String(e.parameter.confirm || '') === 'YES')
-        : 'fixParamHeader missing';
-    } catch (erph) { phf = 'ERROR: ' + erph.message; }
-    return ContentService.createTextOutput(String(phf)).setMimeType(ContentService.MimeType.TEXT);
   }
   //   ?diag=matdatafix[&confirm=YES][&code=YES] → repair MASTERS_Materials data
   if (diag === 'matdatafix') {
@@ -667,6 +651,11 @@ function doGet(e) {
     try { slc = perfSlipCompare(e.parameter.doc || ''); } catch(er){ slc = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(slc)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'rworkidem') {
+    var rwi;
+    try { rwi = perfRworkIdem(); } catch(er){ rwi = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(rwi)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'imgprobe') {
     var ipr;
     try { ipr = perfImgProbe(e.parameter.mod || 'GRN', e.parameter.doc || ''); }
@@ -722,30 +711,6 @@ function doGet(e) {
     var ce; try { ce = cleanE2EGrn(String(e.parameter.confirm||'')==='YES'); } catch(er){ ce='ERR '+er.message; }
     return ContentService.createTextOutput(String(ce)).setMimeType(ContentService.MimeType.TEXT);
   }
-  //   ?diag=ketofix[&confirm=YES] → repair the new BOM rows' client/uom/type
-  if (diag === 'ketofix') {
-    var kf;
-    try {
-      kf = (typeof fixKetoBom === 'function')
-        ? fixKetoBom(String(e.parameter.confirm || '') === 'YES')
-        : 'fixKetoBom missing (is _KetoBomFix.js pushed?)';
-    } catch (erkf) { kf = 'ERROR: ' + erkf.message; }
-    return ContentService.createTextOutput(String(kf)).setMimeType(ContentService.MimeType.TEXT);
-  }
-  if (diag === 'restore201244') {
-    var r24; try { r24 = restore201244(String(e.parameter.confirm||'')==='YES'); } catch(er){ r24='ERR '+er.message; }
-    return ContentService.createTextOutput(String(r24)).setMimeType(ContentService.MimeType.TEXT);
-  }
-  //   ?diag=ketomat[&confirm=YES] → create KETO materials from the revised BOM
-  if (diag === 'ketomat') {
-    var km;
-    try {
-      km = (typeof fixKetoMaterials === 'function')
-        ? fixKetoMaterials(String(e.parameter.confirm || '') === 'YES')
-        : 'fixKetoMaterials missing (is _KetoMaterials.js pushed?)';
-    } catch (erkm) { km = 'ERROR: ' + erkm.message; }
-    return ContentService.createTextOutput(String(km)).setMimeType(ContentService.MimeType.TEXT);
-  }
   //   ?diag=whichsheet → READ-ONLY: which spreadsheet is the server actually writing to?
   if (diag === 'whichsheet') {
     var ws2 = [];
@@ -779,16 +744,6 @@ function doGet(e) {
       }
     } catch (ews) { ws2.push('ERROR: ' + ews.message); }
     return ContentService.createTextOutput(ws2.join('\n')).setMimeType(ContentService.MimeType.TEXT);
-  }
-  //   ?diag=repoint → move GRN+ledger rows onto the correct material code (dry run default)
-  if (diag === 'repoint') {
-    var rp;
-    try {
-      rp = (typeof repointMaterialCodes === 'function')
-        ? repointMaterialCodes(String(e.parameter.confirm || '') === 'YES')
-        : 'repointMaterialCodes missing (is _CodeRepoint.js pushed?)';
-    } catch (errp) { rp = 'ERROR: ' + errp.message; }
-    return ContentService.createTextOutput(String(rp)).setMimeType(ContentService.MimeType.TEXT);
   }
   //   ?diag=grndatafix → create 6 missing master rows + relabel PC->NOS (dry run default)
   if (diag === 'grndatafix') {
@@ -901,16 +856,6 @@ function doGet(e) {
     } catch (erug) { ug = 'ERROR: ' + erug.message; }
     return ContentService.createTextOutput(String(ug)).setMimeType(ContentService.MimeType.TEXT);
   }
-  //   ?diag=cansrows → READ-ONLY: name the CANS rows whose InspCategory disagrees
-  if (diag === 'cansrows') {
-    var cr;
-    try {
-      cr = (typeof diagCansRows === 'function')
-        ? diagCansRows(false, false)
-        : 'diagCansRows missing (is _CansRowDiag.js pushed?)';
-    } catch (ercr) { cr = 'ERROR: ' + ercr.message; }
-    return ContentService.createTextOutput(String(cr)).setMimeType(ContentService.MimeType.TEXT);
-  }
   //   ?diag=cansfix → set InspCategory=CANS on the 3 approved rows (dry run by default)
   if (diag === 'cansfix') {
     var cf;
@@ -920,20 +865,6 @@ function doGet(e) {
         : 'diagCansRows missing (is _CansRowDiag.js pushed?)';
     } catch (ercf) { cf = 'ERROR: ' + ercf.message; }
     return ContentService.createTextOutput(String(cf)).setMimeType(ContentService.MimeType.TEXT);
-  }
-  //   ?diag=ketofgmat → create the 25 KETO FG rows getFG() needs (dry run by default)
-  if (diag === 'ketofgmat') {
-    var kfg;
-    try {
-      kfg = (typeof addKetoFgMaterials === 'function')
-        ? addKetoFgMaterials(String(e.parameter.confirm || '') === 'YES')
-        : 'addKetoFgMaterials missing (is _KetoFgMaterials.js pushed?)';
-    } catch (erkf) { kfg = 'ERROR: ' + erkf.message; }
-    return ContentService.createTextOutput(String(kfg)).setMimeType(ContentService.MimeType.TEXT);
-  }
-  if (diag === 'ketocust') {
-    var kc; try { kc = addKetoCustomer(String(e.parameter.confirm||'')==='YES'); } catch(er){ kc='ERR '+er.message; }
-    return ContentService.createTextOutput(String(kc)).setMimeType(ContentService.MimeType.TEXT);
   }
   //   ?diag=vocabaudit → READ-ONLY cross-sheet vocabulary + join audit
   if (diag === 'vocabaudit') {
@@ -1008,12 +939,6 @@ function doGet(e) {
     } catch (erpd) { pdf = 'ERROR: ' + erpd.message; }
     return ContentService.createTextOutput(String(pdf)).setMimeType(ContentService.MimeType.TEXT);
   }
-  if (diag === 'paramcolscan') {
-    var pcs;
-    try { pcs = (typeof scanParamColumns === 'function') ? scanParamColumns() : 'scanParamColumns missing'; }
-    catch (erpc) { pcs = 'ERROR: ' + erpc.message; }
-    return ContentService.createTextOutput(String(pcs)).setMimeType(ContentService.MimeType.TEXT);
-  }
   if (diag === 'flexparams') {
     var fxp;
     try {
@@ -1080,13 +1005,6 @@ function doGet(e) {
     return ContentService.createTextOutput(String(bf)).setMimeType(ContentService.MimeType.TEXT);
   }
 
-  // MASTERS_Materials column probe (_MatColProbe.js). READ-ONLY.
-  if (diag === 'matprobe') {
-    var mp;
-    try { mp = (typeof probeMaterialColumns === 'function') ? probeMaterialColumns() : 'probeMaterialColumns missing'; }
-    catch (er12) { mp = 'ERROR: ' + er12.message; }
-    return ContentService.createTextOutput(String(mp)).setMimeType(ContentService.MimeType.TEXT);
-  }
 
   // One-off supplier approval backfill (_ApproveSuppliers.js). Dry run unless confirm=YES.
   //   ?diag=approvesuppliers              → dry run
@@ -1217,41 +1135,9 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(la, null, 2)).setMimeType(ContentService.MimeType.TEXT);
   }
 
-  // What happens to pulled samples (_SampleFate.js). READ-ONLY.
-  //   ?diag=samplefate   → SAMPLE-CABINET in/out/net + SAMPLE_LOG disposition
-  if (diag === 'samplefate') {
-    var sf;
-    try { sf = (typeof sampleFate === 'function') ? sampleFate() : { error: 'sampleFate missing' }; }
-    catch (er12) { sf = { error: er12.message, stack: er12.stack }; }
-    return ContentService.createTextOutput(JSON.stringify(sf, null, 2)).setMimeType(ContentService.MimeType.TEXT);
-  }
 
-  // Actual lot-size distribution vs sampling cost (_LotSizeProfile.js). READ-ONLY.
-  //   ?diag=lotprofile   → Level II vs Level I units inspected, on real data
-  if (diag === 'lotprofile') {
-    var lsp;
-    try { lsp = (typeof lotSizeProfile === 'function') ? lotSizeProfile() : { error: 'lotSizeProfile missing' }; }
-    catch (er11) { lsp = { error: er11.message, stack: er11.stack }; }
-    return ContentService.createTextOutput(JSON.stringify(lsp, null, 2)).setMimeType(ContentService.MimeType.TEXT);
-  }
 
-  // getRecentGRNs old-vs-new equivalence proof (_GrnEquivCheck.js). READ-ONLY.
-  //   ?diag=grnequiv   → deep-compares both algorithms on the live sheet
-  if (diag === 'grnequiv') {
-    var gec;
-    try { gec = (typeof grnEquivCheck === 'function') ? grnEquivCheck() : { error: 'grnEquivCheck missing' }; }
-    catch (er10) { gec = { error: er10.message, stack: er10.stack }; }
-    return ContentService.createTextOutput(JSON.stringify(gec, null, 2)).setMimeType(ContentService.MimeType.TEXT);
-  }
 
-  // IQC form-init timing attribution (_IqcInitTiming.js). READ-ONLY.
-  //   ?diag=iqcinittiming   → per-step ms for getIQCFormInit + cache proof
-  if (diag === 'iqcinittiming') {
-    var iit;
-    try { iit = (typeof iqcInitTiming === 'function') ? iqcInitTiming() : { error: 'iqcInitTiming missing' }; }
-    catch (er9) { iit = { error: er9.message, stack: er9.stack }; }
-    return ContentService.createTextOutput(JSON.stringify(iit, null, 2)).setMimeType(ContentService.MimeType.TEXT);
-  }
 
   // Drive folder tidy-up (QmsDrive.js) — deploy-token path; avoids clasp run.
   //   ?diag=folderlist                     → raw list of Drive-root folder names
@@ -1360,7 +1246,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v185_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v186_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

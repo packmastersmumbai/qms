@@ -221,7 +221,16 @@ function submitCompletion() {
       btn.disabled = false;
       btn.textContent = 'Submit Completion';
       if (!res.success) { showToast(res.error || 'Save failed.', 'error'); return; }
-      showToast('Rework ' + SELECTED.reworkId + ' completed. ' + res.qtyReworked + ' → ' + res.destination, 'success');
+      // Retire the key ONLY on a confirmed success, so the next completion is a
+      // new transaction. Left in place on failure: a retry of THIS attempt must
+      // reuse it or the guard cannot recognise the retry.
+      window._rwkTxnId = null;
+      if (res.duplicate) {
+        showToast((res.warnings && res.warnings[0]) ||
+                  'This rework completion was already saved.', 'warning');
+      } else {
+        showToast('Rework ' + SELECTED.reworkId + ' completed. ' + res.qtyReworked + ' → ' + res.destination, 'success');
+      }
       // Success here is a toast, not a screen, so the share offer floats.
       if (window.PMShare) {
         PMShare.offer({
@@ -230,7 +239,11 @@ function submitCompletion() {
           date: new Date().toLocaleDateString('en-GB'),
           material: SELECTED.materialDesc || SELECTED.materialCode || '',
           batch: SELECTED.batchNo || '',
-          qty: res.qtyReworked, status: 'COMPLETED → ' + res.destination,
+          // The duplicate path returns no destination (it reads back the stored
+          // row, which does not carry one), so guard it — otherwise a retry
+          // shares "COMPLETED → undefined".
+          qty: res.qtyReworked,
+          status: res.destination ? ('COMPLETED → ' + res.destination) : 'COMPLETED',
           pdfUrl: res.pdfUrl || ''
         });
       }
@@ -249,7 +262,18 @@ function submitCompletion() {
       reOQCRef:    reOQCRef,
       reIQCRef:    reIQCRef,
       completedBy: completedBy,
-      remarks:     remarks
+      remarks:     remarks,
+      // Idempotency key. Generated ONCE per completion attempt and reused by
+      // every retry, so a dropped GAS response cannot produce a second set of
+      // stock movements — rework writes four ledger rows, so a duplicate
+      // double-debits REWORK-AREA and double-credits FG-STORE/SCRAP-AREA.
+      // Retired only on a confirmed success (see the handler above).
+      clientTxnId: (function () {
+        if (!window._rwkTxnId) {
+          window._rwkTxnId = 'RWK-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+        }
+        return window._rwkTxnId;
+      })()
     });
 }
 

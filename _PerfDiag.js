@@ -1806,3 +1806,47 @@ function perfImgProbe(mod, docNo) {
   out.push('', 'embeddedImages produced: ' + (d.embeddedImages || []).length);
   return out.join(String.fromCharCode(10));
 }
+
+
+// Prove the Rework idempotency guard works WITHOUT moving stock.
+//
+// A write-based self-test here would execute four real ledger movements
+// (REWORK-AREA out, FG-STORE in, scrap out, scrap in) and there is no clean
+// undo, so this exercises the guard's two halves against live data instead:
+// the tag round-trips, and the lookup finds a tag that exists while rejecting
+// one that does not.
+function perfRworkIdem() {
+  _diagRequireOwner_();
+  var out = ['REWORK IDEMPOTENCY GUARD', ''];
+  var ws = getSpreadsheet().getSheetByName('REWORK_LOG');
+  if (!ws) return out.join('\n') + '\nREWORK_LOG not found';
+
+  var rc = _rwkRemarksCol_();
+  out.push('Remarks col (0-based): ' + rc +
+           '  derived=' + (REWORK_LOG_HEADERS.indexOf('Remarks')) +
+           (rc === REWORK_LOG_HEADERS.indexOf('Remarks') ? '  OK' : '  MISMATCH'));
+
+  var probe = 'RWK-SELFTEST-' + new Date().getTime();
+  out.push('tag format: ' + _rwkTxnTag_(probe));
+  out.push('unknown key found? ' + (_rwkFindByTxn_(ws, probe) ? 'YES — BUG' : 'no  OK'));
+
+  // Does the lookup find a tag that IS present? Read an existing tagged row if
+  // one exists; otherwise report that no guarded completion has run yet.
+  var found = '', n = Math.max(0, ws.getLastRow() - 1);
+  if (n) {
+    var vals = ws.getRange(2, 1, n, ws.getLastColumn()).getValues();
+    for (var i = 0; i < n && !found; i++) {
+      var m = String(vals[i][rc] || '').match(/\[txn:([^\]]+)\]/);
+      if (m) found = m[1];
+    }
+  }
+  if (found) {
+    var hit = _rwkFindByTxn_(ws, found);
+    out.push('existing key ' + found + ' -> ' + (hit ? 'FOUND ' + hit.reworkId + '  OK' : 'MISSED — BUG'));
+  } else {
+    out.push('no tagged rows yet — guard is live but untested against real data');
+  }
+
+  out.push('', 'rows: ' + n + ' | client key: window._rwkTxnId (Rework_F.html)');
+  return out.join(String.fromCharCode(10));
+}
