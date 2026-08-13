@@ -340,10 +340,9 @@ function uploadNCRPhoto(data) {
   }
 }
 
-function getOrCreateNCRPhotoFolder_() {
-  // <project>/QMS Data/NCR Photos — see QmsDrive.js
-  return getQmsSubFolder_('NCR Photos');
-}
+// getOrCreateNCRPhotoFolder_ removed 2026-08-13: orphaned by the Drive REST migration and
+// unreachable anyway — getQmsSubFolder_ routes through DriveApp, which
+// the drive.file scope refuses. Photos now go via drvStoreModuleImage.
 
 // Append one row to REVISIONS_LOG. Never throws into caller.
 function _logNCRRevision_(docNo, revisedBy, field, oldValue, newValue) {

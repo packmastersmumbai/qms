@@ -363,10 +363,9 @@ function uploadCustomerReturnPhoto(data) {
   }
 }
 
-function getOrCreateReturnPhotoFolder_() {
-  // <project>/QMS Data/Customer Return Photos — see QmsDrive.js
-  return getQmsSubFolder_('Customer Return Photos');
-}
+// getOrCreateReturnPhotoFolder_ removed 2026-08-13: orphaned by the Drive REST migration and
+// unreachable anyway — getQmsSubFolder_ routes through DriveApp, which
+// the drive.file scope refuses. Photos now go via drvStoreModuleImage.
 
 // Returns OPEN returns awaiting triage.
 function getOpenCustomerReturns() {

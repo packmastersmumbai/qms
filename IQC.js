@@ -526,7 +526,11 @@ function saveIQC(data) {
         } catch(ledgerErr) {
           Logger.log('IQC ledger mirror failed: ' + ledgerErr.message);
           if (!ledgerWarning) {
-            ledgerWarning = 'Document saved but stock ledger update failed — contact admin.';
+            // Name the actual cause. "contact admin" told the operator nothing
+            // and told US nothing — the real message sat in Logger where nobody
+            // reads it, so a stock-integrity failure looked like a vague hiccup.
+            ledgerWarning = 'Document saved but stock ledger update failed: ' +
+                            String(ledgerErr.message).slice(0, 140);
           }
         }
       }
@@ -683,7 +687,10 @@ function saveIQC(data) {
         }
       } catch(imgErr) {
         Logger.log('IQC image upload failed: ' + imgErr.message);
-        warnings.push('Record saved but image upload failed — upload manually.');
+        // Name the cause. "upload manually" hid a Drive-scope failure for the
+        // entire period IQC could not write to Drive at all.
+        warnings.push('Record saved but image upload failed: ' +
+                      String(imgErr.message).slice(0, 140));
       }
     }
 
@@ -753,9 +760,8 @@ function _testPutawayPayload() {
 }
 
 function saveIQCVideo_(base64, mime, ext, docNo, grnNo, materialDesc, disposition) {
-  var ss = getSpreadsheet();
-  // <project>/QMS Data/Media/IQC/yyyy-MM — see QmsDrive.js
-  var monthFolder = getQmsMediaFolder_('IQC', new Date());
+  // Same leftover as uploadIQCImages_: getQmsMediaFolder_ goes through DriveApp
+  // and throws under drive.file, before the REST upload below is reached.
 
   // Sanitise components for filename
   function clean(s) { return String(s||'').replace(/[^A-Za-z0-9_\-]/g, '_').slice(0, 30); }
@@ -777,9 +783,11 @@ function getOrCreateFolder_(parent, name) {
 }
 
 function uploadIQCImages_(images, docNo, grnNo) {
-  var ss = getSpreadsheet();
-  // <project>/QMS Data/Media/IQC/yyyy-MM — see QmsDrive.js
-  var monthFolder = getQmsMediaFolder_('IQC', new Date());
+  // No getQmsMediaFolder_ here: it routes through getProjectFolder_ -> DriveApp,
+  // which the drive.file scope refuses, and it threw BEFORE the loop below ever
+  // ran. The uploads themselves were already migrated to REST; this one leftover
+  // line kept the whole function failing with "You do not have permission to
+  // call DriveApp...". drvStoreModuleImage resolves its own folder by REST.
 
   function clean(s) { return String(s||'').replace(/[^A-Za-z0-9_\-]/g, '_').slice(0, 20); }
   var urls = [];

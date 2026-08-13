@@ -955,3 +955,42 @@ function perfSharedFolderProbe(folderId) {
   out.push('under drive.file and no restricted scope is needed for storage.');
   return out.join('\n');
 }
+
+// Did an IQC row actually get its QR (col 39) and PDF (col 40) stamped?
+// IQC could not write to Drive at all before today's REST fix, so this is the
+// check that proves the fix reaches the real product path, not just a probe.
+function perfIqcPdfCheck(docNo) {
+  var ws = getSpreadsheet().getSheetByName('IQC_LOG');
+  var out = ['IQC PDF / QR CHECK', ''];
+  if (!ws) return 'IQC_LOG not found';
+  var rows = ws.getDataRange().getValues();
+  if (!docNo) {
+    for (var k = rows.length - 1; k >= 1; k--) {
+      if (String(rows[k][0]).trim()) { docNo = String(rows[k][0]).trim(); break; }
+    }
+  }
+  out.push('doc: ' + docNo);
+  var found = 0, qr = '', pdf = '', grn = '', imgs = '';
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === docNo) {
+      found++;
+      grn  = String(rows[i][2] || '');
+      qr   = String(rows[i][38] || '');   // col 39, 0-based 38
+      pdf  = String(rows[i][39] || '');   // col 40
+      // image URL columns vary by schema; report anything drive-looking
+      for (var c = 30; c < rows[i].length; c++) {
+        var v = String(rows[i][c] || '');
+        if (v.indexOf('drive.google.com') >= 0 && c !== 39) imgs += 'col' + (c + 1) + ' ';
+      }
+    }
+  }
+  out.push('rows for doc : ' + found);
+  out.push('GRN ref      : ' + grn);
+  out.push('QR stamped   : ' + (qr ? 'YES (' + qr.length + ' chars)' : 'no'));
+  out.push('PDF stamped  : ' + (pdf || 'no'));
+  out.push('image cols   : ' + (imgs || '(none)'));
+  out.push('');
+  out.push(pdf ? 'VERDICT: IQC writes PDFs again.'
+               : 'VERDICT: no PDF yet — drain may still be pending.');
+  return out.join('\n');
+}

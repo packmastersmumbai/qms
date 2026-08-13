@@ -534,6 +534,11 @@ function doGet(e) {
     var dq; try { dq = deferQueueStatus(); } catch(er){ dq = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(dq)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'iqcpdf') {
+    var ipc;
+    try { ipc = perfIqcPdfCheck(e.parameter.doc || ''); } catch(er){ ipc = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(ipc)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'defercheck') {
     var dfc;
     try { dfc = perfDeferCheck(e.parameter.doc || ''); } catch(er){ dfc = 'ERR ' + er.message; }
