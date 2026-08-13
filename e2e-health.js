@@ -86,8 +86,25 @@ function responsiveAudit() {
   let worst = 999;
   document.querySelectorAll('button, a[href], select, input:not([type=hidden]), [role=button]')
     .forEach(el => {
-      const r = el.getBoundingClientRect();
+      let r = el.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) return;           // hidden
+
+      // A visually-hidden input inside a <label> is not the touch target — the
+      // label is. GRN's coaReceived reported "2px" for exactly this reason and
+      // is really a compliant 48px row, so the probe was manufacturing a defect
+      // and would have sent someone to "fix" a correct control. Credit the
+      // nearest wrapping label instead. Detect by opacity/clip rather than by a
+      // class name so it holds for any form's own switch markup.
+      const cs = getComputedStyle(el);
+      const visuallyHidden = cs.opacity === '0' || cs.clip !== 'auto' ||
+                             r.width < 8 || r.height < 8;
+      if (visuallyHidden) {
+        const lab = el.closest('label');
+        if (!lab) return;                                // truly invisible
+        r = lab.getBoundingClientRect();
+        if (r.height < 2) return;
+      }
+
       if (r.height < 44) {
         out.smallTargets++;
         if (r.height < worst) {

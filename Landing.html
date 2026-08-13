@@ -179,8 +179,23 @@
       background: transparent; border: 0; padding: 0;
     }
     .pm-sec-link:hover { text-decoration: underline; }
-    /* Collapsible section header */
-    .pm-sec-toggle { display:flex; align-items:center; gap:5px; background:transparent; border:0; padding:0; cursor:pointer; }
+    /* Collapsible section header.
+       `padding:0` collapsed this button to its 12px chevron + label — measured at
+       16px by e2e-health on Landing, IPQC, CustomerReturn, Rework and Trace (the
+       SPA shell serves this CSS to all of them, so it was one defect reported
+       five times). DESIGN.md requires 48px for gloved use.
+       A ::before overlay was tried first and does NOT work: measured live, the
+       pseudo-element painted 48px but a tap 18px above the glyph still hit the
+       parent DIV, because a pseudo-element does not extend its parent's
+       hit-testing box. The button itself has to own the height.
+       Negative margin absorbs the extra height so the header stays optically
+       flush with the cards below — the row occupies its original 16px of flow
+       while presenting a 48px target. */
+    .pm-sec-toggle {
+      display:flex; align-items:center; gap:5px;
+      background:transparent; border:0; cursor:pointer;
+      min-height:48px; padding:0 8px; margin:-16px -8px;
+    }
     .pm-sec-chev { width:12px; height:12px; color:var(--pm-faint); transition:transform .15s ease; transform:rotate(90deg); }
     .pm-sec.collapsed .pm-sec-chev { transform:rotate(0deg); }
     .pm-collapse-body { overflow:hidden; transition:max-height .2s ease, opacity .15s ease; }
