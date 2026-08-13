@@ -62,8 +62,15 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
     .frm-title-row .title-text .title-hi {
       font-size: 7.5pt; color: var(--muted); font-weight: 400; margin-top: 1px;
     }
-    .frm-title-row .qr-wrap { width: 48px; min-width: 48px; text-align: center; }
-    .frm-title-row .qr-wrap img { width: 48px; height: 48px; display: block; }
+    /* The wrapper reserved 48px while every <img> carried an inline
+       width:56px, so the QR overflowed its box by 8px and ran into the 10mm
+       @page right margin — the right-hand finder pattern was CLIPPED off the
+       printed slip, which makes the code unscannable. Measured on the rendered
+       PDF: image drawn at x532-574 on a 595pt page.
+       The box is now 56px to match, and !important defeats the inline style on
+       any slip still carrying it. flex:none stops the flex row shrinking it. */
+    .frm-title-row .qr-wrap { width: 56px; min-width: 56px; flex: none; text-align: center; }
+    .frm-title-row .qr-wrap img { width: 56px !important; height: 56px !important; display: block; }
     .frm-title-row .qr-wrap .qr-placeholder {
       width: 48px; height: 48px; border: 1px solid var(--rule);
       display: flex; align-items: center; justify-content: center;
@@ -103,7 +110,10 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
     /* ── Params table ── */
     table.params { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8pt;
       table-layout: fixed; border: 1px solid var(--rule); }
-    table.params col.c-no    { width: 24px; }
+    /* 24px could not hold a two-digit row number at 8pt with 8px cell padding:
+       rows 10-12 wrapped to '1' over '0' in the rendered IQC PDF. */
+    table.params col.c-no    { width: 34px; }
+    table.params td:first-child, table.params th:first-child { padding-left: 4px; padding-right: 4px; }
     table.params col.c-param { width: 22%; }
     table.params col.c-spec  { width: 22%; }
     table.params col.c-guide { width: auto; }
@@ -213,12 +223,51 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
       <th>Guidance <span class="hi">/ मार्गदर्शन</span></th>
       <th style="text-align:center">Result <span class="hi">/ परिणाम</span></th>
     </tr></thead>
-    <tbody id="pParamsBody"></tbody>
+    <? /* SERVER-RENDERED ROWS. These were built by client JavaScript
+          (IQC_PARAMS_CLIENT.forEach + appendChild), which
+          Utilities.getAs('application/pdf') never executes — so the Inspection
+          Parameters table, the entire substance of this quality record, printed
+          as a header with NO ROWS on every IQC PDF ever generated. GRN was
+          fixed for this in eaead30; IQC, OQC and IPQC were missed.
+          The client block below still runs on screen and is now idempotent. */
+       var _hi = { qty:'मात्रा', pkg:'पैकेजिंग', colour:'रंग', shape:'आकार',
+                   dims:'आकार/माप', weight:'शुद्ध भार', clean:'स्वच्छता',
+                   odour:'गंध', label:'लेबल सटीकता', msds:'एमएसडीएस',
+                   shelf:'शेल्फ लाइफ', coa:'सीओए/परीक्षण रिपोर्ट' };
+       var _defs = (typeof paramDefs !== 'undefined' && paramDefs) ? paramDefs : (D.paramDefs || []);
+       var _res  = D.params || {}; ?>
+    <tbody id="pParamsBody">
+      <tr class="sampling-row">
+        <td style="text-align:center">—</td>
+        <td colspan="2"><b>Sampling Method / नमूनाकरण विधि</b></td>
+        <td>Per IS 2500 / ANSI Z1.4 — <?!= pesc(D.samplingMethod || 'Normal') ?></td>
+        <td style="text-align:center;font-weight:700"><?!= pesc(D.samplingMethod || 'Normal') ?></td>
+      </tr>
+      <? for (var _p = 0; _p < _defs.length; _p++) {
+           var pd = _defs[_p];
+           var val = _res[pd.id] ? String(_res[pd.id]) : 'N/A';
+           var rc  = val === 'PASS' ? 'result-pass' : (val === 'FAIL' ? 'result-fail' : 'result-na'); ?>
+      <tr>
+        <td style="text-align:center"><?= (_p + 1) ?></td>
+        <td><?!= pesc(pd.label) ?><? if (pd.ccp) { ?><span class="ccp-badge">CCP</span><? } ?>
+            <div class="hint-text"><?!= pesc(_hi[pd.id] || '') ?></div></td>
+        <td><?!= pesc(pd.spec) ?></td>
+        <td style="font-size:7.5pt;color:#444"><?!= pesc(pd.hint || '') ?></td>
+        <td class="<?= rc ?>" style="text-align:center;font-weight:700"><?!= pesc(val) ?></td>
+      </tr>
+      <? } ?>
+      <? if (!_defs.length) { ?>
+      <tr><td colspan="5" style="text-align:center;color:#888">No parameters defined</td></tr>
+      <? } ?>
+    </tbody>
   </table>
 
   <div class="section-label">Disposition &nbsp;<span class="hi">/ निपटान निर्णय</span></div>
   <table class="info" style="margin-bottom:3px">
-    <tr><td class="lbl">Overall Disposition<span class="hi">समग्र निर्णय</span></td><td class="val" style="width:140px"><span id="pDisp" class="disp-badge"></span></td><td class="lbl">Qty Accepted<span class="hi">स्वीकृत मात्रा</span></td><td class="val" id="pAccQty"><?= pesc(D.acceptedQty || "—") ?></td></tr>
+    <tr><td class="lbl">Overall Disposition<span class="hi">समग्र निर्णय</span></td><td class="val" style="width:140px"><? var _d = String(D.disposition || D.releaseDecision || "").toUpperCase();
+       var _dc = _d === "ACCEPTED" || _d === "ACCEPT" || _d === "RELEASED" ? "disp-acc"
+               : _d === "REJECTED" || _d === "REJECT" ? "disp-rej"
+               : _d === "HOLD" ? "disp-hld" : "disp-awd"; ?><span id="pDisp" class="disp-badge <?= _dc ?>"><?!= pesc(_d || "—") ?></span></td><td class="lbl">Qty Accepted<span class="hi">स्वीकृत मात्रा</span></td><td class="val" id="pAccQty"><?= pesc(D.acceptedQty || "—") ?></td></tr>
     <tr><td class="lbl">Qty Rejected<span class="hi">अस्वीकृत मात्रा</span></td><td class="val" id="pRejQty"><?= pesc(D.rejectedQty || "—") ?></td><td class="lbl">Qty On Hold<span class="hi">होल्ड मात्रा</span></td><td class="val" id="pHldQty"><?= pesc(D.holdQty || "—") ?></td></tr>
     <tr><td class="lbl">NCR Ref.<span class="hi">एनसीआर संदर्भ</span></td><td class="val" id="pNcr"><?= pesc(D.ncrRef || "—") ?></td><td class="lbl">Deviation Ref.<span class="hi">विचलन संदर्भ</span></td><td class="val" id="pDev"><?= pesc(D.deviationRef|| "—") ?></td></tr>
     <tr><td class="lbl">Remarks<span class="hi">टिप्पणी</span></td><td class="val" id="pRemarks" colspan="3" style="white-space:pre-wrap"><?= pesc(D.remarks || "—") ?></td></tr>
@@ -292,6 +341,10 @@ dispEl.className = "disp-badge " + (
 );
 
 var tbody = document.getElementById("pParamsBody");
+// The rows are ALREADY server-rendered above (that is what makes the PDF
+// work). Re-running this on screen would append a duplicate of every row, so
+// it only builds the table when the server produced nothing.
+if (tbody && tbody.getElementsByTagName("tr").length === 0) {
 // Sampling method row first
 var smTr = document.createElement("tr");
 smTr.className = "sampling-row";
@@ -315,6 +368,7 @@ IQC_PARAMS_CLIENT.forEach(function(p, i) {
     '<td class="' + resCls + '" style="text-align:center;font-weight:700">' + val + '</td>';
   tbody.appendChild(tr);
 });
+}
 
 if (d.imageUrls && d.imageUrls.length) {
   document.getElementById("imagesSection").style.display = "";

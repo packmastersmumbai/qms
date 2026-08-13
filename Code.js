@@ -667,6 +667,11 @@ function doGet(e) {
     try { slc = perfSlipCompare(e.parameter.doc || ''); } catch(er){ slc = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(slc)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'pdfshow') {
+    var pds;
+    try { pds = perfPdfShow(e.parameter.mods || ''); } catch(er){ pds = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(pds)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'slipconcurrent') {
     var scc;
     try { scc = perfSlipConcurrent(); } catch(er){ scc = 'ERR ' + er.message; }
@@ -1349,7 +1354,7 @@ function getFormHtml(type) {
   }
   // Server-side HTML cache: forms are templates, only change on deploy.
   // Cache for 6 hours (CacheService max). On every new deploy users hard-reload anyway.
-  var cacheKey = 'pmqms_formhtml_v180_' + String(type || 'Landing');
+  var cacheKey = 'pmqms_formhtml_v182_' + String(type || 'Landing');
   try {
     var hit = CacheService.getScriptCache().get(cacheKey);
     if (hit) return hit;

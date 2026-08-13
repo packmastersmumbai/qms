@@ -136,9 +136,12 @@ function _docWorkIQC_(docNo, row, extra) {
   if (!ws) return;
   var n = Number(extra.count) || 1;
   try {
-    var qr  = generateIQCQR_(docNo);
+    // Store the QR BEFORE rendering the PDF — generateIQCPdf_ reads it back out
+    // of col 39 via getIQCPrintData, so writing afterwards guaranteed an empty
+    // QR box on every printed slip. Same defect as GRN, same fix.
+    var qr = generateIQCQR_(docNo);
+    if (qr) { ws.getRange(row, 39, n, 1).setValue(qr); SpreadsheetApp.flush(); }
     var pdf = generateIQCPdf_(docNo, extra.sampling || '');
-    if (qr)  ws.getRange(row, 39, n, 1).setValue(qr);
     if (pdf) ws.getRange(row, 40, n, 1).setValue(pdf);
   } catch (e) { Logger.log('IQC QR/PDF failed: ' + e.message); }
 
@@ -155,9 +158,10 @@ function _docWorkOQC_(docNo, row, extra) {
   if (!ws) return;
   var n = Number(extra.count) || 1;
   try {
-    var qr  = generateOQCQR_(docNo);
+    // QR stored before the PDF renders — see the note in _docWorkIQC_.
+    var qr = generateOQCQR_(docNo);
+    if (qr) { ws.getRange(row, 26, n, 1).setValue(qr); SpreadsheetApp.flush(); }
     var pdf = generateOQCPdf_(docNo);
-    if (qr)  ws.getRange(row, 26, n, 1).setValue(qr);
     if (pdf) ws.getRange(row, 27, n, 1).setValue(pdf);
   } catch (e) { Logger.log('OQC QR/PDF failed: ' + e.message); }
 

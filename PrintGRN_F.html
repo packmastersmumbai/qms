@@ -62,8 +62,15 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
     .frm-title-row .title-text .title-hi {
       font-size: 7.5pt; color: var(--muted); font-weight: 400; margin-top: 1px;
     }
-    .frm-title-row .qr-wrap { width: 48px; min-width: 48px; text-align: center; }
-    .frm-title-row .qr-wrap img { width: 48px; height: 48px; display: block; }
+    /* The wrapper reserved 48px while every <img> carried an inline
+       width:56px, so the QR overflowed its box by 8px and ran into the 10mm
+       @page right margin — the right-hand finder pattern was CLIPPED off the
+       printed slip, which makes the code unscannable. Measured on the rendered
+       PDF: image drawn at x532-574 on a 595pt page.
+       The box is now 56px to match, and !important defeats the inline style on
+       any slip still carrying it. flex:none stops the flex row shrinking it. */
+    .frm-title-row .qr-wrap { width: 56px; min-width: 56px; flex: none; text-align: center; }
+    .frm-title-row .qr-wrap img { width: 56px !important; height: 56px !important; display: block; }
     .frm-title-row .qr-wrap .qr-placeholder {
       width: 48px; height: 48px; border: 1px solid var(--rule);
       display: flex; align-items: center; justify-content: center;
@@ -126,7 +133,10 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
        on items column 3 is the Description and must stay left and full-ink. */
     table.items td:nth-child(3) { text-align: left; color: var(--ink); }
 
-    table.params col.c-no    { width: 24px; }
+    /* 24px could not hold a two-digit row number at 8pt with 8px cell padding:
+       rows 10-12 wrapped to '1' over '0' in the rendered IQC PDF. */
+    table.params col.c-no    { width: 34px; }
+    table.params td:first-child, table.params th:first-child { padding-left: 4px; padding-right: 4px; }
     table.params col.c-param { width: 22%; }
     table.params col.c-spec  { width: 22%; }
     table.params col.c-guide { width: auto; }

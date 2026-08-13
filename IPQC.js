@@ -573,6 +573,20 @@ function generateIPQCPdf_(sessionId) {
   return drvStoreModulePdf('IPQC', sessionId, html);
 }
 
+/**
+ * Sheets returns a time-only cell as a Date on the 1899 spreadsheet epoch.
+ * String()-ing that puts "Sat Dec 30 1899 …" on a printed quality record.
+ * Dates become HH:mm:ss; anything already a string passes through untouched.
+ */
+function _ipqcFmtTime_(v) {
+  if (v == null || v === '') return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    try { return Utilities.formatDate(v, 'Asia/Kolkata', 'HH:mm:ss'); }
+    catch (e) { return ''; }
+  }
+  return String(v);
+}
+
 function getIPQCPrintData(sessionId) {
   var ws = getSpreadsheet().getSheetByName('IPQC_Sessions');
   if (!ws) throw new Error('IPQC_Sessions not found');
@@ -615,8 +629,12 @@ function getIPQCPrintData(sessionId) {
     inspector:   String(r[4] || ''),
     line:        String(r[5] || ''),
     date:        fmtDate(r[6]),
-    startTime:   String(r[7] || ''),
-    endTime:     String(r[8] || ''),
+    // A time-only cell comes back from Sheets as a Date on the spreadsheet
+    // epoch, so String() printed "Sat Dec 30 1899 12:59:13 GMT+0521 (India
+    // Standard Time)" on the record — seen on the rendered IPQC PDF. Format
+    // Dates as HH:mm:ss and leave plain strings alone.
+    startTime:   _ipqcFmtTime_(r[7]),
+    endTime:     _ipqcFmtTime_(r[8]),
     status:      String(r[9] || ''),
     rounds:      rounds,
     videoUrl:    String(r[11] || ''),

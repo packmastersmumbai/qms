@@ -1441,6 +1441,65 @@ function perfSlipCompare(docNo) {
 }
 
 
+// Render the CURRENT print template for each module to a real PDF and hand back
+// links, so the four documents can be inspected side by side. Same throwaway
+// folder and same delete-last-run behaviour as perfSlipCompare — these are
+// inspection artefacts, not records.
+function perfPdfShow(mods) {
+  _diagRequireOwner_();
+
+  var cfg = {
+    GRN:  { sheet: 'GRN_LOG',       tmpl: 'PrintGRN_F',  data: 'getGRNPrintData'  },
+    IQC:  { sheet: 'IQC_LOG',       tmpl: 'PrintIQC_F',  data: 'getIQCPrintData'  },
+    OQC:  { sheet: 'OQC_LOG',       tmpl: 'PrintOQC_F',  data: 'getOQCPrintData'  },
+    IPQC: { sheet: 'IPQC_Sessions', tmpl: 'PrintIPQC_F', data: 'getIPQCPrintData' }
+  };
+  var list = String(mods || 'GRN,IQC,IPQC,OQC').toUpperCase().split(',');
+  var out = ['PRINT TEMPLATE RENDER', ''];
+
+  var folder = drvGetOrCreateFolder('_SlipCompare', qmsRootFolderId_());
+  var props = PropertiesService.getScriptProperties();
+  String(props.getProperty('pm.pdfshow.fileIds') || '').split(',')
+    .filter(Boolean).forEach(function (id) { drvDeleteFile(id); });
+  var made = [];
+
+  list.forEach(function (m) {
+    m = m.trim();
+    var c = cfg[m];
+    if (!c) { out.push(_perfPad_(m, 6) + 'unknown module'); return; }
+    try {
+      var ws = getSpreadsheet().getSheetByName(c.sheet);
+      if (!ws || ws.getLastRow() < 2) { out.push(_perfPad_(m, 6) + 'no rows in ' + c.sheet); return; }
+      var docNo = '';
+      for (var k = ws.getLastRow(); k >= 2 && !docNo; k--) {
+        docNo = String(ws.getRange(k, 1).getValue() || '').trim();
+      }
+      var data = eval(c.data)(docNo);
+      var t = HtmlService.createTemplateFromFile(c.tmpl);
+      t.printData = data;
+      // PrintIQC_F reads a SECOND template variable, paramDefs, which the real
+      // caller sets (IQC.js:887/901). Without it evaluate() throws
+      // "paramDefs is not defined" — a diag artefact, not a template defect.
+      if (typeof IQC_PARAMS !== 'undefined') t.paramDefs = IQC_PARAMS;
+      var blob = Utilities.newBlob(t.evaluate().getContent(), 'text/html', 'a.html')
+                          .getAs('application/pdf');
+      var safe = docNo.replace(/[^A-Za-z0-9_.\-]/g, '_');
+      var up = drvUploadBlob(blob, 'SHOW-' + m + '-' + safe + '.pdf', folder);
+      made.push(up.id);
+      out.push(_perfPad_(m, 6) + _perfPad_(docNo, 22) +
+               _perfPad_(Math.round(blob.getBytes().length / 1024) + ' KB', 8) +
+               drvShareAnyone(up.id));
+    } catch (e) {
+      out.push(_perfPad_(m, 6) + 'THREW ' + e.message.slice(0, 90));
+    }
+  });
+
+  props.setProperty('pm.pdfshow.fileIds', made.join(','));
+  out.push('', 'The next pdfshow run deletes these files.');
+  return out.join(String.fromCharCode(10));
+}
+
+
 // The one hazard GrnSlipSheet.js flags as its main risk is two renders racing on
 // the shared scratch sheet. Prove the lock actually serialises them: render two
 // DIFFERENT documents back to back and confirm each PDF is non-trivial and the

@@ -62,8 +62,15 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
     .frm-title-row .title-text .title-hi {
       font-size: 7.5pt; color: var(--muted); font-weight: 400; margin-top: 1px;
     }
-    .frm-title-row .qr-wrap { width: 48px; min-width: 48px; text-align: center; }
-    .frm-title-row .qr-wrap img { width: 48px; height: 48px; display: block; }
+    /* The wrapper reserved 48px while every <img> carried an inline
+       width:56px, so the QR overflowed its box by 8px and ran into the 10mm
+       @page right margin — the right-hand finder pattern was CLIPPED off the
+       printed slip, which makes the code unscannable. Measured on the rendered
+       PDF: image drawn at x532-574 on a 595pt page.
+       The box is now 56px to match, and !important defeats the inline style on
+       any slip still carrying it. flex:none stops the flex row shrinking it. */
+    .frm-title-row .qr-wrap { width: 56px; min-width: 56px; flex: none; text-align: center; }
+    .frm-title-row .qr-wrap img { width: 56px !important; height: 56px !important; display: block; }
     .frm-title-row .qr-wrap .qr-placeholder {
       width: 48px; height: 48px; border: 1px solid var(--rule);
       display: flex; align-items: center; justify-content: center;
@@ -103,7 +110,10 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
     /* ── Params table ── */
     table.params { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8pt;
       table-layout: fixed; border: 1px solid var(--rule); }
-    table.params col.c-no    { width: 24px; }
+    /* 24px could not hold a two-digit row number at 8pt with 8px cell padding:
+       rows 10-12 wrapped to '1' over '0' in the rendered IQC PDF. */
+    table.params col.c-no    { width: 34px; }
+    table.params td:first-child, table.params th:first-child { padding-left: 4px; padding-right: 4px; }
     table.params col.c-param { width: 22%; }
     table.params col.c-spec  { width: 22%; }
     table.params col.c-guide { width: auto; }
@@ -211,12 +221,47 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
       <th>Specification</th><th>Guidance</th>
       <th style="text-align:center">Result</th>
     </tr></thead>
-    <tbody id="pParamsBody"></tbody>
+    <? /* SERVER-RENDERED ROWS — see the note in PrintIQC_F. These were built by
+          OQC_CHECKS.forEach + appendChild in client JS, which the HTML->PDF
+          converter never runs, so the Inspection Parameters table printed empty
+          on every OQC record while the remarks said "All parameters within
+          spec". The check list mirrors the OQC_CHECKS literal further down. */
+       var _checks = [
+         { key:'fillWeight', label:'Fill Weight',                    spec:'Per spec / target ± tol.', hint:'Weigh random sample; use calibrated balance', ccp:true },
+         { key:'label',      label:'Label / Batch / Dates',          spec:'Matches batch traveller',  hint:'Verify product code, batch, MFD/EXP',         ccp:true },
+         { key:'seal',       label:'Seal / Closure Integrity',       spec:'No leak, proper closure',  hint:'Visual + pull-test every 50 units',           ccp:true },
+         { key:'appearance', label:'Visual Appearance',              spec:'No dents, stains, damage', hint:'Check container, label, packaging condition', ccp:false },
+         { key:'custSpec',   label:'Customer-Specific Requirements', spec:'Per SOW / PO',             hint:'Check customer special instructions on PO',   ccp:true }
+       ];
+       var _cres = D.checks || {}; ?>
+    <tbody id="pParamsBody">
+      <tr class="sampling-row">
+        <td style="text-align:center">—</td>
+        <td colspan="2"><b>Sampling Method / नमूनाकरण विधि</b></td>
+        <td>Per IS 2500 / ANSI Z1.4 — <?!= pesc(D.samplingMethod || 'Normal') ?></td>
+        <td style="text-align:center;font-weight:700"><?!= pesc(D.samplingMethod || 'Normal') ?></td>
+      </tr>
+      <? for (var _c = 0; _c < _checks.length; _c++) {
+           var ck = _checks[_c];
+           var cv = _cres[ck.key] ? String(_cres[ck.key]) : 'N/A';
+           var cc = cv === 'PASS' ? 'result-pass' : (cv === 'FAIL' ? 'result-fail' : 'result-na'); ?>
+      <tr>
+        <td style="text-align:center"><?= (_c + 1) ?></td>
+        <td><?!= pesc(ck.label) ?><? if (ck.ccp) { ?><span class="ccp-badge">CCP</span><? } ?></td>
+        <td><?!= pesc(ck.spec) ?></td>
+        <td style="font-size:7.5pt;color:#444"><?!= pesc(ck.hint) ?></td>
+        <td class="<?= cc ?>" style="text-align:center;font-weight:700"><?!= pesc(cv) ?></td>
+      </tr>
+      <? } ?>
+    </tbody>
   </table>
 
   <div class="section-label">Disposition &nbsp;<span class="hi">/ निपटान निर्णय</span></div>
   <table class="info" style="margin-bottom:3px">
-    <tr><td class="lbl">Release Decision<span class="hi">निर्णय</span></td><td class="val"><span id="pDisp" class="disp-badge"></span></td><td class="lbl">Qty Accepted<span class="hi">स्वीकृत</span></td><td class="val" id="pAccQty"><?= pesc(D.acceptedQty || "—") ?></td></tr>
+    <tr><td class="lbl">Release Decision<span class="hi">निर्णय</span></td><td class="val"><? var _d = String(D.disposition || D.releaseDecision || "").toUpperCase();
+       var _dc = _d === "ACCEPTED" || _d === "ACCEPT" || _d === "RELEASED" ? "disp-acc"
+               : _d === "REJECTED" || _d === "REJECT" ? "disp-rej"
+               : _d === "HOLD" ? "disp-hld" : "disp-awd"; ?><span id="pDisp" class="disp-badge <?= _dc ?>"><?!= pesc(_d || "—") ?></span></td><td class="lbl">Qty Accepted<span class="hi">स्वीकृत</span></td><td class="val" id="pAccQty"><?= pesc(D.acceptedQty || "—") ?></td></tr>
     <tr><td class="lbl">Qty Rejected<span class="hi">अस्वीकृत</span></td><td class="val" id="pRejQty"><?= pesc(D.rejectedQty || "—") ?></td><td class="lbl">IPQC Reviewed<span class="hi">आईपीक्यूसी</span></td><td class="val" id="pIpqcR"><?= pesc(D.ipqcReviewed) ?></td></tr>
     <tr><td class="lbl">Remarks<span class="hi">टिप्पणी</span></td><td class="val" id="pRemarks" colspan="3" style="white-space:pre-wrap"><?= pesc(D.remarks || "—") ?></td></tr>
   </table>
@@ -271,6 +316,10 @@ dispEl.className = "disp-badge " + (
 );
 
 var tbody = document.getElementById("pParamsBody");
+// The rows are ALREADY server-rendered above (that is what makes the PDF
+// work). Re-running this on screen would append a duplicate of every row, so
+// it only builds the table when the server produced nothing.
+if (tbody && tbody.getElementsByTagName("tr").length === 0) {
 // Sampling method row
 var smTr = document.createElement("tr");
 smTr.className = "sampling-row";
@@ -289,6 +338,7 @@ OQC_CHECKS.forEach(function(p, i) {
     '<td class="' + resCls + '" style="text-align:center;font-weight:700">' + val + '</td>';
   tbody.appendChild(tr);
 });
+}
 </script>
 </body>
 </html>
