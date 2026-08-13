@@ -40,7 +40,10 @@ const PNG='iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJUlEQVR42mNk+M9QzzCKR
             disposition:'PENDING', locationId:'', poLineNo:null}],
     disposition:'PENDING', remarks:'image + pdf verification',
     coaReceived:'N', notifyWhatsapp:'N',
-    docImages:(up.v&&up.v.docUrls)||[], productImages:(up.v&&up.v.productUrls)||[],
+    // The FORM sends docImageUrls/productImageUrls (GRN_F.html:1804-1805).
+    // An earlier version of this probe sent docImages/productImages, which
+    // saveGRN ignores — the images uploaded fine but were never stamped.
+    docImageUrls:(up.v&&up.v.docUrls)||[], productImageUrls:(up.v&&up.v.productUrls)||[],
     clientTxnId:'GRN-IMG-'+Date.now()
   };
   const sv=await rpc.evaluate(p=>new Promise(res=>{

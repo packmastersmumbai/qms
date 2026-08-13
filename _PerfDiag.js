@@ -994,3 +994,43 @@ function perfIqcPdfCheck(docNo) {
                : 'VERDICT: no PDF yet — drain may still be pending.');
   return out.join('\n');
 }
+
+// What does the notification ACTUALLY receive for a document?
+// getGRNRowForWA read only 19 columns while pdfUrl is r[24] and the image
+// columns are r[21]/r[22] — so pdfUrl and images were ALWAYS undefined and no
+// Telegram or WhatsApp message could ever carry them. This renders the real
+// record and the real message text, so the fix is visible rather than asserted.
+function perfNotifyPreview(docNo) {
+  var out = ['NOTIFICATION PAYLOAD PREVIEW', ''];
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  var rows = ws.getDataRange().getValues();
+  if (!docNo) {
+    for (var k = rows.length - 1; k >= 1; k--) {
+      if (String(rows[k][0]).trim()) { docNo = String(rows[k][0]).trim(); break; }
+    }
+  }
+  var row = -1;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === docNo) { row = i + 1; break; }
+  }
+  out.push('doc: ' + docNo + '   sheet row: ' + row);
+  if (row < 2) return out.join('\n') + '\nnot found';
+
+  var rec = getGRNRowForWA(row);
+  if (!rec) return out.join('\n') + '\ngetGRNRowForWA returned null';
+
+  out.push('');
+  out.push('record fields the notification sees:');
+  out.push('   pdfUrl        : ' + (rec.pdfUrl || '(EMPTY)'));
+  out.push('   docImages     : ' + ((rec.docImages || []).length) + '  ' + (rec.docImages || []).join(' '));
+  out.push('   productImages : ' + ((rec.productImages || []).length) + '  ' + (rec.productImages || []).join(' '));
+  out.push('');
+  out.push('--- TELEGRAM message ---');
+  try { out.push(_tgFromRecord_(rec)); } catch (e) { out.push('THREW ' + e.message); }
+  out.push('');
+  out.push('--- WHATSAPP message ---');
+  try {
+    out.push(decodeURIComponent(buildWhatsAppURL(rec).replace('https://wa.me/?text=', '')));
+  } catch (e) { out.push('THREW ' + e.message); }
+  return out.join('\n');
+}

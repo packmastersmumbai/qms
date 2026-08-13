@@ -158,6 +158,31 @@ function buildMessage_(r) {
     lines.push('');
     lines.push('📎 PDF: ' + r.pdfUrl);
   }
+
+  // Photos and video are evidence. A shared receipt should say they exist and
+  // link them; leaving them out meant nobody knew there was anything to look at.
+  var media = [];
+  function addMedia(label, urls) {
+    var list = (typeof urls === 'string') ? urls.split(',') : (urls || []);
+    list = list.map(function (u) { return String(u || '').trim(); }).filter(Boolean);
+    list.forEach(function (u, i) {
+      media.push('   ' + label + (list.length > 1 ? ' ' + (i + 1) : '') + ': ' + u);
+    });
+  }
+  // GRN keeps doc and product photos apart; every other module has one list.
+  if ((r.docImages && r.docImages.length) || (r.productImages && r.productImages.length)) {
+    addMedia('Doc photo', r.docImages);
+    addMedia('Product photo', r.productImages);
+  } else {
+    addMedia('Photo', r.imageUrls || r.images);
+  }
+  if (r.videoUrl) addMedia('Video', [r.videoUrl]);
+  if (media.length) {
+    lines.push('');
+    lines.push('📷 Attachments (' + media.length + '):');
+    media.forEach(function (m) { lines.push(m); });
+  }
+
   if (r.recordUrl) {
     lines.push('🔗 Open record: ' + r.recordUrl);
   }

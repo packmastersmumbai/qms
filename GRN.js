@@ -534,8 +534,19 @@ function updateGRNIQCStatus(grnNo, status) {
 function getGRNRowForWA(row) {
   var ws = getSpreadsheet().getSheetByName('GRN_LOG');
   if (!ws || row < 2) return null;
-  var r = ws.getRange(row, 1, 1, 19).getValues()[0];
+
+  // READ THE FULL ROW. This used to be getRange(row, 1, 1, 19) while pdfUrl is
+  // r[24] — column 25 — so pdfUrl was ALWAYS undefined and no Telegram or
+  // WhatsApp message ever carried a PDF link. Same class of bug OQC already
+  // fixed (see its "read the full row width" note). Never hard-code a width
+  // that is narrower than the highest index read below.
+  var lastCol = Math.max(25, ws.getLastColumn());
+  var r = ws.getRange(row, 1, 1, lastCol).getValues()[0];
   if (!r[0]) return null;
+
+  var docImages     = String(r[21] || '').split(',').map(function(u){ return u.trim(); }).filter(Boolean);
+  var productImages = String(r[22] || '').split(',').map(function(u){ return u.trim(); }).filter(Boolean);
+
   return {
     type:       'GRN',
     docNo:      r[0],
@@ -547,6 +558,9 @@ function getGRNRowForWA(row) {
     qtyReceived:r[10],
     status:     r[15] || 'PENDING',
     inspector:  r[16],
+    docImages:     docImages,
+    productImages: productImages,
+    imageUrls:     docImages.concat(productImages),
     pdfUrl:     r[24] || ''
   };
 }

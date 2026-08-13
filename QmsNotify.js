@@ -223,6 +223,12 @@ function _tgFromRecord_(r) {
   if (r.pdfUrl) l3 += ' · 📎 <a href="' + E(r.pdfUrl) + '">PDF</a>';
   lines.push(l3);
 
+  // L4: attached media. A record's photos and video are evidence — the message
+  // described the inspection but never said evidence existed, so nobody opened
+  // it. Numbered links keep this to one line however many there are.
+  var media = _tgMediaLine_(r, E);
+  if (media) lines.push(media);
+
   lines.push(foot);
   return lines.join('\n');
 }
@@ -306,4 +312,32 @@ function _selfCheckDwmSign() {
   if (!a) throw new Error('empty sig');
   Logger.log('sign ok: ' + a);
   return a;
+}
+
+
+/* Render whatever media a record carries as ONE compact line.
+   Accepts the shapes the modules actually use — GRN keeps doc and product
+   photos apart, IQC has one list plus a video — so callers do not each
+   reimplement the formatting. */
+function _tgMediaLine_(r, E) {
+  var parts = [];
+  function add(label, urls, icon) {
+    var list = [];
+    if (typeof urls === 'string') list = urls.split(',');
+    else if (urls && urls.length) list = urls;
+    list = list.map(function (u) { return String(u || '').trim(); }).filter(Boolean);
+    if (!list.length) return;
+    var links = list.map(function (u, i) {
+      return '<a href="' + E(u) + '">' + (list.length > 1 ? String(i + 1) : label) + '</a>';
+    });
+    parts.push(icon + ' ' + (list.length > 1 ? label + ' ' : '') + links.join(' '));
+  }
+  if ((r.docImages && r.docImages.length) || (r.productImages && r.productImages.length)) {
+    add('doc', r.docImages, String.fromCodePoint(0x1F4C4));
+    add('product', r.productImages, String.fromCodePoint(0x1F4F7));
+  } else {
+    add('photo', r.imageUrls || r.images, String.fromCodePoint(0x1F4F7));
+  }
+  if (r.videoUrl) add('video', [r.videoUrl], String.fromCodePoint(0x1F3A5));
+  return parts.length ? parts.join('  ' + String.fromCharCode(183) + '  ') : '';
 }

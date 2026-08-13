@@ -905,10 +905,18 @@ function getIQCPrintHtml(docNo) {
 function getIQCRowForWA(row) {
   var ws = getSpreadsheet().getSheetByName('IQC_LOG');
   if (!ws || row < 2) return null;
-  var r = ws.getRange(row, 1, 1, 29).getValues()[0];
+  // Full width: pdfUrl is r[39] (col 40) and images are r[36] (col 37), both
+  // beyond the old hard-coded 29 — so both were always undefined here and the
+  // notification carried neither. Same defect as getGRNRowForWA had.
+  var lastCol = Math.max(40, ws.getLastColumn());
+  var r = ws.getRange(row, 1, 1, lastCol).getValues()[0];
   if (!r[0]) return null;
+  var iqcImages = String(r[36] || '').split(',').map(function(u){ return u.trim(); }).filter(Boolean);
   return {
     type:       'IQC',
+    imageUrls:  iqcImages,
+    videoUrl:   String(r[37] || ''),
+    pdfUrl:     String(r[39] || ''),
     docNo:      r[0],
     date:       r[1] ? Utilities.formatDate(new Date(r[1]), 'Asia/Kolkata', 'dd-MMM-yyyy') : '',
     grnNo:      r[2],
@@ -917,8 +925,7 @@ function getIQCRowForWA(row) {
     batch:      r[5],
     inspector:  r[6],
     disposition:r[22],
-    ncrRef:     r[23],
-    pdfUrl:     r[39] || ''
+    ncrRef:     r[23]
   };
 }
 
