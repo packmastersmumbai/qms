@@ -110,6 +110,16 @@ function drvShareAnyone(fileId) {
   return drvViewUrl(fileId);
 }
 
+/**
+ * Delete a file the app created. Under drive.file this succeeds only for the
+ * app's own files, which is the intent — used to clean up throwaway diagnostic
+ * artefacts so they do not accumulate in real document folders.
+ */
+function drvDeleteFile(fileId) {
+  try { _drvFetch_(DRIVE_API_ + '/' + fileId, { method: 'delete' }); return true; }
+  catch (e) { return false; }
+}
+
 /** Canonical view URL — webViewLink is not always returned. */
 function drvViewUrl(fileId) {
   return 'https://drive.google.com/file/d/' + fileId + '/view';

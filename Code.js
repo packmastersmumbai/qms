@@ -662,6 +662,16 @@ function doGet(e) {
     try { sls = perfSlipSheet(e.parameter.doc || ''); } catch(er){ sls = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(sls)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'slipcompare') {
+    var slc;
+    try { slc = perfSlipCompare(e.parameter.doc || ''); } catch(er){ slc = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(slc)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'slipconcurrent') {
+    var scc;
+    try { scc = perfSlipConcurrent(); } catch(er){ scc = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(scc)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'pdfcompare') {
     var pcm; try { pcm = perfPdfCompare(); } catch(er){ pcm = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(pcm)).setMimeType(ContentService.MimeType.TEXT);

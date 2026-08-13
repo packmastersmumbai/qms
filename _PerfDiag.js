@@ -1387,6 +1387,104 @@ function perfSlipSheet(docNo) {
 }
 
 
+// Byte counts do not answer "is the layout acceptable". Write BOTH slips to
+// Drive and hand back links so the two can be opened side by side.
+//
+// The artefacts go to a dedicated _SlipCompare folder, NOT the GRN month folder
+// that holds real documents, and each run deletes the previous run's files. An
+// anyone-with-link PDF that has to be tidied up by hand does not belong beside
+// live records.
+function perfSlipCompare(docNo) {
+  _diagRequireOwner_();
+
+  var out = ['SLIP VISUAL COMPARISON', ''];
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  if (!docNo) {
+    for (var k = ws.getLastRow(); k >= 2; k--) {
+      var v = String(ws.getRange(k, 1).getValue() || '').trim();
+      if (v) { docNo = v; break; }
+    }
+  }
+  out.push('doc: ' + docNo, '');
+
+  var safe = String(docNo).replace(/[^A-Za-z0-9_.\-]/g, '_');
+  var folder = drvGetOrCreateFolder('_SlipCompare', qmsRootFolderId_());
+
+  var props = PropertiesService.getScriptProperties();
+  var prior = String(props.getProperty('pm.slip.cmpFileIds') || '');
+  if (prior) {
+    prior.split(',').filter(Boolean).forEach(function (id) { drvDeleteFile(id); });
+  }
+  var made = [];
+
+  try {
+    var d = getGRNPrintData(docNo);
+    var t = HtmlService.createTemplateFromFile('PrintGRN_F');
+    t.printData = d;
+    var hb = Utilities.newBlob(t.evaluate().getContent(), 'text/html', 'a.html')
+                      .getAs('application/pdf');
+    var hUp = drvUploadBlob(hb, 'CMP-html-' + safe + '.pdf', folder);
+    made.push(hUp.id);
+    out.push('HTML  ' + Math.round(hb.getBytes().length / 1024) + ' KB  ' + drvShareAnyone(hUp.id));
+  } catch (e) { out.push('HTML path threw: ' + e.message.slice(0, 90)); }
+
+  try {
+    var sb = buildGrnSlipPdf(docNo);
+    var sUp = drvUploadBlob(sb, 'CMP-sheet-' + safe + '.pdf', folder);
+    made.push(sUp.id);
+    out.push('SHEET ' + Math.round(sb.getBytes().length / 1024) + ' KB  ' + drvShareAnyone(sUp.id));
+  } catch (e) { out.push('sheet path threw: ' + e.message.slice(0, 90)); }
+
+  props.setProperty('pm.slip.cmpFileIds', made.join(','));
+  out.push('', 'Open both. The next slipcompare run deletes these two files.');
+  return out.join(String.fromCharCode(10));
+}
+
+
+// The one hazard GrnSlipSheet.js flags as its main risk is two renders racing on
+// the shared scratch sheet. Prove the lock actually serialises them: render two
+// DIFFERENT documents back to back and confirm each PDF is non-trivial and the
+// scratch sheet is left in a sane state. A same-process pair cannot truly run
+// concurrently, so this checks serialisation and residue, not a real race.
+function perfSlipConcurrent() {
+  _diagRequireOwner_();
+
+  var out = ['SLIP CONCURRENCY / RESIDUE CHECK', ''];
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  var docs = [];
+  for (var k = ws.getLastRow(); k >= 2 && docs.length < 2; k--) {
+    var v = String(ws.getRange(k, 1).getValue() || '').trim();
+    if (v && docs.indexOf(v) === -1) docs.push(v);
+  }
+  if (docs.length < 2) { out.push('need 2 distinct GRNs, found ' + docs.length); return out.join('\n'); }
+
+  for (var i = 0; i < docs.length; i++) {
+    try {
+      var t0 = new Date().getTime();
+      var b = buildGrnSlipPdf(docs[i]);
+      out.push(_perfPad_(docs[i], 22) + Math.round(b.getBytes().length / 1024) + ' KB  ' +
+               (new Date().getTime() - t0) + 'ms  ' +
+               (b.getBytes().length > 8000 ? 'OK' : 'SUSPICIOUSLY SMALL'));
+    } catch (e) { out.push(_perfPad_(docs[i], 22) + 'THREW ' + e.message.slice(0, 80)); }
+  }
+
+  // A failed export must not leave the scratch sheet holding half a slip, and
+  // must never leave stray images behind (they overlay the grid, not a cell, so
+  // clear() alone does not remove them).
+  try {
+    var tgt = _grnSlipSheet_();
+    out.push('', 'scratch spreadsheet: ' + tgt.ss.getId());
+    out.push('scratch tabs: ' + tgt.ss.getSheets().length +
+             '  (expect 1 — it must not live in the QMS data file)');
+    out.push('images on sheet: ' + tgt.sh.getImages().length + '  (expect 1 QR from the last render)');
+    out.push('in QMS data file: ' +
+             (getSpreadsheet().getSheetByName(GRN_SLIP_SHEET_) ? 'YES — LEAK' : 'no'));
+  } catch (e) { out.push('residue check threw: ' + e.message.slice(0, 80)); }
+
+  return out.join(String.fromCharCode(10));
+}
+
+
 // The sheet export returned HTTP 500. Which parameter is responsible? Try the
 // URL variants one at a time instead of guessing — the export endpoint is
 // undocumented and rejects some combinations silently.
