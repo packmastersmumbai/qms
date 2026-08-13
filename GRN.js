@@ -499,6 +499,12 @@ function getGRNPrintData(docNo) {
     docImages:    docImages,
     productImages:productImages,
     allImages:    allImages,
+    // Bytes, not links. A stored /file/d/<id>/view URL is an HTML page, so an
+    // <img> pointing at it renders nothing — and the PDF converter fetches no
+    // remote resources at all. Embedded here so the photos actually print.
+    embeddedImages: (function () {
+      try { return drvImagesAsDataUris(allImages, 6); } catch (e) { return []; }
+    })(),
     qrBase64:     String(r[23] || ''),
     pdfUrl:       String(r[24] || ''),
     printedAt:    Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')

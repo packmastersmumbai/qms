@@ -1776,3 +1776,33 @@ function perfSlipLatin() {
   out.push('Both are the SAME layout — only the label text differs.');
   return out.join(String.fromCharCode(10));
 }
+
+
+// Are the record's photos reachable and embeddable? Byte counts alone cannot
+// tell "no images attached" apart from "images attached but unreadable".
+function perfImgProbe(mod, docNo) {
+  _diagRequireOwner_();
+  mod = String(mod || 'GRN').toUpperCase();
+  var out = ['IMAGE EMBED PROBE — ' + mod, ''];
+  var d;
+  try {
+    d = mod === 'IQC' ? getIQCPrintData(docNo) : getGRNPrintData(docNo);
+  } catch (e) { return out.join('\n') + '\nprint data threw: ' + e.message; }
+
+  var urls = mod === 'IQC' ? (d.imageUrls || []) : (d.allImages || []);
+  out.push('doc: ' + (d.docNo || docNo));
+  out.push('stored urls: ' + urls.length);
+  urls.slice(0, 6).forEach(function (u) {
+    var id = drvIdFromUrl(u);
+    var line = '  ' + String(u).slice(0, 58) + '  id=' + (id || 'NONE');
+    if (id) {
+      try {
+        var b = drvGetBlob(id, 'x');
+        line += '  ' + b.getContentType() + '  ' + b.getBytes().length + ' B';
+      } catch (e) { line += '  FETCH FAILED: ' + e.message.slice(0, 40); }
+    }
+    out.push(line);
+  });
+  out.push('', 'embeddedImages produced: ' + (d.embeddedImages || []).length);
+  return out.join(String.fromCharCode(10));
+}

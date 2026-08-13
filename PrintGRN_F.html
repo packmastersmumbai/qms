@@ -192,12 +192,20 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
       background: var(--panel2); border: 1px solid var(--rule); border-radius: 2px;
       break-inside: avoid; page-break-inside: avoid; }
     #imagesSection { break-inside: avoid; page-break-inside: avoid; }
-    /* The gallery script builds .img-thumb / .img-link wrappers that had no CSS
-       at all, so once the images did render they had no sizing or separation
-       and the "View in Drive" link was indistinguishable from body text. */
-    .img-grid .img-thumb { break-inside: avoid; page-break-inside: avoid; }
-    .img-grid .img-thumb img { width: 100%; height: 42mm; object-fit: contain; display: block;
+    /* Evidence photos are meant to be READ on the printed sheet, not merely
+       acknowledged, so they get real size: 3-up at 52mm tall, and larger still
+       when only one or two are attached rather than leaving the row half empty.
+       `contain` keeps the whole frame visible — `cover` would crop the damage
+       or label the photo was taken to document. */
+    .img-grid .img-thumb { break-inside: avoid; page-break-inside: avoid; margin: 0; }
+    .img-grid .img-thumb img { width: 100%; height: 52mm; object-fit: contain; display: block;
       background: var(--panel2); border: 1px solid var(--rule); border-radius: 2px; }
+    .img-grid.two .img-thumb img { height: 74mm; }
+    .img-grid.one .img-thumb img { height: 96mm; }
+    .img-grid.one  { grid-template-columns: 1fr; }
+    .img-grid.two  { grid-template-columns: repeat(2, 1fr); }
+    .img-grid .img-thumb figcaption { font-size: 6pt; color: var(--muted);
+      text-align: center; margin-top: 1.5px; }
     .img-grid .img-link { display: block; margin-top: 2px; font-size: 6pt;
       color: var(--teal2); text-decoration: none; text-align: center; }
 
@@ -303,11 +311,33 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
     </tbody>
   </table>
 
-  <div id="imagesSection" style="display:none" class="img-section">
-    <div class="section-label">Inspection Images &nbsp;<span class="hi">/ निरीक्षण फोटो</span></div>
-    <div class="img-grid" id="pImages"></div>
-    <div style="font-size:7px;color:#777;margin-top:3px">Click image or link to open full-size in Drive &nbsp;/&nbsp; पूर्ण आकार के लिए लिंक पर क्लिक करें</div>
+  <? /* SERVER-RENDERED PHOTOS. The gallery was built in client JS from Drive
+        /view URLs — an HTML page, not an image — so the PDF showed "View in
+        Drive" links and no picture. printData.embeddedImages carries the actual
+        bytes as data: URIs, which is the only form that survives the offline
+        HTML->PDF conversion. */
+     var _emb = D.embeddedImages || []; ?>
+  <? if (_emb.length) { ?>
+  <div id="imagesSection" class="img-section">
+    <div class="section-label">Inspection Images &nbsp;<span class="hi">/ निरीक्षण फोटो</span>
+      <span style="float:right;font-weight:400;font-size:7pt;color:var(--muted)"><?= _emb.length ?> attached</span></div>
+    <div class="img-grid <?= _emb.length === 1 ? 'one' : (_emb.length === 2 ? 'two' : '') ?>">
+      <? for (var _m = 0; _m < _emb.length; _m++) { ?>
+      <figure class="img-thumb">
+        <img src="<?!= _emb[_m].src ?>" alt="Inspection photo <?= (_m + 1) ?>">
+        <figcaption><?= (_m + 1) ?> of <?= _emb.length ?></figcaption>
+      </figure>
+      <? } ?>
+    </div>
   </div>
+  <? } else if ((D.allImages || []).length) { ?>
+  <div class="img-section">
+    <div class="section-label">Inspection Images &nbsp;<span class="hi">/ निरीक्षण फोटो</span></div>
+    <div style="font-size:7.5pt;color:var(--muted);padding:3px 0">
+      <?= (D.allImages || []).length ?> photo(s) attached to this record — scan the QR to view.
+    </div>
+  </div>
+  <? } ?>
 
   <table class="sig-table">
     <tr>
@@ -384,10 +414,14 @@ if (d.qrBase64) {
   qrWrap.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=112x112&format=svg&data=' + encodeURIComponent(qrTarget) + '" alt="QR" style="width:56px;height:56px">';
 }
 
+// The photo grid is server-rendered above from embedded bytes, so #pImages no
+// longer exists and this block is a no-op on a normal render. It is kept only
+// for the case where the server had no readable bytes to embed; without the
+// null guard it would throw and kill every statement after it.
 var allImages = (d.allImages || []).filter(Boolean);
-if (allImages.length) {
+var grid = document.getElementById('pImages');
+if (allImages.length && grid) {
   document.getElementById('imagesSection').style.display = '';
-  var grid = document.getElementById('pImages');
   allImages.forEach(function(url, idx) {
     var wrap = document.createElement('div');
     wrap.className = 'img-thumb';

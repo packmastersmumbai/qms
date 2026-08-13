@@ -165,7 +165,13 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
     /* ── Images: 3-up A4 grid, contain (no crop), mm-sized, page-safe ── */
     .img-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm; margin-top: 4px;
       break-inside: avoid; page-break-inside: avoid; }
-    .img-grid img { width: 100%; height: 42mm; object-fit: contain; display: block;
+    .img-grid.one { grid-template-columns: 1fr; }
+    .img-grid.two { grid-template-columns: repeat(2, 1fr); }
+    .img-grid .img-thumb { margin: 0; break-inside: avoid; page-break-inside: avoid; }
+    .img-grid .img-thumb figcaption { font-size: 6pt; color: var(--muted); text-align: center; margin-top: 1.5px; }
+    .img-grid.two img { height: 74mm !important; }
+    .img-grid.one img { height: 96mm !important; }
+    .img-grid img { width: 100%; height: 52mm; object-fit: contain; display: block;
       background: var(--panel2); border: 1px solid var(--rule); border-radius: 2px;
       break-inside: avoid; page-break-inside: avoid; }
     #imagesSection { break-inside: avoid; page-break-inside: avoid; }
@@ -273,10 +279,31 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
     <tr><td class="lbl">Remarks<span class="hi">टिप्पणी</span></td><td class="val" id="pRemarks" colspan="3" style="white-space:pre-wrap"><?= pesc(D.remarks || "—") ?></td></tr>
   </table>
 
-  <div id="imagesSection" style="display:none">
-    <div class="section-label">Defect Photos &nbsp;<span class="hi">/ दोष की फोटो</span></div>
-    <div class="img-grid" id="pImages"></div>
+  <? /* SERVER-RENDERED PHOTOS — see the note in PrintGRN_F. Client JS set
+        img.src to a Drive /view URL (an HTML page), so nothing ever rendered
+        in the PDF. embeddedImages carries the bytes. */
+     var _emb = D.embeddedImages || []; ?>
+  <? if (_emb.length) { ?>
+  <div id="imagesSection">
+    <div class="section-label">Defect Photos &nbsp;<span class="hi">/ दोष की फोटो</span>
+      <span style="float:right;font-weight:400;font-size:7pt;color:var(--muted)"><?= _emb.length ?> attached</span></div>
+    <div class="img-grid <?= _emb.length === 1 ? 'one' : (_emb.length === 2 ? 'two' : '') ?>">
+      <? for (var _m = 0; _m < _emb.length; _m++) { ?>
+      <figure class="img-thumb">
+        <img src="<?!= _emb[_m].src ?>" alt="Defect photo <?= (_m + 1) ?>">
+        <figcaption><?= (_m + 1) ?> of <?= _emb.length ?></figcaption>
+      </figure>
+      <? } ?>
+    </div>
   </div>
+  <? } else if ((D.imageUrls || []).length) { ?>
+  <div>
+    <div class="section-label">Defect Photos &nbsp;<span class="hi">/ दोष की फोटो</span></div>
+    <div style="font-size:7.5pt;color:var(--muted);padding:3px 0">
+      <?= (D.imageUrls || []).length ?> photo(s) attached to this record — scan the QR to view.
+    </div>
+  </div>
+  <? } ?>
 
   <div class="section-label" style="margin-top:6px">Signatures &nbsp;<span class="hi">/ हस्ताक्षर</span></div>
   <table class="sig-table"><tr>
@@ -370,9 +397,11 @@ IQC_PARAMS_CLIENT.forEach(function(p, i) {
 });
 }
 
-if (d.imageUrls && d.imageUrls.length) {
+// Photos are server-rendered above, so #pImages is normally absent; the null
+// guard keeps this from throwing and killing the rest of the script.
+var grid = document.getElementById("pImages");
+if (d.imageUrls && d.imageUrls.length && grid) {
   document.getElementById("imagesSection").style.display = "";
-  var grid = document.getElementById("pImages");
   d.imageUrls.forEach(function(url) {
     var img = document.createElement("img");
     img.src = url; img.alt = "Defect photo";

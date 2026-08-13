@@ -176,3 +176,45 @@ function drvStoreModuleImage(moduleName, filename, blob) {
   var up = drvUploadBlob(blob, filename, qmsMediaFolderId_(moduleName, new Date()));
   return drvShareAnyone(up.id);
 }
+
+/** Pull the Drive file id out of any of the URL shapes we store or receive. */
+function drvIdFromUrl(url) {
+  var s = String(url || '');
+  var m = s.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/) ||
+          s.match(/[?&]id=([A-Za-z0-9_-]{10,})/) ||
+          s.match(/\/d\/([A-Za-z0-9_-]{10,})/);
+  return m ? m[1] : '';
+}
+
+/**
+ * Turn stored image URLs into data: URIs for PRINT.
+ *
+ * Images are stored as `https://drive.google.com/file/d/<id>/view`, which is an
+ * HTML page, not an image — an <img src> pointing at it can never render, which
+ * is why the print templates showed link text where photos should be. The
+ * `uc?export=view` form is a redirect that needs a live browser session, so it
+ * is no better inside Utilities.getAs('application/pdf'), which fetches nothing
+ * at all. Embedding the bytes is the only form that survives the conversion.
+ *
+ * Fails soft per image: one unreadable photo must not cost the whole document.
+ * Capped because each image inflates the PDF by ~4/3 of its byte size.
+ */
+function drvImagesAsDataUris(urls, max, maxBytes) {
+  max = max || 6;
+  maxBytes = maxBytes || 900000;          // ~900KB per image before we skip it
+  var out = [];
+  (urls || []).forEach(function (u) {
+    if (out.length >= max) return;
+    var id = drvIdFromUrl(u);
+    if (!id) return;
+    try {
+      var blob = drvGetBlob(id, 'img');
+      var bytes = blob.getBytes();
+      if (!bytes.length || bytes.length > maxBytes) return;
+      var ct = blob.getContentType() || 'image/jpeg';
+      if (ct.indexOf('image/') !== 0) return;
+      out.push({ src: 'data:' + ct + ';base64,' + Utilities.base64Encode(bytes), href: u });
+    } catch (e) { /* skip this one, keep the rest */ }
+  });
+  return out;
+}

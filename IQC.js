@@ -865,6 +865,10 @@ function getIQCPrintData(docNo) {
     storeInCharge: String(r[34] || ''),
     qaManager:     String(r[35] || ''),
     imageUrls:     imageUrls,
+    // Embedded bytes for print — see the note in getGRNPrintData.
+    embeddedImages: (function () {
+      try { return drvImagesAsDataUris(imageUrls, 6); } catch (e) { return []; }
+    })(),
     samplingMethod: String(r[37] || (IQC_DEFAULT_SEVERITY + ' ' + IQC_SAMPLING_METHOD)),
     qrBase64:      String(r[38] || ''),
     pdfUrl:        String(r[39] || ''),
