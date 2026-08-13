@@ -908,3 +908,50 @@ function perfMenuCheck() {
     : 'Every menu item resolves to a real function.');
   return out.join('\n');
 }
+
+// Can the drive.file scope reach a folder that a HUMAN created and then shared
+// with the script's account as Editor? If yes, the whole restricted-scope
+// verification problem disappears: create one folder by hand, share it, pin its
+// id, and the app only ever touches files inside it.
+//
+// Expectation from Google's docs is NO — drive.file is about FILES THE APP
+// CREATED, not about what the user can see. Sharing changes permission, not
+// scope. But this is cheap to test and the answer decides the plan, so measure
+// rather than argue.
+function perfSharedFolderProbe(folderId) {
+  var out = ['SHARED-FOLDER PROBE (drive.file)', ''];
+  if (!folderId) {
+    return out.concat([
+      'Pass a folder id: ?diag=sharedfolder&id=<folderId>',
+      '',
+      'Create a folder in Drive by hand, share it with the script owner as',
+      'Editor, then pass its id here.'
+    ]).join('\n');
+  }
+  out.push('folder id: ' + folderId);
+
+  function step(label, fn) {
+    try { var v = fn(); out.push(_perfPad_(label, 30) + 'OK   ' + String(v || '').slice(0, 60)); return v; }
+    catch (e) { out.push(_perfPad_(label, 30) + 'FAIL ' + e.message.slice(0, 70)); return null; }
+  }
+
+  step('DriveApp.getFolderById', function () {
+    return DriveApp.getFolderById(folderId).getName();
+  });
+  step('REST get folder metadata', function () {
+    return _drvFetch_(DRIVE_API_ + '/' + folderId + '?fields=id,name', { method: 'get' }).name;
+  });
+  var made = step('REST create file INSIDE it', function () {
+    var blob = Utilities.newBlob('probe', 'text/plain', 'probe.txt');
+    return drvUploadBlob(blob, 'PROBE_' + new Date().getTime() + '.txt', folderId).id;
+  });
+  step('REST read back that file', function () {
+    return made ? _drvFetch_(DRIVE_API_ + '/' + made + '?fields=name', { method: 'get' }).name : 'skipped';
+  });
+  step('cleanup', function () { if (made) drvTrash(made); return 'trashed'; });
+
+  out.push('');
+  out.push('If "create file INSIDE it" succeeds, an Editor-shared folder IS usable');
+  out.push('under drive.file and no restricted scope is needed for storage.');
+  return out.join('\n');
+}

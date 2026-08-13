@@ -508,6 +508,11 @@ function doGet(e) {
     var mck; try { mck = perfMenuCheck(); } catch(er){ mck = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(mck)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'sharedfolder') {
+    var sfp;
+    try { sfp = perfSharedFolderProbe(e.parameter.id || ''); } catch(er){ sfp = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(sfp)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'alldrive') {
     var adr; try { adr = perfAllModuleDrive(); } catch(er){ adr = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(adr)).setMimeType(ContentService.MimeType.TEXT);
