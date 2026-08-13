@@ -534,6 +534,19 @@ function doGet(e) {
     var dq; try { dq = deferQueueStatus(); } catch(er){ dq = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(dq)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'iqclogcols') {
+    var ilc; try { ilc = perfIqcLogCols(); } catch(er){ ilc = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(ilc)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'notifyrow') {
+    var nrw;
+    try { nrw = perfNotifyRow(e.parameter.sheet || 'OQC_LOG'); } catch(er){ nrw = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(nrw)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'ipqccols') {
+    var ipc2; try { ipc2 = perfIpqcCols(); } catch(er){ ipc2 = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(ipc2)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'notifypreview') {
     var npv;
     try { npv = perfNotifyPreview(e.parameter.doc || ''); } catch(er){ npv = 'ERR ' + er.message; }

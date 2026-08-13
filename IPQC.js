@@ -11,7 +11,11 @@ function _ensureIPQCSessions() {
   var ws = ss.getSheetByName('IPQC_Sessions');
   if (!ws) {
     ws = ss.insertSheet('IPQC_Sessions');
-    ws.appendRow(['session_id', 'product_code', 'product_name', 'batch', 'inspector', 'line', 'date', 'start_time', 'end_time', 'status', 'rounds', 'video_url']);
+    // Must match IPQC_SESSIONS_HEADERS exactly — a fresh install that creates
+    // 12 columns while the code reads index 13 would silently read blanks.
+    ws.appendRow(['session_id', 'product_code', 'product_name', 'batch', 'inspector',
+                  'line', 'date', 'start_time', 'end_time', 'status', 'rounds',
+                  'video_url', 'qr_base64', 'pdf_url']);
   }
   return ws;
 }
@@ -615,6 +619,7 @@ function getIPQCPrintData(sessionId) {
     endTime:     String(r[8] || ''),
     status:      String(r[9] || ''),
     rounds:      rounds,
+    videoUrl:    String(r[11] || ''),
     qrBase64:    String(r[12] || ''),
     pdfUrl:      String(r[13] || ''),
     printedAt:   Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd-MMM-yyyy HH:mm')
@@ -646,6 +651,7 @@ function getIPQCRowForWA(sessionId) {
     type: 'IPQC', sessionId: d.sessionId, docNo: d.sessionId,
     product: d.productName || d.productCode, batch: d.batch,
     inspector: d.inspector, date: d.date, pdfUrl: d.pdfUrl || '',
+    videoUrl: d.videoUrl || '',
     status: d.status, rounds: rounds, summary: sum, fails: fails
   };
 }

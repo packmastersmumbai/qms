@@ -226,9 +226,15 @@ var FG_OVERRIDE_HEADERS = [
 ];
 
 // IPQC — session-based in-process inspection
+// 14 columns, matching the LIVE sheet. The constant listed 11 while the sheet
+// had 14 and cols 12-14 were unlabelled — video_url, qr_base64 and pdf_url were
+// added in code without ever being named here. Positional readers map
+// schema[i] to cell[i], so an undocumented column is a future data-corruption
+// bug; see pmqms-positional-column-contracts.
 var IPQC_SESSIONS_HEADERS = [
   'session_id', 'product_code', 'product_name', 'batch', 'inspector', 'line',
-  'date', 'start_time', 'end_time', 'status', 'rounds'
+  'date', 'start_time', 'end_time', 'status', 'rounds',
+  'video_url', 'qr_base64', 'pdf_url'
 ];
 
 var IPQC_LOG_HEADERS = [

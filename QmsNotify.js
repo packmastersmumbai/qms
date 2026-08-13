@@ -260,6 +260,11 @@ function _tgIPQC_(r, icon, vTok, foot) {
   if (r.pdfUrl) totals += ' · 📎 <a href="' + E(r.pdfUrl) + '">PDF</a>';
   lines.push(totals);
 
+  // IPQC renders its own footer, so it needs the media line explicitly — the
+  // shared path in _tgGeneric_ never runs for this type.
+  var ipqcMedia = _tgMediaLine_(r, E);
+  if (ipqcMedia) lines.push(ipqcMedia);
+
   (r.fails || []).slice(0, 5).forEach(function (f) {
     var line = '⚠ R' + f.roundNo + ' ' + E(f.paramName || '');
     if (f.remark) line += ' — ' + E(f.remark);

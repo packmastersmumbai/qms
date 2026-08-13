@@ -1034,3 +1034,98 @@ function perfNotifyPreview(docNo) {
   } catch (e) { out.push('THREW ' + e.message); }
   return out.join('\n');
 }
+
+// IPQC_Sessions column truth. The canonical IPQC_SESSIONS_HEADERS lists 11
+// columns, _ensureIPQCSessions writes 12 (adds video_url), and
+// getIPQCPrintData reads r[12] as qrBase64 and r[13] as pdfUrl. Those cannot
+// all be right. Read the LIVE header row — the sheet is the contract, not the
+// constant. (Same class as pmqms-positional-column-contracts.)
+function perfIpqcCols() {
+  var ws = getSpreadsheet().getSheetByName('IPQC_Sessions');
+  if (!ws) return 'IPQC_Sessions not found';
+  var lastCol = ws.getLastColumn();
+  var hdr = ws.getRange(1, 1, 1, lastCol).getValues()[0];
+  var out = ['IPQC_Sessions LIVE COLUMNS', '', 'width: ' + lastCol, ''];
+  hdr.forEach(function (h, i) {
+    out.push('   col ' + (i + 1) + '  (index ' + i + ')   ' + String(h || '(blank)'));
+  });
+  out.push('');
+  out.push('code expects:');
+  out.push('   qrBase64 at index 12  -> col 13  = ' + String(hdr[12] || '(none)'));
+  out.push('   pdfUrl   at index 13  -> col 14  = ' + String(hdr[13] || '(none)'));
+  out.push('   video    written to col 12 (index 11) = ' + String(hdr[11] || '(none)'));
+
+  // What is actually in the newest row?
+  if (ws.getLastRow() > 1) {
+    var r = ws.getRange(ws.getLastRow(), 1, 1, lastCol).getValues()[0];
+    out.push('');
+    out.push('newest row (' + String(r[0]) + '):');
+    for (var i = 10; i < lastCol; i++) {
+      var v = String(r[i] || '');
+      if (v) out.push('   index ' + i + ' (col ' + (i + 1) + '): ' + v.slice(0, 60));
+    }
+  }
+  return out.join('\n');
+}
+
+
+// Notification payload for ANY module, not just GRN. Verifies that each type's
+// record actually carries pdfUrl and media before the message is built —
+// getGRNRowForWA and getIQCRowForWA both silently returned undefined for those
+// because they read too few columns, and nothing caught it for months.
+// perfNotifyAll removed. It kept throwing inside the GAS shell and returning a
+// blank page, and a diagnostic that needs its own diagnostics is not earning
+// its place. ?diag=notifypreview already renders the real record and BOTH real
+// messages for a given doc, which is the check that matters — use it per
+// module with &doc=.
+
+
+// Per-module notification payload. Deliberately ONE module per call, keyed by
+// sheet — the all-in-one version kept dying inside the GAS shell and returning
+// a blank page. ?diag=notifyrow&sheet=OQC_LOG
+function perfNotifyRow(sheetName) {
+  var ss = getSpreadsheet();
+  var map = {
+    'GRN_LOG':  { fn: 'getGRNRowForWA',  label: 'GRN'  },
+    'IQC_LOG':  { fn: 'getIQCRowForWA',  label: 'IQC'  },
+    'OQC_LOG':  { fn: 'getOQCRowForWA',  label: 'OQC'  }
+  };
+  var m = map[sheetName || 'OQC_LOG'];
+  if (!m) return 'Unknown sheet. Use GRN_LOG | IQC_LOG | OQC_LOG';
+  var ws = ss.getSheetByName(sheetName || 'OQC_LOG');
+  if (!ws || ws.getLastRow() < 2) return (sheetName || 'OQC_LOG') + ': no rows';
+
+  var out = ['NOTIFY ROW — ' + m.label, ''];
+  var row = ws.getLastRow();
+  var rec = null;
+  try { rec = this[m.fn] ? this[m.fn](row) : null; } catch (e) {}
+  if (!rec) { try { rec = eval(m.fn)(row); } catch (e2) { return out.join(String.fromCharCode(10)) + String.fromCharCode(10) + 'reader threw: ' + e2.message; } }
+  if (!rec) return out.join(String.fromCharCode(10)) + String.fromCharCode(10) + 'reader returned null for row ' + row;
+
+  out.push('row      : ' + row);
+  out.push('docNo    : ' + (rec.docNo || ''));
+  out.push('pdfUrl   : ' + (rec.pdfUrl || '(EMPTY)'));
+  out.push('videoUrl : ' + (rec.videoUrl || '(none)'));
+  var imgs = (rec.imageUrls || []).concat(rec.docImages || []).concat(rec.productImages || []);
+  out.push('images   : ' + imgs.length);
+  imgs.slice(0, 4).forEach(function (u) { out.push('   ' + u); });
+  return out.join(String.fromCharCode(10));
+}
+
+// Which IQC_LOG column actually holds what? getIQCRowForWA guessed r[37] for
+// video and got "Normal Single" — a sampling field. Read the live header row
+// rather than guess again.
+function perfIqcLogCols() {
+  var ws = getSpreadsheet().getSheetByName('IQC_LOG');
+  if (!ws) return 'IQC_LOG not found';
+  var n = ws.getLastColumn();
+  var hdr = ws.getRange(1, 1, 1, n).getValues()[0];
+  var r = ws.getLastRow() > 1 ? ws.getRange(ws.getLastRow(), 1, 1, n).getValues()[0] : [];
+  var out = ['IQC_LOG COLUMNS (live)', '', 'width: ' + n, ''];
+  for (var i = 33; i < n; i++) {
+    out.push('   col ' + (i + 1) + ' (idx ' + i + ')  ' +
+             _perfPad_(String(hdr[i] || '(blank)'), 26) +
+             String(r[i] == null ? '' : r[i]).slice(0, 50));
+  }
+  return out.join(String.fromCharCode(10));
+}

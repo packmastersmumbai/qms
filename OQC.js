@@ -653,6 +653,9 @@ function getOQCRowForWA(row) {
     material:       r[5],
     inspector:      r[13],
     releaseDecision:r[14],
+    // Defect video is stamped into col 24 (index 23) by saveOQC. It was never
+    // surfaced here, so the notification could not mention it.
+    videoUrl:       String(r[23] || ''),
     pdfUrl:         r[26] || ''
   };
 }

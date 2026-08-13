@@ -915,7 +915,10 @@ function getIQCRowForWA(row) {
   return {
     type:       'IQC',
     imageUrls:  iqcImages,
-    videoUrl:   String(r[37] || ''),
+    // NO videoUrl here. r[37] is the sampling severity ("Normal Single"), not a
+    // video — verified against the live header (?diag=iqclogcols): idx 36
+    // images, 37 sampling, 38 QR, 39 PDF. Guessing an index is how the wrong
+    // value reaches a notification looking plausible.
     pdfUrl:     String(r[39] || ''),
     docNo:      r[0],
     date:       r[1] ? Utilities.formatDate(new Date(r[1]), 'Asia/Kolkata', 'dd-MMM-yyyy') : '',
