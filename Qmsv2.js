@@ -325,7 +325,18 @@ function getActionFormData() {
 // await placement. SHELL DATA (read-only): surfaces real stock rows whose
 // location looks like a receiving/inbound spot so the checklist has live items.
 // The actual placement write (Scan rack → recordLocationTransfer) is P2.
-function getPutawayQueue() {
+//
+// RENAMED from getPutawayQueue. It collided with Warehouse.js:402, which every
+// caller actually wants: PutawayQueue.html:12 documents that shape, and
+// Code.js:817 reads r.fromLocationId, which this version does not return (it
+// returns `from`) — so whenever this definition won the parse, the putaway
+// diagnostic grouped every row under "(blank)". Worse, the demo fallback below
+// (`if (!rows.length) rows = summary.slice(0, 8)`) FABRICATES rows that are not
+// actually pending putaway. In GAS every .js shares one global scope and the
+// last definition parsed wins, so which one you got was load-order luck.
+// Unreferenced under the new name; kept rather than deleted because it is the
+// QMSv2 shell's intended data source.
+function qmsv2PutawayQueue_() {
   var summary = getStockSummary() || [];
   var INBOUND = /(GATE|INBOUND|RECEIV|QUARANT|IQC|HOLD|STAGE|UNSORT)/i;
   var rows = summary.filter(function(s){ return INBOUND.test(String(s.locationId || '')); });
