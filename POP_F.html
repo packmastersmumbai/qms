@@ -10,6 +10,14 @@
   <style>
     .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
     body { min-height: max(884px, 100dvh); }
+    /* Every control here carries text-[14px], and that utility is LIVE in the
+       bundle, so the inputs really do render at 14px. Below 16px iOS/Android
+       zoom the page on focus inside the GAS double iframe and the operator
+       cannot zoom back out — e2e-health measured 6 such inputs on this form.
+       Done as one rule rather than editing 12 class attributes, and scoped to
+       controls so the 12px labels keep their intended size. */
+    #poForm input, #poForm select, #poForm textarea,
+    #poItems input, #poItems select { font-size: 16px !important; }
     /* Compact responsive layout (bundle lacks md: grid utils, so plain CSS). */
     #poForm { max-width: 28rem; }
     @media (min-width: 768px) {

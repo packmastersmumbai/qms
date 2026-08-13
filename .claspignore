@@ -48,3 +48,20 @@ tools-*.node
 # .node is Node's NATIVE-BINARY extension and cannot be require()d as JS.
 # Node-only tooling uses .cjs instead, still excluded from the GAS push.
 tools-*.cjs
+
+# Shadow duplicates: Drive sync creates "Foo (1).js" beside "Foo.js". Every .js
+# in a GAS project shares ONE global scope and the last file parsed wins, so a
+# stale copy can silently REPLACE production code. Measured on 2026-08-14: the
+# shadows were divergent OLDER versions — "OQC (1).js" defaulted AQL to level II
+# where OQC.js uses I (a different number of units inspected on a release), had
+# no idempotency guard, and "ProductionReadCache (1).js" was MISSING six
+# functions the real one defines, which would be a ReferenceError if it won.
+# Ignored here as well as deleted, so a future Drive sync cannot re-ship them.
+**/*(1).js
+**/*(2).js
+**/*(1).html
+**/*(2).html
+**/* (1).js
+**/* (2).js
+**/* (1).html
+**/* (2).html

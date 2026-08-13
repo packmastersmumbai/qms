@@ -119,11 +119,30 @@ function responsiveAudit() {
   return out;
 }
 
-async function findFrame(page, fn) {
+// Skip the Landing frame unless Landing is what we are measuring.
+//
+// Several pages use a generic ready-predicate (body.innerText.length > 50).
+// Landing stays mounted behind the SPA and satisfies that predicate FIRST, so
+// the probe measured Landing and reported its numbers under IPQC, Rework,
+// CustomerReturn and Trace — four identical "66px overflow / 49 tap targets"
+// rows that were one page counted four times. The tell was the worst-target
+// name: pm-tile-count is a Landing-only class. Probing the real frames directly
+// showed Rework and Trace at zero overflow.
+//
+// Detected by a Landing-only marker rather than by URL: every GAS form is
+// served from the same script.googleusercontent.com origin.
+const LANDING_MARK = () => !!document.querySelector('.pm-tiles, .pm-tile-count');
+
+async function findFrame(page, fn, allowLanding) {
+  const candidates = [];
   for (const f of page.frames()) {
-    try { if (await f.evaluate(fn)) return f; } catch (_) {}
+    try {
+      if (!(await f.evaluate(fn))) continue;
+      if (!allowLanding && (await f.evaluate(LANDING_MARK))) continue;  // wrong frame
+      candidates.push(f);
+    } catch (_) {}
   }
-  return null;
+  return candidates.length ? candidates[candidates.length - 1] : null;
 }
 
 (async () => {
@@ -151,7 +170,7 @@ async function findFrame(page, fn) {
       await page.goto(WRAP + '?page=landing', { waitUntil: 'domcontentloaded', timeout: 60000 });
       let app = null;
       for (let i = 0; i < 60 && !app; i++) {
-        app = await findFrame(page, () => typeof window.navigateTo === 'function');
+        app = await findFrame(page, () => typeof window.navigateTo === 'function', true);
         if (!app) await page.waitForTimeout(400);
       }
       if (!app) throw new Error('SPA frame never appeared (auth expired?)');
@@ -164,7 +183,7 @@ async function findFrame(page, fn) {
       const deadline = Date.now() + 90000;
       let fr = null;
       while (Date.now() < deadline && row.shell < 0) {
-        fr = await findFrame(page, spec.ready);
+        fr = await findFrame(page, spec.ready, spec.name === 'Landing');
         if (fr) row.shell = Date.now() - T;
         else await page.waitForTimeout(250);
       }

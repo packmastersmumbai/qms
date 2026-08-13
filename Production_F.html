@@ -54,7 +54,11 @@
       width: 100%; box-sizing: border-box;
       height: 44px; padding: 0 12px;
       border: 1.5px solid var(--fk-outline-variant); border-radius: var(--fk-r);
-      font-size: 15px; font-family: inherit; background: var(--fk-card);
+      /* 16px, not 15px. Below 16px iOS/Android zoom the page on focus inside the
+         GAS double iframe and the operator cannot zoom back out — measured on 7
+         Production inputs by e2e-health. The desktop rule further down may go
+         smaller: that block is (pointer:fine) only, where zoom does not apply. */
+      font-size: 16px; font-family: inherit; background: var(--fk-card);
       color: var(--fk-on-surface); outline: none;
       transition: border-color .15s, box-shadow .15s;
     }

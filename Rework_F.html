@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Rework</title>
-<?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+<?!= /* TailwindBundle REMOVED: this page uses zero Tailwind utilities (verified
+       by scanning every class attribute) and the bundle is 48KB of CSS parsed on
+       every load, inside a double iframe where nothing is cached across pages.
+       If a Tailwind class is ever added here, restore the include first. */ '' ?>
 <?!= HtmlService.createHtmlOutputFromFile('Theme').getContent(); ?>
 <?!= HtmlService.createHtmlOutputFromFile('BottomNav').getContent(); ?>
 <style>

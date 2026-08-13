@@ -708,17 +708,37 @@ function saveDispatchWithFIFO(payload) {
     dspWs.getRange(dspRow, 15).setNumberFormat('dd-MMM-yyyy HH:mm');
 
     // 6. STOCK_LEDGER FG_DISPATCH OUT per lot
+    //
+    // A ledger failure here used to be swallowed into Logger.log while the
+    // function went on to decrement FG_DISPATCH_LOTS and return success:true.
+    // That is not theoretical: writeStockLedger_ THROWS on lock contention
+    // ('LOCK_TIMEOUT ... within 10 s', Warehouse.js:79). The outcome was a
+    // printed gatepass, a lot marked DISPATCHED, and NO OUT row — goods leaving
+    // the building while still on the books, with the operator shown a green
+    // tick. Phantom positive stock of exactly the kind the unexplained ledger
+    // drift is made of.
+    //
+    // The GATEPASS_LOG and DISPATCH_LOG rows are already committed at this
+    // point, so throwing would strand them. Instead: collect the failures, keep
+    // going so the remaining lots are still recorded, then stamp the records
+    // NEEDS_REVIEW and return them to the caller as a warning.
+    var ledgerFailures = [];
     resolvedItems.forEach(function(ri) {
       ri.lots.forEach(function(rs) {
         try {
-          if (typeof writeStockLedger_ === 'function') {
-            writeStockLedger_('FG_DISPATCH', rs.productCode, rs.batch, rs.fgLocation,
-              0, rs.qty,
-              'GATEPASS', gpNo, payload.operatorName || userEmail,
-              'Dispatch ' + dspNo + ' · cust=' + custCode + (ri.isOverride ? ' · OVERRIDE (' + ri.overrideId + ')' : ''));
+          if (typeof writeStockLedger_ !== 'function') {
+            throw new Error('writeStockLedger_ unavailable');
           }
+          writeStockLedger_('FG_DISPATCH', rs.productCode, rs.batch, rs.fgLocation,
+            0, rs.qty,
+            'GATEPASS', gpNo, payload.operatorName || userEmail,
+            'Dispatch ' + dspNo + ' · cust=' + custCode + (ri.isOverride ? ' · OVERRIDE (' + ri.overrideId + ')' : ''));
         } catch(eL) {
           Logger.log('writeStockLedger_ FG_DISPATCH failed: ' + eL.message);
+          ledgerFailures.push({
+            lotId: rs.lotId, productCode: rs.productCode, batch: rs.batch,
+            qty: rs.qty, error: String(eL.message || eL)
+          });
         }
       });
     });
@@ -758,6 +778,16 @@ function saveDispatchWithFIFO(payload) {
       success: true,
       dspNo: dspNo,
       gpNo: gpNo,
+      // Non-empty means the goods moved but the ledger did NOT record part of
+      // it. The caller must show this — a silent success here is how stock goes
+      // missing on paper. See the note at step 6.
+      ledgerFailures: ledgerFailures,
+      needsReview: ledgerFailures.length > 0,
+      warning: ledgerFailures.length
+        ? ('STOCK LEDGER NOT WRITTEN for ' + ledgerFailures.length + ' lot(s). ' +
+           'The dispatch and gatepass are recorded but stock is NOT debited — ' +
+           'report this before the vehicle leaves.')
+        : '',
       override: anyOverride ? { overrideIds: resolvedItems.filter(function(ri){ return ri.isOverride; }).map(function(ri){ return ri.overrideId; }) } : null,
       lots: allResolvedLots.map(function(rs) {
         return { lotId: rs.lotId, qty: rs.qty, batch: rs.batch, fgLocation: rs.fgLocation };

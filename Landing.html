@@ -93,7 +93,7 @@
       position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
       width: 100%; max-width: 430px; height: 52px; z-index: 50;
       background: #fff; border-top: 1px solid var(--pm-border);
-      display: grid; grid-template-columns: repeat(5, 1fr);
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
     }
     .pm-bn-btn {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -279,7 +279,7 @@
 
     /* ── Stat strip ── */
     .pm-stats {
-      display: grid; grid-template-columns: repeat(4, 1fr);
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
       background: #fff;
       border: 1px solid var(--pm-border);
       border-radius: 10px;
@@ -321,9 +321,16 @@
 
     /* ── Module tile grid (compact) ── */
     .pm-group { margin-top: 2px; margin-bottom: 6px; }
+    /* minmax(0, 1fr), NOT 1fr. `1fr` means minmax(auto, 1fr), whose auto floor
+       is min-content — so a nowrap child wider than its share pushes the track
+       open instead of being ellipsised. The Masters tile's meta line
+       ("Suppliers · materials · inspectors") is 140px wide and blew the grid to
+       456px inside a 390px viewport: the 66px horizontal overflow e2e-health
+       reported on Landing. Applied to every repeat(N, 1fr) here for the same
+       reason. Verified live: 66px -> 0. */
     .pm-tiles {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 5px;
     }
     .pm-tile {
@@ -599,7 +606,7 @@
       .pm-rise, .pm-skel, .pm-belt-box, .pm-loader { animation: none !important; transition: none !important; }
     }
     /* Hero KPI strip */
-    .pm-kpi-hero { display:grid; grid-template-columns: repeat(3, 1fr); gap:5px; }
+    .pm-kpi-hero { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:5px; }
     .pm-kpi-card {
       background:#fff;
       border:1px solid var(--pm-border);
@@ -645,7 +652,7 @@
     .pm-kpi-note.s-na   { color:var(--pm-faint); }
     .pm-kpi-empty { grid-column:1/-1; padding:10px; text-align:center; color:var(--pm-muted); font-size:11px; background:#fff; border:1px dashed var(--pm-border); border-radius:8px; }
     /* Drill tiles */
-    .pm-kpi-drill { display:grid; grid-template-columns: repeat(3, 1fr); gap:5px; }
+    .pm-kpi-drill { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:5px; }
     .pm-kpi-drow { background:#fff; border:1px solid var(--pm-border); border-left-width:3px; border-radius:8px; padding:5px 7px; display:flex; flex-direction:column; gap:1px; overflow:hidden; }
     .pm-kpi-drow.is-err { border-color:#fed7aa; background:#fff7ed; }
     .pm-kpi-drow.s-good { border-left-color:var(--pm-pass); }
@@ -668,8 +675,8 @@
       .pm-shell { max-width: 640px; }
       .pm-top   { max-width: 640px; }
       .pm-bn    { max-width: 640px; }
-      .pm-tiles { grid-template-columns: repeat(4, 1fr); }
-      .pm-kpi-hero { grid-template-columns: repeat(4, 1fr); }
+      .pm-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .pm-kpi-hero { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
 
     /* ══════════════════════════════════════════════════════════════
@@ -741,7 +748,7 @@
       #pmAside .pm-sec { margin: 8px 2px 6px; }
 
       /* Tile grid — desktop */
-      .pm-tiles { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .pm-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
       .pm-tile { min-height: 76px; padding: 9px 10px; }
       .pm-tile-icon { width: 24px; height: 24px; }
       .pm-tile-icon svg { width: 13px; height: 13px; }
@@ -750,10 +757,10 @@
       .pm-tile-count { height: 19px; font-size: 10px; min-width: 20px; }
 
       /* KPI sidebar — 2-col grid to avoid tall single-column stack */
-      .pm-kpi-hero  { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .pm-kpi-hero  { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
       .pm-kpi-card  { padding: 8px 10px; }
       .pm-kpi-val   { font-size: 18px; }
-      .pm-kpi-drill { grid-template-columns: repeat(2, 1fr); gap: 5px; }
+      .pm-kpi-drill { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
 
       /* Section labels look heavier on desktop */
       .pm-sec-l { font-size: 11px; }
@@ -901,7 +908,10 @@
     }
   </style>
 
-  <?!= HtmlService.createHtmlOutputFromFile('TailwindBundle').getContent(); ?>
+  <?!= /* TailwindBundle REMOVED: this page uses zero Tailwind utilities (verified
+       by scanning every class attribute) and the bundle is 48KB of CSS parsed on
+       every load, inside a double iframe where nothing is cached across pages.
+       If a Tailwind class is ever added here, restore the include first. */ '' ?>
 <?!= include('HtmlCache') ?>
 </head>
 <body>

@@ -771,6 +771,21 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* Keyboard focus fallback (WCAG 2.4.7).
+     ControlPlan, Gatepass, Masters, NCR and POP style their focus state with
+     `focus:border-[#0ea5e9]` / `focus:ring-[#0ea5e9]` — 41 uses that are NOT in
+     the static TailwindBundle (it has no JIT, and these tokens post-date the
+     last bundle build), so they resolve to nothing and those forms have NO
+     visible focus indicator at all. Verified against the bundle: the plain
+     `h-[48px]`-style utilities ARE present, these focus variants are not.
+     One rule here covers every form, since Theme is included by all of them.
+     :focus-visible, so a touch tap never paints a ring. */
+  input:focus-visible, select:focus-visible, textarea:focus-visible,
+  button:focus-visible, a[href]:focus-visible, [role="button"]:focus-visible {
+    outline: 2px solid var(--pm-link, #0070F3);
+    outline-offset: 2px;
+  }
 </style>
 <script>
   // ── Global error trap (loads in every form via Theme) ─────────────────────────
