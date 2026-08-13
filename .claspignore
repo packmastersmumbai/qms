@@ -41,3 +41,7 @@ e2e-*.md
 e2e-storageState.json
 test-artifacts/**
 .playwright/**
+# Node-only tooling. Pushing these breaks the GAS project at parse time:
+# 'require is not defined' fires before ANY function runs, so every diag and
+# every form dies. tools-deadscan.js did exactly that on 2026-08-13.
+tools-*.node

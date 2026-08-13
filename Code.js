@@ -1576,11 +1576,22 @@ var PMQMS_CACHE_TTL_S_ = 21600;
 var PM_FP_PROP_ = 'pm.cache.fingerprint';
 
 function _pmSheetFingerprint_() {
+  // With auth/drive restored this is exact again: the file's real modified
+  // time changes on every edit, including edits made by a human directly in
+  // the sheet, which the write-counter alone cannot see.
+  try {
+    return String(DriveApp.getFileById(getSpreadsheet().getId())
+                          .getLastUpdated().getTime());
+  } catch (e) { /* scope narrowed or Drive unreachable — fall back */ }
+
+  // Fallback kept deliberately: when this threw, the ORIGINAL code returned the
+  // constant '0', so every cache silently served stale data for 6h. A counter
+  // bumped by the writers is worse than the real mtime but far better than a
+  // constant, and it degrades safely instead of pretending nothing changed.
   try {
     var v = PropertiesService.getScriptProperties().getProperty(PM_FP_PROP_);
     if (v) return v;
-  } catch (e) {}
-  // No counter yet — bucket by the hour so a fresh deploy still turns over.
+  } catch (e2) {}
   return 'h' + Math.floor(new Date().getTime() / 3600000);
 }
 

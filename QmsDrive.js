@@ -32,19 +32,23 @@ var QMS_DATA_PARENT_PROP_ = 'pm.drive.qmsDataParentId';
  * Resolution order: configured ID → a root folder literally named "PM QMS" →
  * the spreadsheet's parent (which, for this deployment, is My Drive root).
  */
-// SCOPE NOTE (2026-08-12): the pinned ID is now the PRIMARY path, and the
-// root-folder scan is a last resort that is expected never to run in production.
+// SCOPE NOTE (corrected 2026-08-13).
 //
-// Why it matters: getRootFolder() browses the user's whole Drive, so it forces
-// the RESTRICTED https://.../auth/drive scope. Google will not grant a
-// restricted scope on a standard GCP project until the app passes OAuth
-// verification — which is what currently blocks images, PDFs and QR codes.
+// This project shares ONE Google Cloud project with MMT and DWM. Narrowing the
+// manifest to drive.file therefore did not just affect QMS — it narrowed the
+// consent those sibling projects rely on, and their Drive access broke too.
+// auth/drive is restored, and drive.file kept alongside it so the REST path in
+// DriveRest.js keeps working either way.
 //
-// Every other call this project makes (getFileById on files it created,
-// createFile, createFolder, makeCopy) is satisfied by
-// https://.../auth/drive.file, which is NON-sensitive and needs no verification.
-// So: pin the parent folder once via setQmsDataParent(<id>), and the runtime
-// never needs the restricted scope again.
+// The lesson, recorded so it is not repeated: in a shared GCP project the OAuth
+// scope set is NOT a per-script decision. Removing a scope is a change to every
+// script on that project.
+//
+// Both paths are live and both are correct:
+//   getProjectFolder_ / getQmsMonthFolder_  — DriveApp, needs auth/drive
+//   qmsRootFolderId_  / qmsMonthFolderId_   — Drive REST, needs only drive.file
+// The REST path stays because it is the one that survives a future scope
+// tightening, and because it is what every writer now calls.
 function getProjectFolder_() {
   var props = PropertiesService.getScriptProperties();
   var pinned = props.getProperty(QMS_DATA_PARENT_PROP_);
@@ -53,22 +57,31 @@ function getProjectFolder_() {
     catch (e) { /* stale id — fall through and re-resolve */ }
   }
 
-  // MEASURED 2026-08-12: the granted scope is drive.file, NOT the restricted
-  // drive. Under drive.file a script may only touch what IT created — so
-  // getFileById(spreadsheet) and getRootFolder() both throw here, and adopting
-  // the human-made "PM QMS" folder is impossible by design, not by misconfig.
-  //
-  // Both were tried and both failed (?diag=drivefile). The route that DOES work
-  // is for the script to create its own folder and keep using that. New PDFs and
-  // images land there; files already stored elsewhere keep working, because a
-  // Drive file id is stable regardless of which folder holds it, and every link
-  // in the sheets is stored by id.
-  //
-  // Restricted-scope alternatives were rejected deliberately: auth/drive needs
-  // Google OAuth verification, which this project cannot pass quickly, and it
-  // would grant the app the user's ENTIRE Drive to write a few PDFs.
-  throw new Error('getProjectFolder_ is unavailable under drive.file. ' +
-    'Use qmsFolderId_(...) / DriveRest.js instead — see the note above.');
+  // The spreadsheet's own parent — cheapest correct answer when it resolves.
+  try {
+    var ss = getSpreadsheet();
+    var parents = DriveApp.getFileById(ss.getId()).getParents();
+    if (parents.hasNext()) {
+      var p = parents.next();
+      props.setProperty(QMS_DATA_PARENT_PROP_, p.getId());
+      return p;
+    }
+  } catch (eSs) { /* fall through */ }
+
+  // Named folder at Drive root.
+  try {
+    var byName = DriveApp.getRootFolder().getFoldersByName('PM QMS');
+    if (byName.hasNext()) {
+      var f = byName.next();
+      props.setProperty(QMS_DATA_PARENT_PROP_, f.getId());
+      return f;
+    }
+  } catch (eRoot) { /* fall through */ }
+
+  // Last resort: create our own, so a fresh install still works.
+  var own = DriveApp.createFolder(QMS_SELF_ROOT_);
+  props.setProperty(QMS_DATA_PARENT_PROP_, own.getId());
+  return own;
 }
 
 // ── REST folder resolution (drive.file safe) ──────────────────────────
