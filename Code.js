@@ -637,6 +637,31 @@ function doGet(e) {
     var tgd; try { tgd = perfTelegram(); } catch(er){ tgd = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(tgd)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'sliplatin') {
+    var slt; try { slt = perfSlipLatin(); } catch(er){ slt = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(slt)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'hiddenexport') {
+    var hex; try { hex = perfHiddenExport(); } catch(er){ hex = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(hex)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'slipstages') {
+    var sst; try { sst = perfSlipStages(); } catch(er){ sst = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(sst)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'exportscope') {
+    var exs; try { exs = perfExportScope(); } catch(er){ exs = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(exs)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'exportvariants') {
+    var exv; try { exv = perfExportVariants(); } catch(er){ exv = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(exv)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'slipsheet') {
+    var sls;
+    try { sls = perfSlipSheet(e.parameter.doc || ''); } catch(er){ sls = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(sls)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'pdfcompare') {
     var pcm; try { pcm = perfPdfCompare(); } catch(er){ pcm = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(pcm)).setMimeType(ContentService.MimeType.TEXT);

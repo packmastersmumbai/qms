@@ -1344,3 +1344,278 @@ function perfPdfCompare() {
   out.push('html source: ' + htmlBytes + ' bytes');
   return out.join(String.fromCharCode(10));
 }
+
+// Build the sheet-rendered GRN slip and compare it with the HTML one, on the
+// SAME document. Does not store anything — this answers "is it smaller and does
+// it carry the data" before the product is switched over.
+function perfSlipSheet(docNo) {
+  var out = ['SHEET-RENDERED GRN SLIP', ''];
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  if (!docNo) {
+    for (var k = ws.getLastRow(); k >= 2; k--) {
+      var v = String(ws.getRange(k, 1).getValue() || '').trim();
+      if (v) { docNo = v; break; }
+    }
+  }
+  out.push('doc: ' + docNo);
+
+  var htmlBytes = 0;
+  try {
+    var d = getGRNPrintData(docNo);
+    var t = HtmlService.createTemplateFromFile('PrintGRN_F');
+    t.printData = d;
+    htmlBytes = Utilities.newBlob(t.evaluate().getContent(), 'text/html', 'a.html')
+                          .getAs('application/pdf').getBytes().length;
+    out.push(_perfPad_('HTML converter', 24) + htmlBytes + ' B  (' + Math.round(htmlBytes / 1024) + ' KB)');
+  } catch (e) { out.push('HTML path threw: ' + e.message.slice(0, 70)); }
+
+  try {
+    var t0 = new Date().getTime();
+    var blob = buildGrnSlipPdf(docNo);
+    var ms = new Date().getTime() - t0;
+    var n = blob.getBytes().length;
+    out.push(_perfPad_('sheet export', 24) + n + ' B  (' + Math.round(n / 1024) + ' KB)   ' + ms + 'ms');
+    out.push('');
+    if (htmlBytes) {
+      out.push('saving: ' + (htmlBytes - n) + ' B  (' +
+               Math.round((1 - n / htmlBytes) * 100) + '% smaller)');
+    }
+  } catch (e) {
+    out.push('sheet path THREW: ' + e.message.slice(0, 110));
+  }
+  return out.join(String.fromCharCode(10));
+}
+
+
+// The sheet export returned HTTP 500. Which parameter is responsible? Try the
+// URL variants one at a time instead of guessing — the export endpoint is
+// undocumented and rejects some combinations silently.
+function perfExportVariants() {
+  var ss = getSpreadsheet();
+  var sh = _grnSlipSheet_();
+  var out = ['SHEET EXPORT URL VARIANTS', '', 'gid: ' + sh.getSheetId(), ''];
+  var base = 'https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=pdf&gid=' + sh.getSheetId();
+
+  var variants = [
+    ['bare',                  ''],
+    ['portrait+fitw',         '&portrait=true&fitw=true'],
+    ['range A1:F30',          '&range=A1:F30'],
+    ['range + portrait',      '&range=A1:F30&portrait=true'],
+    ['range + fitw',          '&range=A1:F30&fitw=true'],
+    ['range + all flags',     '&range=A1:F30&portrait=true&fitw=true&gridlines=false&printtitle=false&sheetnames=false&pagenumbers=false&fzr=false'],
+    ['all flags, no range',   '&portrait=true&fitw=true&gridlines=false&printtitle=false&sheetnames=false&pagenumbers=false&fzr=false'],
+    ['margins only',          '&top_margin=0.35&bottom_margin=0.35&left_margin=0.4&right_margin=0.4']
+  ];
+  variants.forEach(function (v) {
+    try {
+      var r = UrlFetchApp.fetch(base + v[1], {
+        headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+        muteHttpExceptions: true
+      });
+      var code = r.getResponseCode();
+      out.push(_perfPad_(v[0], 22) + 'HTTP ' + code +
+               (code === 200 ? '   ' + r.getBlob().getBytes().length + ' B' : ''));
+    } catch (e) {
+      out.push(_perfPad_(v[0], 22) + 'THREW ' + e.message.slice(0, 50));
+    }
+  });
+  return out.join(String.fromCharCode(10));
+}
+
+// Is the 500 caused by OUR scratch sheet, or by the spreadsheet as a whole?
+// Export a tiny existing sheet and the scratch sheet under identical settings.
+// The QMS file is far larger than MMT's, and the export endpoint renders the
+// WHOLE file before slicing — which is the likely difference.
+function perfExportScope() {
+  var ss = getSpreadsheet();
+  var out = ['EXPORT SCOPE TEST', '', 'sheets in file: ' + ss.getSheets().length, ''];
+  var tok = ScriptApp.getOAuthToken();
+
+  function tryExport(label, gid, extra) {
+    var url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() +
+              '/export?format=pdf&gid=' + gid + (extra || '');
+    try {
+      var r = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + tok },
+                                       muteHttpExceptions: true });
+      var c = r.getResponseCode();
+      out.push(_perfPad_(label, 26) + 'HTTP ' + c +
+               (c === 200 ? '  ' + r.getBlob().getBytes().length + ' B' : ''));
+      return c;
+    } catch (e) {
+      out.push(_perfPad_(label, 26) + 'THREW ' + e.message.slice(0, 45));
+      return -1;
+    }
+  }
+
+  // Smallest real sheet in the file.
+  var small = null, smallRows = 1e9;
+  ss.getSheets().forEach(function (s) {
+    var r = s.getLastRow();
+    if (r > 0 && r < smallRows && s.getName().indexOf('BAK_') !== 0) { smallRows = r; small = s; }
+  });
+  if (small) {
+    out.push('smallest sheet: ' + small.getName() + ' (' + small.getLastRow() + ' rows)');
+    tryExport('  that sheet, bare', small.getSheetId(), '');
+    tryExport('  that sheet, range', small.getSheetId(), '&range=A1:C5');
+  }
+  var slip = _grnSlipSheet_();
+  out.push('slip sheet rows: ' + slip.getLastRow());
+  tryExport('  slip sheet, bare', slip.getSheetId(), '');
+
+  out.push('');
+  out.push('If EVERY sheet 500s, the export endpoint cannot render this file at');
+  out.push('all — most likely its size — and the sheet route is not viable here.');
+  return out.join(String.fromCharCode(10));
+}
+
+// A normal sheet exports (200) but the slip sheet 500s, so something in HOW it
+// is built breaks the renderer. Rebuild it in stages and export after each, to
+// name the offending step instead of guessing.
+function perfSlipStages() {
+  var ss = getSpreadsheet();
+  var sh = _grnSlipSheet_();
+  var out = ['SLIP SHEET — STAGE BY STAGE', ''];
+  var tok = ScriptApp.getOAuthToken();
+
+  function ex(label) {
+    SpreadsheetApp.flush();
+    Utilities.sleep(1200);   // the endpoint 429s under rapid calls
+    var url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() +
+              '/export?format=pdf&gid=' + sh.getSheetId() + '&range=A1:F20';
+    try {
+      var r = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + tok },
+                                       muteHttpExceptions: true });
+      var c = r.getResponseCode();
+      out.push(_perfPad_(label, 30) + 'HTTP ' + c +
+               (c === 200 ? '  ' + r.getBlob().getBytes().length + ' B' : ''));
+    } catch (e) { out.push(_perfPad_(label, 30) + 'THREW'); }
+  }
+
+  sh.clear();
+  try { sh.getRange(1,1,sh.getMaxRows(),sh.getMaxColumns()).breakApart(); } catch(e){}
+  SpreadsheetApp.flush();
+  ex('1. cleared');
+
+  sh.getRange(1,1).setValue('Plain text');
+  ex('2. one value');
+
+  var widths = [34,128,196,92,128,140];
+  for (var c=0;c<widths.length;c++) sh.setColumnWidth(c+1, widths[c]);
+  ex('3. column widths');
+
+  sh.getRange(1,1,1,6).merge().setValue('MERGED TITLE');
+  ex('4. merged header');
+
+  sh.getRange(3,1,3,6).setBorder(true,true,true,true,true,true,'#cbd5e1',SpreadsheetApp.BorderStyle.SOLID);
+  ex('5. borders');
+
+  sh.getRange(1,1,1,6).setBackground('#0d1b6e').setFontColor('#ffffff');
+  ex('6. colours');
+
+  sh.setRowHeight(1, 30);
+  ex('7. row height');
+
+  return out.join(String.fromCharCode(10));
+}
+
+// Even a CLEARED slip sheet 500s while CONTROL_RM exports fine. The remaining
+// difference is that the slip sheet is HIDDEN — Google's export renderer cannot
+// print a hidden sheet. Test it directly.
+function perfHiddenExport() {
+  var ss = getSpreadsheet();
+  var sh = _grnSlipSheet_();
+  var out = ['HIDDEN SHEET EXPORT TEST', ''];
+  var tok = ScriptApp.getOAuthToken();
+
+  function ex(label) {
+    SpreadsheetApp.flush();
+    Utilities.sleep(1500);
+    var url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() +
+              '/export?format=pdf&gid=' + sh.getSheetId() + '&range=A1:F20';
+    var r = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + tok },
+                                     muteHttpExceptions: true });
+    var c = r.getResponseCode();
+    out.push(_perfPad_(label, 26) + 'HTTP ' + c +
+             (c === 200 ? '  ' + r.getBlob().getBytes().length + ' B' : ''));
+    return c;
+  }
+
+  out.push('isSheetHidden: ' + sh.isSheetHidden());
+  ex('as-is (hidden)');
+
+  sh.showSheet();
+  out.push('now hidden? ' + sh.isSheetHidden());
+  var code = ex('after showSheet()');
+
+  // Leave it visible if that is what works — a hidden scratch sheet that cannot
+  // print is useless. Re-hide only if it made no difference.
+  if (code !== 200) { try { sh.hideSheet(); } catch (e) {} }
+
+  out.push('');
+  out.push(code === 200
+    ? 'VERDICT: the sheet had to be VISIBLE. Export cannot render a hidden sheet.'
+    : 'VERDICT: still failing — visibility was not the cause.');
+  return out.join(String.fromCharCode(10));
+}
+
+
+// The sheet slip came out 66 KB, not the 43 KB a BARE range produced. The
+// difference should be the Devanagari labels forcing a second font subset —
+// the same 18 KB ?diag=pdfweight found on the HTML side. Build the slip with
+// Latin-only labels and compare.
+function perfSlipLatin() {
+  var ss = getSpreadsheet();
+  var sh = _grnSlipSheet_();
+  var out = ['SLIP: BILINGUAL vs LATIN-ONLY', ''];
+  var tok = ScriptApp.getOAuthToken();
+  var ws = ss.getSheetByName('GRN_LOG');
+  var docNo = '';
+  for (var k = ws.getLastRow(); k >= 2; k--) {
+    var v = String(ws.getRange(k, 1).getValue() || '').trim();
+    if (v) { docNo = v; break; }
+  }
+
+  function exportNow(label) {
+    SpreadsheetApp.flush();
+    Utilities.sleep(1500);
+    var url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() +
+              '/export?format=pdf&gid=' + sh.getSheetId() +
+              '&range=A1:F' + Math.max(sh.getLastRow(), 1) +
+              '&portrait=true&fitw=true&gridlines=false&printtitle=false' +
+              '&sheetnames=false&pagenumbers=false&fzr=false' +
+              '&top_margin=0.35&bottom_margin=0.35&left_margin=0.4&right_margin=0.4';
+    var r = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + tok },
+                                     muteHttpExceptions: true });
+    var n = r.getResponseCode() === 200 ? r.getBlob().getBytes().length : -1;
+    out.push(_perfPad_(label, 26) + (n > 0 ? n + ' B  (' + Math.round(n / 1024) + ' KB)'
+                                           : 'HTTP ' + r.getResponseCode()));
+    return n;
+  }
+
+  buildGrnSlipPdf(docNo);            // draws the bilingual slip
+  var bi = exportNow('bilingual (current)');
+
+  // Strip Devanagari from every cell, keep the layout identical.
+  var last = sh.getLastRow();
+  var rng = sh.getRange(1, 1, last, 6);
+  var vals = rng.getValues();
+  for (var r = 0; r < vals.length; r++) {
+    for (var c = 0; c < vals[r].length; c++) {
+      if (typeof vals[r][c] === 'string' && /[^ -]/.test(vals[r][c])) {
+        vals[r][c] = vals[r][c].replace(/[^ -]/g, '')
+                               .replace(/\s*\/\s*$/, '').replace(/\s{2,}/g, ' ').trim();
+      }
+    }
+  }
+  rng.setValues(vals);
+  var latin = exportNow('Latin-only');
+
+  out.push('');
+  if (bi > 0 && latin > 0) {
+    out.push('Devanagari costs: ' + (bi - latin) + ' B  (' +
+             Math.round((1 - latin / bi) * 100) + '% of the file)');
+  }
+  out.push('');
+  out.push('Both are the SAME layout — only the label text differs.');
+  return out.join(String.fromCharCode(10));
+}
