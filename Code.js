@@ -637,6 +637,10 @@ function doGet(e) {
     var tgd; try { tgd = perfTelegram(); } catch(er){ tgd = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(tgd)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'pdfcompare') {
+    var pcm; try { pcm = perfPdfCompare(); } catch(er){ pcm = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(pcm)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'pdfweight') {
     var pwt; try { pwt = perfPdfWeight(); } catch(er){ pwt = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(pwt)).setMimeType(ContentService.MimeType.TEXT);

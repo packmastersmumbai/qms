@@ -1287,3 +1287,60 @@ function perfPdfWeight() {
   out.push('floor       : ' + noBoth + ' B');
   return out.join(String.fromCharCode(10));
 }
+
+// Compare the two ways to make a PDF, on the SAME document:
+//   A) Utilities.newBlob(html).getAs('application/pdf')   — what QMS does now
+//   B) the Sheets export endpoint                          — what MMT does
+// B is "print to PDF" from a rendered sheet and skips the HTML converter's
+// font-subset embedding entirely, which is where our ~62 KB floor comes from.
+function perfPdfCompare() {
+  var out = ['PDF METHOD COMPARISON', ''];
+  var ss = getSpreadsheet();
+  var ws = ss.getSheetByName('GRN_LOG');
+  var docNo = '';
+  for (var k = ws.getLastRow(); k >= 2; k--) {
+    var v = String(ws.getRange(k, 1).getValue() || '').trim();
+    if (v) { docNo = v; break; }
+  }
+  out.push('doc: ' + docNo);
+
+  // A — current path.
+  var htmlBytes = 0, aBytes = 0;
+  try {
+    var data = getGRNPrintData(docNo);
+    var tmpl = HtmlService.createTemplateFromFile('PrintGRN_F');
+    tmpl.printData = data;
+    var html = tmpl.evaluate().getContent();
+    htmlBytes = html.length;
+    aBytes = Utilities.newBlob(html, 'text/html', 'a.html')
+                      .getAs('application/pdf').getBytes().length;
+    out.push(_perfPad_('A) HTML -> getAs(pdf)', 30) + aBytes + ' B  (' + Math.round(aBytes/1024) + ' KB)');
+  } catch (e) { out.push('A threw: ' + e.message.slice(0, 80)); }
+
+  // B — sheet export, the MMT method. Any existing sheet proves the SIZE.
+  try {
+    var target = ss.getSheetByName('GRN_LOG');
+    var url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() +
+              '/export?format=pdf&gid=' + target.getSheetId() +
+              '&portrait=true&fitw=true&gridlines=false&printtitle=false' +
+              '&top_margin=0.25&bottom_margin=0.25&left_margin=0.25&right_margin=0.25' +
+              '&range=A1:E12';   // a slip-sized block, not the whole log
+    var resp = UrlFetchApp.fetch(url, {
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+      muteHttpExceptions: true
+    });
+    if (resp.getResponseCode() === 200) {
+      var bBytes = resp.getBlob().getBytes().length;
+      out.push(_perfPad_('B) Sheets export (MMT way)', 30) + bBytes + ' B  (' + Math.round(bBytes/1024) + ' KB)');
+      out.push('');
+      out.push('difference: ' + (aBytes - bBytes) + ' B  (' +
+               (aBytes ? Math.round((1 - bBytes / aBytes) * 100) : 0) + '% smaller)');
+    } else {
+      out.push('B) Sheets export -> HTTP ' + resp.getResponseCode());
+    }
+  } catch (e) { out.push('B threw: ' + e.message.slice(0, 80)); }
+
+  out.push('');
+  out.push('html source: ' + htmlBytes + ' bytes');
+  return out.join(String.fromCharCode(10));
+}
