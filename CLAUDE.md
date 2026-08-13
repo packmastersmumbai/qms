@@ -149,25 +149,28 @@ playwright-cli screenshot <url> --output out.png
 
 ## Open findings (as of @621, 2026-08-04)
 
-**`?diag=vocabaudit` is currently FAILING** — 148 BOM rows were added after the
-normalisation work and brought new drift. Run it first; do not assume the sheets
-are clean. Needs owner input, not a guess:
-- `KETO` (125 rows) matches no customer code or name — is this a new customer?
-- `NICHEM SOLUTION` (23 rows) is singular; the master says `NICHEM SOLUTIONS`
-- 25 FG + 26 component codes do not resolve to `MASTERS_Materials`
-- BOM/master UoM disagreements 13 -> 36 (`No's` is back in col I)
-- col K reverted to mixed values (`TAPE`/`TAPE-FLAT`, `LABELS`/`LABELS-FLAT`)
-Re-running `bomvocabfix` / `bomsheetfix` fixes the spelling half; the missing
-customer and the 51 unresolved codes are data decisions.
+**RESOLVED 2026-08-14 — `?diag=vocabaudit` now PASSES.** It reports 0 ambiguous
+categories, all BOM types resolving to master, and all BOM clients resolving to
+customer. Re-run it before assuming any of the old drift is back.
 
-**Six of nine writers have NO idempotency key** — OQC, IPQC, Dispatch,
-CustomerReturn, PO, Rework. Only GRN, IQC and Gatepass are guarded. Each
-unguarded one writes a DUPLICATE record on a retry after a dropped response.
-`e2e-savepaths` prints this on every run (`missing txn key:`). **Dispatch is the
-most consequential — it moves FG stock.** Pattern is proven three times over
-(GRN/IQC/Gatepass): generate a key client-side, stamp it into the log's Remarks,
-look it up before writing, strip it on display (`stripTxnTag_`), add a
-`?diag=` self-test.
+**RESOLVED 2026-08-14 — the "six unguarded writers" finding was STALE.** OQC,
+IPQC, Dispatch and CustomerReturn all now carry txn guards (`_oqcTxnTag_` /
+`_ipqcTxnTag_` / `_dspTxnTag_` / `_crTxnTag_` with matching `_findByTxn_`
+lookups). **`Rework.js` is the one real remaining gap** — it takes a lock but
+has no txn key. Copy Dispatch's pattern (`Dispatch.js:380-411`): it derives the
+Remarks column from the header constant instead of hardcoding an index, which
+is the right defence against the positional-column class of bug.
+
+**Never let "Foo (1).js" survive in the project root.** Google Drive sync
+creates these beside the real file. Every `.js` in a GAS project shares ONE
+global scope and the LAST file parsed wins, so a stale copy can silently replace
+production code. On 2026-08-14, 21 such files (~14,983 lines) were being pushed:
+`OQC (1).js` defaulted AQL to level II where `OQC.js` uses I (a different number
+of units inspected on a release) and had no idempotency guard;
+`ProductionReadCache (1).js` was missing six functions the real file defines.
+They are now in `.claspignore` AND deleted. Check the push manifest, not just
+the ignore file — `clasp push` prints the file list only when something changed,
+so an unchanged push showing nothing is not evidence of exclusion.
 
 **GAS replies get lost on long calls.** `saveGRN` takes ~12s server-side and
 returns successfully, but the success handler often never fires through the
