@@ -103,17 +103,24 @@ function _docWorkGRN_(docNo, row) {
   var ws = getSpreadsheet().getSheetByName('GRN_LOG');
   if (!ws) return;
   try {
-    var qr  = generateGRNQR_(docNo);
-    var pdf = generateGRNPdf_(docNo);
-    // ONE scan — the original stamped images and QR/PDF in two separate passes
-    // over the whole sheet (2.9s combined at 341 rows).
+    var qr = generateGRNQR_(docNo);
+
+    // The QR must be STORED before the PDF is generated. generateGRNPdf_ calls
+    // getGRNPrintData, which reads the QR back out of column 24 — so with the
+    // write happening afterwards it always read an empty cell and every printed
+    // slip carried the "QR" placeholder box instead of a scannable code.
+    // Confirmed by rendering the live PDF: the masthead showed a broken-image
+    // icon, not a QR. Write it first, flush, then render.
     var rows = ws.getDataRange().getValues();
+    var hits = [];
     for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]).trim() === String(docNo).trim()) {
-        ws.getRange(i + 1, 24).setValue(qr);
-        ws.getRange(i + 1, 25).setValue(pdf);
-      }
+      if (String(rows[i][0]).trim() === String(docNo).trim()) hits.push(i + 1);
     }
+    hits.forEach(function (r) { ws.getRange(r, 24).setValue(qr); });
+    SpreadsheetApp.flush();
+
+    var pdf = generateGRNPdf_(docNo);
+    hits.forEach(function (r) { ws.getRange(r, 25).setValue(pdf); });
   } catch (e) { Logger.log('GRN QR/PDF failed: ' + e.message); }
 
   try {

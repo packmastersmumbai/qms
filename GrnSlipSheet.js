@@ -114,19 +114,36 @@ function _grnSlipHeader_(sh) {
   return 4;   // row 3 left blank as breathing space
 }
 
-/** Two label/value pairs per row. Returns the next free row. */
+/**
+ * Two label/value pairs per row. Returns the next free row.
+ *
+ * The label for the left-hand pair is MERGED across columns 1-2. Column 1 is
+ * 34px — it exists to hold the items table's "#" column — so a single-cell
+ * label wrapped "GRN No / जीआरएन क्र." onto five lines in the rendered PDF.
+ * Merging gives it 162px, matching the right-hand pair's label column.
+ * Layout per row:  [1-2] label · [3] value   ·   [4] label · [5-6] value
+ */
 function _grnSlipInfo_(sh, startRow, pairs) {
   for (var i = 0; i < pairs.length; i++) {
     var r = startRow + Math.floor(i / 2);
-    var c = (i % 2 === 0) ? 1 : 4;
-    sh.getRange(r, c).setValue(pairs[i][0])
-      .setFontWeight('bold').setFontSize(8).setFontColor(SLIP_GREY_);
-    sh.getRange(r, c + 1, 1, 2).merge()
+    var left = (i % 2 === 0);
+    var labelRange = left ? sh.getRange(r, 1, 1, 2) : sh.getRange(r, 4);
+    var valueRange = left ? sh.getRange(r, 3)       : sh.getRange(r, 5, 1, 2);
+    if (left) labelRange.merge();
+    if (!left) valueRange.merge();
+
+    labelRange.setValue(pairs[i][0])
+      .setFontWeight('bold').setFontSize(8).setFontColor(SLIP_GREY_)
+      .setVerticalAlignment('middle');
+    valueRange
       .setValue(pairs[i][1] === '' || pairs[i][1] == null ? '—' : pairs[i][1])
-      .setFontSize(9).setFontColor(SLIP_INK_);
-    sh.setRowHeight(r, 18);
+      .setFontSize(9).setFontColor(SLIP_INK_)
+      .setVerticalAlignment('middle');
   }
+  // Row height is left to auto-resize: a fixed 18px clipped any label or value
+  // that still needed a second line (long supplier names, remarks).
   var lastRow = startRow + Math.ceil(pairs.length / 2) - 1;
+  try { sh.autoResizeRows(startRow, lastRow - startRow + 1); } catch (e) {}
   sh.getRange(lastRow, 1, 1, GRN_SLIP_COLS_)
     .setBorder(false, false, true, false, false, false, SLIP_RULE_, SpreadsheetApp.BorderStyle.SOLID);
   return lastRow + 2;
@@ -271,9 +288,13 @@ function buildGrnSlipPdf(docNo) {
   var qrRow = row;
   var hasQr = _grnSlipQr_(sh, qrRow, GRN_SLIP_COLS_, docNo);
   if (hasQr) {
-    sh.getRange(qrRow + 2, GRN_SLIP_COLS_).setValue('Scan to verify')
+    // The 84px image spans ~4 rows of 18px+. The caption previously sat at
+    // qrRow+2 and the QR printed straight over it. Give the image its own
+    // rows, then caption BELOW the whole block.
+    for (var qi = 0; qi < 4; qi++) sh.setRowHeight(qrRow + qi, 22);
+    sh.getRange(qrRow + 4, GRN_SLIP_COLS_).setValue('Scan to verify')
       .setFontSize(7).setFontColor(SLIP_GREY_).setHorizontalAlignment('center');
-    row += 3;
+    row += 5;
   }
 
   row = _grnSlipSignatures_(sh, row);

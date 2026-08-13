@@ -100,26 +100,49 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
       display: block; text-transform: none; letter-spacing: 0; }
     table.info td.val { min-width: 78px; font-weight: 600; color: var(--ink); }
 
-    /* ── Params table ── */
-    table.params { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8pt;
+    /* ── Params / Items table ──
+       The selectors below were ported from the IQC form, which marks its table
+       `.params`. GRN's markup says `table.items`, so NONE of this applied: the
+       Material Items table — the whole point of the document — printed with no
+       border, no header fill, no column widths and, worst, no page-break
+       control, so a multi-item GRN could split a row across two pages.
+       Both class names are matched rather than renaming the markup, so the
+       IQC/IPQC/OQC templates that share this stylesheet keep working. */
+    table.params, table.items { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8pt;
       table-layout: fixed; border: 1px solid var(--rule); }
+    /* GRN's items table has no <col> elements, so `table-layout:fixed` would
+       split its 8 columns EQUALLY — a 24px row number the same width as a
+       40-character description. Size them by nth-child instead.
+       #, Code, Description, Batch, Expiry, Ordered, Received, Unit */
+    table.items th:nth-child(1), table.items td:nth-child(1) { width: 22px; text-align: center; }
+    table.items th:nth-child(2), table.items td:nth-child(2) { width: 15%; }
+    table.items th:nth-child(3), table.items td:nth-child(3) { width: auto; }
+    table.items th:nth-child(4), table.items td:nth-child(4) { width: 17%; }
+    table.items th:nth-child(5), table.items td:nth-child(5) { width: 12%; }
+    table.items th:nth-child(6), table.items td:nth-child(6) { width: 11%; text-align: right; }
+    table.items th:nth-child(7), table.items td:nth-child(7) { width: 11%; text-align: right; font-weight: 700; }
+    table.items th:nth-child(8), table.items td:nth-child(8) { width: 8%; }
+    /* The .params rule that centres and greys column 3 is a spec column there;
+       on items column 3 is the Description and must stay left and full-ink. */
+    table.items td:nth-child(3) { text-align: left; color: var(--ink); }
+
     table.params col.c-no    { width: 24px; }
     table.params col.c-param { width: 22%; }
     table.params col.c-spec  { width: 22%; }
     table.params col.c-guide { width: auto; }
     table.params col.c-res   { width: 64px; }
-    table.params th {
+    table.params th, table.items th {
       background: var(--navy); color: #fff; padding: 5px 8px;
       text-align: left; font-size: 7pt; letter-spacing: .5px; text-transform: uppercase; font-weight: 700;
     }
-    table.params th:last-child { text-align: center; }
-    table.params th .hi { font-size: 6pt; font-weight: 400; opacity: .8; display: block;
+    table.params th:last-child, table.items th:last-child { text-align: center; }
+    table.params th .hi, table.items th .hi { font-size: 6pt; font-weight: 400; opacity: .8; display: block;
       letter-spacing: 0; text-transform: none; }
-    table.params td { border-bottom: 1px solid var(--rule-lt); padding: 5px 8px;
+    table.params td, table.items td { border-bottom: 1px solid var(--rule-lt); padding: 5px 8px;
       vertical-align: middle; word-wrap: break-word; }
-    table.params tbody tr:last-child td { border-bottom: none; }
-    table.params tr { break-inside: avoid; page-break-inside: avoid; }
-    table.params tbody tr:nth-child(even) td { background: var(--panel2); }
+    table.params tbody tr:last-child td, table.items tbody tr:last-child td { border-bottom: none; }
+    table.params tr, table.items tr { break-inside: avoid; page-break-inside: avoid; }
+    table.params tbody tr:nth-child(even) td, table.items tbody tr:nth-child(even) td { background: var(--panel2); }
     table.params td:nth-child(3) { text-align: center; color: var(--muted); }
     .ccp-badge {
       display: inline-block; font-size: 5.5pt; font-weight: 700;
@@ -159,6 +182,14 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
       background: var(--panel2); border: 1px solid var(--rule); border-radius: 2px;
       break-inside: avoid; page-break-inside: avoid; }
     #imagesSection { break-inside: avoid; page-break-inside: avoid; }
+    /* The gallery script builds .img-thumb / .img-link wrappers that had no CSS
+       at all, so once the images did render they had no sizing or separation
+       and the "View in Drive" link was indistinguishable from body text. */
+    .img-grid .img-thumb { break-inside: avoid; page-break-inside: avoid; }
+    .img-grid .img-thumb img { width: 100%; height: 42mm; object-fit: contain; display: block;
+      background: var(--panel2); border: 1px solid var(--rule); border-radius: 2px; }
+    .img-grid .img-link { display: block; margin-top: 2px; font-size: 6pt;
+      color: var(--teal2); text-decoration: none; text-align: center; }
 
     .print-btn { position: fixed; top: 12px; right: 12px; padding: 7px 16px; background: var(--navy);
       color: #fff; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
@@ -185,7 +216,11 @@ function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
       <span class="m"><b>Rev:</b> 00</span>
       <span class="m"><b>Effective:</b> 01-07-2025</span>
       <span class="m"><b>ISO Clause:</b> 8.4.3</span>
-      <span class="m status-draft">DRAFT</span>
+      <? /* This said DRAFT unconditionally — an ACCEPTED GRN printed and filed
+            as a controlled record still carried a DRAFT stamp, which is exactly
+            the kind of thing an ISO audit picks up. Show the record's real
+            status. */ ?>
+      <span class="m status-draft"><?= pesc(String(D.status || 'DRAFT').toUpperCase()) ?></span>
     </div>
   </div>
 
@@ -347,8 +382,11 @@ if (allImages.length) {
     var wrap = document.createElement('div');
     wrap.className = 'img-thumb';
     wrap.innerHTML =
+      // The onerror handler used single quotes INSIDE a single-quoted string,
+      // which terminated it early — a syntax error that killed this whole
+      // script block, so the on-screen image gallery never rendered at all.
       '<a href="' + url + '" target="_blank">' +
-        '<img src="' + url + '" onerror="this.style.display='none'" alt="Image ' + (idx+1) + '">' +
+        '<img src="' + url + '" onerror="this.style.display=&quot;none&quot;" alt="Image ' + (idx+1) + '">' +
       '</a>' +
       '<a class="img-link" href="' + url + '" target="_blank">View in Drive</a>';
     grid.appendChild(wrap);
