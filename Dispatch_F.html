@@ -782,6 +782,12 @@
           if (res.duplicate) {
             showToast((res.warnings && res.warnings[0]) ||
                       'This dispatch was already saved.', 'warning');
+          } else if (res.needsReview && res.warnings && res.warnings.length) {
+            // The dispatch saved but the STOCK LEDGER did not record part of it.
+            // The goods are about to move, so this cannot be a 3-second toast
+            // the operator can miss — it must be acknowledged.
+            showToast(res.warnings[0], 'error');
+            try { alert(res.warnings[0]); } catch (e) {}
           }
           showSuccessScreen(res);
         }))

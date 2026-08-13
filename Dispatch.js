@@ -783,11 +783,15 @@ function saveDispatchWithFIFO(payload) {
       // missing on paper. See the note at step 6.
       ledgerFailures: ledgerFailures,
       needsReview: ledgerFailures.length > 0,
-      warning: ledgerFailures.length
-        ? ('STOCK LEDGER NOT WRITTEN for ' + ledgerFailures.length + ' lot(s). ' +
+      // `warnings` (plural, an array) — that is the field Dispatch_F.html:783
+      // already reads. A singular `warning` string would have been silently
+      // dropped by the client, which would have made this whole fix invisible
+      // to the operator: exactly the failure it exists to prevent.
+      warnings: ledgerFailures.length
+        ? ['STOCK LEDGER NOT WRITTEN for ' + ledgerFailures.length + ' lot(s). ' +
            'The dispatch and gatepass are recorded but stock is NOT debited — ' +
-           'report this before the vehicle leaves.')
-        : '',
+           'report this before the vehicle leaves.']
+        : [],
       override: anyOverride ? { overrideIds: resolvedItems.filter(function(ri){ return ri.isOverride; }).map(function(ri){ return ri.overrideId; }) } : null,
       lots: allResolvedLots.map(function(rs) {
         return { lotId: rs.lotId, qty: rs.qty, batch: rs.batch, fgLocation: rs.fgLocation };
