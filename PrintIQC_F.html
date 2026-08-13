@@ -1,108 +1,170 @@
+<?
+/* SERVER-SIDE RENDERING — why the PDFs were blank.
+   Utilities.newBlob(html).getAs('application/pdf') converts the RAW HTML and
+   never executes JavaScript. This template filled every value from JS, so the
+   PDF carried all the labels and none of the data.
+   The scriptlets below run BEFORE conversion. The client JS is kept for the
+   on-screen view and now goes through setIf(), which never blanks a field the
+   server already filled. */
+var D = (typeof printData !== 'undefined' && printData) ? printData : {};
+function pv(v){ return (v===null||v===undefined||v==='') ? '\u2014' : String(v); }
+function pesc(v){ return pv(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>IQC Inspection Record - PM/FRM/IQC-02</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 11px; color: #111; background: #fff; }
-    @page { size: A4 portrait; margin: 10mm 8mm; }
-    @media print { .no-print { display: none !important; } body { font-size: 11px; } }
-    .page { max-width: 780px; margin: 0 auto; padding: 10px; }
-
-    /* ── Compact ISO Header (matches FRM design) ── */
-    .frm-header { margin-bottom: 6px; }
-    .frm-title-row {
-      display: flex; align-items: center; gap: 10px;
-      border-bottom: 2px solid #4a3728; padding-bottom: 4px; margin-bottom: 3px;
+    /* ═══ Matches PM_FRM_IQC-02 ISO reference: navy #1a3a4a + teal, Inter→Helvetica
+       (PDF-safe, Drive HTML→PDF is offline), point-based sizing, panel section heads,
+       amber CCP badges, disposition chips, authorisation blocks. Shows FILLED data.
+       Classes reused from original markup so no HTML/JS change. ═══ */
+    :root{
+      --navy:#1a3a4a; --teal:#2D8B8B; --teal2:#128266; --deep:#0F1720;
+      --ink:#1a3a4a; --muted:#5b6b73;
+      --ccp:#c0392b; --ccp-bg:#fde8e8;
+      --green:#128266; --danger:#c0392b; --amber:#b7791f;
+      --panel:#eef3f5; --panel2:#f5f7f9; --rule:#cdd8dd; --rule-lt:#e3eaed;
+      --paper:#ffffff;
     }
-    .frm-title-row .logo-wrap img { max-height: 36px; max-width: 90px; object-fit: contain; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* SCREEN: grey backdrop + centred white A4 "sheet" with shadow, so it reads
+       like paper. PRINT: @page owns the margins; .page becomes the full sheet. */
+    body { font-family: 'Inter', Helvetica, Arial, sans-serif; font-size: 8pt; line-height: 1.4;
+      color: var(--ink); background: #dfe4e7; padding: 8mm 0;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { size: A4 portrait; margin: 12mm 10mm 10mm 15mm; }  /* 15mm left = binding edge */
+    .page {
+      width: 210mm; max-width: 210mm;   /* full A4 sheet on screen */
+      min-height: 297mm; margin: 0 auto; position: relative;
+      background: var(--paper); padding: 12mm 10mm 10mm 15mm;   /* mirror @page margins → 185mm content */
+      box-shadow: 0 2px 16px rgba(26,58,74,.22);
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; padding: 0; }
+      .page { width: auto; max-width: none; min-height: 0; margin: 0;
+        padding: 0; box-shadow: none; }   /* @page margins take over; no double margin */
+    }
+
+    /* ── Masthead: logo left · title+meta · QR right, thin navy rule ── */
+    .frm-header { margin-bottom: 9px; }
+    .frm-title-row {
+      display: flex; align-items: center; gap: 14px;
+      border-bottom: 1.5px solid var(--navy); padding-bottom: 6px;
+    }
+    .frm-title-row .logo-wrap img { max-height: 40px; max-width: 150px; object-fit: contain; }
     .frm-title-row .title-text { flex: 1; }
     .frm-title-row .title-text h1 {
-      font-size: 13px; font-weight: 700; color: #1a1a1a; line-height: 1.2;
+      font-size: 13pt; font-weight: 700; letter-spacing: .2px; color: var(--navy); line-height: 1.1;
     }
     .frm-title-row .title-text .title-hi {
-      font-size: 9px; color: #555; font-weight: 400; margin-top: 1px;
+      font-size: 7.5pt; color: var(--muted); font-weight: 400; margin-top: 1px;
     }
-    .frm-title-row .qr-wrap { width: 56px; min-width: 56px; }
-    .frm-title-row .qr-wrap img { width: 56px; height: 56px; display: block; }
+    .frm-title-row .qr-wrap { width: 48px; min-width: 48px; text-align: center; }
+    .frm-title-row .qr-wrap img { width: 48px; height: 48px; display: block; }
     .frm-title-row .qr-wrap .qr-placeholder {
-      width: 56px; height: 56px; border: 1px dashed #aaa;
+      width: 48px; height: 48px; border: 1px solid var(--rule);
       display: flex; align-items: center; justify-content: center;
-      font-size: 6px; color: #aaa; text-align: center;
+      font-size: 6pt; color: var(--muted); text-align: center;
     }
+    /* doc-meta ribbon under title */
     .frm-meta-row {
-      font-size: 8.5px; color: #4a3728; font-weight: 400;
-      display: flex; flex-wrap: wrap; gap: 0 18px; padding: 1px 0;
+      font-size: 7pt; color: var(--muted);
+      display: flex; flex-wrap: wrap; gap: 0 14px; padding: 4px 0 0;
     }
     .frm-meta-row .m { white-space: nowrap; }
-    .frm-meta-row .m b { font-weight: 700; }
-    .frm-meta-row .status-draft { color: #c0392b; font-weight: 700; }
+    .frm-meta-row .m b { font-weight: 700; color: var(--navy); }
+    .frm-meta-row .status-draft { color: var(--ccp); font-weight: 700; }
 
-    /* ── Section labels ── */
+    /* ── Section heads: navy panel bar, uppercase ── */
     .section-label {
-      font-size: 8px; font-weight: 700; color: #1e3a5f;
-      text-transform: uppercase; letter-spacing: 0.4px;
-      margin: 5px 0 2px; border-bottom: 1.5px solid #1e3a5f; padding-bottom: 1px;
+      font-size: 8.5pt; font-weight: 700; color: var(--navy);
+      text-transform: uppercase; letter-spacing: .5px;
+      margin: 11px 0 4px; padding: 4px 8px; background: var(--panel);
+      border-left: 3px solid var(--teal);
     }
-    .section-label .hi { font-size: 7.5px; font-weight: 600; color: #3a5a8f; text-transform: none; }
+    .section-label .hi { font-size: 7pt; font-weight: 400; color: var(--muted);
+      text-transform: none; letter-spacing: 0; }
 
-    /* ── Info grid ── */
+    /* ── Info grid: label-cell + value, dotted underline feel ── */
     table.info { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
-    table.info td { border: 1px solid #bbb; padding: 2px 4px; vertical-align: top; font-size: 9px; }
+    table.info td { border-bottom: 1px solid var(--rule-lt); padding: 4px 8px;
+      vertical-align: baseline; font-size: 8.5pt; }
     table.info td.lbl {
-      font-weight: 700; background: #f2f2f2; white-space: nowrap;
-      width: 110px; line-height: 1.45;
+      font-size: 6.5pt; letter-spacing: .4px; text-transform: uppercase; color: var(--navy);
+      font-weight: 700; background: var(--panel2); white-space: nowrap; width: 122px; line-height: 1.3;
     }
-    table.info td.lbl .hi { font-size: 7.5px; font-weight: 400; color: #666; display: block; }
-    table.info td.val { min-width: 70px; }
+    table.info td.lbl .hi { font-size: 6pt; font-weight: 400; color: var(--muted);
+      display: block; text-transform: none; letter-spacing: 0; }
+    table.info td.val { min-width: 78px; font-weight: 600; color: var(--ink); }
 
     /* ── Params table ── */
-    table.params { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8.5px; table-layout: fixed; }
-    table.params col.c-no    { width: 22px; }
-    table.params col.c-param { width: 18%; }
+    table.params { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 8pt;
+      table-layout: fixed; border: 1px solid var(--rule); }
+    table.params col.c-no    { width: 24px; }
+    table.params col.c-param { width: 22%; }
     table.params col.c-spec  { width: 22%; }
-    table.params col.c-guide { width: 36%; }
-    table.params col.c-res   { width: 60px; }
+    table.params col.c-guide { width: auto; }
+    table.params col.c-res   { width: 64px; }
     table.params th {
-      background: #1e3a5f; color: #fff; padding: 3px 4px;
-      text-align: left; border: 1px solid #1e3a5f; font-size: 8px;
+      background: var(--navy); color: #fff; padding: 5px 8px;
+      text-align: left; font-size: 7pt; letter-spacing: .5px; text-transform: uppercase; font-weight: 700;
     }
-    table.params th .hi { font-size: 7px; font-weight: 400; opacity: 0.85; display: block; }
-    table.params td { border: 1px solid #bbb; padding: 2px 4px; vertical-align: middle; word-wrap: break-word; }
-    table.params tr:nth-child(even) td { background: #f5f5f5; }
+    table.params th:last-child { text-align: center; }
+    table.params th .hi { font-size: 6pt; font-weight: 400; opacity: .8; display: block;
+      letter-spacing: 0; text-transform: none; }
+    table.params td { border-bottom: 1px solid var(--rule-lt); padding: 5px 8px;
+      vertical-align: middle; word-wrap: break-word; }
+    table.params tbody tr:last-child td { border-bottom: none; }
+    table.params tr { break-inside: avoid; page-break-inside: avoid; }
+    table.params tbody tr:nth-child(even) td { background: var(--panel2); }
+    table.params td:nth-child(3) { text-align: center; color: var(--muted); }
     .ccp-badge {
-      display: inline-block; font-size: 6.5px; font-weight: 700;
-      color: #c00; border: 1px solid #c00; border-radius: 2px;
-      padding: 0 2px; margin-left: 2px; line-height: 11px;
+      display: inline-block; font-size: 5.5pt; font-weight: 700;
+      color: var(--ccp); background: var(--ccp-bg); border: 1px solid var(--ccp); border-radius: 2px;
+      padding: 0 3px; margin-left: 4px; letter-spacing: .5px; vertical-align: middle;
     }
-    .result-pass { color: #16a34a; font-weight: 700; }
-    .result-fail { color: #dc2626; font-weight: 700; }
-    .result-na { color: #64748b; }
-    .hint-text { font-size: 7px; color: #777; font-style: italic; margin-top: 1px; }
-    .sampling-row td { background: #eef2f7 !important; font-style: italic; font-size: 8px; }
+    .result-pass { color: var(--green); font-weight: 700; letter-spacing: .5px; }
+    .result-fail { color: var(--danger); font-weight: 700; letter-spacing: .5px; }
+    .result-na { color: var(--muted); }
+    .hint-text { font-size: 6pt; color: var(--muted); font-style: italic; margin-top: 1px; }
+    .sampling-row td { background: var(--panel) !important; font-style: italic; font-size: 7pt; color: var(--muted); }
 
-    /* ── Disposition ── */
-    .disp-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-weight: 700; font-size: 10px; }
-    .disp-acc { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-    .disp-rej { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-    .disp-hld { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
-    .disp-awd { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+    /* ── Disposition: chip-style verdict (echoes "Circle one" of the form) ── */
+    .disp-badge { display: inline-block; padding: 3px 12px; border-radius: 3px; font-weight: 700;
+      font-size: 9pt; letter-spacing: .5px; text-transform: uppercase; border: 1.5px solid; }
+    .disp-acc { color: var(--green); border-color: var(--green); background: #e9f5f1; }
+    .disp-rej { color: var(--danger); border-color: var(--danger); background: var(--ccp-bg); }
+    .disp-hld { color: var(--amber); border-color: var(--amber); background: #fdf6e8; }
+    .disp-awd { color: var(--amber); border-color: var(--amber); background: #fdf6e8; }
 
-    /* ── Signatures ── */
-    .sig-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-    .sig-table td { border: 1px solid #999; padding: 4px 6px; text-align: center; width: 33.3%; }
-    .sig-table .sig-name { font-size: 10px; font-weight: 700; min-height: 20px; }
-    .sig-table .sig-lbl { font-size: 8px; color: #555; margin-top: 2px; border-top: 1px solid #ccc; padding-top: 2px; line-height: 1.35; }
-    .sig-table .sig-lbl .hi { font-size: 7px; color: #888; }
+    /* ── Signatures / Authorisation blocks ── */
+    .sig-table { width: 100%; border-collapse: collapse; margin-top: 10px;
+      break-inside: avoid; page-break-inside: avoid; }
+    .sig-table td { padding: 4px 8px; text-align: left; width: 33.3%; vertical-align: top;
+      border: 1px solid var(--rule); }
+    .sig-table .sig-name { font-size: 9.5pt; font-weight: 700; min-height: 26px; color: var(--ink);
+      border-bottom: 1px dotted var(--muted); padding-bottom: 3px; margin-bottom: 3px; }
+    .sig-table .sig-lbl { font-size: 6.5pt; letter-spacing: .4px; text-transform: uppercase;
+      color: var(--navy); font-weight: 700; line-height: 1.35; }
+    .sig-table .sig-lbl .hi { font-size: 6pt; font-weight: 400; color: var(--muted);
+      letter-spacing: 0; text-transform: none; }
 
-    /* ── Images ── */
-    .img-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-    .img-grid img { width: 120px; height: 90px; object-fit: cover; border: 1px solid #ccc; border-radius: 3px; }
+    /* ── Images: 3-up A4 grid, contain (no crop), mm-sized, page-safe ── */
+    .img-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3.5mm; margin-top: 4px;
+      break-inside: avoid; page-break-inside: avoid; }
+    .img-grid img { width: 100%; height: 42mm; object-fit: contain; display: block;
+      background: var(--panel2); border: 1px solid var(--rule); border-radius: 2px;
+      break-inside: avoid; page-break-inside: avoid; }
+    #imagesSection { break-inside: avoid; page-break-inside: avoid; }
 
-    .print-btn { position: fixed; top: 10px; right: 10px; padding: 6px 14px; background: #1e3a5f; color: #fff; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
-    .print-btn:hover { background: #163060; }
-    .footer-note { font-size: 7.5px; color: #999; text-align: right; margin-top: 5px; }
+    .print-btn { position: fixed; top: 12px; right: 12px; padding: 7px 16px; background: var(--navy);
+      color: #fff; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .print-btn:hover { background: var(--deep); }
+    .footer-note { font-size: 6.5pt; color: var(--muted);
+      text-align: right; margin-top: 9px; padding-top: 5px; border-top: 1px solid var(--rule); }
   </style>
 </head>
 <body>
@@ -128,19 +190,19 @@
       <span class="m"><b>Effective:</b> 01-07-2025</span>
       <span class="m"><b>ISO Clause:</b> 8.4.2</span>
       <span class="m"><b>Status:</b> <span class="status-draft">DRAFT</span></span>
-      <span class="m"><b>Record No.:</b> <span id="pDocNo"></span></span>
-      <span class="m"><b>Date:</b> <span id="pDate"></span></span>
-      <span class="m"><b>GRN No.:</b> <span id="pGrnNo"></span></span>
+      <span class="m"><b>Record No.:</b> <span id="pDocNo"><?= pesc(D.docNo) ?></span></span>
+      <span class="m"><b>Date:</b> <span id="pDate"><?= pesc(D.date) ?></span></span>
+      <span class="m"><b>GRN No.:</b> <span id="pGrnNo"><?= pesc(D.grnNo || "—") ?></span></span>
     </div>
   </div>
 
   <div class="section-label">Material &amp; Supplier Details &nbsp;<span class="hi">/ सामग्री एवं आपूर्तिकर्ता विवरण</span></div>
   <table class="info">
-    <tr><td class="lbl">Supplier<span class="hi">आपूर्तिकर्ता</span></td><td class="val" id="pSupplier" colspan="3"></td></tr>
-    <tr><td class="lbl">Material Code<span class="hi">सामग्री कोड</span></td><td class="val" id="pMatCode"></td><td class="lbl">Description<span class="hi">विवरण</span></td><td class="val" id="pMaterial"></td></tr>
-    <tr><td class="lbl">Batch/Lot No.<span class="hi">बैच/लॉट क्र.</span></td><td class="val" id="pBatch"></td><td class="lbl">GRN No.<span class="hi">जीआरएन क्र.</span></td><td class="val" id="pGrnNo2"></td></tr>
-    <tr><td class="lbl">PO Reference<span class="hi">क्रय आदेश</span></td><td class="val" id="pPoRef"></td><td class="lbl">Invoice No.<span class="hi">चालान क्र.</span></td><td class="val" id="pInvoice"></td></tr>
-    <tr><td class="lbl">AQL Level<span class="hi">एक्यूएल स्तर</span></td><td class="val" id="pAql"></td><td class="lbl">Sample Size<span class="hi">नमूना आकार</span></td><td class="val" id="pSample"></td></tr>
+    <tr><td class="lbl">Supplier<span class="hi">आपूर्तिकर्ता</span></td><td class="val" id="pSupplier" colspan="3"><?= pesc(D.supplierName) ?></td></tr>
+    <tr><td class="lbl">Material Code<span class="hi">सामग्री कोड</span></td><td class="val" id="pMatCode"><?= pesc(D.materialCode || "—") ?></td><td class="lbl">Description<span class="hi">विवरण</span></td><td class="val" id="pMaterial"><?= pesc(D.materialDesc) ?></td></tr>
+    <tr><td class="lbl">Batch/Lot No.<span class="hi">बैच/लॉट क्र.</span></td><td class="val" id="pBatch"><?= pesc(D.batchNo) ?></td><td class="lbl">GRN No.<span class="hi">जीआरएन क्र.</span></td><td class="val" id="pGrnNo2"><?= pesc(D.grnNo || "—") ?></td></tr>
+    <tr><td class="lbl">PO Reference<span class="hi">क्रय आदेश</span></td><td class="val" id="pPoRef"><?= pesc(D.poRef || "—") ?></td><td class="lbl">Invoice No.<span class="hi">चालान क्र.</span></td><td class="val" id="pInvoice"><?= pesc(D.invoiceNo || "—") ?></td></tr>
+    <tr><td class="lbl">AQL Level<span class="hi">एक्यूएल स्तर</span></td><td class="val" id="pAql"><?= pesc(D.aqlLevel) ?></td><td class="lbl">Sample Size<span class="hi">नमूना आकार</span></td><td class="val" id="pSample"><?= pesc(D.sampleSize) ?></td></tr>
   </table>
 
   <div class="section-label">Inspection Parameters &nbsp;<span class="hi">/ निरीक्षण मानदंड</span></div>
@@ -158,10 +220,10 @@
 
   <div class="section-label">Disposition &nbsp;<span class="hi">/ निपटान निर्णय</span></div>
   <table class="info" style="margin-bottom:3px">
-    <tr><td class="lbl">Overall Disposition<span class="hi">समग्र निर्णय</span></td><td class="val" style="width:140px"><span id="pDisp" class="disp-badge"></span></td><td class="lbl">Qty Accepted<span class="hi">स्वीकृत मात्रा</span></td><td class="val" id="pAccQty"></td></tr>
-    <tr><td class="lbl">Qty Rejected<span class="hi">अस्वीकृत मात्रा</span></td><td class="val" id="pRejQty"></td><td class="lbl">Qty On Hold<span class="hi">होल्ड मात्रा</span></td><td class="val" id="pHldQty"></td></tr>
-    <tr><td class="lbl">NCR Ref.<span class="hi">एनसीआर संदर्भ</span></td><td class="val" id="pNcr"></td><td class="lbl">Deviation Ref.<span class="hi">विचलन संदर्भ</span></td><td class="val" id="pDev"></td></tr>
-    <tr><td class="lbl">Remarks<span class="hi">टिप्पणी</span></td><td class="val" id="pRemarks" colspan="3" style="white-space:pre-wrap"></td></tr>
+    <tr><td class="lbl">Overall Disposition<span class="hi">समग्र निर्णय</span></td><td class="val" style="width:140px"><span id="pDisp" class="disp-badge"></span></td><td class="lbl">Qty Accepted<span class="hi">स्वीकृत मात्रा</span></td><td class="val" id="pAccQty"><?= pesc(D.acceptedQty || "—") ?></td></tr>
+    <tr><td class="lbl">Qty Rejected<span class="hi">अस्वीकृत मात्रा</span></td><td class="val" id="pRejQty"><?= pesc(D.rejectedQty || "—") ?></td><td class="lbl">Qty On Hold<span class="hi">होल्ड मात्रा</span></td><td class="val" id="pHldQty"><?= pesc(D.holdQty || "—") ?></td></tr>
+    <tr><td class="lbl">NCR Ref.<span class="hi">एनसीआर संदर्भ</span></td><td class="val" id="pNcr"><?= pesc(D.ncrRef || "—") ?></td><td class="lbl">Deviation Ref.<span class="hi">विचलन संदर्भ</span></td><td class="val" id="pDev"><?= pesc(D.deviationRef|| "—") ?></td></tr>
+    <tr><td class="lbl">Remarks<span class="hi">टिप्पणी</span></td><td class="val" id="pRemarks" colspan="3" style="white-space:pre-wrap"><?= pesc(D.remarks || "—") ?></td></tr>
   </table>
 
   <div id="imagesSection" style="display:none">
@@ -171,12 +233,12 @@
 
   <div class="section-label" style="margin-top:6px">Signatures &nbsp;<span class="hi">/ हस्ताक्षर</span></div>
   <table class="sig-table"><tr>
-    <td><div class="sig-name" id="pSigInspector"></div><div class="sig-lbl">QC Inspector<br><span class="hi">गुणवत्ता निरीक्षक</span></div></td>
-    <td><div class="sig-name" id="pSigStore"></div><div class="sig-lbl">Store In-Charge<br><span class="hi">भंडार प्रभारी</span></div></td>
-    <td><div class="sig-name" id="pSigQA"></div><div class="sig-lbl">QA Manager<br><span class="hi">गुणवत्ता प्रबंधक</span></div></td>
+    <td><div class="sig-name" id="pSigInspector"><?= pesc(D.inspector) ?></div><div class="sig-lbl">QC Inspector<br><span class="hi">गुणवत्ता निरीक्षक</span></div></td>
+    <td><div class="sig-name" id="pSigStore"><?= pesc(D.storeInCharge || "") ?></div><div class="sig-lbl">Store In-Charge<br><span class="hi">भंडार प्रभारी</span></div></td>
+    <td><div class="sig-name" id="pSigQA"><?= pesc(D.qaManager || "") ?></div><div class="sig-lbl">QA Manager<br><span class="hi">गुणवत्ता प्रबंधक</span></div></td>
   </tr></table>
 
-  <div class="footer-note" id="pPrintedAt"></div>
+  <div class="footer-note" id="pPrintedAt"><?= pesc("मुद्रित / Printed: " + D.printedAt) ?></div>
 </div>
 
 <script>
@@ -190,28 +252,28 @@ var HI_PARAM = {
   shelf:"शेल्फ लाइफ", coa:"सीओए/परीक्षण रिपोर्ट"
 };
 
-document.getElementById("pDocNo").textContent     = d.docNo;
-document.getElementById("pDate").textContent      = d.date;
-document.getElementById("pGrnNo").textContent     = d.grnNo   || "—";
-document.getElementById("pGrnNo2").textContent    = d.grnNo   || "—";
-document.getElementById("pSupplier").textContent  = d.supplierName;
-document.getElementById("pMatCode").textContent   = d.materialCode || "—";
-document.getElementById("pMaterial").textContent  = d.materialDesc;
-document.getElementById("pBatch").textContent     = d.batchNo;
-document.getElementById("pPoRef").textContent     = d.poRef       || "—";
-document.getElementById("pInvoice").textContent   = d.invoiceNo   || "—";
-document.getElementById("pAql").textContent       = d.aqlLevel;
-document.getElementById("pSample").textContent    = d.sampleSize;
-document.getElementById("pAccQty").textContent    = d.acceptedQty || "—";
-document.getElementById("pRejQty").textContent    = d.rejectedQty || "—";
-document.getElementById("pHldQty").textContent    = d.holdQty     || "—";
-document.getElementById("pNcr").textContent       = d.ncrRef      || "—";
-document.getElementById("pDev").textContent       = d.deviationRef|| "—";
-document.getElementById("pRemarks").textContent   = d.remarks     || "—";
-document.getElementById("pSigInspector").textContent = d.inspector;
-document.getElementById("pSigStore").textContent  = d.storeInCharge || "";
-document.getElementById("pSigQA").textContent     = d.qaManager    || "";
-document.getElementById("pPrintedAt").textContent = "मुद्रित / Printed: " + d.printedAt;
+setIf('pDocNo', d.docNo);
+setIf('pDate', d.date);
+setIf('pGrnNo', d.grnNo   || "—");
+setIf('pGrnNo2', d.grnNo   || "—");
+setIf('pSupplier', d.supplierName);
+setIf('pMatCode', d.materialCode || "—");
+setIf('pMaterial', d.materialDesc);
+setIf('pBatch', d.batchNo);
+setIf('pPoRef', d.poRef       || "—");
+setIf('pInvoice', d.invoiceNo   || "—");
+setIf('pAql', d.aqlLevel);
+setIf('pSample', d.sampleSize);
+setIf('pAccQty', d.acceptedQty || "—");
+setIf('pRejQty', d.rejectedQty || "—");
+setIf('pHldQty', d.holdQty     || "—");
+setIf('pNcr', d.ncrRef      || "—");
+setIf('pDev', d.deviationRef|| "—");
+setIf('pRemarks', d.remarks     || "—");
+setIf('pSigInspector', d.inspector);
+setIf('pSigStore', d.storeInCharge || "");
+setIf('pSigQA', d.qaManager    || "");
+setIf('pPrintedAt', "मुद्रित / Printed: " + d.printedAt);
 
 // QR code — use stored base64 if available, else fetch on-the-fly
 var qrWrap = document.getElementById("qrWrap");

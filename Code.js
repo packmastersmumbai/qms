@@ -637,6 +637,16 @@ function doGet(e) {
     var tgd; try { tgd = perfTelegram(); } catch(er){ tgd = 'ERR ' + er.message; }
     return ContentService.createTextOutput(String(tgd)).setMimeType(ContentService.MimeType.TEXT);
   }
+  if (diag === 'pdfvalues') {
+    var pvl;
+    try { pvl = perfPdfValues(e.parameter.mod || 'GRN'); } catch(er){ pvl = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(pvl)).setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (diag === 'pdfcontent') {
+    var pdc;
+    try { pdc = perfPdfContent(e.parameter.doc || ''); } catch(er){ pdc = 'ERR ' + er.message; }
+    return ContentService.createTextOutput(String(pdc)).setMimeType(ContentService.MimeType.TEXT);
+  }
   if (diag === 'printrender') {
     var prr;
     try { prr = perfPrintRender(e.parameter.doc || ''); } catch(er){ prr = 'ERR ' + er.message; }

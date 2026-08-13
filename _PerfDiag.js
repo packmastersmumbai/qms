@@ -1129,3 +1129,120 @@ function perfIqcLogCols() {
   }
   return out.join(String.fromCharCode(10));
 }
+
+// Generate a PDF and report the TEXT INSIDE IT. Rendering the HTML correctly
+// proves nothing: Blob.getAs('application/pdf') converts raw HTML and never
+// runs JavaScript, so a template that fills values via JS produces a PDF with
+// every label and no data — which is exactly what shipped.
+function perfPdfContent(docNo) {
+  var out = ['PDF CONTENT CHECK', ''];
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  if (!docNo) {
+    for (var k = ws.getLastRow(); k >= 2; k--) {
+      var v = String(ws.getRange(k, 1).getValue() || '').trim();
+      if (v) { docNo = v; break; }
+    }
+  }
+  out.push('doc: ' + docNo);
+  try {
+    var data = getGRNPrintData(docNo);
+    var tmpl = HtmlService.createTemplateFromFile('PrintGRN_F');
+    tmpl.printData = data;
+    var html = tmpl.evaluate().getContent();
+
+    // Does the HTML carry the VALUES, not just the labels?
+    var checks = [
+      ['docNo',    docNo],
+      ['supplier', data.supplierName || ''],
+      ['date',     data.date || '']
+    ];
+    out.push('rendered HTML: ' + html.length + ' bytes');
+    checks.forEach(function (c) {
+      if (!c[1]) { out.push('   ' + _perfPad_(c[0], 10) + '(no value to check)'); return; }
+      out.push('   ' + _perfPad_(c[0], 10) +
+               (html.indexOf(String(c[1])) >= 0 ? 'PRESENT in HTML' : 'MISSING from HTML') +
+               '   "' + String(c[1]).slice(0, 30) + '"');
+    });
+    var firstItem = (data.items || [])[0];
+    if (firstItem && firstItem.batchNo) {
+      out.push('   ' + _perfPad_('item batch', 10) +
+               (html.indexOf(String(firstItem.batchNo)) >= 0 ? 'PRESENT in HTML' : 'MISSING from HTML'));
+    }
+
+    // Convert exactly as the product does, and count the bytes.
+    var pdf = Utilities.newBlob(html, 'text/html', 'probe.html').getAs('application/pdf');
+    out.push('');
+    out.push('PDF bytes: ' + pdf.getBytes().length);
+    out.push('');
+    out.push(html.indexOf(String(docNo)) >= 0
+      ? 'VERDICT: values ARE in the HTML that becomes the PDF.'
+      : 'VERDICT: BLANK PDF — the HTML has labels but no values, so the values\n' +
+        'are being written by JavaScript, which the converter never runs.');
+  } catch (e) {
+    out.push('THREW: ' + e.message);
+  }
+  return out.join(String.fromCharCode(10));
+}
+
+// Does a module's print template put VALUES (not just labels) into the HTML
+// that becomes the PDF? One call per module so a single failure cannot blank
+// the whole report.  ?diag=pdfvalues&mod=IQC
+function perfPdfValues(mod) {
+  mod = String(mod || 'GRN').toUpperCase();
+  var out = ['PDF VALUE CHECK — ' + mod, ''];
+  var ss = getSpreadsheet();
+
+  var cfg = {
+    GRN:  { sheet: 'GRN_LOG',       tmpl: 'PrintGRN_F',  data: 'getGRNPrintData'  },
+    IQC:  { sheet: 'IQC_LOG',       tmpl: 'PrintIQC_F',  data: 'getIQCPrintData'  },
+    OQC:  { sheet: 'OQC_LOG',       tmpl: 'PrintOQC_F',  data: 'getOQCPrintData'  },
+    IPQC: { sheet: 'IPQC_Sessions', tmpl: 'PrintIPQC_F', data: 'getIPQCPrintData' }
+  }[mod];
+  if (!cfg) return 'Unknown module. Use GRN | IQC | OQC | IPQC';
+
+  var ws = ss.getSheetByName(cfg.sheet);
+  if (!ws || ws.getLastRow() < 2) return out.join(String.fromCharCode(10)) + String.fromCharCode(10) + 'no rows';
+
+  var docNo = '';
+  for (var k = ws.getLastRow(); k >= 2; k--) {
+    var v = String(ws.getRange(k, 1).getValue() || '').trim();
+    if (v) { docNo = v; break; }
+  }
+  out.push('doc: ' + docNo);
+
+  try {
+    var data = eval(cfg.data)(docNo);
+    var tmpl = HtmlService.createTemplateFromFile(cfg.tmpl);
+    tmpl.printData = data;
+    // PrintIQC_F also reads `paramDefs` (IQC.js:887 sets it). Omitting it threw
+    // "paramDefs is not defined" — a gap in THIS probe, not in the template.
+    if (typeof IQC_PARAMS !== 'undefined') tmpl.paramDefs = IQC_PARAMS;
+    var html = tmpl.evaluate().getContent();
+    out.push('rendered: ' + html.length + ' bytes');
+
+    // Every non-trivial string value in the payload should appear in the HTML.
+    var present = 0, absent = 0, missing = [];
+    Object.keys(data).forEach(function (key) {
+      var val = data[key];
+      if (typeof val !== 'string' && typeof val !== 'number') return;
+      val = String(val);
+      if (val.length < 3 || val === '—') return;
+      if (html.indexOf(val) >= 0) present++;
+      else { absent++; if (missing.length < 6) missing.push(key + '="' + val.slice(0, 24) + '"'); }
+    });
+    out.push('values in HTML : ' + present);
+    out.push('values MISSING : ' + absent);
+    missing.forEach(function (m) { out.push('   ' + m); });
+
+    var pdf = Utilities.newBlob(html, 'text/html', 'p.html').getAs('application/pdf');
+    out.push('PDF bytes      : ' + pdf.getBytes().length);
+    out.push('');
+    out.push(present > 0 && absent === 0
+      ? 'VERDICT: every value reaches the PDF.'
+      : (present > absent ? 'VERDICT: mostly rendered; check the missing keys above.'
+                          : 'VERDICT: BLANK — values are not in the HTML.'));
+  } catch (e) {
+    out.push('THREW: ' + e.message.slice(0, 120));
+  }
+  return out.join(String.fromCharCode(10));
+}

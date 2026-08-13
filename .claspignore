@@ -45,3 +45,6 @@ test-artifacts/**
 # 'require is not defined' fires before ANY function runs, so every diag and
 # every form dies. tools-deadscan.js did exactly that on 2026-08-13.
 tools-*.node
+# .node is Node's NATIVE-BINARY extension and cannot be require()d as JS.
+# Node-only tooling uses .cjs instead, still excluded from the GAS push.
+tools-*.cjs
