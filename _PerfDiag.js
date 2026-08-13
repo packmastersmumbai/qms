@@ -1246,3 +1246,44 @@ function perfPdfValues(mod) {
   }
   return out.join(String.fromCharCode(10));
 }
+
+// Why is the PDF ~87KB for one page? Convert the SAME html with pieces removed
+// and compare, so the answer is measured rather than assumed. The logo turned
+// out to be only part of it — Google's converter embeds font subsets for the
+// Devanagari labels, which a Latin-only variant does not need.
+function perfPdfWeight() {
+  var out = ['PDF WEIGHT BREAKDOWN', ''];
+  var ws = getSpreadsheet().getSheetByName('GRN_LOG');
+  var docNo = '';
+  for (var k = ws.getLastRow(); k >= 2; k--) {
+    var v = String(ws.getRange(k, 1).getValue() || '').trim();
+    if (v) { docNo = v; break; }
+  }
+  var data = getGRNPrintData(docNo);
+  var tmpl = HtmlService.createTemplateFromFile('PrintGRN_F');
+  tmpl.printData = data;
+  var html = tmpl.evaluate().getContent();
+
+  function size(label, h) {
+    var n = Utilities.newBlob(h, 'text/html', 'x.html').getAs('application/pdf').getBytes().length;
+    out.push(_perfPad_(label, 34) + _perfPad_(String(n) + ' B', 10) + Math.round(n / 1024) + ' KB');
+    return n;
+  }
+
+  out.push('html: ' + html.length + ' bytes');
+  out.push('');
+  var full = size('as-is', html);
+  var noImg = size('without the logo', html.replace(/<img[^>]*src="data:image[^"]*"[^>]*>/g, ''));
+  // Devanagari: every .hi span plus any non-ASCII text.
+  var noHi = html.replace(/<span class="hi">[\s\S]*?<\/span>/g, '')
+                 .replace(/[^\x00-\x7F]/g, '');
+  var noHiN = size('without Hindi text', noHi);
+  var noBoth = size('without logo AND Hindi', noHi.replace(/<img[^>]*src="data:image[^"]*"[^>]*>/g, ''));
+  size('without CSS', html.replace(/<style[\s\S]*?<\/style>/g, ''));
+
+  out.push('');
+  out.push('logo costs  : ' + (full - noImg) + ' B');
+  out.push('Hindi costs : ' + (full - noHiN) + ' B   <- font subset embedding');
+  out.push('floor       : ' + noBoth + ' B');
+  return out.join(String.fromCharCode(10));
+}
